@@ -1,0 +1,157 @@
+{
+  "note": "The test project's config (DEPOT2_CONFIG in tests/helpers.py): a made-up project on GitHub with a deploy job and two runner pools, and a team of five (the suites' rounds, tokens and reflection).",
+  "characters": [
+    {
+      "id": "builder",
+      "name": "Строитель",
+      "full": "Строгий строитель",
+      "default_gender": "m",
+      "spec_marker": "Строгий строитель",
+      "role": "simple code, small budgets, no heavy solutions"
+    },
+    {
+      "id": "painter",
+      "name": "Краски",
+      "full": "Любитель красок",
+      "default_gender": "f",
+      "spec_marker": "Любитель красок",
+      "display": "Палитра, Краски",
+      "aliases": [
+        "палитра",
+        "palette"
+      ],
+      "role": "how it looks and feels; against tedium"
+    },
+    {
+      "id": "counter",
+      "name": "Счетовод",
+      "full": "Счетовод",
+      "default_gender": "m",
+      "spec_marker": "Счетовод",
+      "role": "exact numbers, honest models, reproducible results"
+    },
+    {
+      "id": "chronicler",
+      "name": "Летописец",
+      "full": "Летописец-натуралист",
+      "default_gender": "m",
+      "spec_marker": "Летописец-натуралист",
+      "display": "Перо, Летописец",
+      "aliases": [
+        "перо"
+      ],
+      "title": "летописец",
+      "role": "the story the project tells, and whether its facts are true"
+    },
+    {
+      "id": "keeper",
+      "name": "Копилка",
+      "full": "Хозяйка копилки",
+      "default_gender": "f",
+      "spec_marker": "Хозяйка копилки",
+      "role": "what it costs to build and run, scope, risks"
+    }
+  ],
+  "repo": "example-org/example-project",
+  "merge": {
+    "ci_workflow": "ci.yml",
+    "deploy_job": "Deploy",
+    "cd_fallback": {
+      "var": "CD_RUNNER",
+      "main": [
+        "self-hosted",
+        "primary"
+      ],
+      "fallback": [
+        "self-hosted",
+        "spare"
+      ]
+    },
+    "ci_fallback": {
+      "var": "CI_RUNNER",
+      "main": [
+        "self-hosted",
+        "primary"
+      ],
+      "fallback": [
+        "self-hosted",
+        "spare"
+      ],
+      "jobs": [
+        "Test and build",
+        "Lint and typecheck"
+      ]
+    },
+    "auto": {
+      "generated": {
+        "file": "docs/GENERATED.md",
+        "cmd": [
+          "false"
+        ]
+      },
+      "snapshots": {
+        "glob": "test/__snapshots__/*.snap",
+        "cmd": [
+          "false"
+        ]
+      },
+      "golden": {
+        "file": "test/golden/ranking.golden.json",
+        "cmd": [
+          "false"
+        ]
+      },
+      "union": [
+        "README.md",
+        "NOTES.md",
+        "docs/*/GUIDE.md"
+      ]
+    },
+    "scan_args": [
+      "--repo",
+      "{worktree}"
+    ],
+    "trial_scan_args": [
+      "--root",
+      "{dir}"
+    ]
+  },
+  "model": "model-a",
+  "effort": "xhigh",
+  "agents": {
+    "projects": "/nonexistent/depot2-test-runs"
+  },
+  "backup": {
+    "git": {
+      "scan": false,
+      "scan_args": [
+        "--repo",
+        "{state}"
+      ],
+      "scan_pushed_args": [
+        "--root",
+        "{dir}"
+      ]
+    },
+    "pass_password": "example/depot2-backup/crypt-password",
+    "pass_salt": "example/depot2-backup/crypt-salt",
+    "forbidden_remotes": [
+      "other-backup"
+    ],
+    "forbidden_folders": [
+      "other-backups"
+    ]
+  },
+  "standing_questions": [
+    {
+      "id": "X1",
+      "title": "Что упущено?",
+      "question": "Что упущено в теме раунда?"
+    },
+    {
+      "id": "X2",
+      "title": "Где меньше всего уверенности?",
+      "question": "Где у нас меньше всего уверенности по теме раунда?"
+    }
+  ]
+}

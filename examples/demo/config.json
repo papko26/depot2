@@ -1,0 +1,23 @@
+{
+  "project": {"name": "Shelfmark", "description": "an invented library catalogue app, used only by the demo"},
+  "repo": "example-org/shelfmark",
+  "stack": {"slots": 2, "queue_max": 6, "post_max": 2},
+  "characters": [
+    {"id": "builder", "name": "Builder", "full": "Strict builder", "default_gender": "m",
+     "spec_marker": "Strict builder", "role": "simple code, small budgets, no heavy solutions"},
+    {"id": "painter", "name": "Paints", "full": "Lover of paints", "default_gender": "f",
+     "spec_marker": "Lover of paints", "display": "Palette, Paints", "aliases": ["palette"],
+     "role": "how it looks and feels; against tedium"},
+    {"id": "counter", "name": "Counter", "full": "Counter", "default_gender": "m",
+     "spec_marker": "Counter", "role": "exact numbers, honest models, reproducible results"},
+    {"id": "chronicler", "name": "Chronicler", "full": "Chronicler-naturalist", "default_gender": "m",
+     "spec_marker": "Chronicler-naturalist", "display": "Quill, Chronicler", "aliases": ["quill"],
+     "title": "chronicler", "role": "the story the project tells, and whether its facts are true"},
+    {"id": "keeper", "name": "Keeper", "full": "Keeper of the piggy bank", "default_gender": "f",
+     "spec_marker": "Keeper of the piggy bank", "role": "what it costs to build and run, scope, risks"}
+  ],
+  "standing_questions": [
+    {"id": "X1", "title": "What is missing?", "question": "What does this round's topic leave out?"},
+    {"id": "X2", "title": "Least sure", "question": "What are we least sure of here?"}
+  ]
+}

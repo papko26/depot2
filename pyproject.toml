@@ -1,0 +1,25 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "depot2"
+version = "0.1.0"
+description = "A planning and merge depot for a team that works through outside runners"
+readme = "README.md"
+requires-python = ">=3.8"
+license = {text = "Apache-2.0"}
+authors = [{name = "papko26"}, {name = "dice cafe"}]
+classifiers = [
+    "License :: OSI Approved :: Apache Software License",
+    "Programming Language :: Python :: 3",
+]
+
+[project.scripts]
+depot2 = "depot2.cli:main"
+
+[tool.setuptools]
+packages = ["depot2", "depot2.catalogs", "depot2.executors"]
+
+[tool.setuptools.package-data]
+depot2 = ["web/*"]

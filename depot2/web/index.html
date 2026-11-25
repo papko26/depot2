@@ -1,0 +1,2020 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light dark">
+<title>depot2</title>
+<link rel="icon" href="data:,">
+<script type="application/json" id="messages">{}</script>
+<style>
+:root {
+  --bg: #f6f5f1; --card: #ffffff; --ink: #1d1c1a; --muted: #6b675f; --line: #e2dfd7; --soft: #efede7;
+  --link: #1f5fbf; --warn: #a3450b; --bad: #b3261e; --ok: #2e7d32; --focus: #1f5fbf;
+  --st-bogie: #8a6a4f; --st-sketch: #b98a00; --st-project: #7a4fc4; --st-build: #1e6fd9; --st-docs: #a53f8c;
+  --st-acceptance: #00897b; --st-queued: #d9620b; --st-rolling: #3b9a3f; --st-arrived: #2b6630; --st-scrapped: #7d7a74;
+  --panel-w: min(760px, 100vw);
+  --tab-strip: rgb(20 20 20 / 0.07); --tab-hover: rgb(20 20 20 / 0.06); --tab-on: #ffffff; --tab-on-ink: #282828; --tab-ink: #373737;
+  --font-ui: "FreeSans", "Liberation Sans", Arial, Helvetica, sans-serif;
+  --mark: #fde68a;  /* a found word */
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #161614; --card: #201f1c; --ink: #ecebe6; --muted: #a29e95; --line: #35332e; --soft: #2a2925;
+    --link: #8ab4ff; --warn: #f0a868; --bad: #ff8a80; --ok: #8fd694; --focus: #8ab4ff;
+    --st-bogie: #c49a76; --st-sketch: #e3b53a; --st-project: #b28cf0; --st-build: #66a6ff; --st-docs: #e48ccf;
+    --st-acceptance: #3fc2b0; --st-queued: #ff9a4d; --st-rolling: #79cf7d; --st-arrived: #a6dba9; --st-scrapped: #a8a49c;
+    --tab-strip: rgb(236 235 230 / 0.07); --tab-hover: rgb(236 235 230 / 0.06); --tab-on: #45433d; --tab-on-ink: #ecebe6; --tab-ink: #cfccc4;
+    --mark: #6b5714;
+  }
+}
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+a { color: var(--link); }
+button { font: inherit; color: inherit; }
+code, pre { font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace; font-size: 0.92em; }
+.muted { color: var(--muted); }
+.w { color: var(--warn); } .g { color: var(--ok); }
+.s-bogie { --c: var(--st-bogie); } .s-sketch { --c: var(--st-sketch); } .s-project { --c: var(--st-project); }
+.s-build { --c: var(--st-build); } .s-docs { --c: var(--st-docs); } .s-acceptance { --c: var(--st-acceptance); }
+.s-queued { --c: var(--st-queued); }
+.s-rolling { --c: var(--st-rolling); } .s-arrived { --c: var(--st-arrived); } .s-scrapped { --c: var(--st-scrapped); }
+
+.top { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px;
+  padding: 10px 16px; background: var(--card); border-bottom: 1px solid var(--line); }
+.top h1 { margin: 0; font-size: 20px; letter-spacing: 0.02em; }
+.top .ro { font-size: 12px; color: var(--muted); }
+.tabs { display: flex; flex-wrap: wrap; min-width: 0; max-width: 100%; border-radius: 12px; background: var(--tab-strip); }
+.tabs button { flex: 1 1 auto; display: inline-flex; align-items: center; justify-content: center; min-height: 34px; margin: 0;
+  padding: 0 12px; border: 3px solid transparent; border-radius: 12px; background: none; background-clip: padding-box;
+  color: var(--tab-ink); font: 600 12.5px/1 var(--font-ui); white-space: nowrap; cursor: pointer; }
+.tabs button:hover:not([aria-selected="true"]) { background-color: var(--tab-hover); }
+.tabs button[aria-selected="true"] { background-color: var(--tab-on); color: var(--tab-on-ink); }
+.tabs button:focus-visible { outline-offset: -1px; }  /* the ring on the pill's edge, inside the strip */
+@media (pointer: coarse) { .tabs button { min-height: 44px; } }  /* a finger's 44 */
+.tabs .tcnt { margin-left: 6px; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+.find { display: flex; align-items: center; gap: 6px; flex: 0 1 400px; min-width: 0; }
+.find input, .find select { font: inherit; min-height: 30px; border: 1px solid var(--line); border-radius: 6px; color: var(--ink); }
+.find input { flex: 1 1 8em; min-width: 0; padding: 3px 8px; background: var(--bg); }
+.find select { flex: 0 1 auto; min-width: 0; max-width: 55%; padding: 3px 4px; background: var(--soft); }
+@media (pointer: coarse) { .find input, .find select { min-height: 40px; } }
+mark { background: var(--mark); color: inherit; border-radius: 2px; }
+.hit { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.nohit { opacity: 0.35; }
+.btn { border: 1px solid var(--line); background: var(--soft); border-radius: 6px; padding: 4px 12px; cursor: pointer; }
+.btn:hover { border-color: var(--muted); }
+.spacer { flex: 1; }
+.chk { display: inline-flex; align-items: center; gap: 4px; color: var(--muted); }
+#stamp { font-variant-numeric: tabular-nums; color: var(--muted); }
+:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+
+.err { margin: 10px 16px 0; padding: 8px 12px; border: 1px solid var(--bad); border-radius: 6px; color: var(--bad); background: var(--card); }
+main { padding: 12px 16px 40px; }
+body.with-panel main { margin-right: var(--panel-w); }
+
+.summary { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 12px; color: var(--muted); }
+.summary b { color: var(--ink); font-weight: 600; }
+.summary > span { min-width: 0; overflow-wrap: anywhere; }  /* a long path (the principles' file) wraps on a phone */
+
+/* the tracks and the trains */
+#view-trains .grid, #view-tracks .grid { display: grid; gap: 10px; max-width: 1400px; }
+.train { background: var(--card); border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.train > details > summary { list-style: none; cursor: pointer; padding: 10px 12px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.train > details > summary::-webkit-details-marker { display: none; }
+.train > details > summary::before { content: "▸"; color: var(--muted); width: 1em; }
+.train > details[open] > summary::before { content: "▾"; }
+.tnum { color: var(--muted); font-variant-numeric: tabular-nums; }
+.tid { font-weight: 600; font-variant-numeric: tabular-nums; }
+.ttitle { font-weight: 600; flex: 1 1 20em; min-width: 0; }
+.tstat { flex-basis: 100%; padding-left: 1.9em; font-size: 13px; color: var(--muted); overflow-wrap: anywhere; }
+.tstat.w { color: var(--warn); }
+.tcost { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.badge { display: inline-block; border-radius: 10px; padding: 0 8px; font-size: 12px; border: 1px solid currentColor; white-space: nowrap; }
+.b-design { color: var(--st-sketch); } .b-impl { color: var(--st-build); } .b-merge { color: var(--st-queued); }
+.b-arrived { color: var(--st-arrived); } .b-scrapped { color: var(--muted); } .b-open { color: var(--st-build); } .b-done { color: var(--st-arrived); }
+.tname { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 13px; }
+.lnk { display: inline-block; max-width: 100%; overflow: hidden; text-overflow: ellipsis; vertical-align: bottom; font-size: 12px;
+  padding: 0 6px; border-radius: 9px; background: var(--soft); white-space: nowrap; }
+.code { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.code.w { color: var(--warn); }
+.tmeta { padding: 0 12px 8px 32px; display: grid; gap: 2px; font-size: 13px; }
+.tmeta .k { color: var(--muted); }
+.counts { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 4px; }
+.chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; padding: 0 6px; border-radius: 9px; background: var(--soft); white-space: nowrap; }
+.chip::before { content: ""; width: 8px; height: 8px; border-radius: 50%; background: var(--c, var(--muted)); }
+.cars { border-top: 1px solid var(--line); }
+.car { display: grid; grid-template-columns: calc(2.6em + 19px) minmax(0, 1fr) auto; gap: 2px 10px; padding: 7px 12px 7px 8px;
+  border-top: 1px solid var(--line); cursor: pointer; align-items: start; }
+.car:first-child { border-top: 0; }
+.car:hover { background: var(--soft); }
+.car.sel { background: var(--soft); box-shadow: inset 3px 0 0 var(--focus); }
+.c-n { font-weight: 600; text-align: right; font-variant-numeric: tabular-nums; padding-top: 1px; white-space: nowrap; }
+.c-title { font-weight: 500; overflow-wrap: anywhere; }
+.c-sub, .c-wait { font-size: 12.5px; color: var(--muted); overflow-wrap: anywhere; }
+.c-wait .w { color: var(--warn); }
+.c-wait .g { color: var(--ok); }
+.c-route { grid-column: 2 / 4; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.open { border: 1px solid var(--line); background: var(--card); border-radius: 6px; padding: 1px 8px; font-size: 12px; cursor: pointer; }
+.cars:not(.more-open) .car.fin { display: none; }
+.fin-toggle { display: block; width: 100%; text-align: left; border: 0; border-top: 1px solid var(--line); background: none; color: var(--muted); padding: 6px 12px 6px 46px; cursor: pointer; }
+.fin-toggle:hover { background: var(--soft); }
+.moved { border-top: 1px solid var(--line); padding: 6px 12px 6px 46px; font-size: 12px; }
+.done-group { margin-top: 16px; }
+.done-group > summary { cursor: pointer; color: var(--muted); margin-bottom: 8px; }
+
+/* the route */
+.route { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 3px; margin: 0; padding: 0; list-style: none; }
+.route li { height: 16px; min-width: 12px; border-radius: 8px; border: 1.5px solid var(--c); font-size: 11px; line-height: 13px; padding: 0 2px; }
+.route li.past { background: var(--c); opacity: 0.38; }
+.route li.skip { border-style: dashed; opacity: 0.6; }
+.route li.cur { background: var(--c); color: #fff; padding: 0 7px; font-weight: 600; }
+@media (prefers-color-scheme: dark) { .route li.cur { color: #111; } }
+.route.full li { height: auto; padding: 2px 8px; font-size: 12px; line-height: 16px; border-radius: 10px; }
+.route.full li.past { opacity: 1; background: transparent; color: var(--muted); }
+.route.full li.fut { color: var(--muted); }
+.route.full .arr { border: 0; min-width: 0; padding: 0; color: var(--muted); }
+.next { font-size: 12px; color: var(--muted); }
+
+/* the board */
+.board { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr)); gap: 12px; align-items: start; }
+.col { background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 8px; padding: 8px; }
+.col h3 { margin: 0; font-size: 15px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.col h3 .cnt { font-variant-numeric: tabular-nums; color: var(--muted); }
+.col .lim { font-size: 12px; font-weight: 400; color: var(--muted); }
+.col .lim.full { color: var(--warn); } .col .lim.over { color: var(--bad); font-weight: 600; }
+.col .means { margin: 2px 0 8px; font-size: 12px; color: var(--muted); }
+.bcard { border: 1px solid var(--line); border-left: 3px solid var(--c); border-radius: 6px; padding: 6px 8px; margin-top: 6px; cursor: pointer; background: var(--card); }
+.bcard:hover { background: var(--soft); }
+.bcard.sel { box-shadow: 0 0 0 2px var(--focus); }
+.bcard .ref { font-weight: 600; font-size: 12.5px; font-variant-numeric: tabular-nums; }
+.bcard .t { overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.bcard .m { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.bcard .gate { font-size: 12px; color: var(--warn); }
+.bcard .gate.ok { color: var(--ok); }
+.slots { background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 8px; padding: 8px; margin: 0 0 12px; }
+.slots h3 { margin: 0 0 4px; font-size: 15px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.slots h3 .cnt { font-variant-numeric: tabular-nums; color: var(--muted); }
+.slots .lim { font-size: 12px; font-weight: 400; color: var(--muted); } .slots .lim.full { color: var(--warn); } .slots .lim.over { color: var(--bad); font-weight: 600; }
+.slot-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(170px, 100%), 1fr)); gap: 8px; }
+.slot { border: 1px solid var(--line); border-left: 3px solid var(--c); border-radius: 6px; padding: 6px 8px; background: var(--card); min-width: 0; }
+.slot[data-ref] { cursor: pointer; } .slot[data-ref]:hover { background: var(--soft); } .slot.sel { box-shadow: 0 0 0 2px var(--focus); }
+.slot.free { border-style: dashed; color: var(--muted); }
+.slot .sn { font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+.slot .stg { color: var(--c); font-weight: 600; }
+.slot .ref { font-weight: 600; font-size: 12.5px; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.slot .t { overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.slot .m { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; } .slot .gate { font-size: 12px; color: var(--warn); } .slot .gate.ok { color: var(--ok); }
+.slot-next { margin-top: 8px; font-size: 13px; display: grid; gap: 2px; }
+.slot-next .lbl { color: var(--muted); }
+.nchip { display: inline-block; padding: 0 6px; margin: 1px 2px; border-radius: 9px; background: var(--soft); cursor: pointer; overflow-wrap: anywhere; }
+.nchip:hover { box-shadow: 0 0 0 1px var(--line); }
+.col:not(.more-open) .extra { display: none; }
+.more { margin-top: 8px; width: 100%; }
+.busy { background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--c); border-radius: 8px; padding: 6px 8px 8px; margin: 0 0 12px; }
+.busy h3 { margin: 0 0 4px; font-size: 15px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.busy h3 .cnt { font-variant-numeric: tabular-nums; color: var(--muted); }
+.busy .go { font-size: 12.5px; font-weight: 400; margin-left: auto; }
+.busy-row { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 100%), 1fr)); gap: 4px 8px; }
+.bchip { display: flex; align-items: baseline; gap: 6px; min-width: 0; padding: 2px 6px; border-left: 3px solid var(--c); border-radius: 4px; background: var(--soft); cursor: pointer; font-size: 13px; }
+.bchip:hover { box-shadow: 0 0 0 1px var(--line); } .bchip.sel { box-shadow: 0 0 0 2px var(--focus); }
+.bchip .ref { font-weight: 600; font-size: 12.5px; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.bchip .t { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bchip .m { color: var(--muted); font-size: 12px; white-space: nowrap; }
+.bchip .stg { color: var(--c); font-weight: 600; }
+.slot-row.wide { grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr)); }
+.slot .ag { margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--line); font-size: 12.5px; overflow-wrap: anywhere; }
+.slot .ag .m { font-size: 12px; }
+.slot .ag.none { color: var(--muted); }
+.slot-free { margin-top: 6px; font-size: 13px; }
+.ast { font-weight: 600; } .ast.st-working { color: var(--ok); } .ast.st-silent, .ast.st-unattached, .ast.st-lost { color: var(--warn); }
+.ast.st-finished, .ast.st-stopped { color: var(--muted); }
+.alist { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; margin: 0 0 12px; }
+.alist h3 { margin: 0 0 2px; font-size: 15px; } .alist h3 .cnt { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 400; }
+.arow { padding: 5px 4px; border-top: 1px solid var(--line); cursor: pointer; font-size: 13px; overflow-wrap: anywhere; }
+.arow:first-of-type { border-top: 0; }
+.arow:hover { background: var(--soft); } .arow.sel { background: var(--soft); box-shadow: inset 3px 0 0 var(--focus); }
+.arow .m { font-size: 12px; color: var(--muted); }
+.alist:not(.more-open) .extra { display: none; }
+ol.acts { margin: 0; padding-left: 22px; font-size: 13px; } ol.acts li { overflow-wrap: anywhere; } ol.acts .tm { color: var(--muted); font-variant-numeric: tabular-nums; }
+
+.pc-sec { margin: 0 0 18px; max-width: 1040px; }
+.pc-sec h3 { margin: 0 0 8px; font-size: 16px; }
+.pc-sec h3 .cnt { color: var(--muted); font-weight: 400; font-variant-numeric: tabular-nums; }
+.pc { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px 8px; margin: 0 0 8px; }
+.pc.third { border-left: 4px solid var(--link); }
+.pc.off { opacity: 0.62; }
+.pc-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; font-size: 12.5px; color: var(--muted); }
+.pc-h .pcn { font-weight: 700; font-size: 15px; color: var(--ink); font-variant-numeric: tabular-nums; min-width: 1.6em; }
+.badge3 { display: inline-block; padding: 0 8px; border-radius: 9px; background: var(--link); color: var(--bg); font-weight: 600; font-size: 12px; }
+
+.dp { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+.dp-col { min-width: 0; max-height: calc(100vh - var(--top-h, 0px) - 28px); max-height: calc(100dvh - var(--top-h, 0px) - 28px);
+  overflow-y: auto; overscroll-behavior: contain; padding-right: 4px; }
+.dp-h { margin: 0 0 8px; font-size: 17px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; }
+.dp-h .cnt { font-size: 13px; font-weight: 400; color: var(--muted); font-variant-numeric: tabular-nums; }
+.dp-switch { display: none; gap: 4px; margin: 0 0 10px; }
+.dp-switch .btn[aria-pressed="true"] { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.dec-tools { position: sticky; top: 0; z-index: 1; background: var(--bg); padding: 0 0 8px; }
+.dec { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 6px 12px 8px; margin: 0 0 8px; }
+.dec.flash { box-shadow: 0 0 0 2px var(--focus); }
+.dec-h { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px 10px; font-size: 12.5px; color: var(--muted); }
+.dec-h .tid { color: var(--ink); }
+.dec-t { overflow-wrap: anywhere; white-space: pre-line; margin-top: 2px; }
+.rlink { color: var(--link); cursor: pointer; text-decoration: underline dotted; }
+.rlink.sel { background: var(--soft); border-radius: 3px; }
+.note { font-size: 12px; margin: 10px 0 0; }
+
+.qboard { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(min(290px, 84vw), 1fr); gap: 12px; align-items: start;
+  overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity; padding-bottom: 8px; }
+.qcol { scroll-snap-align: start; min-width: 0; display: flex; flex-direction: column; background: var(--card); border: 1px solid var(--line);
+  border-top: 4px solid var(--link); border-radius: 8px; padding: 8px;
+  max-height: calc(100vh - var(--top-h, 0px) - 96px); max-height: calc(100dvh - var(--top-h, 0px) - 96px); }
+.qcol.empty { border-top-color: var(--line); }
+.qcol h3 { margin: 0; font-size: 15px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.qcol h3 .cnt { font-variant-numeric: tabular-nums; color: var(--muted); }
+.qcol .means { margin: 2px 0 4px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.qlist { overflow-y: auto; min-height: 0; overscroll-behavior-y: contain; }
+.qcard { border: 1px solid var(--line); border-left: 3px solid var(--qc, var(--line)); border-radius: 6px; padding: 6px 8px; margin-top: 6px; background: var(--card); }
+.qcard.p-high { --qc: var(--warn); } .qcard.p-normal { --qc: var(--link); } .qcard.p-later { --qc: var(--muted); }
+.qcard[data-ref], .qcard[data-qx] { cursor: pointer; } .qcard[data-ref]:hover, .qcard[data-qx]:hover { background: var(--soft); }
+.qcard.sel { box-shadow: 0 0 0 2px var(--focus); }
+.qcard.closed { opacity: 0.62; }
+.qcard .qh { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; font-size: 12px; color: var(--muted); }
+.qcard .qh .tid { font-size: 12.5px; color: var(--ink); }
+.qcard .qh .stg { color: var(--c); font-weight: 600; }
+.qcard .t, .qcard .x { overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+.qcard .x { font-size: 12.5px; }
+.qcard.full .t, .qcard.full .x { display: block; -webkit-line-clamp: unset; overflow: visible; }
+.qcard .m { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.qcard .qd { margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--line); font-size: 12.5px; overflow-wrap: anywhere; }
+.qcard .qd .k { color: var(--muted); }
+.qcard .qd ul { margin: 2px 0; padding-left: 18px; }
+.prio { display: inline-block; padding: 0 5px; border-radius: 9px; background: var(--soft); color: var(--muted); font-size: 11.5px;
+  font-weight: 500; line-height: 16px; font-variant-numeric: tabular-nums; white-space: nowrap; vertical-align: 1px; }
+.prio.high { color: var(--warn); font-weight: 600; } .prio.later { opacity: 0.75; }
+.qclosed { margin-top: 8px; } .qclosed > summary { cursor: pointer; color: var(--muted); font-size: 13px; }
+
+/* the panel */
+.panel { position: fixed; top: var(--top-h, 0px); right: 0; bottom: 0; width: var(--panel-w); z-index: 10; background: var(--card);
+  border-left: 1px solid var(--line); box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18); display: flex; flex-direction: column; }
+.panel-head { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.panel-head .ph { flex: 1; min-width: 0; font-weight: 600; overflow-wrap: anywhere; }
+.panel-body { overflow-y: auto; padding: 12px 16px 40px; flex: 1; }
+.panel h2 { font-size: 17px; margin: 0 0 6px; overflow-wrap: anywhere; }
+.panel h4 { font-size: 13px; text-transform: none; color: var(--muted); margin: 18px 0 6px; border-bottom: 1px solid var(--line); padding-bottom: 2px; }
+.stage-badge { display: inline-block; padding: 1px 10px; border-radius: 10px; background: var(--c); color: #fff; font-weight: 600; font-size: 12.5px; }
+@media (prefers-color-scheme: dark) { .stage-badge { color: #111; } }
+dl.f { display: grid; grid-template-columns: max-content minmax(0, 1fr); gap: 3px 12px; margin: 0; }
+dl.f dt { color: var(--muted); }
+dl.f dd { margin: 0; overflow-wrap: anywhere; }
+ul.plain { margin: 0; padding-left: 18px; }
+.hist { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+.hist td, .hist th { border-top: 1px solid var(--line); padding: 3px 6px 3px 0; vertical-align: top; text-align: left; overflow-wrap: anywhere; }
+.hist th { color: var(--muted); font-weight: 500; }
+.forced { color: var(--bad); }
+.qa { font-size: 12px; margin-top: 2px; } .qa .ret { color: var(--warn); } .qa .cl { color: var(--bad); } .qa .rep { color: var(--link); }
+pre.raw { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--soft); padding: 8px; border-radius: 6px; font-size: 12px; max-height: 420px; overflow: auto; }
+.waits { margin: 0; padding-left: 18px; }
+.waits .w { color: var(--warn); } .waits .g { color: var(--ok); }
+
+/* the brief, rendered */
+.md { overflow-wrap: anywhere; }
+.md h3, .md h4, .md h5, .md h6 { margin: 14px 0 6px; color: var(--ink); border: 0; text-transform: none; font-size: 15px; }
+.md h3 { font-size: 17px; } .md h4 { font-size: 15px; } .md h5, .md h6 { font-size: 14px; }
+.md p { margin: 6px 0; }
+.md ul, .md ol { margin: 4px 0; padding-left: 22px; }
+.md pre { background: var(--soft); padding: 8px; border-radius: 6px; overflow-x: auto; white-space: pre; }
+.md code { background: var(--soft); padding: 0 3px; border-radius: 3px; }
+.md pre code { background: none; padding: 0; }
+.md blockquote { margin: 6px 0; padding: 2px 10px; border-left: 3px solid var(--line); color: var(--muted); }
+.md table { border-collapse: collapse; margin: 8px 0; display: block; overflow-x: auto; font-size: 13px; }
+.md th, .md td { border: 1px solid var(--line); padding: 3px 7px; text-align: left; vertical-align: top; }
+.md th { background: var(--soft); }
+.md hr { border: 0; border-top: 1px solid var(--line); margin: 12px 0; }
+.nolink { text-decoration: underline dotted; }
+
+.sprite { position: absolute; width: 0; height: 0; overflow: hidden; }
+.cp { position: relative; display: inline-flex; align-items: center; justify-content: center; flex: none; width: 16px; height: 14px;
+  margin: 0 0 0 3px; padding: 0; border: 0; border-radius: 3px; background: none; color: var(--muted); opacity: 0.8;
+  cursor: pointer; vertical-align: -2px; }
+@media (pointer: coarse) { .cp::before { content: ""; position: absolute; inset: -9px -8px; } }
+.cp:hover, .cp:focus-visible { opacity: 1; color: var(--ink); }
+.cp svg { display: block; width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 1.5; stroke-linejoin: round; }
+.cp-tip { position: fixed; top: 0; left: 0; z-index: 30; padding: 1px 8px; border-radius: 9px; background: var(--ink); color: var(--bg);
+  font-size: 12px; line-height: 18px; white-space: nowrap; pointer-events: none; }
+.cp-tip:empty { padding: 0; }
+.cp-tip.w { background: var(--warn); }
+.nw { white-space: nowrap; }
+.lnkw { display: inline-flex; align-items: center; max-width: 100%; vertical-align: bottom; }
+.lnkw > .lnk { min-width: 0; }
+.cp-buf { position: fixed; top: 0; left: 0; width: 1px; height: 1px; padding: 0; border: 0; opacity: 0; pointer-events: none; }
+
+@media (max-width: 700px) {
+  .top { padding: 8px 12px; gap: 6px 10px; }
+  .find { flex: 1 1 100%; }
+  main { padding: 10px 10px 40px; }
+  .tmeta { padding-left: 12px; }
+  .car { grid-template-columns: calc(2em + 19px) minmax(0, 1fr); padding-right: 8px; }
+  .car .open { grid-column: 2; justify-self: start; }
+  .c-route { grid-column: 2; }
+  body.with-panel main { margin-right: 0; }
+}
+@media (max-width: 900px) {
+  .dp { display: block; }
+  .dp-col { max-height: none; overflow: visible; padding-right: 0; }
+  .dec-tools { position: static; }
+  .dp-switch { display: flex; }
+  .dp[data-side="pc"] .dp-dec, .dp[data-side="dec"] .dp-pc { display: none; }
+}
+@media (max-width: 1599px) { body.with-panel main { margin-right: 0; } }
+</style>
+</head>
+<body>
+<svg class="sprite" aria-hidden="true" focusable="false"><symbol id="cp-i" viewBox="0 0 16 16"><rect x="5.5" y="5.5" width="8.5" height="8.5" rx="1.5"></rect><path d="M10.5 5.5V3.5A1.5 1.5 0 0 0 9 2H3.5A1.5 1.5 0 0 0 2 3.5V9a1.5 1.5 0 0 0 1.5 1.5h2"></path></symbol></svg>
+<header class="top">
+  <h1>depot2</h1>
+  <span class="ro" data-t="top.ro">view only · 127.0.0.1</span>
+  <nav class="tabs" role="tablist" aria-label="view" data-t-aria-label="top.tabs">
+    <button type="button" role="tab" data-tab="tracks" aria-selected="false" data-t="tab.tracks">Tracks</button>
+    <button type="button" role="tab" data-tab="trains" aria-selected="true" data-t="tab.trains">Trains</button>
+    <button type="button" role="tab" data-tab="board" aria-selected="false" data-t="tab.board">Board</button>
+    <button type="button" role="tab" data-tab="agents" aria-selected="false" data-t="tab.agents">Agents</button>
+    <button type="button" role="tab" data-tab="principles" aria-selected="false" data-t="tab.principles">Decisions and principles</button>
+    <button type="button" role="tab" data-tab="queues" aria-selected="false" data-t="tab.queues">Queues</button>
+  </nav>
+  <div class="find" role="search">
+    <input type="search" id="q" placeholder="search: id, words, track, train" aria-label="search in the tab" title="/ to search, Esc to clear" data-t-placeholder="find.placeholder" data-t-aria-label="find.aria" data-t-title="find.title" autocomplete="off" spellcheck="false">
+    <select id="sort" aria-label="sort" title="sort within a column or a group" data-t-aria-label="sort.aria" data-t-title="sort.title"></select>
+  </div>
+  <span class="spacer"></span>
+  <label class="chk"><input type="checkbox" id="all"> <span id="all-l" data-t="top.all_fin">arrived and scrapped</span></label>
+  <button type="button" class="btn" id="refresh" data-t="top.refresh">Refresh</button>
+  <span id="code" class="code" title="the code that serves this page" data-t-title="code.title_short"></span>
+  <span id="stamp" data-t="common.loading">loading…</span>
+</header>
+<div id="err" class="err" role="status" hidden></div>
+<main>
+  <section id="view-tracks" aria-label="tracks" data-t-aria-label="aria.tracks" hidden></section>
+  <section id="view-trains" aria-label="trains" data-t-aria-label="aria.trains"></section>
+  <section id="view-board" aria-label="board" data-t-aria-label="aria.board" hidden></section>
+  <section id="view-agents" aria-label="agents" data-t-aria-label="aria.agents" hidden></section>
+  <section id="view-principles" aria-label="decisions and principles" data-t-aria-label="aria.principles" hidden>
+    <div class="dp-switch" role="group" aria-label="column" data-t-aria-label="aria.column">
+      <button type="button" class="btn" data-side="pc" aria-pressed="true" data-t="dp.principles">Principles</button>
+      <button type="button" class="btn" data-side="dec" aria-pressed="false" data-t="dp.decisions">Decisions</button>
+    </div>
+    <div class="dp" id="dp" data-side="pc">
+      <div class="dp-col dp-pc" aria-label="principles" data-t-aria-label="aria.pc"><h2 class="dp-h" data-t="dp.principles">Principles</h2><div id="pc-list"></div></div>
+      <div class="dp-col dp-dec" aria-label="decisions" data-t-aria-label="aria.dec">
+        <div class="dec-tools"><h2 class="dp-h"><span data-t="dp.decisions">Decisions</span> <span class="cnt" id="dec-count"></span></h2></div>
+        <div id="dec-list"></div>
+      </div>
+    </div>
+  </section>
+  <section id="view-queues" aria-label="queues" data-t-aria-label="aria.queues" hidden></section>
+</main>
+<aside id="panel" class="panel" hidden aria-label="car" data-t-aria-label="aria.panel">
+  <div class="panel-head">
+    <button type="button" class="btn" id="back" hidden data-t="panel.back_car">← to the car</button>
+    <span class="ph" id="panel-title"></span>
+    <button type="button" class="btn" id="close" aria-label="close" data-t-aria-label="panel.close">✕</button>
+  </div>
+  <div class="panel-body" id="panel-body"></div>
+</aside>
+<div id="cp-tip" class="cp-tip" role="status" aria-live="polite"></div>
+<script>
+"use strict";
+const $ = (s) => document.querySelector(s);
+const ESC = { "&": "&amp;", "<": "&lt;", ">": "&gt;", "\"": "&quot;", "'": "&#39;" };
+const esc = (v) => String(v === null || v === undefined ? "" : v).replace(/[&<>"']/g, (c) => ESC[c]);
+// the page's texts: the catalogs' `web.` keys in the run's language, which webui.py writes into #messages (and <html lang>)
+const LANG = document.documentElement.lang || "en";
+const MSG = (() => { try { return JSON.parse($("#messages").textContent || "{}"); } catch (e) { return {}; } })();
+// T(key, fields): the message with its {field}s filled in (a doubled brace is a brace), nothing else; no message: the key.
+// A message may hold markup (<b>, <code>); a field is put in as given, so the caller escapes what is text.
+function T(key, fields) {
+  const m = Object.prototype.hasOwnProperty.call(MSG, key) ? String(MSG[key]) : key;
+  return m.replace(/\{\{|\}\}|\{([A-Za-z0-9_]+)\}/g, (s, f) => (f === undefined ? s[0]
+    : fields && Object.prototype.hasOwnProperty.call(fields, f) ? String(fields[f] === null || fields[f] === undefined ? "" : fields[f]) : s));
+}
+const labels = (prefix, keys) => Object.fromEntries(keys.map((k) => [k, T(prefix + "." + k)]));
+// the static texts: data-t is the element's text, data-t-title / -placeholder / -aria-label its attribute; once, at load
+function translatePage() {
+  for (const el of document.querySelectorAll("[data-t]")) el.textContent = T(el.dataset.t);
+  for (const a of ["title", "placeholder", "aria-label"])
+    for (const el of document.querySelectorAll("[data-t-" + a + "]")) el.setAttribute(a, T(el.getAttribute("data-t-" + a)));
+}
+translatePage();
+const WHERE_RU = labels("where", ["slot", "post", "queue", "parked", "track", "merge"]);
+const KIND_RU = labels("kind", ["car", "stack", "left", "merge", "wish", "think"]);
+const STATE_RU = labels("state", ["design", "impl", "merge", "arrived", "scrapped"]);
+const LIVE = ["design", "impl", "merge"];
+const BOARD_SHOWN = 15;
+
+const ui = { tab: "trains", car: null, doc: null, all: false, open: {}, more: {}, doneOpen: null, side: "pc", q: "", flash: null,
+  sort: "", findOpen: {}, scroll: {} };
+let meta = null, data = null, idx = null, busy = false, timer = null;
+const shown = { tracks: "", trains: "", board: "", agents: "", principles: "", dec: "", queues: "", panel: "", title: "", sort: "" };
+const TABS = ["tracks", "trains", "board", "agents", "principles", "queues"];
+const DEC_SHOWN = 40, QUEUE_SHOWN = 20;
+let pageStamp = null;  // the code the page came with: another one in /api/meta → the page reloads itself
+let panelCache = { ref: null, car: null, brief: null, briefErr: null, doc: null, docErr: null };
+
+// --- fetching ---------------------------------------------------------------------------------------------
+async function get(path) {
+  const r = await fetch(path, { cache: "no-store", headers: { Accept: "application/json" } });
+  let j = null;
+  try { j = await r.json(); } catch (e) { j = null; }
+  if (!r.ok) {
+    const e = new Error((j && j.error) || ("HTTP " + r.status));
+    e.status = r.status;
+    throw e;
+  }
+  return j;
+}
+const enc = encodeURIComponent;
+
+async function refresh() {
+  if (busy) return;
+  busy = true;
+  try {
+    meta = await get("/api/meta");
+    showCode(meta.code);
+    if (meta.code && meta.code.stamp) {
+      if (pageStamp && pageStamp !== meta.code.stamp) { location.reload(); return; }
+      pageStamp = meta.code.stamp;
+    }
+    const defs = meta.queues || [], decQ = ui.q;
+    const [board, tracks, trains, merge, principles, decisions, agents, ...qs] = await Promise.all([
+      get("/api/board" + (ui.all ? "?all=1" : "")), get("/api/tracks"), get("/api/trains"), get("/api/merge"),
+      get("/api/principles" + (ui.all ? "?all=1" : "")), get(decUrl(decQ)), get("/api/agents?all=1"),
+      ...defs.map((d) => get("/api/queue/" + enc(d.name) + (ui.all ? "?all=1" : "")))]);
+    data = { board, tracks, trains, merge, principles, decisions, agents, queues: Object.fromEntries(defs.map((d, i) => [d.name, qs[i]])) };
+    index();
+    render();
+    if (decQ !== ui.q) loadDecisions();  // typed into the search meanwhile
+    if (ui.car) await loadPanel();
+    $("#stamp").textContent = T("top.stamp", { time: hms(new Date()), s: meta.refresh_s });
+    $("#err").hidden = true;
+  } catch (e) {
+    const err = $("#err");
+    err.textContent = T("err.refresh", { time: hms(new Date()), error: e.message });
+    err.hidden = false;
+  } finally {
+    busy = false;
+    schedule();
+  }
+}
+const decUrl = (q) => "/api/decisions" + (q ? "?q=" + enc(q) : "");
+async function loadDecisions() {
+  const q = ui.q;
+  if (!data) return;
+  try {
+    const d = await get(decUrl(q));
+    if (q !== ui.q || !data) return;
+    data.decisions = d;
+    paintDecisions();
+  } catch (e) {
+    const err = $("#err");
+    err.textContent = T("err.decisions", { error: e.message });
+    err.hidden = false;
+  }
+}
+function showCode(c) {
+  const el = $("#code");
+  if (!c) { el.textContent = ""; return; }
+  const f = { commit: c.commit, date: when(c.date) };
+  const t = c.commit ? (c.dirty ? T("code.commit_dirty", f) : T("code.commit", f)) : T("code.outside_git", { stamp: c.stamp });
+  el.textContent = c.broken ? T("code.broken", { code: t, error: c.broken }) : t;
+  el.title = c.broken ? T("code.title_broken", { started: when(c.started) }) : T("code.title", { started: when(c.started) });
+  el.classList.toggle("w", !!c.broken);
+}
+function schedule() {
+  clearTimeout(timer);
+  timer = setTimeout(refresh, ((meta && meta.refresh_s) || 25) * 1000);
+}
+
+function cp(name) {
+  const s = name === null || name === undefined ? "" : String(name);
+  if (!s || s === "—") return "";
+  const label = esc(T("copy.name", { name: s }));
+  return '<button type="button" class="cp" data-copy="' + esc(s) + '" aria-label="' + label + '" title="' + label +
+    '"><svg aria-hidden="true" focusable="false"><use href="#cp-i"></use></svg></button>';
+}
+const named = (name) => '<span class="nw">' + hl(name) + cp(name) + "</span>";  // a name and its icon, never split by a line's end
+const paren = (name) => ' <span class="nw">(' + hl(name) + cp(name) + ")</span>";
+const pill = (html, name) => '<span class="lnkw">' + html + cp(name) + "</span>";
+const linked = (ref) => '<span class="nw">' + refLink(ref) + cp(ref) + "</span>";  // a ref that opens what it names, and its icon
+async function copyName(btn) {
+  const s = btn.dataset.copy;
+  let ok = false;
+  if (window.isSecureContext && navigator.clipboard && navigator.clipboard.writeText) {
+    try { await navigator.clipboard.writeText(s); ok = true; } catch (e) { ok = false; }
+  }
+  if (!ok) ok = copyBySelection(s);
+  copyTip(btn, ok);
+}
+function copyBySelection(s) {
+  const was = document.activeElement, ta = document.createElement("textarea");
+  ta.className = "cp-buf";
+  ta.value = s;
+  ta.readOnly = true;
+  ta.tabIndex = -1;
+  document.body.appendChild(ta);
+  ta.focus({ preventScroll: true });
+  ta.setSelectionRange(0, s.length);
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+  ta.remove();
+  if (was && was.focus) was.focus({ preventScroll: true });
+  return ok;
+}
+let tipFor = null, tipTimer = null;
+function copyTip(btn, ok) {
+  const t = $("#cp-tip");
+  t.textContent = ok ? T("copy.done") : T("copy.failed");
+  t.classList.toggle("w", !ok);
+  tipFor = btn;
+  placeTip();
+  clearTimeout(tipTimer);
+  tipTimer = setTimeout(hideTip, ok ? 1000 : 2500);
+}
+function placeTip() {  // on its icon, kept within the width; it follows the icon when a list scrolls, out of sight it goes
+  const t = $("#cp-tip");
+  if (!tipFor || !t.textContent) return;
+  const r = tipFor.getBoundingClientRect(), vw = document.documentElement.clientWidth, vh = document.documentElement.clientHeight;
+  if (!tipFor.isConnected || r.bottom < 0 || r.top > vh) { hideTip(); return; }
+  t.style.left = Math.max(4, Math.min(vw - t.offsetWidth - 4, r.left + r.width / 2 - t.offsetWidth / 2)) + "px";
+  t.style.top = r.top + r.height / 2 - t.offsetHeight / 2 + "px";
+}
+function hideTip() {
+  clearTimeout(tipTimer);
+  tipFor = null;
+  const t = $("#cp-tip");
+  if (t.textContent) { t.textContent = ""; t.classList.remove("w"); }
+}
+
+// --- the indexes the views join on -----------------------------------------------------------------------
+function index() {
+  const items = new Map(), byObj = new Map();
+  for (const col of data.board.columns) {
+    for (const it of col.items) {
+      items.set(it.ref, it);
+      if (it.object) byObj.set(it.object, it);
+    }
+  }
+  const open = data.merge.entries || [];
+  const merge = new Map();
+  open.forEach((e, i) => {
+    const pos = { pos: i + 1, total: open.length, e };
+    merge.set("mq:" + e.id, pos);
+    if (e.pr) merge.set("pr:" + e.pr, pos);
+    if (e.car) merge.set("car:" + e.car, pos);
+    if (e.st) merge.set("st:" + e.st, pos);
+  });
+  const nx = data.trains.next || {};
+  const trainOf = new Map((data.trains.trains || []).map((t) => [t.name, t]));
+  const tracks = data.tracks.tracks || [], trains = data.trains.trains || [];
+  const trackCars = tracks.flatMap((t) => t.cars || []), anyPrio = (xs) => xs.some((x) => prioOf(x) !== null);
+  const ags = (data.agents && data.agents.agents) || [], agent = new Map(), liveByObj = new Map(), liveByCar = new Map();
+  for (const a of ags) {
+    agent.set(a.id, a);
+    if (!a.live) continue;
+    liveByCar.set(a.car, a);
+    if (a.slot && a.slot.object) liveByObj.set(a.slot.object, a);
+  }
+  idx = {
+    items, byObj, merge, nx, trainOf, agent, liveByObj, liveByCar,
+    picks: new Set((nx.picks || []).map((p) => p.car)),
+    ownerWord: new Map((nx.owner_word || []).map((w) => [w.id, w])),
+    stage: new Map((meta.stages || []).map((s) => [s.stage, s])),
+    cars: new Map(trackCars.map((c) => [c.ref, c])),
+    rank: new Map((meta.stages || []).map((s, i) => [s.stage, i])),
+    prio: { tracks: anyPrio(tracks) || anyPrio(trackCars), trains: anyPrio(trains) || anyPrio(trains.flatMap((t) => t.cars || [])),
+      board: anyPrio([...items.values()]) || anyPrio(trackCars),
+      agents: ags.some((a) => { const c = trackCars.find((x) => x.ref === a.car); return !!c && prioOf(c) !== null; }),
+      queues: (meta.queues || []).some((d) => anyPrio(qRows(d.name, data.queues[d.name]))) },
+  };
+}
+const ru = (s) => (idx && idx.stage.get(s) ? idx.stage.get(s).ru : s || "—");
+
+const SORTS = [["own", T("sort.own")], ["match", T("sort.match")], ["prio", T("sort.prio")], ["new", T("sort.new")],
+  ["old", T("sort.old")], ["stage", T("sort.stage")], ["group", T("sort.group")]];
+const TAB_SORTS = { tracks: ["match", "prio", "new", "old", "stage", "group"], trains: ["match", "prio", "new", "old", "stage", "group"],
+  board: ["match", "prio", "new", "old", "group"], agents: ["match", "prio", "new", "old", "group"], principles: ["match", "new", "old"],
+  queues: ["match", "prio", "new", "old", "stage"] };
+const STATE_ORDER = [...LIVE, "arrived", "scrapped"];
+const find = { on: false, res: [], re: null, whole: "", marking: false, n: {} };
+let findTimer = null;
+const reEsc = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+function setFind(q) {
+  const words = [...new Set(String(q || "").toLowerCase().split(/\s+/).filter(Boolean))];
+  find.on = words.length > 0;
+  find.whole = String(q || "").trim().toLowerCase();
+  find.res = words.map((w) => new RegExp(reEsc(w), "i"));
+  find.re = find.on ? new RegExp(words.sort((a, b) => b.length - a.length).map(reEsc).join("|"), "gi") : null;
+}
+// a thing by its fields [text, weight, shown, where] → {ok, s, note}: ok when every word is in one of them; s the sum of
+// each word's best place (an id 40, a PR 30, a title 20, a track, a train or a text 10, the notes 5; +1000 for an id
+// equal to the whole search); note: the piece of a field the card does not show, when a word is found only there
+const NO_HIT = { ok: true, s: 0, note: "" }, MISS = { ok: false, s: 0, note: "" };
+function hit(fields) {
+  if (!find.on) return NO_HIT;
+  let s = 0, note = "";
+  for (const re of find.res) {
+    let best = 0, seen = false, hidden = null;
+    for (const [t, w, shown, where] of fields) {
+      if (t === null || t === undefined || t === "" || !re.test(String(t))) continue;
+      best = Math.max(best, w);
+      if (shown) seen = true;
+      else if (!hidden) hidden = [String(t), where];
+    }
+    if (!best) return MISS;
+    s += best;
+    if (!seen && hidden && !note) note = '<div class="hit">' + esc(hidden[1]) + ": " + snippet(hidden[0], re) + "</div>";
+  }
+  if (fields.some(([t, w]) => w >= 40 && t && String(t).toLowerCase() === find.whole)) s += 1000;
+  return { ok: true, s, note };
+}
+function snippet(t, re) {
+  t = t.replace(/\s+/g, " ");
+  const m = re.exec(t), i = m ? m.index : 0, a = Math.max(0, i - 40), b = Math.min(t.length, i + 110);
+  return (a ? "…" : "") + hl(t.slice(a, b)) + (b < t.length ? "…" : "");
+}
+// the words marked: in a text (escaped here) or between the tags of HTML already made; only in the tabs' views
+function hl(s) {
+  s = s === null || s === undefined ? "" : String(s);
+  if (!find.re || !find.marking) return esc(s);
+  let out = "", last = 0;
+  for (const m of s.matchAll(find.re)) { out += esc(s.slice(last, m.index)) + "<mark>" + esc(m[0]) + "</mark>"; last = m.index + m[0].length; }
+  return out + esc(s.slice(last));
+}
+const UNESC = { "&amp;": "&", "&lt;": "<", "&gt;": ">", "&quot;": "\"", "&#39;": "'" };
+function hlHtml(h) {
+  if (!find.re || !find.marking) return h;
+  return h.split(/(<[^>]*>)/).map((p, i) => (i % 2 ? p : hl(p.replace(/&(?:amp|lt|gt|quot|#39);/g, (e) => UNESC[e])))).join("");
+}
+const refHl = (ref, n) => (find.marking && find.on && find.res.some((re) => re.test(String(ref))) ? "<mark>" + esc(n) + "</mark>" : esc(n));
+// the sort: rows {s: score, p: priority, d: date (ms), st: stage rank, g: track or train}; the ones without the key last,
+// ties in the tab's own order
+const COLL = new Intl.Collator(LANG, { numeric: true });
+const none = (x) => x === null || x === undefined || x === "";
+const keyed = (f) => (x, y) => (none(x) ? (none(y) ? 0 : 1) : none(y) ? -1 : f(x, y));
+const DESC = keyed((x, y) => y - x), ASC = keyed((x, y) => x - y), NAME = keyed((x, y) => COLL.compare(x, y));
+const CMP = { match: (a, b) => b.s - a.s, prio: (a, b) => DESC(a.p, b.p), new: (a, b) => DESC(a.d, b.d), old: (a, b) => ASC(a.d, b.d),
+  stage: (a, b) => ASC(a.st, b.st), group: (a, b) => NAME(a.g, b.g) };
+function arrange(rows, sort) {
+  const f = CMP[sort];
+  return f ? rows.map((r, i) => [r, i]).sort((a, b) => f(a[0], b[0]) || a[1] - b[1]).map((x) => x[0]) : rows;
+}
+const tsOf = (x) => { const t = Date.parse(x || ""); return isNaN(t) ? null : t; };
+function prioOf(...xs) {
+  for (const x of xs) if (x && typeof x.priority === "number") return x.priority;
+  return null;
+}
+const prioBand = (p) => (p >= 8 ? "high" : p <= 3 ? "later" : "normal");
+const prioTag = (p) => (typeof p === "number" ? '<span class="prio ' + prioBand(p) + '" title="' + esc(T("prio.title", { p })) +
+  '">P' + p + "</span>" : "");
+const notesText = (ns) => (Array.isArray(ns) ? ns : []).map((n) => (n && typeof n === "object" ? n.text || "" : String(n || ""))).join(" · ");
+function sortOk(tab, s) {
+  return (TAB_SORTS[tab] || []).includes(s) && (s !== "match" || find.on) && (s !== "prio" || !!(idx && idx.prio[tab]));
+}
+function sortOf(tab) {  // the one chosen when this tab has it, else by the match while searching, else the tab's own
+  if (ui.sort === "own" || sortOk(tab, ui.sort)) return ui.sort;
+  return sortOk(tab, "match") ? "match" : "own";
+}
+// a details' state while searching: open unless folded during this search; else as the viewer left it
+function isOpen(key, dflt) {
+  if (find.on) return ui.findOpen[key] !== undefined ? ui.findOpen[key] : true;
+  return ui.open[key] !== undefined ? ui.open[key] : dflt;
+}
+const foundLine = (n) => (find.on ? "<span>" + T("find.found", { q: esc(ui.q), n }) + "</span>" : "");
+const nothing = () => '<p class="muted">' + T("find.nothing", { q: esc(ui.q) }) + "</p>";
+// the sort's choices for the shown tab, and on each tab how many it finds
+function paintFind() {
+  const opts = SORTS.filter(([k]) => k === "own" || sortOk(ui.tab, k)).map(([k, t]) => '<option value="' + k + '">' + esc(t) + "</option>").join("");
+  const sel = $("#sort");
+  if (opts !== shown.sort) { sel.innerHTML = opts; shown.sort = opts; }
+  sel.value = sortOf(ui.tab);
+  for (const b of document.querySelectorAll(".tabs button")) {
+    let c = b.querySelector(".tcnt");
+    const n = find.on ? find.n[b.dataset.tab] : undefined;
+    if (n === undefined) { if (c) c.remove(); continue; }
+    if (!c) { c = document.createElement("span"); c.className = "tcnt"; c.title = T("find.count_title"); b.appendChild(c); }
+    if (c.textContent !== String(n)) c.textContent = String(n);
+  }
+}
+// the field's text becomes the search: every view drawn again, the decisions asked again, the URL
+function applyFind() {
+  clearTimeout(findTimer);
+  const q = $("#q").value.trim();
+  if (q === ui.q) return Promise.resolve();
+  ui.q = q;
+  setFind(q);
+  ui.findOpen = {};
+  ui.more.dec = false;
+  ui.flash = null;
+  writeHash();
+  if (!data) return Promise.resolve();
+  render();
+  listsToTop();
+  return loadDecisions();
+}
+
+// --- small helpers ----------------------------------------------------------------------------------------
+function hms(d) { return d.toLocaleTimeString(LANG, { hour12: false }); }
+function age(iso) {
+  if (!iso) return "—";
+  const t = Date.parse(iso);
+  if (isNaN(t)) return "—";
+  const m = Math.max(0, Math.round((Date.now() - t) / 60000));
+  if (m < 60) return T("time.min", { n: m });
+  const h = Math.round(m / 60);
+  if (h < 48) return T("time.h", { n: h });
+  return T("time.d", { n: Math.round(h / 24) });
+}
+function when(iso) { return iso ? String(iso).slice(0, 16).replace("T", " ") : "—"; }
+function prLink(pr) {
+  if (!pr) return "";
+  const repo = meta && meta.repo;
+  return repo ? '<a href="https://github.com/' + esc(repo) + "/pull/" + esc(pr) + '" target="_blank" rel="noopener noreferrer">PR ' + hl("#" + pr) + "</a>" : "PR " + hl("#" + pr);
+}
+function prName(pr) { return pr ? '<span class="nw">' + prLink(pr) + cp("#" + pr) + "</span>" : ""; }  // a PR's link and its icon (#NNN)
+function mergePlace(p) {
+  if (!p) return "";
+  return T("merge.place", { pos: p.pos, total: p.total, id: esc(p.e.id), status: esc(p.e.status_ru || p.e.status) });
+}
+const OPTIONAL = new Set(["project", "docs"]);
+function route(stage, hist, full) {
+  const r = meta.route;
+  const cur = r.indexOf(stage);
+  const seen = new Set((hist || []).map((h) => h.stage));
+  const out = [];
+  r.forEach((s, i) => {
+    let cls = "s-" + s;
+    if (s === stage) cls += " cur";
+    else if (cur >= 0 && i < cur) cls += (OPTIONAL.has(s) && !seen.has(s) ? " skip" : " past");
+    else cls += " fut";
+    const label = OPTIONAL.has(s) ? "(" + ru(s) + ")" : ru(s);
+    out.push('<li class="' + cls + '" title="' + esc(ru(s)) + '">' + (full || s === stage ? esc(label) : "") + "</li>");
+    if (full && i < r.length - 1) out.push('<li class="arr" aria-hidden="true">→</li>');
+  });
+  if (stage === "scrapped") out.push('<li class="s-scrapped cur">' + esc(ru("scrapped")) + "</li>");
+  else if (full) out.push('<li class="arr" aria-hidden="true">' + T("route.or") + '</li><li class="s-scrapped fut">' + esc(ru("scrapped")) + "</li>");
+  return '<ol class="route' + (full ? " full" : "") + '" aria-label="' + esc(T("route.aria", { stage: ru(stage) })) + '">' + out.join("") + "</ol>";
+}
+function nextStage(stage, docs) {
+  const moves = (meta.moves || {})[stage] || [];
+  const r = meta.route;
+  const fwd = moves.filter((m) => r.indexOf(m) > r.indexOf(stage) && (m !== "docs" || docs));
+  if (docs && fwd.includes("docs")) return "docs";
+  return fwd.length ? fwd[0] : null;
+}
+function gateLines(g) {
+  if (!g) return [];
+  const notes = g.notes && g.notes.length ? g.notes.join("; ") : "";
+  if (g.unmet && g.unmet.length) return [{ w: true, t: T("gate.unmet", { gate: g.name, stage: ru(g.to), unmet: g.unmet.join("; ") }) +
+                                             (notes ? " · " + notes : "") }];
+  return [{ g: true, t: notes ? T("gate.passed_notes", { gate: g.name, notes }) : T("gate.passed", { gate: g.name }) }];
+}
+
+// --- what a car waits for (the trains view and the panel) --------------------------------------------------
+// a car's status word as tracks.py writes its cells (/api/meta car_status), for the cells that start with it
+const carWord = (s) => ((meta && meta.car_status) || {})[s] || "\u0000";
+function waits(c, it) {
+  const out = [];
+  const ref = c.ref;
+  const tn = c.train ? idx.trainOf.get(c.train) : null;
+  if (["waiting", "ready", "pr"].includes(c.status) && c.status_ru) out.push({ w: c.status === "waiting" || c.status_ru.startsWith(carWord("waiting")), t: c.status_ru });
+  if (c.st && idx.ownerWord.has(c.st)) out.push({ w: true, t: T("wait.owner_word", { why: idx.ownerWord.get(c.st).why }) });
+  if (idx.picks.has(ref)) out.push({ g: true, t: T("wait.slot_takes") });
+  else if (tn && tn.state === "impl" && ["bogie", "sketch", "project"].includes(c.stage) && c.status_ru === carWord("ready") &&
+           idx.nx.free === 0) out.push({ w: true, t: T("wait.no_free_slot", { slots: idx.nx.slots }) });
+  else if (tn && tn.state === "design" && ["waiting", "ready"].includes(c.status)) out.push({ t: T("wait.train_in_design", { train: tn.name }) });
+  if (!tn && ["waiting", "ready"].includes(c.status)) out.push({ t: T("wait.no_train") });
+  const mp = idx.merge.get("car:" + ref) || (c.st && idx.merge.get("st:" + c.st)) || (it && it.merge && idx.merge.get("mq:" + it.merge));
+  if (mp) out.push({ t: mergePlace(mp) });
+  if (it) out.push(...gateLines(it.gate));
+  if (it && it.forced) out.push({ w: true, t: T("wait.forced") });
+  const pm = marksLine(c.principles, c.status === "pr" || ["build", "docs", "acceptance"].includes(c.stage));
+  if (pm) out.push(pm);
+  return out;
+}
+function marksLine(p, always) {
+  if (!p || (!p.read && !always)) return null;
+  return { w: !p.read || !p.passed, g: p.read && p.passed, t: T("wait.principles", { cell: p.cell }) };
+}
+function marksDiv(p, always) {
+  const x = marksLine(p, always);
+  return x ? '<div class="gate' + (x.g ? " ok" : "") + '">' + esc(x.t) + "</div>" : "";
+}
+function waitsHtml(list, cls) {
+  if (!list.length) return "";
+  return '<div class="' + cls + '">' + list.map((x) => '<span class="' + (x.w ? "w" : x.g ? "g" : "") + '">' + esc(x.t) + "</span>").join(" · ") + "</div>";
+}
+
+function carRow(c, other, h) {
+  const ref = c.ref;
+  const it = idx.items.get(ref) || (c.st ? idx.byObj.get(c.st) : null);
+  const sub = [c.size ? esc(c.size) : null, c.effort && c.effort.text !== "—" ? "effort " + esc(c.effort.text) : null,
+    c.branch ? T("car.branch", { branch: hl(c.branch) }) : null, prName(c.pr) || null, c.st ? named(c.st) : null,
+    c.after && c.after.length ? T("car.after", { refs: esc(c.after.join(", ")) }) : null].filter(Boolean);
+  const link = other === "track" ? pill('<span class="lnk" title="' + esc(T("common.track")) + '">' + hl(c.track) + " " + hl(clipText(c.track_title, 40)) + "</span>", c.track)
+    : (c.train ? pill('<span class="lnk tname" title="' + esc(T("common.train")) + '">' + hl(c.train) + "</span>", c.train) : '<span class="lnk muted">' + T("car.no_train") + "</span>");
+  const nx = nextStage(c.stage, !!c.docs_need);
+  const fin = c.stage === "arrived" || c.stage === "scrapped";
+  return '<div class="car' + (fin ? " fin" : "") + (ui.car === ref ? " sel" : "") + '" data-ref="' + esc(ref) + '" tabindex="0" role="button" aria-label="' + esc(T("car.aria", { ref })) + '">' +
+    '<div class="c-n">' + refHl(ref, c.n) + cp(ref) + "</div>" +
+    '<div><div class="c-title">' + prioTag(c.priority) + " " + hl(c.title) + " " + link + "</div>" + (sub.length ? '<div class="c-sub">' + sub.join(" · ") + "</div>" : "") +
+    (h ? h.note : "") + waitsHtml(waits(c, it), "c-wait") +
+    qaMarks(c.returns, (c.claim_links || []).filter((x) => !x.moved).length, null) + "</div>" +
+    '<button type="button" class="open" data-ref="' + esc(ref) + '">' + T("car.open") + "</button>" +
+    '<div class="c-route">' + route(c.stage, c.stages) + (nx ? '<span class="next">' + T("car.next", { stage: esc(ru(nx)) }) + "</span>" : "") + "</div>" +
+    "</div>";
+}
+function clipText(t, n) { t = String(t || ""); return t.length > n ? t.slice(0, n - 1) + "…" : t; }
+function stageChips(cars) {
+  const n = {};
+  for (const c of cars) n[c.stage] = (n[c.stage] || 0) + 1;
+  return '<div class="counts">' + meta.stages.filter((s) => n[s.stage]).map((s) =>
+    '<span class="chip s-' + esc(s.stage) + '">' + esc(s.ru) + " " + n[s.stage] + "</span>").join("") + "</div>";
+}
+function carsBlock(key, rows, done, other) {  // rows: {x: the car, h: its search hit}
+  if (!rows.length) return '<div class="cars"><div class="muted fin-toggle">' + T("car.none") + "</div></div>";
+  const fin = rows.filter((r) => r.x.stage === "arrived" || r.x.stage === "scrapped").length;
+  const open = ui.all || done || !!ui.more[key];
+  const tog = fin && !ui.all && !done
+    ? '<button type="button" class="fin-toggle" data-more="' + esc(key) + '">' + (open ? T("car.fin_hide") : T("car.fin_show", { n: fin })) + "</button>" : "";
+  return '<div class="cars' + (open ? " more-open" : "") + '">' + rows.map((r) => carRow(r.x, other, r.h)).join("") + tog + "</div>";
+}
+function carFields(c) {
+  return [[c.ref, 40, 1], [c.st, 40, 1], [c.pr ? "#" + c.pr : "", 30, 1], [c.title, 20, 1], [c.branch, 10, 1], [c.track, 10, 1],
+    [c.track_title, 10, 1], [c.train, 10, 1], [notesText(c.notes), 5, 0, T("find.in_notes")]];
+}
+function sift(t, fields, sort, group) {
+  const self = hit(fields);
+  let rows = (t.cars || []).map((c) => ({ x: c, h: hit(carFields(c)) }));
+  const found = find.on ? rows.filter((r) => r.h.ok) : [];
+  if (find.on && !self.ok) rows = found;
+  for (const r of rows) Object.assign(r, { s: r.h.s, p: prioOf(r.x), d: tsOf(r.x.added), st: idx.rank.get(r.x.stage), g: group(r.x) });
+  return { x: t, self, cars: arrange(rows, sort), keep: !find.on || self.ok || found.length > 0,
+    n: find.on ? (self.ok ? 1 : 0) + found.length : 0, s: Math.max(self.s, ...found.map((r) => r.h.s)), p: prioOf(t), d: tsOf(t.added) };
+}
+function counts(cars) {
+  const live = cars.filter((c) => c.status !== "dropped");
+  const done = live.filter((c) => c.status === "merged").length;
+  return done + " / " + live.length + (cars.length > live.length ? " " + T("track.dropped", { n: cars.length - live.length }) : "");
+}
+function trackCard(v, i) {
+  const t = v.x, key = "k:" + t.id;
+  const open = isOpen(key, false);
+  return '<article class="train" data-track="' + esc(t.id) + '"><details data-key="' + esc(key) + '"' + (open ? " open" : "") + ">" +
+    '<summary><span class="tnum">' + i + '</span><span class="tid">' + named(t.id) + '</span><span class="ttitle">' + hl(t.title) + "</span>" +
+    '<span class="badge b-' + (t.done ? "done" : "open") + '">' + (t.done ? T("track.done") : T("track.open")) + "</span>" +
+    '<span class="tstat">' + esc(t.status_ru || "") + "</span></summary>" +
+    '<div class="tmeta">' + v.self.note +
+    "<div><span class=\"k\">" + T("track.cars_k") + "</span> " + counts(t.cars) + " · <span class=\"k\">" + T("track.effort_k") + "</span> " + esc(t.effort ? t.effort.text : "—") + "</div>" +
+    stageChips(t.cars) + "</div>" +
+    carsBlock(key, v.cars, t.done, "train") + movedOut(t) +
+    "</details></article>";
+}
+function movedOut(t) {
+  const m = t.moved_out || [];
+  if (!m.length) return "";
+  return '<div class="moved muted">' + T("track.moved_out", { list: m.map((p) => '<span class="nw">' + esc(p.n) + cp(t.id + ":" + p.n) + "</span> → " +
+    '<span class="nw">' + refLink(p.now || p.to) + cp(p.now || p.to) + "</span> " +
+    T("common.quoted", { t: esc(clipText(p.title, 40)) }) + " (" + esc(String(p.at || "").slice(0, 10)) + (p.why ? ": " + esc(p.why) : "") + ")").join("; ") }) + "</div>";
+}
+function renderTracks() {
+  const all = data.tracks.tracks || [], sort = sortOf("tracks");
+  const vs = all.map((t) => sift(t, [[t.id, 40, 1], [t.title, 20, 1], [notesText(t.notes), 5, 0, T("find.in_track_notes")]], sort, (c) => c.train));
+  const kept = arrange(vs.filter((v) => v.keep).map((v) => Object.assign(v, { g: v.x.id })), sort);
+  const live = kept.filter((v) => !v.x.done), done = kept.filter((v) => v.x.done);
+  find.n.tracks = vs.reduce((n, v) => n + v.n, 0);
+  let h = '<div class="summary"><span>' + T("tracks.summary", { open: all.filter((t) => !t.done).length, done: all.filter((t) => t.done).length }) + "</span>" +
+    foundLine(find.n.tracks) + "<span>" + T("tracks.hint") + "</span></div>";
+  h += '<div class="grid">' + live.map((v, i) => trackCard(v, i + 1)).join("") + "</div>";
+  if (find.on && !kept.length) h += nothing();
+  if (done.length) {
+    const doneOpen = find.on ? isOpen("__tracksDone", true) : !!ui.open.__tracksDone || ui.all;
+    h += '<details class="done-group" data-key="__tracksDone"' + (doneOpen ? " open" : "") + "><summary>" + T("tracks.done_group", { n: done.length }) + "</summary>" +
+      '<div class="grid">' + done.map((v, i) => trackCard(v, live.length + i + 1)).join("") + "</div></details>";
+  }
+  return h;
+}
+function trainCard(v, i) {
+  const t = v.x, live = LIVE.includes(t.state);
+  const open = isOpen(t.name, t.state === "impl" || t.state === "merge");
+  const slots = t.slots ? (t.slots.policy === "all-free" ? T("train.slots_all") : "≤ " + t.slots.n) : "—";
+  const gateW = t.gate && Object.values(t.gate.unmet || {}).some((v) => v && v.length);
+  return '<article class="train" data-train="' + esc(t.name) + '"><details data-key="' + esc(t.name) + '"' + (open ? " open" : "") + ">" +
+    '<summary><span class="tnum">' + i + '</span><span class="tid tname">' + named(t.name) + "</span>" + prioTag(t.priority) +
+    '<span class="ttitle">' + hl(t.title) + "</span>" +
+    '<span class="badge b-' + esc(t.state) + '">' + esc(STATE_RU[t.state] || t.state) + "</span>" + costChip(t.effort) +
+    '<span class="tstat' + (live && gateW ? " w" : "") + '">' + esc(live ? T("car.next", { stage: t.gate_ru || "—" }) : t.status_ru || "") + "</span></summary>" +
+    '<div class="tmeta">' + v.self.note +
+    "<div><span class=\"k\">" + T("train.start_k") + "</span> " + esc(t.start_ru || "—") + "</div>" +
+    "<div><span class=\"k\">" + T("train.slots_k") + "</span> " + esc(slots) + " · <span class=\"k\">" + T("train.cars_k") + "</span> " + counts(t.cars) + "</div>" +
+    "<div><span class=\"k\">" + T("train.effort_k") + "</span> " + esc(t.effort ? t.effort.text : "—") + costNote() + "</div>" +
+    stageChips(t.cars) + "</div>" +
+    carsBlock("t:" + t.name, v.cars, !live, "track") +
+    "</details></article>";
+}
+function costChip(e) {
+  return e.text !== "—" ? '<span class="tcost" title="' + esc(T("cost.title", { note: data.trains.effort.note })) + '">' + esc(e.text) + "</span>" : "";
+}
+function costNote() { return ' <span class="muted">(' + esc(data.trains.effort.note) + ")</span>"; }
+function costTotal(key, what) { return T("cost.total", { what, total: esc(data.trains.effort[key].text) }); }
+function idleNote(r) {
+  if (!r) return "";
+  return ' — <b class="w">' + T("merge.idle", { n: r.open }) + "</b>" + (r.stopped
+    ? ": " + T("merge.idle_stopped", { pr: esc(r.stopped) })
+    : " (<code>depot2 merge run --ensure</code>)");
+}
+function wtNote(lm) {
+  if (!lm || !lm.wt) return "";
+  const w = lm.wt;
+  return " · #" + esc(lm.pr) + ": " + (w.removed
+    ? T("merge.wt_removed", { mb: (Number(w.freed || 0) / 1048576).toFixed(1) })
+    : '<b class="w">' + T("merge.wt_kept") + "</b>: " + esc(w.reason || ""));
+}
+function renderTrains() {
+  const all = data.trains.trains || [], sort = sortOf("trains");
+  const vs = all.map((t) => sift(t, [[t.name, 40, 1], [t.title, 20, 1], [notesText(t.notes), 5, 0, T("find.in_train_notes")]], sort, (c) => c.track));
+  const kept = arrange(vs.filter((v) => v.keep).map((v) => Object.assign(v, { g: v.x.name, st: STATE_ORDER.indexOf(v.x.state) })), sort);
+  const live = kept.filter((v) => LIVE.includes(v.x.state)), done = kept.filter((v) => !LIVE.includes(v.x.state));
+  const allLive = all.filter((t) => LIVE.includes(t.state)), allDone = all.length - allLive.length;
+  find.n.trains = vs.reduce((n, v) => n + v.n, 0);
+  const nx = idx.nx;
+  const by = {};
+  for (const t of allLive) by[t.state] = (by[t.state] || 0) + 1;
+  const sum = [
+    "<span>" + T("trains.count", { n: allLive.length, states: LIVE.filter((s) => by[s]).map((s) => esc(STATE_RU[s]) + " " + by[s]).join(", ") }) +
+      (allDone ? "; " + T("trains.count_done", { n: allDone }) : "") + "</span>",
+    '<span class="cost-sum">' + costTotal("live", T("cost.live")) + costNote() + "</span>",  // all the live trains, the search or not
+    foundLine(find.n.trains),
+    "<span>" + T("trains.slots", { free: nx.free, n: nx.slots }) + "</span>",
+    "<span>" + T("trains.post", { n: (nx.post || []).length, max: nx.post_max }) + "</span>",
+    "<span>" + T("trains.merge", { n: (data.merge.entries || []).length }) + (data.merge.runner_pid ? " " + T("trains.merge_running") : "") + idleNote(data.merge.runner_idle) + wtNote(data.merge.last_merged) + "</span>",
+    (nx.picks || []).length ? "<span>" + T("trains.picks", { cars: nx.picks.map((p) => esc(p.car)).join(", ") }) + "</span>" : "",
+    (nx.ready || []).length ? "<span>" + T("trains.ready", { trains: nx.ready.map((r) => esc(r.train)).join(", ") }) + "</span>" : "",
+  ].join("");
+  const doneOpen = find.on ? isOpen("__done", true) : ui.doneOpen !== null ? ui.doneOpen : ui.all;
+  let h = '<div class="summary">' + sum + "</div>";
+  h += '<div class="grid">' + live.map((v, i) => trainCard(v, i + 1)).join("") + "</div>";
+  if (find.on && !kept.length) h += nothing();
+  else if (!allLive.length) h += '<p class="muted">' + T("trains.none") + "</p>";
+  if (done.length) {
+    // their price is all of them: while a search shows some, it says so
+    h += '<details class="done-group" data-key="__done"' + (doneOpen ? " open" : "") + "><summary>" + T("trains.done_group", { n: done.length }) +
+      ' · <span class="cost-sum">' + costTotal("done", done.length === allDone ? T("cost.done") : T("cost.done_all", { n: allDone })) + "</span></summary>" +
+      '<div class="grid">' + done.map((v, i) => trainCard(v, live.length + i + 1)).join("") + "</div></details>";
+  }
+  return h;
+}
+
+// --- the board ----------------------------------------------------------------------------------------------
+function limitCell(l) {
+  if (!l) return "";
+  const cls = l.over ? "lim over" : l.used >= l.max ? "lim full" : "lim";
+  return '<span class="' + cls + '">' + esc(l.what) + " " + l.used + "/" + l.max + (l.over ? " " + T("board.over_limit") : l.used >= l.max ? " " + T("board.full") : "") + "</span>";
+}
+function boardCard(it, extra, h) {
+  const m = [];
+  if (it.train) m.push('<span class="tname">' + named(it.train) + "</span>");
+  if (it.track) m.push(named(it.track) + " " + hl(clipText(it.track_title, 40)));
+  if (!it.train && !it.track) m.push(esc(KIND_RU[it.kind] || it.kind));
+  const w = [];
+  if (it.size) w.push(esc(it.size));
+  if (it.docs && it.docs.state === "ahead") w.push('<span class="w" title="' + esc(it.docs.need) + '">' + T("board.docs_needed") + "</span>");
+  if (it.where) w.push(esc(WHERE_RU[it.where] || it.where));
+  if (it.pr) w.push(it.ref === "#" + it.pr ? prLink(it.pr) : prName(it.pr));  // a merge card's name is its PR: one icon
+  if (it.merge && idx.merge.get("mq:" + it.merge)) w.push(mergePlace(idx.merge.get("mq:" + it.merge)));
+  w.push(T("board.on_stage", { age: age(it.since) }));
+  const g = it.gate;
+  const notes = g && g.notes && g.notes.length ? g.notes.join("; ") : "";
+  const gate = g ? (g.unmet.length ? '<div class="gate">' + esc(g.name) + ": " + esc(g.unmet.join("; ")) +
+                                       (notes ? " · " + esc(notes) : "") + "</div>"
+                                     : '<div class="gate ok">' + esc(notes ? T("gate.passed_notes", { gate: g.name, notes }) : T("gate.passed", { gate: g.name })) +
+                                       "</div>") : "";
+  const ref = named(it.ref) + (it.kind === "car" && it.object ? paren(it.object) : it.kind === "merge" && it.merge ? paren(it.merge) : "");
+  return '<div class="bcard s-' + esc(it.stage) + (extra ? " extra" : "") + (ui.car === it.ref ? " sel" : "") + '" data-ref="' + esc(it.ref) + '" tabindex="0" role="button">' +
+    '<div class="ref">' + ref + (it.priority ? " " + prioTag(it.priority) : "") + (it.forced ? ' <span class="forced" title="' + esc(T("board.forced_title")) + '">⚑</span>' : "") + "</div>" +
+    '<div class="t">' + hl(it.title) + "</div>" +
+    '<div class="m">' + m.join(" · ") + "</div>" + '<div class="m">' + w.join(" · ") + "</div>" + (h ? h.note : "") + gate +
+    marksDiv(it.principles, ["build", "docs", "acceptance", "queued"].includes(it.stage)) +
+    qaMarks(it.returns, it.claims, it.repair) + "</div>";
+}
+function cardFields(it, car) {
+  return [[it.ref, 40, 1], [it.object, 40, 1], [it.merge, 40, 1], [it.pr ? "#" + it.pr : "", 30, 1], [it.title, 20, 1], [it.train, 10, 1],
+    [it.track, 10, 1], [it.track_title, 10, 1], [it.branch || (car && car.branch), 10, 0, T("find.in_branch")], [car ? notesText(car.notes) : "", 5, 0, T("find.in_notes")]];
+}
+function renderBoard() {
+  const b = data.board, sort = sortOf("board");
+  const cols = b.columns.map((c) => {
+    let rows = c.items.map((it) => {
+      const car = idx.cars.get(it.ref) || null, h = hit(cardFields(it, car));
+      return { x: it, h, s: h.s, p: prioOf(it, car), d: tsOf((car && car.added) || it.since), g: [it.train, it.track].filter(Boolean).join(" ") || null };
+    });
+    if (find.on) rows = rows.filter((r) => r.h.ok);
+    return { c, rows: arrange(rows, sort) };
+  });
+  find.n.board = find.on ? cols.reduce((n, x) => n + x.rows.length, 0) : 0;
+  const stackLine = "<span>" + T("board.line", { cols: b.columns.map((c) => esc(c.ru) + " <b>" + c.count + "</b>").join(" · ") }) + "</span>";
+  let h = '<div class="summary">' + stackLine + foundLine(find.n.board) + "</div>" + renderBusy(b.slots) + '<div class="board">';
+  for (const { c, rows } of cols) {
+    const open = !!ui.more[c.stage];
+    h += '<section class="col s-' + esc(c.stage) + (open ? " more-open" : "") + '" data-stage="' + esc(c.stage) + '">' +
+      "<h3>" + esc(c.ru) + ' <span class="cnt">' + (find.on ? T("common.n_of", { n: rows.length, total: c.count }) : c.count) + "</span> " + limitCell(c.limit) + "</h3>" +
+      '<p class="means">' + esc(c.means) + "</p>" +
+      (rows.length ? rows.map((r, i) => boardCard(r.x, i >= BOARD_SHOWN, r.h)).join("") : '<div class="muted">' + (find.on ? T("common.not_found") : T("common.empty")) + "</div>") +
+      (rows.length > BOARD_SHOWN ? '<button type="button" class="btn more" data-more="' + esc(c.stage) + '">' +
+        (open ? T("common.fold") : T("common.more", { n: rows.length - BOARD_SHOWN })) + "</button>" : "") +
+      "</section>";
+  }
+  return h + "</div>";
+}
+
+function renderBusy(sl) {
+  if (!sl) return "";
+  const busy = sl.cells.filter((c) => c.ref);
+  const rows = busy.map((c) => '<div class="bchip s-' + esc(c.stage || "build") + (ui.car === c.ref ? " sel" : "") + (slotHit(c).ok ? "" : " nohit") +
+    '" data-ref="' + esc(c.ref) + '" tabindex="0" role="button" title="' + esc(T("slot.title", { n: c.n, title: c.title || "" })) + '">' + '<span class="ref">' + named(c.ref) + (c.priority ? " " + prioTag(c.priority) : "") + "</span>" +
+    '<span class="t">' + hl(c.title) + "</span>" + '<span class="m"><span class="stg">' + esc(ru(c.stage || "build")) + "</span>" +
+    (c.in_slot ? " · " + age(c.in_slot) : "") + "</span></div>").join("");
+  return '<section class="busy s-build" aria-label="' + esc(T("busy.aria")) + '"><h3>' + T("busy.title") + ' <span class="cnt">' + busy.length + "</span>" +
+    '<a href="#agents" class="go" data-go="agents">' + T("busy.all_slots") + "</a></h3>" +
+    (busy.length ? '<div class="busy-row">' + rows + "</div>" : '<div class="muted">' + T("busy.none") + "</div>") + "</section>";
+}
+
+const NEXT_ORDER = ["now", "next", "gated", "owner"];
+const NEXT_SHOWN = 8, AGENTS_SHOWN = 12;
+function mins(m) {
+  m = Math.max(0, Math.round(m));
+  if (m < 60) return T("time.min", { n: m });
+  const h = Math.round(m / 60);
+  if (h < 48) return T("time.h", { n: h });
+  return T("time.d", { n: Math.round(h / 24) });
+}
+function agentEnd(a) { return a.finished || (a.stopped && a.stopped.ts) || a.last_at || null; }
+function agentRuns(a) {
+  const t0 = Date.parse(a.started || ""), t1 = a.live ? Date.now() : Date.parse(agentEnd(a) || "");
+  if (isNaN(t0) || isNaN(t1)) return "";
+  return a.live ? T("agent.runs", { t: mins((t1 - t0) / 60000) }) : T("agent.ran", { t: mins((t1 - t0) / 60000) });
+}
+const agentState = (a) => '<span class="ast st-' + esc(a.state) + '" title="' + esc(a.state_text) + '">' + hl(a.state === "silent" ? a.state_text : a.state_ru) + "</span>";
+function actionText(x) { return x ? x.name + (x.arg ? ": " + x.arg : "") : "—"; }
+function lastAction(a) {
+  const x = a.last_action;
+  if (!x) return '<span class="muted">' + T("agent.no_actions") + "</span>";
+  return T("agent.last", { action: hl(clipText(actionText(x), 90)) }) + (x.at ? ' <span class="muted">' + T("time.ago", { age: age(x.at) }) + "</span>" : "");
+}
+function carTitle(ref) {
+  const it = idx.items.get(ref), tc = trackCar(ref);
+  return (it && it.title) || (tc && tc.title) || "";
+}
+const slotAgent = (c) => (c.ref && ((c.object && idx.liveByObj.get(c.object)) || idx.liveByCar.get(c.ref))) || null;
+const slotHit = (c) => { const a = slotAgent(c); return hit(slotFields(c).concat(a ? agentFields(a, true) : [])); };
+function slotFields(c) {
+  return [[c.ref, 40, 1], [c.object, 40, 1], [c.pr ? "#" + c.pr : "", 30, 1], [c.title, 20, 1], [c.train, 10, 1], [c.track, 10, 1], [c.track_title, 10, 1]];
+}
+function agentFields(a, inCard) {
+  const tc = trackCar(a.car), it = idx.items.get(a.car), pr = (tc && tc.pr) || (it && it.pr);
+  return [[a.id, 40, 1], [a.car, 40, inCard ? 0 : 1, T("common.car")], [a.slot && a.slot.object, 40, 1], [a.agent_id, 40, 0, T("agent.run_id")],
+    [pr ? "#" + pr : "", 30, inCard ? 1 : 0, "PR"], [inCard ? "" : carTitle(a.car), 20, 1], [a.role_ru, 10, 1], [a.state_text, 10, 1],
+    [actionText(a.last_action), 10, 1], [tc && tc.train, 10, inCard ? 1 : 0, T("common.train")], [tc && tc.track, 10, inCard ? 1 : 0, T("common.track")],
+    [a.by, 5, 0, T("common.who")], [(a.actions || []).map(actionText).join(" · "), 5, 0, T("find.in_actions")]];
+}
+function agentBlock(a) {
+  return '<div class="ag"><div><b>' + named(a.id) + "</b> " + hl(a.role_ru) + " · " + agentState(a) + "</div>" +
+    "<div>" + lastAction(a) + "</div>" +
+    '<div class="m">' + [agentRuns(a), esc(a.spent_text), a.turns != null ? T("agent.turns", { n: esc(a.turns) }) : null].filter(Boolean).join(" · ") + "</div></div>";
+}
+function slotCard(c) {
+  if (!c.ref) return '<div class="slot free"><div class="sn">' + T("slot.n", { n: c.n }) + "</div><div>" + T("slot.free") + "</div></div>";
+  const a = slotAgent(c);
+  const g = c.gate;
+  const gate = g ? (g.unmet.length ? '<div class="gate">' + esc(g.name) + ": " + esc(g.unmet.join("; ")) + "</div>"
+                                     : '<div class="gate ok">' + esc(T("gate.passed", { gate: g.name })) + "</div>") : "";
+  const ref = named(c.ref) + (c.kind === "car" && c.object ? paren(c.object) : "");
+  const links = [c.train ? pill('<span class="lnk tname" title="' + esc(T("common.train")) + '">' + T("slot.train", { train: hl(c.train) }) + "</span>", c.train) : null,
+    c.track ? pill('<span class="lnk" title="' + esc(T("common.track")) + '">' + T("slot.track", { track: hl(c.track), title: hl(clipText(c.track_title, 28)) }) + "</span>", c.track) : null].filter(Boolean);
+  const m = ['<span class="stg s-' + esc(c.stage || "build") + '">' + esc(ru(c.stage || "build")) + "</span>",
+    c.size ? esc(c.size) : null, c.pr ? prName(c.pr) : null, c.in_slot ? T("slot.in_slot", { age: age(c.in_slot) }) : null].filter(Boolean);
+  const open = a ? a.id : c.ref, h = slotHit(c);
+  return '<div class="slot s-' + esc(c.stage || "build") + (ui.car === open ? " sel" : "") + (h.ok ? "" : " nohit") + '" data-ref="' + esc(open) + '" data-car="' + esc(c.ref) +
+    '" tabindex="0" role="button" title="' + (a ? esc(T("slot.open_agent", { id: a.id })) : esc(T("common.open_car"))) + '">' +
+    '<div class="sn">' + T("slot.n", { n: c.n }) + "</div>" + '<div class="ref">' + ref + (c.priority ? " " + prioTag(c.priority) : "") + (c.forced ? ' <span class="forced">⚑</span>' : "") + "</div>" +
+    '<div class="t">' + hl(c.title) + "</div>" + (links.length ? '<div class="m">' + links.join(" ") + "</div>" : "") +
+    '<div class="m">' + m.join(" · ") + "</div>" +
+    (a ? agentBlock(a) + h.note : '<div class="ag none">' + (c.kind === "car" ? T("slot.no_agent_car", { ref: esc(c.ref) }) : T("slot.no_agent")) + "</div>") +
+    gate + marksDiv(c.principles, true) + qaMarks(c.returns, c.claims, c.repair) + "</div>";
+}
+function renderSlots(sl) {
+  if (!sl) return "";
+  const rows = [];
+  for (const st of NEXT_ORDER) {
+    const es = sl.next.filter((e) => e.state === st);
+    if (!es.length) continue;
+    rows.push('<div><span class="lbl">' + esc(es[0].state_ru) + ":</span> " + es.slice(0, NEXT_SHOWN).map((e) =>
+      '<span class="nchip' + (hit([[e.ref, 40, 1], [e.title, 20, 1], [e.why, 10, 1]]).ok ? "" : " nohit") + '" data-ref="' + esc(e.ref) + '" tabindex="0" role="button" title="' + esc((e.title || "") + (e.command ? " — " + e.command : "")) + '">' +
+      named(e.ref) + (e.priority ? " " + prioTag(e.priority) : "") + (e.why ? ' <span class="muted">' + hl(e.why.length > 60 ? e.why.slice(0, 59) + "…" : e.why) + "</span>" : "") + "</span>").join("") +
+      (es.length > NEXT_SHOWN ? ' <span class="muted">' + T("slot.and_more", { n: es.length - NEXT_SHOWN }) + "</span>" : "") + "</div>");
+  }
+  const free = sl.used > sl.max ? '<span class="lim over">' + T("slot.over", { used: sl.used, max: sl.max }) + "</span>"
+    : '<span class="lim' + (sl.free ? "" : " full") + '">' + (sl.free ? T("slot.free_n", { n: sl.free, max: sl.max }) : T("slot.all_taken", { max: sl.max })) + "</span>";
+  return '<section class="slots s-build" aria-label="' + esc(T("slot.aria")) + '"><h3>' + T("slot.title_h") + ' <span class="cnt">' + sl.used + "/" + sl.max + "</span></h3>" +
+    '<div class="slot-row wide">' + sl.cells.map(slotCard).join("") + "</div>" +
+    '<div class="slot-next">' + (rows.length ? rows.join("") : '<div class="muted">' + T("slot.next_none") + "</div>") + "</div>" +
+    '<div class="slot-free">' + free + "</div></section>";
+}
+function agentRow(a, extra, h) {
+  const t = carTitle(a.car), tc = trackCar(a.car);
+  return '<div class="arow' + (extra ? " extra" : "") + (ui.car === a.id ? " sel" : "") + '" data-ref="' + esc(a.id) + '" tabindex="0" role="button">' +
+    "<div><b>" + named(a.id) + "</b> " + agentState(a) + " · " + hl(a.role_ru) + " · " + named(a.car) + (tc && tc.priority ? " " + prioTag(tc.priority) : "") + (t ? " " + hl(clipText(t, 70)) : "") + "</div>" +
+    '<div class="m">' + [T("agent.started", { at: esc(when(a.started)) }), agentRuns(a), esc(a.spent_text),
+      a.slot ? T("agent.stack", { slot: esc(a.slot.n || WHERE_RU[a.slot.where] || a.slot.where), object: hl(a.slot.object) }) : null,
+      a.forced ? T("agent.forced") : null].filter(Boolean).join(" · ") + "</div>" +
+    '<div class="m">' + lastAction(a) + (!a.live ? " · " + hl(a.state_text) : "") + "</div>" + (h ? h.note : "") + "</div>";
+}
+function agentRows(list) {
+  let rows = list.map((a) => {
+    const h = hit(agentFields(a, false)), tc = trackCar(a.car);
+    return { x: a, h, s: h.s, p: prioOf(tc, idx.items.get(a.car)), d: tsOf(a.started), g: tc ? [tc.train, tc.track].filter(Boolean).join(" ") || null : null };
+  });
+  if (find.on) rows = rows.filter((r) => r.h.ok);
+  return arrange(rows, sortOf("agents"));
+}
+function agentList(key, title, list, rows) {
+  if (!list.length) return "";
+  const open = !!ui.more[key];
+  return '<section class="alist' + (open ? " more-open" : "") + '" aria-label="' + esc(title) + '"><h3>' + esc(title) + ' <span class="cnt">' +
+    (find.on ? T("common.n_of", { n: rows.length, total: list.length }) : list.length) + "</span></h3>" +
+    (rows.length ? rows.map((r, i) => agentRow(r.x, i >= AGENTS_SHOWN, r.h)).join("") : '<div class="muted">' + T("common.not_found") + "</div>") +
+    (rows.length > AGENTS_SHOWN ? '<button type="button" class="btn more" data-more="' + esc(key) + '">' + (open ? T("common.fold") : T("common.more", { n: rows.length - AGENTS_SHOWN })) + "</button>" : "") +
+    "</section>";
+}
+function renderAgents() {
+  const j = data.agents || {}, all = j.agents || [], sl = data.board.slots;
+  const inSlot = new Set();
+  if (sl) for (const c of sl.cells) {
+    const a = slotAgent(c);
+    if (a) inSlot.add(a.id);
+  }
+  const live = all.filter((a) => a.live), out = live.filter((a) => !inSlot.has(a.id));
+  const ended = all.filter((a) => !a.live).map((a, i) => [a, Date.parse(agentEnd(a) || a.started || "") || 0, i])
+    .sort((x, y) => y[1] - x[1] || y[2] - x[2]).map((x) => x[0]);
+  const outRows = agentRows(out.slice().reverse()), endedRows = agentRows(ended);
+  // found: the busy slots with the words (a slot keeps its place, pale without them) and the rows
+  find.n.agents = find.on ? (sl ? sl.cells.filter((c) => c.ref && slotHit(c).ok).length : 0) + outRows.length + endedRows.length : 0;
+  const sum = ["<span>" + T("agents.live", { n: live.length }) + (live.length ? " " + T("agents.live_split", { slots: inSlot.size, out: out.length }) : "") + "</span>",
+    "<span>" + T("agents.ended", { n: ended.length }) + "</span>",
+    j.stop_at != null ? "<span>" + T("agents.stop_at", { pct: Math.round(j.stop_at * 100) }) + "</span>" : "", foundLine(find.n.agents)].join("");
+  return '<div class="summary">' + sum + "</div>" + renderSlots(sl) +
+    agentList("ag-out", T("agents.out"), out, outRows) +
+    (ended.length ? agentList("ag-ended", T("agents.recent"), ended, endedRows) : '<p class="muted">' + T("agents.none_ended") + "</p>") +
+    '<p class="note muted">' + T("agents.legend", { silent: esc(j.silent_min != null ? j.silent_min : 20) }) + "</p>";
+}
+
+function render() {
+  const was = find.marking;
+  find.marking = true;  // the found words marked in the views, never in the panel
+  try {
+    const kv = renderTracks(), tv = renderTrains(), bv = renderBoard(), av = renderAgents(), pv = renderPrinciples(), qv = renderQueues();
+    if (kv !== shown.tracks) { paint($("#view-tracks"), kv); shown.tracks = kv; }
+    if (tv !== shown.trains) { paint($("#view-trains"), tv); shown.trains = tv; }
+    if (bv !== shown.board) { paint($("#view-board"), bv); shown.board = bv; }
+    if (av !== shown.agents) { paint($("#view-agents"), av); shown.agents = av; }
+    if (pv !== shown.principles) { paint($("#pc-list"), pv); shown.principles = pv; }
+    if (qv !== shown.queues) { paint($("#view-queues"), qv); shown.queues = qv; }
+  } finally { find.marking = was; }
+  paintDecisions();
+}
+
+const CARDS = ".car[data-ref], .bcard[data-ref], .slot[data-ref], .bchip[data-ref], .arow[data-ref], .nchip[data-ref], .qcard[data-ref], .qcard[data-qx], .rlink[data-ref]";
+const COLUMN_CARDS = ".car[data-ref], .bcard[data-ref], .arow[data-ref], .qcard[data-ref], .qcard[data-qx]";  // the arrows walk these
+const HOLD_KEYS = ["data-qx", "data-ref", "data-more", "data-copy", "data-dec-link", "data-doc", "data-go"];
+function byKey(root, k) {  // the elements of `root` with that key, in order (no selector built from the value)
+  const out = [];
+  for (const e of root.querySelectorAll(k.tag + "[" + k.attr + "]")) {
+    if (e.getAttribute(k.attr) !== k.val) continue;
+    const x = k.sub ? e.querySelector(":scope > summary") : e;
+    if (x) out.push(x);
+  }
+  return out;
+}
+function holdKey(el, root) {
+  if (!el || el === root || !root.contains(el)) return null;
+  const fold = el.matches("summary") && el.parentElement && el.parentElement.hasAttribute("data-key");
+  const host = fold ? el.parentElement : el, attr = fold ? "data-key" : HOLD_KEYS.find((a) => el.hasAttribute(a));
+  if (!attr) return null;
+  const k = { tag: host.tagName.toLowerCase(), attr, val: host.getAttribute(attr), sub: fold };
+  k.i = byKey(root, k).indexOf(el);
+  return k;
+}
+function scroller(el, axis) {  // the nearest box that scrolls `el` on that axis, else null (the page)
+  for (let p = el.parentElement; p && p !== document.body; p = p.parentElement) {
+    const s = getComputedStyle(p);
+    if (axis === "y" ? /auto|scroll/.test(s.overflowY) && p.scrollHeight > p.clientHeight
+                     : /auto|scroll/.test(s.overflowX) && p.scrollWidth > p.clientWidth) return p;
+  }
+  return null;
+}
+const shownBox = (b) => (b.checkVisibility ? b.checkVisibility() : b.getClientRects().length > 0);  // not in a hidden tab nor a closed fold
+function keepScroll(root) {  // the boxes of `root` that are on the screen: to their remembered places
+  for (const b of root.querySelectorAll("[data-sk]")) {
+    const at = ui.scroll[b.dataset.sk];
+    if (at && shownBox(b)) { b.scrollLeft = at[0]; b.scrollTop = at[1]; }
+  }
+}
+function paint(el, html) {
+  const a = document.activeElement, k = holdKey(a, el);
+  const at = k && a.matches(CARDS) ? a.getBoundingClientRect() : null;
+  for (const b of el.querySelectorAll("[data-sk]")) if (shownBox(b)) ui.scroll[b.dataset.sk] = [b.scrollLeft, b.scrollTop];
+  const x = el.scrollLeft, y = el.scrollTop;
+  el.innerHTML = html;
+  el.scrollLeft = x;
+  el.scrollTop = y;
+  keepScroll(el);
+  if (!k) return;
+  const all = byKey(el, k), n = all[k.i] || all[0];
+  if (!n) return;
+  n.focus({ preventScroll: true });
+  if (!at) return;
+  const now = n.getBoundingClientRect(), dy = now.top - at.top, dx = now.left - at.left;
+  if (Math.abs(dy) >= 1) { const b = scroller(n, "y"); if (b) b.scrollTop += dy; else window.scrollBy(0, dy); }
+  if (Math.abs(dx) >= 1) { const b = scroller(n, "x"); if (b) b.scrollLeft += dx; }
+}
+function reveal(el) {  // a card unfolded or reached by the arrows: whole in its box, its top first; no box: the page
+  const b = scroller(el, "y");
+  if (!b) { el.scrollIntoView({ block: "nearest" }); return; }
+  const r = el.getBoundingClientRect(), br = b.getBoundingClientRect();
+  if (r.top < br.top) b.scrollTop -= br.top - r.top;
+  else if (r.bottom > br.bottom) b.scrollTop += Math.min(r.bottom - br.bottom, r.top - br.top);
+}
+function listsToTop() {  // a new search or sort: each queue's column from its first card (the row stays on its column)
+  for (const k of Object.keys(ui.scroll)) if (k.startsWith("q:")) ui.scroll[k] = [ui.scroll[k][0], 0];
+  for (const b of document.querySelectorAll(".qlist[data-sk]")) b.scrollTop = 0;
+}
+function toggleQ(card) {  // a queue's card without a panel: unfolds in place (its details), folds on the next click, Enter or Esc
+  const key = card.dataset.qx;
+  ui.open[key] = !ui.open[key];
+  render();
+  const n = byKey($("#view-queues"), { tag: "div", attr: "data-qx", val: key })[0];
+  if (n && ui.open[key]) reveal(n);
+}
+function paintDecisions() {
+  const was = find.marking;
+  find.marking = true;
+  let dv;
+  try { dv = renderDecisions(); } finally { find.marking = was; }
+  if (dv !== shown.dec) { paint($("#dec-list"), dv); shown.dec = dv; }
+  const d = data.decisions;
+  $("#dec-count").textContent = d ? (d.grep ? T("dec.count_found", { n: d.found, total: d.total }) : String(d.total)) : "";
+  find.n.principles = find.on ? (find.n.pc || 0) + (d && d.grep ? d.found : 0) : 0;
+  paintFind();
+}
+
+const RE_DREF = /(?<![\w-])(?:tr-\d{4}:[0-9A-Za-z]+(?:-[0-9A-Za-z]+)*|(?:tr|st|wl|th|td|tm|pc|bs|ord)-\d{4}|dec-\d{6}|#\d{1,5})(?!\w)/g;
+function refLink(ref) {
+  if (ref[0] === "#") {
+    const repo = meta && meta.repo;
+    return repo ? '<a href="https://github.com/' + esc(repo) + "/pull/" + esc(ref.slice(1)) + '" target="_blank" rel="noopener noreferrer">' + esc(ref) + "</a>" : esc(ref);
+  }
+  if (ref.startsWith("dec-")) return '<a href="#" data-dec-link="' + esc(ref) + '">' + esc(ref) + "</a>";
+  if (/^(?:tr-\d{4}:|st-|wl-|th-)/.test(ref)) return '<span class="rlink' + (ui.car === ref ? " sel" : "") + '" data-ref="' + esc(ref) + '" tabindex="0" role="button" title="' + esc(T("common.open_car")) + '">' + esc(ref) + "</span>";
+  return esc(ref);  // a track, a todo, a team item, a principle, an order: no panel of their own
+}
+function linkRefs(t) {
+  t = String(t || "");
+  let out = "", last = 0;
+  for (const m of t.matchAll(RE_DREF)) { out += esc(t.slice(last, m.index)) + refLink(m[0]); last = m.index + m[0].length; }
+  return out + esc(t.slice(last));
+}
+function renderDecisions() {
+  const d = data.decisions || {}, sort = sortOf("principles");
+  // found by the server (`?q=`): here only ordered and marked
+  const rows = arrange((d.decisions || []).map((r) => {
+    const h = hit([[r.id, 40, 1], [r.text, 20, 1], [r.who, 10, 1], [r.round, 10, 1], [r.point, 5, 1], [r.character, 5, 0, T("common.who")]]);
+    return { x: r, h, s: h.s, d: tsOf(r.ts) };
+  }), sort).map((r) => r.x), all = !!ui.more.dec;
+  let h = (all ? rows : rows.slice(0, DEC_SHOWN)).map(decCard).join("");
+  if (!rows.length) h = '<p class="muted">' + (d.grep ? T("find.nothing", { q: esc(d.grep) }) : T("dec.none")) + "</p>";
+  if (rows.length > DEC_SHOWN) h += '<button type="button" class="btn more" data-more="dec">' + (all ? T("common.fold") : T("common.more", { n: rows.length - DEC_SHOWN })) + "</button>";
+  return h + '<p class="muted note">' + T("dec.note") + "</p>";
+}
+function decCard(r) {
+  const where = r.round ? " · " + (r.point ? T("common.round_point", { round: hl(r.round), point: hl(r.point) }) : T("common.round", { round: hl(r.round) })) : "";
+  return '<article class="dec' + (ui.flash === r.id ? " flash" : "") + '" data-dec="' + esc(r.id) + '">' +
+    '<div class="dec-h"><span class="tid">' + named(r.id) + "</span><span>" + esc(when(r.ts)) + " · " + hl(r.who) + where + "</span></div>" +
+    '<div class="dec-t">' + hlHtml(linkRefs(r.text)) + "</div></article>";
+}
+async function showDecision(id) {
+  ui.flash = id;
+  if (ui.tab !== "principles") { ui.tab = "principles"; showTab(); writeHash(); }
+  ui.side = "dec";
+  showSide();
+  const rows = (data && data.decisions && data.decisions.decisions) || [];
+  const i = rows.findIndex((r) => r.id === id);
+  if (i < 0) { $("#q").value = id; await applyFind(); }  // not among the ones the search keeps: the search is the id
+  else { if (i >= DEC_SHOWN) ui.more.dec = true; paintDecisions(); }
+  const el = document.querySelector('.dec[data-dec="' + id + '"]');
+  if (el) el.scrollIntoView({ block: "nearest" });
+}
+function showSide() {
+  $("#dp").dataset.side = ui.side;
+  for (const b of document.querySelectorAll(".dp-switch [data-side]")) b.setAttribute("aria-pressed", String(b.dataset.side === ui.side));
+}
+
+function qItem(def, e) {
+  const L = def.labels || {}, st = def.status_ru || {};
+  const who = (w) => (L.who && L.who[w]) || w || "";
+  const kind = (k) => (L.kind && L.kind[k]) || k || "";
+  const first = (e.history && e.history[0] && e.history[0].ts) || null;
+  const it = { id: e.id, ref: null, title: e.title || e.text || e.topic || "", text: "", prio: prioOf(e), stage: null,
+    open: def.open.length ? def.open.includes(e.status) : true, status: st[e.status] || e.status || "",
+    date: e.date || e.added || e.created || first, meta: [] };
+  switch (def.name) {
+    case "todo":
+      it.text = e.title && e.text && !String(e.text).startsWith(e.title) ? e.text : "";
+      if (e.status === "in_pr" && e.pr) it.status += " #" + e.pr;
+      it.meta = [kind(e.kind), e.source, (e.where || []).join(", "), e.version, e.trigger ? T("q.when", { v: e.trigger }) : ""];
+      break;
+    case "think":
+      Object.assign(it, { ref: e.id, title: e.topic, stage: e.stage });
+      if (e.status === "in_round" && e.round) it.status += " " + e.round;
+      if (e.status === "decided" && e.decision) it.status += " " + e.decision;
+      it.text = (e.questions || []).length ? T("q.questions", { n: e.questions.length, first: e.questions[0] }) : "";
+      it.meta = [e.by ? T("q.raised_by", { who: e.by }) : "", (e.related || []).join(", ")];
+      break;
+    case "wishes":
+      Object.assign(it, { ref: e.id, stage: e.stage, text: e.words ? T("common.quoted", { t: e.words }) : "" });
+      it.meta = [(L.area && L.area[e.area]) || e.area];
+      break;
+    case "ballots":
+      it.id = e.round;
+      it.meta = [kind(e.kind), e.at_point ? T("q.stopped_at", { point: e.at_point }) : "",
+        (e.points_left || []).length ? T("q.points_left", { n: e.points_left.length, points: e.points_left.join(", ") }) : T("q.no_points_left")];
+      break;
+    case "tstack":
+      it.status = (e.where === "slot" ? T("q.in_slot") : T("q.waits")) + (e.status ? ": " + e.status : "");
+      it.meta = [kind(e.kind), e.who ? T("q.who", { who: who(e.who) }) : "", e.round ? T("common.round", { round: e.round }) : "",
+        (e.depends_on || []).length ? T("car.after", { refs: e.depends_on.join(", ") }) : ""];
+      break;
+    case "orders":
+      it.title = e.command || "";
+      it.meta = [who(e.character), e.round, e.why ? T("q.why", { v: e.why }) : "", e.forecast ? T("q.forecast", { v: e.forecast }) : "",
+        e.threshold ? T("q.threshold", { v: e.threshold }) : ""];
+      break;
+    case "brainstorms":
+      it.title = e.topic || "";
+      it.meta = [e.initiator ? T("q.called_by", { who: who(e.initiator) }) : "", e.round, e.ran_in ? T("q.ran_in", { v: e.ran_in }) : ""];
+      break;
+  }
+  if (e.status === "taken" && e.taken_to) it.status += " → " + e.taken_to;
+  it.id = it.id || "—";
+  it.notes = [].concat(e.notes || []).map((n) => (typeof n === "string" ? n : (n && (n.text || n.note)) || JSON.stringify(n)));
+  it.links = [...new Set([e.taken_to || null, e.pr ? "#" + e.pr : null, ...[].concat(e.links || []).map(String)].filter(Boolean))];
+  it.from = [e.added ? T("q.added", { at: when(e.added) }) : "", e.source_ref ? T("q.source", { ref: e.source_ref }) : ""].filter(Boolean);
+  it.fields = [[it.id, 40, 1], [e.id, 40, 1], [it.title, 20, 1], [it.text, 10, 1], [it.meta.filter(Boolean).join(" · "), 10, 1],
+    [notesText(e.notes), 5, 0, T("find.in_notes")], [(e.questions || []).join(" · "), 5, 0, T("find.in_questions")], [e.text, 5, 0, T("find.in_text")]];
+  Object.assign(it, { p: prioOf(e), d: tsOf(it.date), st: it.stage ? idx.rank.get(it.stage) : null });
+  return it;
+}
+// a queue's entries as its JSON gives them (the team stack: its slots, then its queue)
+function qRows(name, raw) {
+  return name === "tstack" ? [...((raw && raw.in_slots) || []), ...((raw && raw.queue) || [])] : (Array.isArray(raw) ? raw : []);
+}
+function qOrder(def, items) {
+  return items.map((it, i) => [it, i]).sort((a, b) => (a[0].open === b[0].open ? 0 : a[0].open ? -1 : 1) ||
+    (b[0].prio || 0) - (a[0].prio || 0) ||
+    (def.name === "wishes" ? String(b[0].date || "").localeCompare(String(a[0].date || "")) || String(a[0].id).localeCompare(String(b[0].id)) : 0) ||
+    a[1] - b[1]).map((x) => x[0]);
+}
+function qCard(def, it) {
+  const key = "qx:" + def.name + ":" + it.id, full = !!ui.open[key], mt = it.meta.filter(Boolean);
+  const attrs = it.ref ? ' data-ref="' + esc(it.ref) + '" tabindex="0" role="button"'
+    : (it.text || mt.length || it.notes.length || it.links.length || String(it.title).length > 120) ? ' data-qx="' + esc(key) + '" tabindex="0" role="button" aria-expanded="' + full + '"' : "";
+  const more = [it.notes.length ? T("q.notes_n", { n: it.notes.length }) : "", it.links.length ? T("q.links_n", { n: it.links.length }) : ""].filter(Boolean);
+  return '<div class="qcard' + (it.prio ? " p-" + prioBand(it.prio) : "") + (it.open ? "" : " closed") + (full ? " full" : "") +
+    (it.ref && ui.car === it.ref ? " sel" : "") + '"' + attrs + ">" +
+    '<div class="qh"><span class="tid">' + named(it.id) + "</span>" + prioTag(it.prio) +
+    (it.status ? "<span>" + esc(it.status) + "</span>" : "") + (it.date ? "<span>" + esc(when(it.date)) + "</span>" : "") +
+    (it.stage ? '<span class="stg s-' + esc(it.stage) + '">' + esc(ru(it.stage)) + "</span>" : "") + "</div>" +
+    '<div class="t">' + hl(it.title || "—") + "</div>" + (it.text ? '<div class="x">' + hl(it.text) + "</div>" : "") +
+    (mt.length || (!full && more.length) ? '<div class="m">' + mt.concat(full ? [] : more).map(hl).join(" · ") + "</div>" : "") +
+    (it.h && !full ? it.h.note : "") + (full ? qDetails(it) : "") + "</div>";
+}
+function qDetails(it) {
+  const h = (it.notes.length ? '<div><span class="k">' + T("q.notes_k") + "</span><ul>" + it.notes.map((n) => "<li>" + hlHtml(linkRefs(n)) + "</li>").join("") + "</ul></div>" : "") +
+    (it.links.length ? '<div><span class="k">' + T("q.links_k") + "</span> " + it.links.map(refLink).join(" · ") + "</div>" : "") +
+    (it.from.length ? '<div class="k">' + it.from.map(hl).join(" · ") + "</div>" : "");
+  return h ? '<div class="qd">' + h + "</div>" : "";
+}
+function renderQueues() {
+  const defs = (meta && meta.queues) || [], sort = sortOf("queues");
+  const heads = [];
+  let cols = "", found = 0;
+  for (const def of defs) {
+    const raw = data.queues[def.name];
+    const all = qOrder(def, qRows(def.name, raw).map((e) => qItem(def, e)));
+    for (const it of all) { it.h = hit(it.fields); it.s = it.h.s; }
+    const items = arrange(find.on ? all.filter((it) => it.h.ok) : all, sort);
+    const open = items.filter((i) => i.open), closed = items.filter((i) => !i.open);
+    const allOpen = find.on ? all.filter((i) => i.open).length : open.length;
+    found += find.on ? items.length : 0;
+    const more = !!ui.more["q:" + def.name];
+    heads.push(esc(def.title) + " <b>" + allOpen + "</b>");
+    const counts = {};
+    for (const i of open) if (i.prio) counts[i.prio] = (counts[i.prio] || 0) + 1;
+    const pc = Object.keys(counts).map(Number).sort((x, y) => y - x).map((p) => "P" + p + " " + counts[p]).join(" · ");
+    const lim = def.name === "tstack" && raw ? T("q.tstack_lim", { slots: (raw.in_slots || []).length, max: raw.slots, queue: (raw.queue || []).length, queue_max: raw.queue_max }) : "";
+    let h = (more ? open : open.slice(0, QUEUE_SHOWN)).map((it) => qCard(def, it)).join("");
+    if (!open.length) h = '<p class="muted">' + (find.on ? T("common.not_found") : T("common.empty")) + "</p>";
+    if (open.length > QUEUE_SHOWN) h += '<button type="button" class="btn more" data-more="q:' + esc(def.name) + '">' + (more ? T("common.fold") : T("common.more", { n: open.length - QUEUE_SHOWN })) + "</button>";
+    if (closed.length) {
+      const k = "qc:" + def.name;
+      h += '<details class="qclosed" data-key="' + esc(k) + '"' + (ui.open[k] ? " open" : "") + "><summary>" + T("q.closed_n", { n: closed.length }) + "</summary>" +
+        (ui.open[k] ? closed.map((it) => qCard(def, it)).join("") : "") + "</details>";
+    }
+    cols += '<section class="qcol' + (open.length ? "" : " empty") + '" data-q="' + esc(def.name) + '" aria-label="' + esc(def.title) + '">' +
+      '<h3>' + esc(def.title) + ' <span class="cnt">' + (find.on ? T("common.n_of", { n: open.length, total: allOpen }) : open.length) + "</span>" + (ui.all ? ' <span class="cnt">' + T("q.total", { n: items.length }) + "</span>" : "") + "</h3>" +
+      '<div class="means"><code>' + esc(def.command) + "</code>" + (pc ? " · " + esc(pc) : "") + (lim ? " · " + esc(lim) : "") + "</div>" +
+      '<div class="qlist" data-sk="q:' + esc(def.name) + '">' + h + "</div></section>";
+  }
+  find.n.queues = found;
+  return '<div class="summary"><span>' + T("q.open_line", { heads: heads.join(" · ") || "—" }) + "</span>" + foundLine(found) +
+    "<span>" + (ui.all ? T("q.hint") : T("q.hint_closed")) + "</span></div>" +
+    '<div class="qboard" data-sk="qboard">' + cols + "</div>";
+}
+
+function renderPrinciples() {
+  const p = data.principles;
+  const n = p.counts || {};
+  const sort = sortOf("principles");
+  let found = 0, body = "";
+  for (const s of p.sections || []) {
+    if (!s.items.length) continue;
+    let rows = s.items.map((e) => {
+      const r = hit([[e.id, 40, 1], [e.label, 40, 1], [e.title, 20, 1], [(e.lines || []).join("\n"), 10, 1], [e.reason, 5, 1],
+        [(e.words || []).map((w) => (w && w.text) || "").join(" · "), 5, 0, T("find.in_owner_words")], [notesText(e.notes), 5, 0, T("find.in_notes")]]);
+      return { x: e, h: r, s: r.s, d: tsOf(e.date || e.added) };
+    });
+    if (find.on) rows = rows.filter((r) => r.h.ok);
+    found += find.on ? rows.length : 0;
+    if (!rows.length) continue;
+    body += '<section class="pc-sec"><h3>' + esc(s.title) + ' <span class="cnt">' + (find.on ? T("common.n_of", { n: rows.length, total: s.count }) : s.count) + "</span></h3>" +
+      arrange(rows, sort).map((r) => principleCard(r.x, r.h)).join("") + "</section>";
+  }
+  find.n.pc = found;
+  const h = '<div class="summary"><span>' + T("pc.active", { n: n.active || 0 }) + (n.replaced ? " · " + T("pc.replaced", { n: n.replaced }) : "") +
+    (n.dropped ? " · " + T("pc.dropped", { n: n.dropped }) : "") + "</span>" + foundLine(found) +
+    '<span><span class="badge3">③</span> ' + T("pc.third", { checks: (p.checks || []).map(esc).join(", ") || T("pc.none") }) + "</span>" +
+    "<span>" + (p.file ? T("pc.file", { file: esc(p.file) }) : T("pc.no_file")) + "</span></div>";
+  return h + (find.on && !found ? nothing() : body);
+}
+function principleCard(e, hh) {
+  const off = e.status !== "active";
+  const lines = (e.lines || []).slice();
+  if (lines.length) lines[0] = lines[0].replace(/^\d+[a-z]?\. /, "");
+  return '<article class="pc' + (off ? " off" : "") + (e.check ? " third" : "") + '" data-pc="' + esc(e.id) + '">' +
+    '<div class="pc-h"><span class="pcn">' + hl(e.label) + "</span>" +
+    (e.check ? '<span class="badge3" title="' + esc(T("pc.third_title")) + '">③ ' +
+      (e.priority === 1 ? T("pc.gates") : T("pc.score")) + "</span>" : "") +
+    "<span>" + named(e.id) + (e.date ? " · " + esc(e.date) : "") + ((e.words || []).length ? " · " + T("pc.words", { n: e.words.length }) : "") +
+    (off ? " · " + esc(e.status_ru) + (e.by ? " → " + esc(e.by) : "") + (e.reason ? " (" + esc(e.reason) + ")" : "") : "") + "</span></div>" +
+    '<div class="md">' + hlHtml(md(lines.join("\n"))) + "</div>" + (hh ? hh.note : "") + "</article>";
+}
+
+// --- markdown: a small renderer, everything escaped, no raw HTML -------------------------------------------
+function docPath(s) {
+  // a relative .md path under the depot's docs base (web.docs.base); the server checks web.docs.dirs
+  const m = /^((?:[\w.-]+\/)+[^\s`'"<>()\/]+\.md)$/.exec(String(s).trim());
+  return m && !m[1].split("/").includes("..") ? m[1] : null;
+}
+function link(txt, url) {
+  if (/^https?:\/\//i.test(url)) return '<a href="' + esc(url) + '" target="_blank" rel="noopener noreferrer">' + esc(txt) + "</a>";
+  const d = docPath(url);
+  if (d) return '<a href="#" data-doc="' + esc(d) + '">' + esc(txt) + "</a>";
+  return '<span class="nolink" title="' + esc(url) + '">' + esc(txt) + "</span>";
+}
+function inline(t) {
+  const keep = [];
+  const put = (h) => "\u0000" + (keep.push(h) - 1) + "\u0000";
+  t = String(t).replace(/\u0000/g, "");
+  t = t.replace(/`([^`]+)`/g, (_, c) => {
+    const d = docPath(c);
+    return put(d ? '<a href="#" data-doc="' + esc(d) + '"><code>' + esc(c) + "</code></a>" : "<code>" + esc(c) + "</code>");
+  });
+  t = t.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_, txt, url) => put(link(txt, url)));
+  t = t.replace(/\bhttps?:\/\/[^\s<>()«»"']*[^\s<>()«»"'.,;:!?]/g, (u) => put(link(u, u)));
+  let s = esc(t);
+  s = s.replace(/\*\*(?=\S)(.+?)\*\*/g, "<strong>$1</strong>").replace(/(^|[^\w])__(?=\S)(.+?)__(?!\w)/g, "$1<strong>$2</strong>");
+  s = s.replace(/(^|[^\w*])\*(?=\S)([^*]*?\S)\*(?![\w*])/g, "$1<em>$2</em>").replace(/(^|[^\w])_(?=\S)([^_]*?\S)_(?!\w)/g, "$1<em>$2</em>");
+  s = s.replace(/^\[( |x|X)\]\s/, (_, x) => (x === " " ? "☐ " : "☑ "));
+  return s.replace(/\u0000(\d+)\u0000/g, (_, n) => keep[+n]);
+}
+const RE_LI = /^(\s*)([-*+]|\d+[.)])\s+(.*)$/;
+function mdList(lines) {
+  let h = "";
+  const st = [];
+  for (const l of lines) {
+    const m = RE_LI.exec(l);
+    if (!m) { if (st.length) h += " " + inline(l.trim()); continue; }
+    const ind = m[1].replace(/\t/g, "    ").length, type = /\d/.test(m[2]) ? "ol" : "ul";
+    while (st.length && ind < st[st.length - 1].ind) h += "</li></" + st.pop().type + ">";
+    const top = st[st.length - 1];
+    if (!top || ind > top.ind) { h += "<" + type + "><li>"; st.push({ ind, type }); }
+    else if (top.type !== type) { h += "</li></" + top.type + "><" + type + "><li>"; top.type = type; }
+    else h += "</li><li>";
+    h += inline(m[3]);
+  }
+  while (st.length) h += "</li></" + st.pop().type + ">";
+  return h;
+}
+function cells(l) {
+  let s = l.trim();
+  if (s.startsWith("|")) s = s.slice(1);
+  if (s.endsWith("|") && !s.endsWith("\\|")) s = s.slice(0, -1);
+  return s.split(/(?<!\\)\|/).map((c) => c.trim().replace(/\\\|/g, "|"));
+}
+const RE_SEP = /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/;
+function isBlock(l, nextLine) {
+  return /^\s*```/.test(l) || /^#{1,6}\s/.test(l) || /^\s*>/.test(l) || RE_LI.test(l) || /^\s*([-*_])(\s*\1){2,}\s*$/.test(l) ||
+    (/^\s*\|/.test(l) && nextLine !== undefined && RE_SEP.test(nextLine));
+}
+function md(src) {
+  const L = String(src).replace(/\r\n?/g, "\n").split("\n");
+  const out = [];
+  let i = 0;
+  while (i < L.length) {
+    const l = L[i];
+    if (/^\s*```/.test(l)) {
+      const body = [];
+      i++;
+      while (i < L.length && !/^\s*```/.test(L[i])) body.push(L[i++]);
+      i++;
+      out.push("<pre><code>" + esc(body.join("\n")) + "</code></pre>");
+    } else if (/^#{1,6}\s/.test(l)) {
+      const n = Math.min(6, /^#+/.exec(l)[0].length + 2);
+      out.push("<h" + n + ">" + inline(l.replace(/^#+\s+/, "").replace(/\s+#+\s*$/, "")) + "</h" + n + ">");
+      i++;
+    } else if (/^\s*([-*_])(\s*\1){2,}\s*$/.test(l)) {
+      out.push("<hr>");
+      i++;
+    } else if (/^\s*\|/.test(l) && i + 1 < L.length && RE_SEP.test(L[i + 1])) {
+      const head = cells(l);
+      i += 2;
+      const rows = [];
+      while (i < L.length && /^\s*\|/.test(L[i])) rows.push(cells(L[i++]));
+      out.push("<table><thead><tr>" + head.map((c) => "<th>" + inline(c) + "</th>").join("") + "</tr></thead><tbody>" +
+        rows.map((r) => "<tr>" + head.map((_, k) => "<td>" + inline(r[k] || "") + "</td>").join("") + "</tr>").join("") + "</tbody></table>");
+    } else if (/^\s*>/.test(l)) {
+      const q = [];
+      while (i < L.length && /^\s*>/.test(L[i])) q.push(L[i++].replace(/^\s*>\s?/, ""));
+      out.push("<blockquote>" + md(q.join("\n")) + "</blockquote>");
+    } else if (RE_LI.test(l)) {
+      const block = [];
+      while (i < L.length && L[i].trim() !== "" && (RE_LI.test(L[i]) || (/^\s+\S/.test(L[i]) && !isBlock(L[i], L[i + 1])))) block.push(L[i++]);
+      out.push(mdList(block));
+    } else if (l.trim() === "") {
+      i++;
+    } else {
+      const p = [];
+      while (i < L.length && L[i].trim() !== "" && !isBlock(L[i], L[i + 1])) p.push(L[i++].trim());
+      out.push("<p>" + inline(p.join(" ")) + "</p>");
+    }
+  }
+  return out.join("\n");
+}
+
+// --- the panel ----------------------------------------------------------------------------------------------
+const KNOWN = new Set(["id", "n", "title", "status", "stage", "stages", "brief", "size", "branch", "pr", "st", "after", "notes",
+  "note", "added", "started", "finished", "est_mtok", "spent_mtok", "where", "ci", "dod", "depends_on", "words", "text",
+  "asks", "needs_project", "taken_to", "status_ru", "effort", "question", "questions", "topic",
+  "returns", "claims", "claim_links", "kind", "repairs", "bug", "marks", "principles", "docs", "docs_need", "from",
+  "moved_from", "priority"]);
+const SHOW_KNOWN = new Set(["v", "ref", "kind", "car", "object", "track", "train", "title", "stage", "stage_ru", "moves", "stages",
+  "object_stages", "brief", "size", "branch", "pr", "where", "status", "asks", "project", "project_passed", "gate", "ci",
+  "dod", "left", "taken_to", "from", "records", "returns", "returns_log", "claims", "claim_links", "repair", "fixes", "principles",
+  "docs", "priority"]);
+function qaMarks(returns, claims, repair) {
+  const m = [];
+  if (repair) m.push('<span class="rep" title="' + esc(T("qa.repair_title")) + '">' + T("qa.repair") + (repair.of ? " " + esc(repair.of) : "") +
+    (repair.bug ? " · " + T("qa.bug", { bug: esc(repair.bug) }) : "") + "</span>");
+  if (returns) m.push('<span class="ret" title="' + esc(T("qa.returns_title")) + '">' + T("qa.returns", { n: esc(returns) }) + "</span>");
+  if (claims) m.push('<span class="cl" title="' + esc(T("qa.claims_title")) + '">' + T("qa.claims", { n: esc(claims) }) + "</span>");
+  return m.length ? '<div class="qa">' + m.join(" · ") + "</div>" : "";
+}
+function claimLine(x) {
+  return T("qa.claim_line", { n: x.n, date: when(x.at).slice(0, 10), why: x.why || "—" }) +
+    (x.repair ? " · " + T("qa.repair_ref", { ref: x.repair }) : "") + (x.bug ? " · " + T("qa.bug", { bug: x.bug }) : "") + (x.forced ? " · ⚑ --force" : "") +
+    (x.moved ? " · " + T("qa.moved_to", { to: x.moved.to }) : "");
+}
+function val(v) {
+  if (v === null || v === undefined || v === "") return '<span class="muted">—</span>';
+  if (typeof v === "boolean") return v ? T("common.yes") : T("common.no");
+  if (typeof v === "string" || typeof v === "number") return esc(v);
+  if (Array.isArray(v) && v.every((x) => typeof x === "string" || typeof x === "number"))
+    return v.length ? '<ul class="plain">' + v.map((x) => "<li>" + esc(x) + "</li>").join("") + "</ul>" : '<span class="muted">—</span>';
+  return '<pre class="raw">' + esc(JSON.stringify(v, null, 1)) + "</pre>";
+}
+function dl(rows) {
+  const r = rows.filter((x) => x && x[1] !== undefined && x[1] !== null && x[1] !== "");
+  return r.length ? '<dl class="f">' + r.map(([k, v]) => "<dt>" + esc(k) + "</dt><dd>" + v + "</dd>").join("") + "</dl>" : "";
+}
+function histTable(rows) {
+  if (!rows || !rows.length) return '<p class="muted">' + T("hist.none") + "</p>";
+  return '<table class="hist"><thead><tr><th>' + T("hist.when") + "</th><th>" + T("hist.stage") + "</th><th>" + T("hist.by") + "</th><th>" +
+    T("hist.why") + "</th></tr></thead><tbody>" +
+    rows.map((r) => {
+      const fromTo = (r.from ? esc(ru(r.from)) + " → " : "") + esc(ru(r.stage));
+      const forced = r.forced ? '<div class="forced">⚑ --force' + (r.gates ? ": " + esc(Object.entries(r.gates).map(([k, v]) => k + " — " + [].concat(v).join("; ")).join("; ")) : "") + "</div>" : "";
+      const off = (r.off_route ? '<div class="muted">' + T("hist.off_route") + "</div>" : "") + (r.return ? '<div class="w">' + T("hist.return") + "</div>" : "");
+      return "<tr><td>" + esc(when(r.at)) + '</td><td><span class="chip s-' + esc(r.stage) + '">' + fromTo + "</span>" + off + "</td><td>" + esc(r.by || "") + "</td><td>" + esc(r.why || "") + forced + "</td></tr>";
+    }).join("") + "</tbody></table>";
+}
+const MARK_CLS = { ok: "g", bad: "w" };
+function marksTable(p) {
+  const g = p.gate || {};
+  const c = p.counts || {};
+  const head = '<p class="' + (p.read && g.passed ? "g" : "w") + '">' + esc(p.text) + "</p>" +
+    '<p class="muted">' + T("marks.legend") + (p.max ? " · " + T("marks.counts", { ok: c.ok, na: c.na, bad: c.bad, none: c.none }) : "") + "</p>";
+  return head + '<table class="hist"><thead><tr><th>' + [T("marks.h_principle"), T("marks.h_priority"), T("marks.h_mark"), T("marks.h_line"),
+    T("marks.h_by")].join("</th><th>") + "</th></tr></thead><tbody>" +
+    (p.items || []).map((i) => "<tr><td>" + esc(i.label + ". " + (i.title || "")) + "</td><td>" + (i.priority === 1 ? T("marks.p1") : T("marks.p2")) +
+      '</td><td class="' + (MARK_CLS[i.mark] || (i.mark ? "" : i.priority === 1 ? "w" : "muted")) + '">' + esc(i.mark_ru) + "</td><td>" + esc(i.text || "") +
+      "</td><td>" + esc(i.by || "") + "</td></tr>").join("") + "</tbody></table>";
+}
+function trackCar(ref) {
+  const m = /^(tr-\d{4}):(.+)$/.exec(ref || "");
+  if (!m || !data) return null;
+  const t = (data.tracks.tracks || []).find((x) => x.id === m[1]);
+  return t ? t.cars.find((c) => String(c.n) === m[2]) || null : null;
+}
+function otherFields(recs, j) {
+  const rows = [];
+  for (const [name, rec] of recs) {
+    if (!rec || typeof rec !== "object") continue;
+    for (const k of Object.keys(rec)) if (!KNOWN.has(k)) rows.push([name + "." + k, val(rec[k])]);
+  }
+  for (const k of Object.keys(j)) if (!SHOW_KNOWN.has(k)) rows.push([k, val(j[k])]);
+  return rows;
+}
+function panelCar(j) {
+  const rec = j.records || {};
+  const carRec = rec.car, obj = rec.object || rec.left, entry = rec.entry;
+  const tc = trackCar(j.car);
+  const it = idx.items.get(j.ref) || (j.car && idx.items.get(j.car)) || (j.object && idx.byObj.get(j.object));
+  let h = "<h2>" + esc(j.title || j.ref) + "</h2>";
+  if (j.car && j.ref !== j.car && /^tr-\d{4}:/.test(j.ref)) h += '<p class="muted">' + T("panel.old_ref", { old: named(j.ref), car: named(j.car) }) + "</p>";
+  h += '<p><span class="stage-badge s-' + esc(j.stage) + '">' + esc(j.stage_ru || ru(j.stage)) + "</span> " +
+       '<span class="muted">' + esc(KIND_RU[j.kind] || j.kind) + (it && it.since ? " · " + T("board.on_stage", { age: age(it.since) }) : "") + "</span></p>";
+  h += route(j.stage, (j.stages || []).concat(j.object_stages || []), true);
+  h += '<p class="muted">' + T("panel.moves", { moves: (j.moves || []).length ? j.moves.map((m) => esc(ru(m))).join(", ") : T("panel.no_moves") }) + "</p>";
+
+  const w = [];
+  if (tc) w.push(...waits(tc, it));
+  else {
+    if (j.object && idx.ownerWord.has(j.object)) w.push({ w: true, t: T("wait.owner_word", { why: idx.ownerWord.get(j.object).why }) });
+    const mp = (j.object && idx.merge.get("st:" + j.object)) || (j.pr && idx.merge.get("pr:" + j.pr));
+    if (mp) w.push({ t: mergePlace(mp) });
+  }
+  if (j.gate && !tc) {
+    if (j.gate.unmet && j.gate.unmet.length) w.push({ w: true, t: j.gate.name + ": " + j.gate.unmet.join("; ") });
+    else w.push({ g: true, t: T("gate.passed", { gate: j.gate.name }) });
+  }
+  if (j.gate && j.gate.handed) w.push({ t: T("panel.handed", { v: j.gate.handed }) });
+  for (const q of j.asks || []) w.push({ w: !q.answered, t: q.answered ? T("panel.ask_answered", { n: q.n, q: q.q, answer: q.answer || "" }) : T("panel.ask_open", { n: q.n, q: q.q }) });
+  if (j.project) w.push({ w: !j.project_passed, t: T("panel.project", { why: j.project.why || "", state: j.project_passed ? T("panel.project_passed") : T("panel.project_skipped") }) });
+  if (j.docs && j.docs.need) w.push({ w: ["ahead", "skipped"].includes(j.docs.state), g: ["now", "passed"].includes(j.docs.state),
+    t: T("panel.docs", { need: j.docs.need, word: j.docs.word }) + (j.docs.state === "ahead" ? " — " + j.docs.cmd : "") });
+  if (j.principles && !tc) { const pm = marksLine(j.principles, true); if (pm) w.push(pm); }
+  h += "<h4>" + T("panel.waits_h") + "</h4>" + (w.length ? '<ul class="waits">' + w.map((x) => '<li class="' + (x.w ? "w" : x.g ? "g" : "") + '">' + esc(x.t) + "</li>").join("") + "</ul>"
+    : '<p class="muted">' + T("panel.waits_none") + "</p>");
+
+  const r0 = carRec || obj || entry || {};
+  h += "<h4>" + T("panel.car") + "</h4>" + dl([
+    [T("panel.car"), named(j.car || j.ref) + (j.object && j.object !== j.ref ? " · " + T("panel.object", { ref: named(j.object) }) : "")],
+    [T("panel.track"), j.track ? named(j.track.id) + " " + esc(j.track.title) : null],
+    [T("panel.from"), (j.from || []).length ? '<ul class="plain">' + j.from.map((x) => "<li>" + linked(x.ref) + esc(" — " + (x.kind_ru || "?") + (x.title ? " " + T("common.quoted", { t: x.title }) : "") + (x.status_ru ? " (" + x.status_ru + ")" : "")) + "</li>").join("") + "</ul>" : null],
+    [T("panel.moved"), carRec && (carRec.moved_from || []).length ? '<ul class="plain">' + carRec.moved_from.map((m) => "<li>" + named(m.from) + " → " + named(m.to) + esc(" (" + String(m.at || "").slice(0, 10) + (m.why ? ": " + m.why : "") + ")") + "</li>").join("") + "</ul>" : null],
+    [T("panel.train"), j.train ? '<span class="tname">' + named(j.train.name) + "</span> " + T("common.quoted", { t: esc(j.train.title) }) + " — " + esc(STATE_RU[j.train.state] || j.train.state) : (j.car ? T("panel.none") : null)],
+    [T("panel.prio"), typeof j.priority === "number" ? prioTag(j.priority) + ' <span class="muted">' + T("panel.prio_hint", { ref: esc(j.car || j.ref) }) + "</span>" : null],
+    [T("panel.size"), j.size ? esc(j.size) : null],
+    [T("panel.effort"), tc && tc.effort ? esc(tc.effort.text) : (r0.est_mtok != null || r0.spent_mtok != null ? esc((r0.est_mtok != null ? r0.est_mtok : "—") + " / " + (r0.spent_mtok != null ? r0.spent_mtok : "—") + " MTok") : null)],
+    [T("panel.status"), j.status ? esc(j.status_ru || j.status) : null],
+    [T("panel.where"), j.where ? esc(WHERE_RU[j.where] || j.where) : (j.left ? KIND_RU.left : null)],
+    [T("panel.docs_k"), j.docs && j.docs.need ? esc(j.docs.need) : (carRec && carRec.docs === false ? T("panel.docs_off") : null)],
+    [T("panel.branch"), j.branch ? esc(j.branch) : null],
+    ["PR", j.pr ? prName(j.pr) : null],
+    [T("panel.after"), carRec && carRec.after && carRec.after.length ? esc(carRec.after.join(", ")) : (obj && obj.depends_on && obj.depends_on.length ? esc(obj.depends_on.join(", ")) : null)],
+    ["CI", j.ci ? esc(j.ci.state + (j.ci.ts ? " (" + when(j.ci.ts) + ")" : "")) : null],
+    [T("panel.dod"), j.dod && Object.keys(j.dod).length ? esc(Object.entries(j.dod).map(([k, v]) => k + ": " + (v && v.state !== undefined ? v.state : JSON.stringify(v))).join(" · ")) : null],
+    [T("panel.taken_to"), j.taken_to ? linked(j.taken_to) : null],
+    [T("panel.agents"), agentLinks(j.car || j.ref)],
+    [T("panel.added"), r0.added ? esc(when(r0.added)) : null],
+    [T("panel.started"), r0.started ? esc(when(r0.started)) : null],
+    [T("panel.finished"), r0.finished ? esc(when(r0.finished)) : null],
+  ]);
+
+  const qa = [];
+  if (j.repair) qa.push([T("qa.repair_k"), j.repair.of ? T("qa.fixes_ref", { ref: named(j.repair.of) }) : '<span class="w">' + T("qa.culprit_none") + "</span> (depot2 repair link " + esc(j.car || j.ref) + " --of …)"],
+                        [T("qa.bug_k"), j.repair.bug ? esc(j.repair.bug) : null]);
+  if (j.returns) qa.push([T("qa.returns_k"), esc(j.returns) + '<ul class="plain">' + (j.returns_log || []).map((e) => "<li>" + esc(when(e.at) + ": " + (e.why || "—") + (e.object ? " " + T("qa.before_stages", { object: e.object }) : "")) + "</li>").join("") + "</ul>"]);
+  const cls = (j.claim_links || []);
+  if (cls.length) qa.push([T("qa.claims_k"), esc((cls.filter((x) => !x.moved)).length) + '<ul class="plain">' + cls.map((x) => "<li" + (x.moved ? ' class="muted"' : "") + ">" + esc(claimLine(x)) + "</li>").join("") + "</ul>"]);
+  if ((j.fixes || []).length) qa.push([T("qa.fixes_claims"), '<ul class="plain">' + j.fixes.map((f) => "<li>" + esc(T("qa.claim_ref", { of: f.of, n: f.n, why: f.why || "—" })) + "</li>").join("") + "</ul>"]);
+  if (qa.length) h += "<h4>" + T("qa.h") + "</h4>" + dl(qa);
+  if (j.principles) h += "<h4>" + T("panel.marks_h") + "</h4>" + marksTable(j.principles);
+
+  const said = (title, xs) => (xs.length ? "<h4>" + title + "</h4>" + xs.map((x) => "<p>" + esc(x) + "</p>").join("") : "");
+  const str = (q) => (typeof q === "string" ? q : JSON.stringify(q));
+  if (entry) {
+    const qs = (entry.questions || []).map(str);
+    if (entry.question && !qs.includes(str(entry.question))) qs.unshift(str(entry.question));
+    h += said(T("panel.owner_words"), [].concat(entry.words || [])) + said(T("panel.topic"), [].concat(entry.topic || [])) +
+         said(T("panel.questions"), qs) + said(T("panel.text"), [].concat(entry.text || []));
+  }
+  const notes = [];
+  const recs = [[T("common.car"), carRec], [T("panel.rec_object"), obj], [T("panel.rec_entry"), entry]];
+  for (const [name, r] of recs) {
+    if (!r) continue;
+    if (r.note) notes.push(name + ": " + r.note);
+    for (const n of [].concat(r.notes || [])) notes.push(typeof n === "string" ? n : JSON.stringify(n));
+  }
+  if (notes.length) h += "<h4>" + T("panel.notes_h") + "</h4>" + '<ul class="plain">' + notes.map((n) => "<li>" + esc(n) + "</li>").join("") + "</ul>";
+
+  h += "<h4>" + T("panel.hist_h") + "</h4>" + histTable(j.stages);
+  if (j.object_stages) h += "<h4>" + T("panel.obj_hist_h", { object: esc(j.object || "") }) + "</h4>" + histTable(j.object_stages);
+
+  const other = otherFields(recs, j);
+  if (other.length) h += "<h4>" + T("panel.other_h") + "</h4>" + dl(other);
+
+  h += "<h4>" + T("panel.brief") + "</h4>";
+  if (!j.brief) h += '<p class="muted">' + T("panel.no_brief") + "</p>";
+  else if (panelCache.briefErr) h += '<p class="muted">' + esc(j.brief) + '</p><p class="w">' + esc(panelCache.briefErr) + "</p>";
+  else if (panelCache.brief) h += '<p class="muted">' + esc(panelCache.brief.path) + (panelCache.brief.cut ? " " + T("panel.cut") : "") + '</p><div class="md">' + md(panelCache.brief.text) + "</div>";
+  else h += '<p class="muted">' + T("common.loading") + "</p>";
+  h += '<details><summary class="muted">' + T("panel.raw", { cmd: "car show --json" }) + '</summary><pre class="raw">' + esc(JSON.stringify(j, null, 1)) + "</pre></details>";
+  return h;
+}
+function agentLinks(ref) {
+  const as = ((data.agents && data.agents.agents) || []).filter((a) => a.car === ref).reverse();
+  if (!as.length) return null;
+  return '<ul class="plain">' + as.map((a) => '<li><a href="#" data-open="' + esc(a.id) + '">' + esc(a.id) + "</a>" + cp(a.id) + " " + esc(a.role_ru) + " · " +
+    agentState(a) + " · " + esc(a.spent_text) + "</li>").join("") + "</ul>";
+}
+function panelAgent(id) {
+  const a = idx && idx.agent.get(id);
+  if (!a) return '<p class="w">' + T("agent.none", { id: esc(id) }) + "</p>";
+  const tc = trackCar(a.car), it = idx.items.get(a.car);
+  const brief = (tc && tc.brief) || (it && it.brief) || null, d = brief ? docPath(brief) : null;
+  const pr = (tc && tc.pr) || (it && it.pr) || null, branch = (tc && tc.branch) || (it && it.branch) || null;
+  let h = "<h2>" + esc(a.id + " — " + a.role_ru + ", " + a.car) + "</h2>";
+  h += "<p>" + agentState(a) + (a.state_text !== a.state_ru ? ' <span class="muted">' + esc(a.state_text) + "</span>" : "") + "</p>";
+  const end = a.finished ? [T("agent.finished"), esc(when(a.finished))] : a.stopped ? [T("agent.stopped"), esc(when(a.stopped.ts) + " — " + (a.stopped.why || "") + " (" + (a.stopped.by || "") + ")")] : null;
+  h += "<h4>" + T("agent.h") + "</h4>" + dl([
+    [T("panel.car"), '<a href="#" data-open="' + esc(a.car) + '">' + esc(a.car) + "</a>" + cp(a.car) + (carTitle(a.car) ? " " + esc(carTitle(a.car)) : "")],
+    [T("agent.role"), esc(a.role_ru)],
+    [T("agent.by"), esc(a.by)],
+    [T("agent.started_k"), esc(when(a.started)) + (a.started ? ' <span class="muted">(' + T("time.ago", { age: age(a.started) }) + ")</span>" : "")],
+    end,
+    [T("agent.how_long"), esc(agentRuns(a))],
+    [T("agent.week_k"), a.usage != null ? esc(T("agent.week", { pct: Math.round(a.usage * 1000) / 10, stop: Math.round((a.stop_at || 0) * 100) })) : null],
+    [T("agent.gates_k"), a.forced ? esc(T("agent.gates_forced", { why: a.why || "" }) + (a.gates ? " (" + Object.keys(a.gates).join(", ") + ")" : "")) : null],
+    [T("agent.stack_k"), a.slot ? esc((a.slot.n || WHERE_RU[a.slot.where] || a.slot.where) + " ") + named(a.slot.object) : null],
+    [T("agent.run_id"), a.agent_id ? named(a.agent_id) + (a.model ? ' <span class="muted">' + esc([a.model, a.effort].filter(Boolean).join(" ")) + "</span>" : "") : '<span class="w">' + T("agent.not_attached") + "</span>: depot2 agents attach " + esc(a.id) + " &lt;agentId&gt;"],
+    [T("agent.turns_k"), a.turns != null ? esc(a.turns) + (a.actions_n != null ? " · " + T("agent.actions_n", { n: esc(a.actions_n) }) : "") : null],
+    [T("agent.spent_k"), esc(a.spent_text) + (a.booked ? ' <span class="muted">' + T("agent.booked") + "</span>" : "")],
+    [T("panel.branch"), branch ? esc(branch) : null],
+    ["PR", pr ? prName(pr) : null],
+    [T("panel.brief"), brief ? (d ? '<a href="#" data-doc="' + esc(d) + '">' + esc(d) + "</a>" : '<span class="muted">' + esc(brief) + "</span>") : null],
+  ].filter(Boolean));
+  const acts = a.actions || [];
+  h += "<h4>" + T("agent.actions_h") + (acts.length ? " " + T("agent.actions_of", { n: acts.length, total: esc(a.actions_n != null ? a.actions_n : acts.length) }) : "") + "</h4>" +
+    (acts.length ? '<ol class="acts">' + acts.map((x) => '<li><span class="tm">' + esc(x.at ? hms(new Date(x.at)).slice(0, 5) : "--:--") + "</span> " + esc(actionText(x)) + "</li>").join("") + "</ol>"
+      : '<p class="muted">' + (a.transcript ? T("agent.no_actions") : T("agent.no_transcript")) + "</p>");
+  h += '<details><summary class="muted">' + T("panel.raw", { cmd: "agents show --json" }) + '</summary><pre class="raw">' + esc(JSON.stringify(a, null, 1)) + "</pre></details>";
+  return h;
+}
+function panelMerge(ref) {
+  const it = idx.items.get(ref);
+  const mp = it && it.merge ? idx.merge.get("mq:" + it.merge) : null;
+  if (!it) return "<p>" + T("panel.gone", { ref: esc(ref) }) + "</p>";
+  let h = "<h2>" + esc(it.title || ref) + "</h2>";
+  h += '<p><span class="stage-badge s-' + esc(it.stage) + '">' + esc(it.stage_ru) + '</span> <span class="muted">' + esc(KIND_RU[it.kind]) + " · " + T("board.on_stage", { age: age(it.since) }) + "</span></p>";
+  h += route(it.stage, [], true);
+  h += "<h4>" + T("panel.car") + "</h4>" + dl([["PR", prName(it.pr)], [T("panel.branch"), it.branch ? esc(it.branch) : null], [T("panel.place"), mp ? mergePlace(mp) : null]]);
+  if (mp) h += "<h4>" + T("panel.merge_entry_h") + "</h4>" + dl(Object.keys(mp.e).map((k) => [k, val(mp.e[k])]));
+  return h;
+}
+async function loadPanel() {
+  const ref = ui.car;
+  if (!ref) return;
+  let html, title;
+  if (ui.doc) {
+    try { panelCache.doc = await get("/api/doc?path=" + enc(ui.doc)); panelCache.docErr = null; }
+    catch (e) { panelCache.docErr = e.message; }
+    if (ui.car !== ref) return;
+    title = esc(ui.doc);
+    html = panelCache.docErr ? '<p class="w">' + esc(panelCache.docErr) + "</p>" : '<p class="muted">' + esc(panelCache.doc.path) + '</p><div class="md">' + md(panelCache.doc.text) + "</div>";
+  } else if (ref.startsWith("#")) {
+    title = named(ref);
+    html = panelMerge(ref);
+  } else if (/^ag-\d{4}$/.test(ref)) {
+    if (!data) return;
+    title = named(ref);
+    html = panelAgent(ref);
+  } else {
+    let j;
+    try { j = await get("/api/car/" + enc(ref)); }
+    catch (e) {
+      if (ui.car !== ref) return;
+      html = '<p class="w">' + esc(ref) + ": " + esc(e.message) + "</p>";
+      title = esc(ref);
+      setPanel(title, html);
+      return;
+    }
+    if (j.brief) {
+      try { panelCache.brief = await get("/api/brief/" + enc(ref)); panelCache.briefErr = null; }
+      catch (e) { panelCache.brief = null; panelCache.briefErr = e.message; }
+    } else { panelCache.brief = null; panelCache.briefErr = null; }
+    if (ui.car !== ref) return;
+    title = named(j.car || j.ref) + (j.object && j.object !== j.ref ? paren(j.object) : "");
+    html = panelCar(j);
+  }
+  setPanel(title, html);
+}
+function setPanel(title, html) {
+  const body = $("#panel-body");
+  if (title !== shown.title) { $("#panel-title").innerHTML = title; shown.title = title; }  // the names escaped, with their copy icons
+  if (html !== shown.panel) { paint(body, html); shown.panel = html; }
+  $("#back").hidden = !ui.doc;
+  $("#back").textContent = ui.car && ui.car.startsWith("ag-") ? T("panel.back_agent") : T("panel.back_car");
+}
+function openCar(ref) {
+  if (ui.car !== ref) { shown.panel = ""; panelCache = { ref, brief: null, briefErr: null, doc: null, docErr: null }; $("#panel-body").innerHTML = '<p class="muted">' + T("common.loading") + "</p>"; $("#panel-body").scrollTop = 0; }
+  ui.car = ref;
+  ui.doc = null;
+  $("#panel").hidden = false;
+  document.body.classList.add("with-panel");
+  writeHash();
+  markSelected();
+  loadPanel();
+}
+function closePanel() {
+  const ref = ui.car, inside = $("#panel").contains(document.activeElement);
+  ui.car = null;
+  ui.doc = null;
+  shown.panel = "";
+  shown.title = "";
+  $("#panel").hidden = true;
+  document.body.classList.remove("with-panel");
+  writeHash();
+  markSelected();
+  if (inside && ref) {
+    const back = [...document.querySelectorAll(CARDS)].find((e) => e.dataset.ref === ref && shownBox(e));
+    if (back) back.focus({ preventScroll: true });
+  }
+}
+function markSelected() {
+  if (data) render();
+}
+
+function readHash() {
+  const h = location.hash.replace(/^#/, "");
+  const cut = h.search(/[?&]/), p = {};
+  for (const kv of cut < 0 ? [] : h.slice(cut + 1).split("&")) {
+    const i = kv.indexOf("=");
+    if (i > 0) try { p[kv.slice(0, i)] = decodeURIComponent(kv.slice(i + 1)); } catch (e) { /* a broken escape: left out */ }
+  }
+  const tab = cut < 0 ? h : h.slice(0, cut);
+  ui.tab = TABS.includes(tab) ? tab : "trains";
+  ui.sort = SORTS.some(([k]) => k === p.sort) ? p.sort : "";
+  const q = String(p.q || "").trim();
+  if (q !== ui.q) { ui.q = q; setFind(q); ui.findOpen = {}; ui.more.dec = false; }
+  if ($("#q").value.trim() !== q) $("#q").value = q;
+  return p.car || null;
+}
+function writeHash() {
+  const f = [ui.q ? "q=" + enc(ui.q) : "", ui.sort ? "sort=" + enc(ui.sort) : ""].filter(Boolean).join("&");
+  const h = "#" + ui.tab + (f ? "?" + f : "") + (ui.car ? "&car=" + enc(ui.car) : "");
+  if (location.hash !== h) history.replaceState(null, "", h);
+}
+function showTab() {
+  for (const b of document.querySelectorAll(".tabs button")) b.setAttribute("aria-selected", String(b.dataset.tab === ui.tab));
+  $("#view-tracks").hidden = ui.tab !== "tracks";
+  $("#view-trains").hidden = ui.tab !== "trains";
+  $("#view-board").hidden = ui.tab !== "board";
+  $("#view-agents").hidden = ui.tab !== "agents";
+  $("#view-principles").hidden = ui.tab !== "principles";
+  $("#view-queues").hidden = ui.tab !== "queues";
+  $("#all-l").textContent = ui.tab === "queues" ? T("top.all_closed") : T("top.all_fin");
+  keepScroll($("main"));
+  paintFind();
+}
+
+// --- events -------------------------------------------------------------------------------------------------
+document.addEventListener("click", (e) => {
+  const cpb = e.target.closest("button.cp");
+  if (cpb) { e.preventDefault(); e.stopPropagation(); copyName(cpb); return; }  // the name alone: the card, row or summary under it stays as it was
+  const doc = e.target.closest("a[data-doc]");
+  if (doc) { e.preventDefault(); ui.doc = doc.dataset.doc; shown.panel = ""; $("#panel-body").scrollTop = 0; loadPanel(); return; }
+  const dl = e.target.closest("a[data-dec-link]");
+  if (dl) { e.preventDefault(); showDecision(dl.dataset.decLink); return; }
+  const op = e.target.closest("a[data-open]");
+  if (op) { e.preventDefault(); openCar(op.dataset.open); return; }
+  const go = e.target.closest("a[data-go]");
+  if (go) { e.preventDefault(); ui.tab = go.dataset.go; showTab(); writeHash(); window.scrollTo(0, 0); return; }
+  const rl = e.target.closest("#panel .rlink[data-ref]");
+  if (rl) { e.preventDefault(); if (ui.car !== rl.dataset.ref) openCar(rl.dataset.ref); return; }
+  if (e.target.closest("a")) return;
+  const side = e.target.closest(".dp-switch [data-side]");
+  if (side) { ui.side = side.dataset.side; showSide(); return; }
+  const tab = e.target.closest(".tabs button");
+  if (tab) { ui.tab = tab.dataset.tab; showTab(); writeHash(); return; }
+  const more = e.target.closest("[data-more]");
+  if (more) { ui.more[more.dataset.more] = !ui.more[more.dataset.more]; render(); return; }
+  if (e.target.closest("summary")) return;
+  const row = e.target.closest("[data-ref], [data-qx]");
+  if (!row || e.target.closest("#panel")) return;
+  const sel = getSelection();
+  if (sel && !sel.isCollapsed && row.contains(sel.anchorNode)) return;
+  if (row.hasAttribute("data-qx")) { toggleQ(row); return; }
+  if (ui.car === row.dataset.ref && row.matches(CARDS)) closePanel();
+  else openCar(row.dataset.ref);
+});
+// the arrows up and down: to the card above or below in the same column (a queue, a board's column, a train's cars)
+function stepCard(el, d) {
+  if (!el.matches(COLUMN_CARDS)) return false;
+  const sib = [...el.parentElement.children].filter((c) => c.matches(COLUMN_CARDS) && shownBox(c));
+  const n = sib[sib.indexOf(el) + d];
+  if (!n) return false;
+  n.focus({ preventScroll: true });
+  reveal(n);
+  return true;
+}
+document.addEventListener("keydown", (e) => {
+  const typing = !!(e.target.closest && e.target.closest("input, textarea, select, [contenteditable]"));
+  if ((e.key === "/" || (e.code === "Slash" && !e.shiftKey)) && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+    e.preventDefault();
+    $("#q").focus();
+    $("#q").select();
+    return;
+  }
+  if (e.key === "Escape" && e.target === $("#q") && $("#q").value) { e.preventDefault(); $("#q").value = ""; applyFind(); return; }
+  const card = e.target.matches && e.target.matches(CARDS) ? e.target : null;
+  if (e.key === "Escape" && card && card.hasAttribute("data-qx") && ui.open[card.dataset.qx]) { toggleQ(card); return; }
+  if (e.key === "Escape" && ui.car) { closePanel(); return; }
+  if (e.key === "Escape" && ui.q && !typing) { $("#q").value = ""; applyFind(); return; }
+  if (!card || e.altKey || e.ctrlKey || e.metaKey) return;
+  if (e.key === "Enter" || e.key === " ") {
+    e.preventDefault();
+    if (card.hasAttribute("data-qx")) toggleQ(card);
+    else if (ui.car === card.dataset.ref) closePanel();
+    else openCar(card.dataset.ref);
+  } else if ((e.key === "ArrowDown" || e.key === "ArrowUp") && stepCard(card, e.key === "ArrowDown" ? 1 : -1)) e.preventDefault();
+});
+document.addEventListener("toggle", (e) => {
+  const d = e.target;
+  if (!d.dataset || !d.dataset.key || !d.isConnected) return;  // one a newer drawing replaced: its state is not the view's
+  if (find.on && !d.dataset.key.startsWith("qc:")) ui.findOpen[d.dataset.key] = d.open;  // folded during a search: for it alone
+  else if (d.dataset.key === "__done") ui.doneOpen = d.open;
+  else ui.open[d.dataset.key] = d.open;
+  if (d.dataset.key.startsWith("qc:") && data) render();  // a queue's closed ones are drawn when unfolded
+}, true);
+document.addEventListener("scroll", (e) => {
+  const b = e.target;
+  if (b && b.dataset && b.dataset.sk && shownBox(b)) ui.scroll[b.dataset.sk] = [b.scrollLeft, b.scrollTop];  // paint() gives it back
+  placeTip();
+}, { capture: true, passive: true });
+$("#close").addEventListener("click", closePanel);
+$("#back").addEventListener("click", () => { ui.doc = null; shown.panel = ""; loadPanel(); });
+$("#refresh").addEventListener("click", () => refresh());
+$("#q").addEventListener("input", () => { clearTimeout(findTimer); findTimer = setTimeout(applyFind, 150); });
+$("#q").addEventListener("search", applyFind);  // Enter, or the field's own ✕: at once
+$("#sort").addEventListener("change", (e) => { ui.sort = e.target.value; writeHash(); if (data) { render(); listsToTop(); } else paintFind(); });
+$("#all").addEventListener("change", (e) => { ui.all = e.target.checked; ui.doneOpen = null; refresh(); });
+document.addEventListener("visibilitychange", () => { if (!document.hidden) refresh(); });
+window.addEventListener("hashchange", () => {
+  const q0 = ui.q, s0 = ui.sort;
+  const c = readHash();
+  showTab();
+  if (data && (q0 !== ui.q || s0 !== ui.sort)) { render(); listsToTop(); if (q0 !== ui.q) loadDecisions(); }
+  if (c && c !== ui.car) openCar(c);
+  else if (!c && ui.car) closePanel();
+});
+
+function topHeight() { document.documentElement.style.setProperty("--top-h", $(".top").offsetHeight + "px"); }
+window.addEventListener("resize", topHeight);
+topHeight();
+const startCar = readHash();
+showTab();
+if (startCar) { ui.car = startCar; $("#panel").hidden = false; document.body.classList.add("with-panel"); }
+refresh();
+</script>
+</body>
+</html>

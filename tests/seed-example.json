@@ -1,0 +1,10 @@
+{
+  "note": "An example seed for the tests. The real seed lives in the state dir (seed/).",
+  "opening_reason": "test",
+  "opening": {"builder": 5, "painter": 5, "counter": 5, "chronicler": 5, "keeper": 5},
+  "rounds": [{"id": "old-review", "kind": "review", "created": "2015-11-02T21:01:00+02:00",
+              "points": {"p1": "first", "p2": "second"},
+              "stakes": {"painter": {"p1": 2}, "keeper": {"p1": 1, "p2": 1}}}],
+  "expect": {"builder": 5, "painter": 3, "counter": 5, "chronicler": 5, "keeper": 3},
+  "pending": [{"character": "painter", "amount": null, "condition": "dark theme wins", "ref": "B51"}]
+}
