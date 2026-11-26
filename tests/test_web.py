@@ -406,7 +406,7 @@ class WebTest(WebBase):
 
     def fill_merge(self):
         """A merge queue of every kind (made up): two merged ones (the second with the plugin's lines), one riding (merged,
-        its deploy on the way), one stopped at CI, one waiting; one dropped."""
+        its deploy on the way), one stopped at CI, one waiting; one dropped before its merge, one dropped after it."""
         from depot2 import merge
         q = merge.MergeQueue(self.t.state)
 
@@ -426,6 +426,8 @@ class WebTest(WebBase):
             merged={"sha": "d" * 40, "ts": NOW})
         put(405, "stopped", stop={"step": "ci", "ts": NOW, "reason": "CI failed: test_dates"}, st="st-0002")
         put(406, "waiting", word="406: «yes», as said")
+        put(407, "dropped", merged={"sha": "e" * 40, "ts": NOW},
+            dropped={"reason": "its deploy rides with the next", "ts": NOW})  # merged, then dropped
         q.save("test", "mq-0001")
 
     def test_the_merge_queue_tab_is_its_json_commands(self):
@@ -448,8 +450,13 @@ class WebTest(WebBase):
         self.assertEqual(j["entries"][2]["word"], "406: «yes», as said")  # verbatim
         _, rep = self.web.json("/api/merge/report?last=10")
         self.assertEqual([e["pr"] for e in rep], [401, 402, 404])  # merged, in the queue's order (404 rides on: its deploy)
+        # (407, merged and then dropped, is not among them, as in `merge report`)
         self.assertEqual(rep[1]["usage"]["lines"], ["release notes: 3 lines", "  index size  12.4 MB  "])  # as the hook wrote them
         self.assertEqual([e["pr"] for e in self.web.json("/api/merge/report")[1]], [404])  # one, as the command
+        rc, md, err = self.team("merge", "report", "--last", "10")  # the Markdown report: the same merges
+        self.assertEqual(rc, 0, err)
+        self.assertEqual(re.findall(r"^#(\d+) PR \d+ — смерджен", md, re.M), ["401", "402", "404"])
+        self.assertNotIn("#407", md)
         _, m = self.web.json("/api/meta")
         mm = m["merge"]
         self.assertEqual(mm["steps"], ["sync", "ci", "merge", "deploy", "smoke", "usage"])

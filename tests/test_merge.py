@@ -543,6 +543,40 @@ class RideTest(MergeBase):
         self.assertEqual([c[2] for c in self.gh_calls("pr", "merge")], ["302"])
         self.assertEqual(self.entry(301)["status"], "dropped")
 
+    def test_a_pr_dropped_after_its_merge_is_in_no_view_of_the_merges(self):
+        """Merged, its deploy failed, resumed, then dropped: `merge report`, its --json and the last merge show it alike
+        while it is watched and leave it out alike once it is dropped."""
+        self.pr(301, "feat-a", {"a.txt": "A\n"}, title="Первый")
+        self.pr(302, "feat-b", {"b.txt": "B\n"}, title="Второй")
+        self.ci(main=["failure", "success"])
+        self.team("merge", "add", "301", "--word", "мердж 301")
+        self.team("merge", "add", "302", "--word", "мердж 302")
+        rc, out, err = self.team("merge", "run")
+        self.assertEqual(rc, 1, out + err)
+        e = self.entry(301)
+        self.assertEqual((e["status"], e["stop"]["step"], bool(e["merged"]["sha"])), ("stopped", "deploy", True))
+        self.assertIn("#301 Первый — смерджен", self.team("merge", "report")[1])  # merged and stopped: still a merge
+        self.assertEqual(self.team("merge", "resume", "--reason", "try the deploy again")[0], 0)
+        self.assertEqual((self.entry(301)["status"], self.entry(301)["step"]), ("waiting", "deploy"))
+        md = self.team("merge", "report")[1]  # waits again for its deploy: still a merge, in every view
+        self.assertIn("#301 Первый — смерджен", md)
+        self.assertIn("сейчас: ждёт (с шага", md)
+        self.assertEqual([x["pr"] for x in json.loads(self.team("merge", "report", "--json")[1])], [301])
+        rc, out, err = self.team("merge", "drop", "301", "--reason", "the deploy rides with the next merge")
+        self.assertEqual(rc, 0, err)
+        self.assertIn("note: #301 is merged already", out)
+        rc, out, err = self.team("merge", "run")
+        self.assertEqual(rc, 0, out + err)
+        self.assertEqual([self.entry(n)["status"] for n in (301, 302)], ["dropped", "merged"])
+        self.assertTrue(self.entry(301)["merged"]["sha"])  # merged, then dropped
+        md = self.team("merge", "report", "--last", "5")[1]
+        self.assertIn("#302 Второй — смерджен", md)
+        self.assertNotIn("#301", md)
+        js = json.loads(self.team("merge", "report", "--last", "5", "--json")[1])
+        self.assertEqual([x["pr"] for x in js], [302])
+        self.assertEqual([x["pr"] for x in merge.report_json(self.t.state, last=5)], [302])  # what the web tab reads
+        self.assertEqual(json.loads(self.team("merge", "--json")[1])["last_merged"]["pr"], 302)
+
     def test_github_not_starting_a_job_is_a_wait_with_a_rerun(self):
         self.pr(301, "feat-a", {"a.txt": "A\n"})
         self.ci(feat_a=["never_started!", "success"], main=["stuck", "success"])

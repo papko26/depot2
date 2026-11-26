@@ -304,7 +304,8 @@ Every `--json` output is a stable format; the web view reads nothing else:
 `board --json` (the columns, their cars and limits), `tracks --json`, `track ID --json`, `trains --json [next]`,
 `stack --json`, `merge --json`, `agents --json`, `wishes|think|todo --json`, `principles --json`,
 `decisions --json`, `queues --json`. Each is one JSON object; new fields may be added, existing ones keep their
-meaning. `merge report --json [--last N]` (the merge queue's tab reads it too) is a list: the last merges' entries.
+meaning. `merge report --json [--last N]` (the merge queue's tab reads it too) is a list: the last merges' entries,
+the same ones `merge report` shows (a PR dropped from the queue after its merge is not among them).
 
 ## Languages
 

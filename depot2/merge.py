@@ -2212,9 +2212,16 @@ def md(state, cfg, all_=False, now=None, heading=True):
     return "\n".join(L) + "\n"
 
 
+def merges(q):
+    """The one rule for what the views call the merges: `merge report`, `merge report --json` (the web view's merge
+    tab) and the last merge of `merge`, `merge --json` and `queues`. The entries the queue merged, in its order, the
+    newest last; one dropped after its merge is not among them (the drop stops watching it), one that waits again for
+    its deploy after `merge resume` is."""
+    return [e for e in q.entries() if e.get("merged") and e["status"] != "dropped"]
+
+
 def last_merged(q):
-    done = [(e["merged"].get("ts") or "", i, e) for i, e in enumerate(q.entries())
-            if e.get("merged") and e["status"] != "dropped"]
+    done = [(e["merged"].get("ts") or "", i, e) for i, e in enumerate(merges(q))]
     return max(done, key=lambda x: x[:2])[2] if done else None
 
 
@@ -2270,10 +2277,9 @@ def to_json(state, all_=False):
 
 
 def report_json(state, last=1):
-    """`merge report --json` and the web view's merge tab: the entries of the last `last` merges as the queue keeps
-    them (in its order, the newest last), with their deploy, smoke and the plugins' after_merge lines."""
-    q = MergeQueue(state)
-    return [e for e in q.entries() if e.get("merged")][-max(1, int(last)):]
+    """`merge report --json` and the web view's merge tab: the entries of the last `last` merges (`merges`, the ones
+    `merge report` shows) as the queue keeps them, with their deploy, smoke and the plugins' after_merge lines."""
+    return merges(MergeQueue(state))[-max(1, int(last)):]
 
 
 def counts(state):
@@ -2329,7 +2335,7 @@ def report_entry(e):
 
 def report(state, cfg, last=1, now=None):
     q = MergeQueue(state)
-    done = [e for e in q.entries() if e.get("merged") and e["status"] in ("merged", "riding", "stopped", "github")]
+    done = merges(q)
     L = [i18n.t("merge.report_heading", at=stamp()[:16].replace("T", " ")), ""]
     for e in done[-max(1, int(last)):]:
         L += report_entry(e)
