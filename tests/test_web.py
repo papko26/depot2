@@ -132,18 +132,19 @@ class WebTest(WebBase):
         self.assertIn("<title>depot2</title>", html)
         self.assertIn('data-tab="principles"', html)
         self.assertIn('id="view-principles"', html)
-        for tab in ("tracks", "trains", "board", "agents", "principles", "queues"):
+        for tab in ("tracks", "trains", "board", "merge", "agents", "principles", "queues"):
             self.assertIn('data-tab="%s"' % tab, html)
             self.assertIn('id="view-%s"' % tab, html)
         self.assertIn('data-tab="board" aria-selected="false" data-t="tab.board">Board</button>\n    <button type="button" role="tab" '
-                      'data-tab="agents" aria-selected="false" data-t="tab.agents">Agents</button>', html)
+                      'data-tab="merge" aria-selected="false" data-t="tab.merge">Merge queue</button>\n    <button type="button" '
+                      'role="tab" data-tab="agents" aria-selected="false" data-t="tab.agents">Agents</button>', html)
         for part in ('"/api/agents?all=1"', 'data-go="agents"', "function renderAgents()", "function renderBusy(sl)"):
             self.assertIn(part, html)
         self.assertIn('data-tab="principles" aria-selected="false" data-t="tab.principles">', html)
         self.assertIn('data-tab="queues" aria-selected="false" data-t="tab.queues">', html)
         msgs = page_messages(html)  # the static texts filled from the catalog at load
-        self.assertEqual((msgs["tab.board"], msgs["tab.agents"], msgs["tab.principles"], msgs["tab.queues"]),
-                         ("Доска", "Агенты", "Решения и принципы", "Очереди"))
+        self.assertEqual((msgs["tab.board"], msgs["tab.merge"], msgs["tab.agents"], msgs["tab.principles"], msgs["tab.queues"]),
+                         ("Доска", "Мердж-очередь", "Агенты", "Решения и принципы", "Очереди"))
         for part in ('id="pc-list"', 'id="dec-list"', '"/api/decisions"', '"/api/queue/"', 'data-side="dec"'):
             self.assertIn(part, html)
         self.assertNotIn('id="dec-q"', html)
@@ -203,7 +204,7 @@ class WebTest(WebBase):
                      docs_base=self.scratch)
         try:
             for p in ["/", "/api/meta", "/api/board", "/api/board?all=1", "/api/trains", "/api/tracks", "/api/stack",
-                      "/api/merge", "/api/car/st-0001", "/api/car/tr-0001%3A1", "/api/principles", "/api/decisions",
+                      "/api/merge", "/api/merge/report", "/api/car/st-0001", "/api/car/tr-0001%3A1", "/api/principles", "/api/decisions",
                       "/api/agents?all=1"] + ["/api/queue/%s%s" % (n, a) for n, _, _ in webui.QUEUES for a in ("", "?all=1")]:
                 code, _, body = web.get(p)
                 self.assertEqual(code, 200, (p, body[:300]))
@@ -403,11 +404,77 @@ class WebTest(WebBase):
         self.assertEqual(next(q for q in meta["queues"] if q["name"] == "ballots")["labels"]["kind"]["discuss"],
                          "обсуждение с командой")
 
+    def fill_merge(self):
+        """A merge queue of every kind (made up): two merged ones (the second with the plugin's lines), one riding (merged,
+        its deploy on the way), one stopped at CI, one waiting; one dropped."""
+        from depot2 import merge
+        q = merge.MergeQueue(self.t.state)
+
+        def put(n, status, **kw):
+            e = dict({"id": q.new_id(), "pr": n, "title": "PR %d" % n, "branch": "feat-%d" % n, "worktree": "/nowhere",
+                      "st": None, "car": None, "status": status, "word": "%d — merge it" % n, "added": NOW, "step": None,
+                      "log": ["2015-11-12T11:00:00 added"]}, **kw)
+            q.data["entries"].append(e)
+            return e
+        put(401, "merged", merged={"sha": "a" * 40, "ts": "2015-11-12T10:00:00+02:00"},
+            deploy={"run": 7, "conclusion": "success", "deploy_job": "success", "site": "200"},
+            smoke={"ok": True, "summary": "checks 3/3 ok"})
+        put(402, "merged", merged={"sha": "b" * 40, "ts": "2015-11-12T11:00:00+02:00"}, smoke={"ok": None, "summary": "off"},
+            usage={"lines": ["release notes: 3 lines", "  index size  12.4 MB  "], "plugins": [], "ts": NOW})
+        put(403, "dropped", dropped={"reason": "not needed", "ts": NOW})
+        put(404, "riding", step="deploy", step_since=NOW, head="c" * 40, car="tr-0001:0",
+            merged={"sha": "d" * 40, "ts": NOW})
+        put(405, "stopped", stop={"step": "ci", "ts": NOW, "reason": "CI failed: test_dates"}, st="st-0002")
+        put(406, "waiting", word="406: «yes», as said")
+        q.save("test", "mq-0001")
+
+    def test_the_merge_queue_tab_is_its_json_commands(self):
+        """The tab's data: `merge --json` (the open entries in their order, the runner, the last merge) and `merge report
+        --json --last N` (the last merges with the project's after_merge lines, as written); its words in /api/meta."""
+        self.fill_merge()
+        for path, argv in (("/api/merge", ["merge", "--json"]), ("/api/merge/report", ["merge", "report", "--json"]),
+                           ("/api/merge/report?last=10", ["merge", "report", "--last", "10", "--json"]),
+                           ("/api/merge/report?last=2", ["merge", "report", "--last", "2", "--json"])):
+            code, got = self.web.json(path)
+            self.assertEqual(code, 200, (path, got))
+            rc, out, err = self.team(*argv)
+            self.assertEqual(rc, 0, err)
+            self.assertEqual(got, json.loads(out), path)
+        _, j = self.web.json("/api/merge")
+        self.assertEqual([(e["pr"], e["status"], e["status_ru"]) for e in j["entries"]],
+                         [(404, "riding", "едет"), (405, "stopped", "остановлен"), (406, "waiting", "ждёт")])
+        self.assertEqual((j["runner_pid"], j["runner_idle"]), (None, {"open": 3, "stopped": 405}))
+        self.assertEqual((j["last_merged"]["pr"], j["last_merged"]["ts"]), (404, NOW))  # the newest merge, its time
+        self.assertEqual(j["entries"][2]["word"], "406: «yes», as said")  # verbatim
+        _, rep = self.web.json("/api/merge/report?last=10")
+        self.assertEqual([e["pr"] for e in rep], [401, 402, 404])  # merged, in the queue's order (404 rides on: its deploy)
+        self.assertEqual(rep[1]["usage"]["lines"], ["release notes: 3 lines", "  index size  12.4 MB  "])  # as the hook wrote them
+        self.assertEqual([e["pr"] for e in self.web.json("/api/merge/report")[1]], [404])  # one, as the command
+        _, m = self.web.json("/api/meta")
+        mm = m["merge"]
+        self.assertEqual(mm["steps"], ["sync", "ci", "merge", "deploy", "smoke", "usage"])
+        self.assertEqual((mm["step_ru"]["ci"], mm["status_ru"]["stopped"], mm["smoke_ru"]["skipped"]),
+                         ("CI на голове", "остановлен", "пропущен"))
+        self.assertTrue(mm["means"].startswith("PR по слову владельца"))
+        html = self.web.get("/")[2].decode("utf-8")
+        for part in ('id="view-merge"', '"/api/merge/report?last=" + MERGES_SHOWN', "const MERGES_SHOWN = 10;", "function renderMerge()",
+                     'T("mq.todo", { pr: esc(e.pr) })', 'if (j.runner_pid) return T("mq.runner_rides");', 'lines.map((x) => "<li>" + hl(x)',
+                     'data-go="merge" data-mq="', 'if (go.dataset.mq) showEntry(go.dataset.mq);', '.mcard[data-ref]',
+                     'if (it.merge && !mqRef.has(it.merge)) mqRef.set(it.merge, it.ref);', '(x.h || esc(x.t))'):
+            self.assertIn(part, html)
+        self.assertNotIn("runner_pid +", html)  # the runner's pid is never shown, only whether it rides
+        msgs = page_messages(html)
+        self.assertIn("<code>depot2 merge resume {pr}</code>", msgs["mq.todo"])
+        self.assertIn("<code>depot2 merge drop {pr} --reason …</code>", msgs["mq.todo"])
+        self.assertNotIn("{pid}", msgs["mq.runner_rides"] + msgs["mq.runner_idle"] + msgs["mq.runner_empty"])
+        self.assertEqual(msgs["tab.merge"], "Мердж-очередь")
+
     def test_not_found_and_only_get(self):
         for path in ("/api/car/st-0999", "/api/car/tr-0001:9", "/api/car/zz", "/api/car/..%2F..%2Fetc", "/api/train/tr-0009",
                      "/api/train/x", "/api/train/Search", "/api/track/tr-0009", "/api/track/search", "/api/nope", "/nope",
                      "/api/board?view=zz", "/api/queue/nope", "/api/queue/..%2Fstack", "/api/queue/stack", "/api/queue",
-                     "/api/queue/trains", "/api/decisions?limit=x", "/api/decisions?limit=-1"):
+                     "/api/queue/trains", "/api/decisions?limit=x", "/api/decisions?limit=-1", "/api/merge/report?last=0",
+                     "/api/merge/report?last=x", "/api/merge/report?last=-2", "/api/merge/nope", "/api/merge/report/1"):
             code, j = self.web.json(path)
             self.assertEqual(code, 404, path)
             self.assertIn("error", j)
@@ -459,6 +526,7 @@ class WebTest(WebBase):
 
     def test_nothing_written_nothing_run(self):
         self.fill_queues()
+        self.fill_merge()
         before = tree_hash(self.t.dir)
         runs = []
 
@@ -466,7 +534,8 @@ class WebTest(WebBase):
             runs.append(a)
             raise AssertionError("a handler ran a command: %r" % (a,))
         paths = ["/", "/api/meta", "/api/board", "/api/board?all=1", "/api/board?view=stack", "/api/trains",
-                 "/api/train/search", "/api/tracks", "/api/track/tr-0001", "/api/stack", "/api/merge", "/api/car/st-0001", "/api/car/tr-0001%3A1",
+                 "/api/train/search", "/api/tracks", "/api/track/tr-0001", "/api/stack", "/api/merge", "/api/merge/report",
+                 "/api/merge/report?last=5", "/api/car/st-0001", "/api/car/tr-0001%3A1",
                  "/api/car/wl-0001", "/api/brief/st-0001", "/api/doc?path=design/sketch.md", "/api/decisions",
                  "/api/decisions?q=x&limit=1", "/api/agents", "/api/agents?all=1"] + ["/api/queue/%s%s" % (n, a) for n, _, _ in webui.QUEUES for a in ("", "?all=1")]
         with mock.patch.object(subprocess, "Popen", no_popen), mock.patch.object(os, "system", no_popen):

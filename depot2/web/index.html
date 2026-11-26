@@ -76,6 +76,7 @@ body.with-panel main { margin-right: var(--panel-w); }
 
 .summary { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 0 0 12px; color: var(--muted); }
 .summary b { color: var(--ink); font-weight: 600; }
+.summary b.w { color: var(--warn); } .summary b.g { color: var(--ok); }  /* a word marked in the line: riding, not riding */
 .summary > span { min-width: 0; overflow-wrap: anywhere; }  /* a long path (the principles' file) wraps on a phone */
 
 /* the tracks and the trains */
@@ -256,6 +257,35 @@ ol.acts { margin: 0; padding-left: 22px; font-size: 13px; } ol.acts li { overflo
 .prio.high { color: var(--warn); font-weight: 600; } .prio.later { opacity: 0.75; }
 .qclosed { margin-top: 8px; } .qclosed > summary { cursor: pointer; color: var(--muted); font-size: 13px; }
 
+/* the merge queue: its open entries in their order, beside them the last merges */
+.mq { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; max-width: 1600px; }
+.mq-col { min-width: 0; background: var(--card); border: 1px solid var(--line); border-top: 4px solid var(--st-queued); border-radius: 8px; padding: 8px; }
+.mq-col.done { border-top-color: var(--st-rolling); }
+.mq-col h3 { margin: 0; font-size: 15px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.mq-col h3 .cnt { font-variant-numeric: tabular-nums; color: var(--muted); font-weight: 400; }
+.mq-col .means { margin: 2px 0 4px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.mcard { border: 1px solid var(--line); border-left: 3px solid var(--mc, var(--line)); border-radius: 6px; padding: 6px 8px; margin-top: 6px; background: var(--card); }
+.mcard.m-waiting { --mc: var(--link); } .mcard.m-riding { --mc: var(--ok); } .mcard.m-github { --mc: var(--st-sketch); }
+.mcard.m-stopped { --mc: var(--warn); } .mcard.m-done { --mc: var(--st-rolling); } .mcard.m-done.m-stopped { --mc: var(--warn); }
+.mcard[data-ref] { cursor: pointer; } .mcard[data-ref]:hover { background: var(--soft); }
+.mcard.sel { box-shadow: 0 0 0 2px var(--focus); } .mcard.flash { box-shadow: 0 0 0 2px var(--focus); }
+.mcard .mh { display: flex; flex-wrap: wrap; gap: 2px 8px; align-items: baseline; font-size: 12px; color: var(--muted); }
+.mcard .mh .tid { font-size: 12.5px; color: var(--ink); }
+.mcard .mpos { min-width: 1.4em; font-weight: 700; font-size: 14px; color: var(--ink); font-variant-numeric: tabular-nums; }
+.mcard .mst { font-weight: 600; color: var(--mc, var(--muted)); }
+.mcard .stg { color: var(--c); font-weight: 600; }
+.mcard .t { font-weight: 500; overflow-wrap: anywhere; }
+.mcard .m { font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.mcard .mstate { font-size: 13px; overflow-wrap: anywhere; }
+.mcard .mstate.w { color: var(--warn); } .mcard .mstate.g { color: var(--ok); }
+.mcard .mdo { font-size: 12.5px; overflow-wrap: anywhere; }
+.mcard .mword { font-size: 12.5px; overflow-wrap: anywhere; white-space: pre-line; }
+.mcard .mafter { margin-top: 4px; padding-top: 4px; border-top: 1px dashed var(--line); font-size: 12.5px; }
+.mcard .mafter .k { color: var(--muted); }
+.mcard .mafter ul { margin: 2px 0; padding-left: 18px; }
+.mcard .mafter li { white-space: pre-wrap; overflow-wrap: anywhere; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+@media (max-width: 900px) { .mq { grid-template-columns: minmax(0, 1fr); } }
+
 /* the panel */
 .panel { position: fixed; top: var(--top-h, 0px); right: 0; bottom: 0; width: var(--panel-w); z-index: 10; background: var(--card);
   border-left: 1px solid var(--line); box-shadow: -8px 0 24px rgba(0, 0, 0, 0.18); display: flex; flex-direction: column; }
@@ -340,6 +370,7 @@ pre.raw { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--soft
     <button type="button" role="tab" data-tab="tracks" aria-selected="false" data-t="tab.tracks">Tracks</button>
     <button type="button" role="tab" data-tab="trains" aria-selected="true" data-t="tab.trains">Trains</button>
     <button type="button" role="tab" data-tab="board" aria-selected="false" data-t="tab.board">Board</button>
+    <button type="button" role="tab" data-tab="merge" aria-selected="false" data-t="tab.merge">Merge queue</button>
     <button type="button" role="tab" data-tab="agents" aria-selected="false" data-t="tab.agents">Agents</button>
     <button type="button" role="tab" data-tab="principles" aria-selected="false" data-t="tab.principles">Decisions and principles</button>
     <button type="button" role="tab" data-tab="queues" aria-selected="false" data-t="tab.queues">Queues</button>
@@ -359,6 +390,7 @@ pre.raw { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--soft
   <section id="view-tracks" aria-label="tracks" data-t-aria-label="aria.tracks" hidden></section>
   <section id="view-trains" aria-label="trains" data-t-aria-label="aria.trains"></section>
   <section id="view-board" aria-label="board" data-t-aria-label="aria.board" hidden></section>
+  <section id="view-merge" aria-label="merge queue" data-t-aria-label="aria.merge" hidden></section>
   <section id="view-agents" aria-label="agents" data-t-aria-label="aria.agents" hidden></section>
   <section id="view-principles" aria-label="decisions and principles" data-t-aria-label="aria.principles" hidden>
     <div class="dp-switch" role="group" aria-label="column" data-t-aria-label="aria.column">
@@ -416,8 +448,8 @@ const BOARD_SHOWN = 15;
 const ui = { tab: "trains", car: null, doc: null, all: false, open: {}, more: {}, doneOpen: null, side: "pc", q: "", flash: null,
   sort: "", findOpen: {}, scroll: {} };
 let meta = null, data = null, idx = null, busy = false, timer = null;
-const shown = { tracks: "", trains: "", board: "", agents: "", principles: "", dec: "", queues: "", panel: "", title: "", sort: "" };
-const TABS = ["tracks", "trains", "board", "agents", "principles", "queues"];
+const shown = { tracks: "", trains: "", board: "", merge: "", agents: "", principles: "", dec: "", queues: "", panel: "", title: "", sort: "" };
+const TABS = ["tracks", "trains", "board", "merge", "agents", "principles", "queues"];
 const DEC_SHOWN = 40, QUEUE_SHOWN = 20;
 let pageStamp = null;  // the code the page came with: another one in /api/meta → the page reloads itself
 let panelCache = { ref: null, car: null, brief: null, briefErr: null, doc: null, docErr: null };
@@ -447,11 +479,12 @@ async function refresh() {
       pageStamp = meta.code.stamp;
     }
     const defs = meta.queues || [], decQ = ui.q;
-    const [board, tracks, trains, merge, principles, decisions, agents, ...qs] = await Promise.all([
+    const [board, tracks, trains, merge, merges, principles, decisions, agents, ...qs] = await Promise.all([
       get("/api/board" + (ui.all ? "?all=1" : "")), get("/api/tracks"), get("/api/trains"), get("/api/merge"),
+      get("/api/merge/report?last=" + MERGES_SHOWN),
       get("/api/principles" + (ui.all ? "?all=1" : "")), get(decUrl(decQ)), get("/api/agents?all=1"),
       ...defs.map((d) => get("/api/queue/" + enc(d.name) + (ui.all ? "?all=1" : "")))]);
-    data = { board, tracks, trains, merge, principles, decisions, agents, queues: Object.fromEntries(defs.map((d, i) => [d.name, qs[i]])) };
+    data = { board, tracks, trains, merge, merges, principles, decisions, agents, queues: Object.fromEntries(defs.map((d, i) => [d.name, qs[i]])) };
     index();
     render();
     if (decQ !== ui.q) loadDecisions();  // typed into the search meanwhile
@@ -558,11 +591,12 @@ function hideTip() {
 
 // --- the indexes the views join on -----------------------------------------------------------------------
 function index() {
-  const items = new Map(), byObj = new Map();
+  const items = new Map(), byObj = new Map(), mqRef = new Map();
   for (const col of data.board.columns) {
     for (const it of col.items) {
       items.set(it.ref, it);
       if (it.object) byObj.set(it.object, it);
+      if (it.merge && !mqRef.has(it.merge)) mqRef.set(it.merge, it.ref);
     }
   }
   const open = data.merge.entries || [];
@@ -586,7 +620,7 @@ function index() {
     if (a.slot && a.slot.object) liveByObj.set(a.slot.object, a);
   }
   idx = {
-    items, byObj, merge, nx, trainOf, agent, liveByObj, liveByCar,
+    items, byObj, merge, mqRef, nx, trainOf, agent, liveByObj, liveByCar,
     picks: new Set((nx.picks || []).map((p) => p.car)),
     ownerWord: new Map((nx.owner_word || []).map((w) => [w.id, w])),
     stage: new Map((meta.stages || []).map((s) => [s.stage, s])),
@@ -603,7 +637,7 @@ const ru = (s) => (idx && idx.stage.get(s) ? idx.stage.get(s).ru : s || "—");
 const SORTS = [["own", T("sort.own")], ["match", T("sort.match")], ["prio", T("sort.prio")], ["new", T("sort.new")],
   ["old", T("sort.old")], ["stage", T("sort.stage")], ["group", T("sort.group")]];
 const TAB_SORTS = { tracks: ["match", "prio", "new", "old", "stage", "group"], trains: ["match", "prio", "new", "old", "stage", "group"],
-  board: ["match", "prio", "new", "old", "group"], agents: ["match", "prio", "new", "old", "group"], principles: ["match", "new", "old"],
+  board: ["match", "prio", "new", "old", "group"], merge: ["match", "new", "old"], agents: ["match", "prio", "new", "old", "group"], principles: ["match", "new", "old"],
   queues: ["match", "prio", "new", "old", "stage"] };
 const STATE_ORDER = [...LIVE, "arrived", "scrapped"];
 const find = { on: false, res: [], re: null, whole: "", marking: false, n: {} };
@@ -742,9 +776,10 @@ function prLink(pr) {
   return repo ? '<a href="https://github.com/' + esc(repo) + "/pull/" + esc(pr) + '" target="_blank" rel="noopener noreferrer">PR ' + hl("#" + pr) + "</a>" : "PR " + hl("#" + pr);
 }
 function prName(pr) { return pr ? '<span class="nw">' + prLink(pr) + cp("#" + pr) + "</span>" : ""; }  // a PR's link and its icon (#NNN)
-function mergePlace(p) {
+function mergePlace(p) {  // a car's or a card's place in the merge queue: a link to its entry on the merge queue's tab
   if (!p) return "";
-  return T("merge.place", { pos: p.pos, total: p.total, id: esc(p.e.id), status: esc(p.e.status_ru || p.e.status) });
+  return '<a href="#merge" class="go" data-go="merge" data-mq="' + esc(p.e.id) + '">' +
+    T("merge.place", { pos: p.pos, total: p.total, id: esc(p.e.id), status: esc(p.e.status_ru || p.e.status) }) + "</a>";
 }
 const OPTIONAL = new Set(["project", "docs"]);
 function route(stage, hist, full) {
@@ -795,7 +830,7 @@ function waits(c, it) {
   else if (tn && tn.state === "design" && ["waiting", "ready"].includes(c.status)) out.push({ t: T("wait.train_in_design", { train: tn.name }) });
   if (!tn && ["waiting", "ready"].includes(c.status)) out.push({ t: T("wait.no_train") });
   const mp = idx.merge.get("car:" + ref) || (c.st && idx.merge.get("st:" + c.st)) || (it && it.merge && idx.merge.get("mq:" + it.merge));
-  if (mp) out.push({ t: mergePlace(mp) });
+  if (mp) out.push({ h: mergePlace(mp) });  // x.h: HTML made here (its texts escaped), x.t: a text
   if (it) out.push(...gateLines(it.gate));
   if (it && it.forced) out.push({ w: true, t: T("wait.forced") });
   const pm = marksLine(c.principles, c.status === "pr" || ["build", "docs", "acceptance"].includes(c.stage));
@@ -812,7 +847,7 @@ function marksDiv(p, always) {
 }
 function waitsHtml(list, cls) {
   if (!list.length) return "";
-  return '<div class="' + cls + '">' + list.map((x) => '<span class="' + (x.w ? "w" : x.g ? "g" : "") + '">' + esc(x.t) + "</span>").join(" · ") + "</div>";
+  return '<div class="' + cls + '">' + list.map((x) => '<span class="' + (x.w ? "w" : x.g ? "g" : "") + '">' + (x.h || esc(x.t)) + "</span>").join(" · ") + "</div>";
 }
 
 function carRow(c, other, h) {
@@ -1178,14 +1213,125 @@ function renderAgents() {
     '<p class="note muted">' + T("agents.legend", { silent: esc(j.silent_min != null ? j.silent_min : 20) }) + "</p>";
 }
 
+// --- the merge queue ---------------------------------------------------------------------------------------------
+// `merge --json` (the open entries, the runner, the last merge) and `merge report --json --last 10` (the last merges, each
+// with its deploy, smoke and the lines the project's after_merge hook wrote, shown as they are). Only shown: what
+// starts, resumes or drops an entry is a command, written here as text.
+const MERGES_SHOWN = 10;
+const mqMeta = () => (meta && meta.merge) || {};
+const stepName = (s) => (mqMeta().step_ru || {})[s] || s || "?";
+const statusName = (s) => (mqMeta().status_ru || {})[s] || s || "";
+const clock = (iso) => (iso ? when(iso).slice(11) : "--:--");
+const shaName = (sha) => (sha ? '<span class="nw"><code>' + hl(String(sha).slice(0, 7)) + "</code>" + cp(sha) + "</span>" : "?");
+function mqState(e) {  // {cls, h, todo}: what the entry does now (its step, since when), for a stopped one what to do
+  const s = e.status;
+  if (s === "riding") {
+    const steps = mqMeta().steps || [], k = steps.indexOf(e.step);
+    const h = T("mq.riding", { step: esc(stepName(e.step)), k: k < 0 ? "?" : k + 1, n: steps.length, since: esc(clock(e.step_since)), age: esc(age(e.step_since)) });
+    const sha = e.merged && e.merged.sha ? T("mq.merged_sha", { sha: shaName(e.merged.sha) }) : e.head ? T("mq.head", { sha: shaName(e.head) }) : "";
+    return { cls: "g", h: h + (sha ? " · " + sha : "") };
+  }
+  if (s === "github") {
+    const g = e.github || {};
+    return { cls: "w", h: T("mq.github", { step: esc(stepName(e.step)), reason: hl(g.reason || "—"), since: esc(clock(g.since)), age: esc(age(g.since)),
+      reruns: esc(g.reruns || 0) }) + (g.githubstatus ? " · githubstatus: " + hl(g.githubstatus) : "") };
+  }
+  if (s === "stopped") {
+    const st = e.stop || {};
+    return { cls: "w", h: T("mq.stopped", { step: esc(stepName(st.step)), at: esc(when(st.ts)), ago: esc(T("time.ago", { age: age(st.ts) })), reason: hl(st.reason || "—") }),
+      todo: T("mq.todo", { pr: esc(e.pr) }) };
+  }
+  const t = e.trial ? " · " + T("mq.trial", { status: hl(e.trial.status || "?") }) + (e.trial.branch ? " " + named(e.trial.branch) : "") : "";
+  return { cls: "", h: (e.step ? T("mq.waiting_from", { step: esc(stepName(e.step)) }) : T("mq.waiting")) + t };
+}
+const logText = (e) => (e.log || []).join(" · ");
+function mqFields(e) {
+  return [[e.id, 40, 1], [e.st, 40, 1], [e.car, 40, 1], [e.pr ? "#" + e.pr : "", 30, 1], [e.title, 20, 1], [e.branch, 10, 1], [e.word, 10, 1],
+    [(e.stop || {}).reason, 10, 1], [(e.github || {}).reason, 10, 1], [logText(e), 5, 0, T("mq.in_log")]];
+}
+function mqCard(v) {
+  const e = v.x, st = mqState(e), ref = idx.mqRef.get(e.id) || null;
+  const m = [e.branch ? T("mq.branch", { branch: named(e.branch) }) : "", e.st ? T("mq.object", { ref: named(e.st) }) : "",
+    e.car ? T("mq.car", { ref: named(e.car) }) : "", e.stage ? '<span class="stg s-' + esc(e.stage) + '">' + esc(ru(e.stage)) + "</span>" : ""].filter(Boolean);
+  return '<article class="mcard m-' + esc(e.status) + (ref && ui.car === ref ? " sel" : "") + (ui.flash === e.id ? " flash" : "") + '" data-mq="' + esc(e.id) + '"' +
+    (ref ? ' data-ref="' + esc(ref) + '" tabindex="0" role="button"' : "") + ">" +
+    '<div class="mh"><span class="mpos" title="' + esc(T("mq.place_title")) + '">' + v.pos + '</span><span class="tid">' + named(e.id) + "</span>" + prName(e.pr) +
+    '<span class="mst">' + esc(e.status_ru || e.status) + "</span><span>" + T("mq.added", { at: esc(when(e.added)) }) + "</span></div>" +
+    '<div class="t">' + hl(e.title || "—") + "</div>" + (m.length ? '<div class="m">' + m.join(" · ") + "</div>" : "") +
+    '<div class="mstate ' + st.cls + '">' + st.h + "</div>" + (st.todo ? '<div class="mdo">' + st.todo + "</div>" : "") +
+    (e.word ? '<div class="mword">' + T("mq.word", { word: hl(e.word) }) + "</div>" : "") + (v.h ? v.h.note : "") + "</article>";
+}
+function mdFields(e) {
+  const m = e.merged || {}, u = e.usage || {};
+  return [[e.id, 40, 1], [e.car, 40, 0, T("panel.car")], [e.pr ? "#" + e.pr : "", 30, 1], [m.sha, 30, 1], [e.title, 20, 1], [e.word, 10, 1],
+    [(u.lines || []).join(" · "), 10, 1], [e.branch, 10, 0, T("find.in_branch")], [logText(e), 5, 0, T("mq.in_log")]];
+}
+function smokeWord(ok) { return (mqMeta().smoke_ru || {})[ok === true ? "ok" : ok === null || ok === undefined ? "skipped" : "bad"] || ""; }
+function mdCard(v) {  // one merge of the report: its commit, the owner's word, the deploy and smoke, the project's lines as they are
+  const e = v.x, m = e.merged || {}, d = e.deploy, sm = e.smoke, u = e.usage || {}, ref = e.car || null, w = e.wt;
+  const L = [];
+  if (d) L.push(T("mq.deploy", { conclusion: hl(d.conclusion), job: hl(d.deploy_job), site: hl(d.site) }));
+  if (sm) L.push(T("mq.smoke", { verdict: esc(smokeWord(sm.ok)), summary: sm.summary ? " — " + hl(sm.summary) : "" }));
+  if (e.handoff) L.push(T("mq.handoff", { reason: hl(e.handoff.reason || "") }));
+  if (w) L.push(w.removed ? T("merge.wt_removed", { mb: (Number(w.freed || 0) / 1048576).toFixed(1) }) : T("merge.wt_kept") + ": " + hl(w.reason || ""));
+  const lines = (u.lines || []).map(String);
+  return '<article class="mcard m-done' + (e.status !== "merged" ? " m-" + esc(e.status) : "") + (ref && ui.car === ref ? " sel" : "") + '" data-mq="' + esc(e.id) + '"' +
+    (ref ? ' data-ref="' + esc(ref) + '" tabindex="0" role="button"' : "") + ">" +
+    '<div class="mh"><span class="tid">' + prName(e.pr) + "</span><span>" + named(e.id) + "</span><span>" + T("mq.merged_at", { sha: shaName(m.sha), at: esc(when(m.ts)) }) + "</span>" +
+    (e.status !== "merged" ? '<span class="mst">' + T("mq.now", { state: esc(statusName(e.status)) }) + "</span>" : "") + "</div>" +
+    '<div class="t">' + hl(e.title || "—") + "</div>" + (e.car || e.st ? '<div class="m">' + [e.car ? T("mq.car", { ref: named(e.car) }) : "", e.st ? T("mq.object", { ref: named(e.st) }) : ""].filter(Boolean).join(" · ") + "</div>" : "") +
+    (e.word ? '<div class="mword">' + T("mq.word", { word: hl(e.word) }) + "</div>" : "") + (L.length ? '<div class="m">' + L.join(" · ") + "</div>" : "") +
+    (lines.length ? '<div class="mafter"><span class="k">' + T("mq.after_h") + "</span><ul>" + lines.map((x) => "<li>" + hl(x) + "</li>").join("") + "</ul></div>" : "") +
+    (u.error ? '<div class="mafter w">' + T("mq.after_error", { error: hl(u.error) }) + "</div>" : "") + (v.h ? v.h.note : "") + "</article>";
+}
+function mqRunner(j) {  // the runner rides or not (its pid is not shown), and what starts it again
+  if (j.runner_pid) return T("mq.runner_rides");
+  const r = j.runner_idle;
+  if (!r) return T("mq.runner_empty");
+  return T("mq.runner_idle", { n: esc(r.open) }) + (r.stopped ? ": " + T("merge.idle_stopped", { pr: esc(r.stopped) }) : " — <code>depot2 merge run --ensure</code>");
+}
+function renderMerge() {
+  const j = data.merge || {}, open = j.entries || [], sort = sortOf("merge");
+  const rows = open.map((e, i) => { const h = hit(mqFields(e)); return { x: e, pos: i + 1, h, s: h.s, d: tsOf(e.added) }; });
+  const queue = arrange(find.on ? rows.filter((r) => r.h.ok) : rows, sort);
+  const done = (Array.isArray(data.merges) ? data.merges : []).slice().reverse()  // the newest first
+    .map((e) => { const h = hit(mdFields(e)); return { x: e, h, s: h.s, d: tsOf((e.merged || {}).ts) }; });
+  const last = arrange(find.on ? done.filter((r) => r.h.ok) : done, sort);
+  find.n.merge = find.on ? queue.length + last.length : 0;
+  const by = {};
+  for (const e of open) by[e.status] = (by[e.status] || 0) + 1;
+  const states = ["riding", "github", "stopped", "waiting"].filter((s) => by[s]).map((s) => esc(statusName(s)) + " " + by[s]).join(", ");
+  const lm = j.last_merged;
+  const sum = ["<span>" + T("mq.count", { n: open.length, states: states ? " — " + states : "" }) + "</span>", "<span>" + mqRunner(j) + "</span>",
+    lm ? "<span>" + T("mq.last", { pr: prName(lm.pr), sha: shaName(lm.sha), at: esc(when(lm.ts)) }) + "</span>" : "", foundLine(find.n.merge)].join("");
+  const cnt = (n, total) => '<span class="cnt">' + (find.on ? T("common.n_of", { n, total }) : total) + "</span>";
+  return '<div class="summary">' + sum + "</div>" + '<div class="mq">' +
+    '<section class="mq-col" aria-label="' + esc(T("mq.queue_h")) + '"><h3>' + T("mq.queue_h") + " " + cnt(queue.length, open.length) + "</h3>" +
+    '<p class="means">' + inline(mqMeta().means || "") + "</p>" +
+    (queue.length ? queue.map(mqCard).join("") : '<p class="muted">' + (find.on ? T("common.not_found") : T("mq.empty")) + "</p>") + "</section>" +
+    '<section class="mq-col done" aria-label="' + esc(T("mq.done_h")) + '"><h3>' + T("mq.done_h") + " " + cnt(last.length, done.length) + "</h3>" +
+    '<p class="means"><code>depot2 merge report --last ' + MERGES_SHOWN + "</code></p>" +
+    (last.length ? last.map(mdCard).join("") : '<p class="muted">' + (find.on ? T("common.not_found") : T("mq.none_merged")) + "</p>") + "</section></div>";
+}
+async function showEntry(id) {  // an entry named elsewhere (a car's place in the queue): its card marked, in sight
+  const card = () => [...document.querySelectorAll("#view-merge .mcard[data-mq]")].find((el) => el.dataset.mq === id);
+  ui.flash = id;
+  if (data) render();
+  if (!card() && ui.q) { $("#q").value = ""; await applyFind(); ui.flash = id; render(); }  // the search hid it
+  const el = card();
+  if (el) el.scrollIntoView({ block: "nearest" });
+  else window.scrollTo(0, 0);
+}
+
 function render() {
   const was = find.marking;
   find.marking = true;  // the found words marked in the views, never in the panel
   try {
-    const kv = renderTracks(), tv = renderTrains(), bv = renderBoard(), av = renderAgents(), pv = renderPrinciples(), qv = renderQueues();
+    const kv = renderTracks(), tv = renderTrains(), bv = renderBoard(), mv = renderMerge(), av = renderAgents(), pv = renderPrinciples(), qv = renderQueues();
     if (kv !== shown.tracks) { paint($("#view-tracks"), kv); shown.tracks = kv; }
     if (tv !== shown.trains) { paint($("#view-trains"), tv); shown.trains = tv; }
     if (bv !== shown.board) { paint($("#view-board"), bv); shown.board = bv; }
+    if (mv !== shown.merge) { paint($("#view-merge"), mv); shown.merge = mv; }
     if (av !== shown.agents) { paint($("#view-agents"), av); shown.agents = av; }
     if (pv !== shown.principles) { paint($("#pc-list"), pv); shown.principles = pv; }
     if (qv !== shown.queues) { paint($("#view-queues"), qv); shown.queues = qv; }
@@ -1193,8 +1339,8 @@ function render() {
   paintDecisions();
 }
 
-const CARDS = ".car[data-ref], .bcard[data-ref], .slot[data-ref], .bchip[data-ref], .arow[data-ref], .nchip[data-ref], .qcard[data-ref], .qcard[data-qx], .rlink[data-ref]";
-const COLUMN_CARDS = ".car[data-ref], .bcard[data-ref], .arow[data-ref], .qcard[data-ref], .qcard[data-qx]";  // the arrows walk these
+const CARDS = ".car[data-ref], .bcard[data-ref], .slot[data-ref], .bchip[data-ref], .arow[data-ref], .nchip[data-ref], .qcard[data-ref], .qcard[data-qx], .mcard[data-ref], .rlink[data-ref]";
+const COLUMN_CARDS = ".car[data-ref], .bcard[data-ref], .arow[data-ref], .qcard[data-ref], .qcard[data-qx], .mcard[data-ref]";  // the arrows walk these
 const HOLD_KEYS = ["data-qx", "data-ref", "data-more", "data-copy", "data-dec-link", "data-doc", "data-go"];
 function byKey(root, k) {  // the elements of `root` with that key, in order (no selector built from the value)
   const out = [];
@@ -1680,7 +1826,7 @@ function panelCar(j) {
   else {
     if (j.object && idx.ownerWord.has(j.object)) w.push({ w: true, t: T("wait.owner_word", { why: idx.ownerWord.get(j.object).why }) });
     const mp = (j.object && idx.merge.get("st:" + j.object)) || (j.pr && idx.merge.get("pr:" + j.pr));
-    if (mp) w.push({ t: mergePlace(mp) });
+    if (mp) w.push({ h: mergePlace(mp) });
   }
   if (j.gate && !tc) {
     if (j.gate.unmet && j.gate.unmet.length) w.push({ w: true, t: j.gate.name + ": " + j.gate.unmet.join("; ") });
@@ -1692,7 +1838,7 @@ function panelCar(j) {
   if (j.docs && j.docs.need) w.push({ w: ["ahead", "skipped"].includes(j.docs.state), g: ["now", "passed"].includes(j.docs.state),
     t: T("panel.docs", { need: j.docs.need, word: j.docs.word }) + (j.docs.state === "ahead" ? " — " + j.docs.cmd : "") });
   if (j.principles && !tc) { const pm = marksLine(j.principles, true); if (pm) w.push(pm); }
-  h += "<h4>" + T("panel.waits_h") + "</h4>" + (w.length ? '<ul class="waits">' + w.map((x) => '<li class="' + (x.w ? "w" : x.g ? "g" : "") + '">' + esc(x.t) + "</li>").join("") + "</ul>"
+  h += "<h4>" + T("panel.waits_h") + "</h4>" + (w.length ? '<ul class="waits">' + w.map((x) => '<li class="' + (x.w ? "w" : x.g ? "g" : "") + '">' + (x.h || esc(x.t)) + "</li>").join("") + "</ul>"
     : '<p class="muted">' + T("panel.waits_none") + "</p>");
 
   const r0 = carRec || obj || entry || {};
@@ -1909,6 +2055,7 @@ function showTab() {
   $("#view-tracks").hidden = ui.tab !== "tracks";
   $("#view-trains").hidden = ui.tab !== "trains";
   $("#view-board").hidden = ui.tab !== "board";
+  $("#view-merge").hidden = ui.tab !== "merge";
   $("#view-agents").hidden = ui.tab !== "agents";
   $("#view-principles").hidden = ui.tab !== "principles";
   $("#view-queues").hidden = ui.tab !== "queues";
@@ -1928,7 +2075,13 @@ document.addEventListener("click", (e) => {
   const op = e.target.closest("a[data-open]");
   if (op) { e.preventDefault(); openCar(op.dataset.open); return; }
   const go = e.target.closest("a[data-go]");
-  if (go) { e.preventDefault(); ui.tab = go.dataset.go; showTab(); writeHash(); window.scrollTo(0, 0); return; }
+  if (go) {
+    e.preventDefault();
+    if (go.dataset.mq && go.closest("#panel") && matchMedia("(max-width: 1599px)").matches) closePanel();  // the panel covers the page
+    ui.tab = go.dataset.go; showTab(); writeHash();
+    if (go.dataset.mq) showEntry(go.dataset.mq); else window.scrollTo(0, 0);
+    return;
+  }
   const rl = e.target.closest("#panel .rlink[data-ref]");
   if (rl) { e.preventDefault(); if (ui.car !== rl.dataset.ref) openCar(rl.dataset.ref); return; }
   if (e.target.closest("a")) return;

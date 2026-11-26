@@ -1324,8 +1324,7 @@ def cmd_merge(state, cfg, a):
         return 0
     if act == "report":
         if a.json:
-            q = merge.MergeQueue(state)
-            print(json.dumps([e for e in q.entries() if e.get("merged")][-max(1, a.last):], ensure_ascii=False, indent=1))
+            print(json.dumps(merge.report_json(state, last=a.last), ensure_ascii=False, indent=1))
         else:
             print(merge.report(state, cfg, last=a.last), end="")
         return 0
@@ -2029,8 +2028,8 @@ def build_parser():
     q.add_argument("--by", help=t("cli.help.agents_stop_by"))
     p.set_defaults(fn=cmd_agents, mutates=True)  # reading books a finished agent's spend on its car
 
-    p = sub.add_parser("web", help="depot2's web view, six tabs: tracks, trains, board, agents, decisions and "
-                                   "principles, queues; search, copy icons, a car's panel and brief; "
+    p = sub.add_parser("web", help="depot2's web view, seven tabs: tracks, trains, board, merge queue, agents, "
+                                   "decisions and principles, queues; search, copy icons, a car's panel and brief; "
                                    "127.0.0.1 only, no authorization, read only (Ctrl+C stops it)")
     p.add_argument("--port", type=int, default=8765, help="the port (default 8765; 0: any free one)")
     p.add_argument("--verbose", action="store_true", help="log every request to stderr")

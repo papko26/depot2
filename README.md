@@ -304,7 +304,7 @@ Every `--json` output is a stable format; the web view reads nothing else:
 `board --json` (the columns, their cars and limits), `tracks --json`, `track ID --json`, `trains --json [next]`,
 `stack --json`, `merge --json`, `agents --json`, `wishes|think|todo --json`, `principles --json`,
 `decisions --json`, `queues --json`. Each is one JSON object; new fields may be added, existing ones keep their
-meaning.
+meaning. `merge report --json [--last N]` (the merge queue's tab reads it too) is a list: the last merges' entries.
 
 ## Languages
 
@@ -426,7 +426,7 @@ depot2 agents start                # the gates (the role and the car's stage, th
 depot2 agents attach               # link it to its transcript: found by the agentId under agents.projects (the …
 depot2 agents show                 # one agent: its fields and its last actions
 depot2 agents stop                 # record its stop (the orchestrator stops the process): its spend so far on the car
-depot2 web                         # depot2's web view, six tabs: tracks, trains, board, agents, decisions and …
+depot2 web                         # depot2's web view, seven tabs: tracks, trains, board, merge queue, agents, …
 depot2 wishes                      # the owner's wishes not scheduled yet (wishes.json); no action: print it
 depot2 wishes add                  # a new open entry (its id never reused)
 depot2 wishes set                  # change an open entry's fields (--note, --link, --question, --where append)

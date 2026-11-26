@@ -139,6 +139,15 @@ def merge_queue(state, cfg):
     return merge.to_json(state)
 
 
+def merge_report(state, cfg, q):
+    """`merge report --json [--last N]`: the last merges (?last=N, 1 when not given, as the command)."""
+    from . import merge
+    last = (q.get("last") or [""])[-1].strip()
+    if last and not (last.isdigit() and int(last) >= 1):
+        raise NotFound(i18n.t("webui.bad_last", got=repr(last)))
+    return merge.report_json(state, last=int(last) if last else 1)
+
+
 def agents(state, cfg, q):
     from .agents import Agents
     return Agents(state, cfg).to_json(include_all=_flag(q, "all"))
@@ -198,6 +207,14 @@ def queue_meta():
             for n, title, c in QUEUES]
 
 
+def merge_meta():
+    """What the page needs to draw the merge queue's tab (/api/meta): what the queue is, its steps in their order and
+    the names of the steps, the statuses and the smoke's verdicts, as `merge --md` writes them."""
+    from . import merge
+    return {"means": merge.means(cap=True), "steps": list(merge.STEPS), "step_ru": plain(merge.STEP_RU),
+            "status_ru": plain(merge.STATUS_RU), "smoke_ru": plain(merge.SMOKE_RU)}
+
+
 def meta(state, cfg, code=None):
     from . import priority as pri
     from . import stages, tracks
@@ -207,6 +224,7 @@ def meta(state, cfg, code=None):
             "route": [s for s in stages.STAGES if s != "scrapped"],
             "moves": {s: list(m) for s, m in stages.MOVES.items()},
             "queues": queue_meta(),
+            "merge": merge_meta(),
             # a car's status words as tracks.py writes its cells: the page reads a cell that starts with `waiting`
             # as a car with blockers, one that is `ready` alone as a car a free slot could take
             "car_status": plain(tracks.CAR_RU),
@@ -584,6 +602,8 @@ class Server(http.server.ThreadingHTTPServer):
             return lambda c: self.brief(c, rest)
         if rest and head == "queue":
             return lambda c: queue(st, c, rest, q)
+        if rest == "report" and head == "merge":
+            return lambda c: merge_report(st, c, q)
         return None
 
     def answer(self, name, q):

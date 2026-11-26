@@ -2265,7 +2265,15 @@ def to_json(state, all_=False):
             "runner_idle": None if r["pid"] or not r["open"] else {
                 "open": r["open"], "stopped": r["stopped"]["pr"] if r["stopped"] else None},
             "last_merged": {"id": last["id"], "pr": last["pr"], "sha": (last.get("merged") or {}).get("sha"),
-                            "branch": last.get("branch"), "wt": last.get("wt")} if last else None}
+                            "ts": (last.get("merged") or {}).get("ts"), "branch": last.get("branch"),
+                            "wt": last.get("wt")} if last else None}
+
+
+def report_json(state, last=1):
+    """`merge report --json` and the web view's merge tab: the entries of the last `last` merges as the queue keeps
+    them (in its order, the newest last), with their deploy, smoke and the plugins' after_merge lines."""
+    q = MergeQueue(state)
+    return [e for e in q.entries() if e.get("merged")][-max(1, int(last)):]
 
 
 def counts(state):
