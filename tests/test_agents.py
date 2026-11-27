@@ -132,7 +132,7 @@ class StartGateTest(AgentsBase):
         for bad in ("lots", "150", "-3"):
             with self.assertRaises(AgentError):
                 parse_usage(bad)
-        rc, _, err = self.team("--set", "usage.stop_at=0", "config")
+        _rc, _, err = self.team("--set", "usage.stop_at=0", "config")
         self.assertIn("usage.stop_at is a share of the usage window", err)
 
 
@@ -352,7 +352,7 @@ class SpendTest(AgentsBase):
         self.team("agents", "attach", "ag-0001", LIVE)
         with open(os.path.join(self.projects, SUB, f"agent-{LIVE}.meta.json"), "w") as f:
             json.dump({"finished": True}, f)
-        rc, out, err = self.team("agents", "start", "tr-0001:2", "--role", "plan")  # no --usage: refused
+        rc, out, _err = self.team("agents", "start", "tr-0001:2", "--role", "plan")  # no --usage: refused
         self.assertEqual(rc, 1)
         self.assertIn("ag-0001 закончил: на вагон tr-0001:2 записано", out)
         self.assertEqual(self.car("tr-0001:2")["spent_mtok"], 0.0265)

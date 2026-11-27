@@ -25,7 +25,7 @@ LINKED = ("Вагон tr-0904:16: и tr-0907:2x-alt. Трек tr-0904, PR #946 �
 
 class DecisionsTest(Base):
     def decide(self, who, text, *more):
-        rc, out, err = self.team("decide", who, "--text", text, *more)
+        rc, _out, err = self.team("decide", who, "--text", text, *more)
         self.assertEqual(rc, 0, err)
 
     def json(self, *argv):

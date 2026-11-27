@@ -475,7 +475,7 @@ def cmd_car(state, cfg, a):
         return 0
     stage = stages.parse(a.stage)
     warn = [car.tracks.moved_note(a.id), car.tracks.closed_note(car.track, car.car) if car.car is not None else None]
-    was, rows = car.move(stage, why=a.why, by=a.by or "car stage", force=a.force)
+    was, _rows = car.move(stage, why=a.why, by=a.by or "car stage", force=a.force)
     for line in warn:
         if line:
             print(line)
@@ -489,7 +489,7 @@ def cmd_car(state, cfg, a):
 
 def cmd_priority(state, cfg, a):
     if a.n is None:
-        kind, ref, rec = pri.get_any(state, cfg, a.id)
+        _kind, ref, rec = pri.get_any(state, cfg, a.id)
         print(t("cli.priority_show", ref=ref, cell=pri.cell(rec), min=pri.MIN, max=pri.MAX, default=pri.DEFAULT))
         return 0
     for line in pri.set_any(state, cfg, a.id, a.n):
@@ -502,7 +502,7 @@ def cmd_repair(state, cfg, a):
     from . import claims
     by = a.by or "repair " + a.action
     if a.action == "add":
-        obj, ref, claim, lines = claims.add(state, cfg, a.of, bug=a.bug, title=a.title, brief=a.brief, why=a.why,
+        obj, ref, claim, lines = claims.add(state, cfg, a.of, bug=a.bug, title=a.title, brief=a.brief, why=a.why,  # noqa: RUF059
                                             size=a.size, by=by, force=a.force)
         for line in lines:
             print(line)
@@ -510,7 +510,7 @@ def cmd_repair(state, cfg, a):
             print(line)
         state.commit("team: repair add {} ({})".format(obj["id"], ref or obj.get("bug")))
     else:
-        claim, lines = claims.link(state, cfg, a.repair, a.of, why=a.why, by=by, force=a.force)
+        _claim, lines = claims.link(state, cfg, a.repair, a.of, why=a.why, by=by, force=a.force)
         for line in lines:
             print(line)
         state.commit(f"team: repair link {a.repair} --of {a.of}")
@@ -672,7 +672,7 @@ def cmd_reflect(state, cfg, a):
     from .reflect import reflect
     only = characters.resolve(a.only) if a.only else None
     try:
-        status, _ = reflect(state, cfg, only=only, dry_run=a.dry_run)
+        _status, _ = reflect(state, cfg, only=only, dry_run=a.dry_run)
     except FatalError as e:
         state.commit(f"team: reflect stopped: {str(e)[:100]}")
         print(f"FATAL: {e}", file=sys.stderr)
@@ -968,7 +968,7 @@ def _cmd_car(state, cfg, tr, a):
         print("%s:%s → position %d" % (t["id"], c["n"], t["cars"].index(c) + 1))  # noqa: UP031
     elif act == "stack":
         t, c = tr.car(a.ref)
-        obj, msgs = tr.car_stack(a.ref, start=a.start, force=a.force, why=a.why)
+        _obj, msgs = tr.car_stack(a.ref, start=a.start, force=a.force, why=a.why)
         for m in tr.stack.notes + msgs:
             print(m)
     print("")

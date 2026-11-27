@@ -224,7 +224,7 @@ class TrialTest(AutoBase):
             self.team("merge", "add", str(n), "--word", "мердж")
         self.ci(feat_a=["in_progress", "failure"])
         feat_b0 = self.bare_head("refs/heads/feat-b")
-        rc, out, _ = self.team("merge", "run")
+        rc, _out, _ = self.team("merge", "run")
         self.assertEqual(rc, 1)
         self.assertEqual(len(self.pushed_to("mq/302")), 2)  # pushed, then deleted
         self.assertTrue(any("--delete" in p["argv"] for p in self.pushed_to("mq/302")))

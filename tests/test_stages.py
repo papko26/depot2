@@ -487,7 +487,7 @@ class MigrateArrivalsTest(Base):
         self.assertTrue(any(x.startswith("остаются «в пути» ") and x.endswith(": 2 — tr-0001:3, #304") for x in lines),
                         lines)
         self.assertEqual({f: slurp(self.t.state.path(f)) for f in before}, before)  # a dry run writes nothing
-        rc, out, err = self.team("board")  # any command migrates first
+        rc, _out, err = self.team("board")  # any command migrates first
         self.assertEqual(rc, 0, err)
         self.assertIn("миграция данных депо: схема 4 → 5", err)
         self.assertEqual(migrate.version(self.t.state), migrate.SCHEMA)

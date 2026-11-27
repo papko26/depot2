@@ -257,7 +257,7 @@ class AddTest(MergeBase):
         self.gh["prs"]["301"]["state"] = "OPEN"
         self.save_gh()
         self.assertEqual(self.team("merge", "add", "301", "--word", "мердж")[0], 0)
-        rc, out, err = self.team("merge", "drop", "301", "--reason", "владелец передумал")
+        rc, _out, err = self.team("merge", "drop", "301", "--reason", "владелец передумал")
         self.assertEqual(rc, 0, err)
         self.assertEqual(self.entry(301)["status"], "dropped")
         self.assertEqual(Stack(self.t.state, self.t.cfg).get(oid)["status"], "PR #301: CI green")

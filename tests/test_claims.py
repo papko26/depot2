@@ -158,7 +158,7 @@ class RepairTest(ClaimBase):
         self.assertEqual(rc, 1)
         self.assertIn("st-0001 на этапе «сборка», не на проде (рекламация — на прибывший вагон; брак до мерджа", err)
         self.assertIn("depot2 repair add --of st-0001 --force --why «…»", err)
-        rc, out, err = self.team("repair", "add", "--of", "st-0001", "--force", "--why", "на проде старая копия")
+        rc, _out, err = self.team("repair", "add", "--of", "st-0001", "--force", "--why", "на проде старая копия")
         self.assertEqual(rc, 0, err)
         r = self.stk().get("st-0002")
         self.assertTrue(r["stages"][0]["forced"])
@@ -203,13 +203,13 @@ class RepairTest(ClaimBase):
         culprit = self.arrived()
         self.ok("tracks", "add", "--title", "Каталог")
         self.ok("tracks", "car", "add", "tr-0001", "--title", "карточка книги", "--brief", self.brief)
-        rc, _, err = self.team("repair", "link", "tr-0001:0", "--of", "#142")
+        rc, _, err = self.team("repair", "link", "tr-0001:0", "--of", "#142")  # noqa: RUF059
         self.assertIn("tr-0001:0 — не вагон-ремонт: что за дефект он починил — --why «…»", err)
         for why in ("дубли авторов после импорта", "пустая графа года"):
             out = self.ok("repair", "link", "tr-0001:0", "--of", "#142", "--why", why)
         self.assertIn("st-0001: рекламация №2 (ремонт tr-0001:0, внутри вагона): пустая графа года; "
                       "рекламаций теперь 2", out)
-        rc, _, err = self.team("repair", "link", "tr-0001:0", "--of", "#142", "--why", "пустая графа года")
+        _rc, _, err = self.team("repair", "link", "tr-0001:0", "--of", "#142", "--why", "пустая графа года")
         self.assertIn("уже есть рекламация с ремонтом tr-0001:0 и этой причиной", err)
         self.assertIn("Чинит рекламации: st-0001 №1; st-0001 №2.", self.ok("car", "show", "tr-0001:0"))
         self.assertNotIn("kind", Tracks(self.t.state, self.t.cfg).car("tr-0001:0")[1])  # an ordinary car stays one

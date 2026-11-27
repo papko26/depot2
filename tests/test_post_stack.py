@@ -83,7 +83,7 @@ class PostStackTest(PostStackBase):
         self.assertIn("Свободный слот берёт (trains next): tr-0001:P (поезд reader P5, вагон P5) — `depot2 tracks car stack tr-0001:P "
                       "--start`", out)
         tr = self.tracks()
-        t, c = tr.car("tr-0001:R0")
+        _t, c = tr.car("tr-0001:R0")
         self.assertEqual((c["status"], c["st"], c["pr"], c["branch"]), ("pr", "st-0001", 206, "reader-mockup"))
         self.assertTrue(tr.posted(c))
         self.assertFalse(tr.parked(c))                                # not parked: it waits only for the merge
@@ -296,10 +296,10 @@ class CarBackTest(PostStackBase):
         rc, _, err = self.team("stack", "done", "st-0002", "--car", "back", "--reason", "x")
         self.assertIn("st-0002 has PR #360: a car with a PR goes back to its track with `stack park st-0002`", err)
         self.assertEqual(self.stk().get("st-0002")["where"], "slot")
-        rc, _, err = self.team("stack", "done", "st-0003", "--car", "back", "--reason", "x")
+        rc, _, err = self.team("stack", "done", "st-0003", "--car", "back", "--reason", "x")  # noqa: RUF059
         self.assertIn("st-0003 is no track's car's object: --car back sends a car back to its track", err)
         # a car with no PR is not parked: the refusal says how it goes back
-        rc, _, err = self.team("stack", "park", "st-0001", "--reason", "x")
+        _rc, _, err = self.team("stack", "park", "st-0001", "--reason", "x")
         self.assertIn("a car with no PR goes back to its track with stack done st-0001 --car back", err)
         # an object that is no car's: --car merged|dropped is its row's outcome, and a PR ref reads it first
         s = self.stk()

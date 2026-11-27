@@ -388,7 +388,7 @@ class StakeReportTest(unittest.TestCase):
         led = Ledger(self.t.state)
         entries = [e for e in led.entries() if e.get("round") == r["id"]]
         for cid in characters.IDS:
-            name, before, stakes, staked, back, fee, order, lock, left = rows[characters.name(cid)]
+            _name, before, stakes, staked, back, fee, order, lock, left = rows[characters.name(cid)]
             self.assertEqual((fee, order, lock), ("0", "0", "0"), cid)
             mine = [e for e in entries if e["character"] == cid]
             self.assertEqual(int(staked), -sum(e["amount"] for e in mine if e["type"] == "stake"), cid)
@@ -560,7 +560,7 @@ class ReflectionGateTest(unittest.TestCase):
             return self.fake(spec)
 
         led = Ledger(self.t.state)
-        status, skipped = reflect(self.t.state, self.t.cfg, runner=runner, out=lambda *a: None)
+        _status, skipped = reflect(self.t.state, self.t.cfg, runner=runner, out=lambda *a: None)
         self.assertEqual(calls, [])  # nothing changed: no calls
         self.assertEqual(sorted(skipped), sorted(characters.IDS))
         led.payout("counter", 2, "exact numbers")

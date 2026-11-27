@@ -1458,7 +1458,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                     out += freed_slot_lines(self.state, self.cfg)
             elif e.get("car"):
                 tr = Tracks(self.state, self.cfg)
-                t, c = tr.car(e["car"])
+                _t, c = tr.car(e["car"])
                 if c["status"] not in ("merged", "dropped"):
                     tr.car_set(e["car"], status="merged", note=reason, by="merge run ({})".format(e["id"]))
                     out.append(i18n.t("merge.car_merged", car=e["car"], reason=reason))
@@ -1495,7 +1495,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         cmd = self.m.get("site_check")
         if not cmd:
             return "not checked"
-        code, out, err = self.sh.run(argv_of(cmd), timeout=60)
+        code, out, _err = self.sh.run(argv_of(cmd), timeout=60)
         return out.strip() or (f"exit {code}")
 
     def step_smoke(self, e):

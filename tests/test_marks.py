@@ -474,7 +474,7 @@ class MigrateMarksTest(GateBase):
         self.assertEqual((n, lines[0]), (1, "DRY RUN: ничего не записано"))
         self.assertIn(f"сданные слова «legacy check» сняты с объектов стека: {oid} (ok)", lines)
         self.assertEqual({f: slurp(self.t.state.path(f)) for f in before}, before)  # a dry run writes nothing
-        rc, out, err = self.team("stack", "--md")  # any command migrates first
+        rc, _out, err = self.team("stack", "--md")  # any command migrates first
         self.assertEqual(rc, 0, err)
         self.assertIn("миграция данных депо: схема 2 → 3", err)
         self.assertEqual(migrate.version(self.t.state), SCHEMA)

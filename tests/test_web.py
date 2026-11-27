@@ -172,7 +172,7 @@ class WebTest(WebBase):
     def test_the_page_takes_its_texts_from_the_catalog(self):
         """The served page: <html lang> and the #messages block in the run's language (the catalogs' `web.` keys), no
         Russian outside that block, and the CSP hashes the one script that runs, not the data block."""
-        code, h, body = self.web.get("/")
+        _code, h, body = self.web.get("/")
         html = body.decode("utf-8")
         self.assertIn('<html lang="ru">', html)
         self.assertEqual(page_messages(html), i18n.web_messages("ru"))
@@ -315,7 +315,7 @@ class WebTest(WebBase):
         self.team("stack", "set", "st-0001", "--pr", "301")
         self.assertEqual(self.team("stack", "post", "st-0001", "--force", "--why", "тест")[0], 0)
         self.assertEqual(self.team("stack", "start", "st-0001", "--reason", "доработать")[0], 0)
-        rc, out, err = self.team("repair", "add", "--of", "st-0002", "--force", "--why", "на проде дефект")
+        rc, _out, err = self.team("repair", "add", "--of", "st-0002", "--force", "--why", "на проде дефект")
         self.assertEqual(rc, 0, err)
         _, car = self.web.json("/api/car/st-0001")
         self.assertEqual((car["returns"], car["claims"]), (1, 0))
@@ -334,7 +334,7 @@ class WebTest(WebBase):
         for label in ("перенесены отсюда: ", "старый номер: вагон перенесён, теперь ", '[T("panel.moved"), ',
                       '"moved_from", "priority"]'):
             self.assertIn(label, html)
-        rc, out, err = self.team("tracks", "car", "move", "tr-0001:1", "--n", "5", "--why", "номер")
+        rc, _out, err = self.team("tracks", "car", "move", "tr-0001:1", "--n", "5", "--why", "номер")
         self.assertEqual(rc, 0, err)
         _, t = self.web.json("/api/track/tr-0001")
         p = t["moved_out"][0]
@@ -656,7 +656,7 @@ class ReexecTest(unittest.TestCase):
                 self.assertIn("depot2/webui.py", meta2["broken"])
             finally:
                 p.terminate()
-                out, err = p.communicate(timeout=10)
+                out, _err = p.communicate(timeout=10)
             self.assertIn("код изменился — перезапускаюсь", out)
             self.assertIn("перезапущен на новом коде (код вне git", out)
         finally:

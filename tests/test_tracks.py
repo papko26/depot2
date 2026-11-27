@@ -110,7 +110,7 @@ class TracksTest(TracksBase):
         # A new calibration: a stored spend keeps its MTok (its % moves); a size keeps its % (its MTok moves).
         self.t.cfg["usage"]["mtok_per_pct"] = 6.0
         self.assertEqual(tr.effort_cell(tr.get(a["id"])), "≈ 1.5%UW (9 MTok) / 3%UW (18 MTok)")
-        rc, out, err = self.team("--set", "usage.sizes.M=0.7", "--set", "usage.mtok_per_pct=10", "config")
+        _rc, out, _err = self.team("--set", "usage.sizes.M=0.7", "--set", "usage.mtok_per_pct=10", "config")
         self.assertEqual((json.loads(out)["usage"]["sizes"]["M"], json.loads(out)["usage"]["mtok_per_pct"]), (0.7, 10))
         self.assertEqual(self.team("--set", "usage.mtok_per_pct=0", "tracks")[0], 1)
 
@@ -198,14 +198,14 @@ class StackLinkTest(TracksBase):
         tr = self.tracks()
         other = tr.car_add(tr.add("Ещё")["id"], "x", size="S")
         ref = "{}:{}".format(other[0]["id"], other[1]["n"])
-        rc, out, err = self.team("tracks", "car", "set", ref, "--st", "st-0001")
+        rc, out, err = self.team("tracks", "car", "set", ref, "--st", "st-0001")  # noqa: RUF059
         self.assertEqual(rc, 1)
         self.assertIn("st-0001 is or was the stack object of tr-0001:0: a car links only to an object of its own", err)
         # a merged car whose object stayed in the queue (the API's write, as the hand's was before): no start, no post
         self.tracks().car_set("tr-0001:1", status="merged")
         finished = self.tracks().car("tr-0001:1")[1]["finished"]
         for act in (("start", "st-0002"), ("post", "st-0002", "--reason", "CI")):
-            rc, out, err = self.team("stack", *act)
+            rc, _out, err = self.team("stack", *act)
             self.assertEqual(rc, 1, act)
             self.assertIn(f"st-0002 is the object of tr-0001:1, which is слит: no stack {act[0]} — the object is left over, "
                           "close it: depot2 stack done st-0002 --car merged --reason «…»", err)
@@ -561,14 +561,14 @@ class CarMoveTest(TracksBase):
         self.assertEqual(self.trains().get("katalog")["cars"][1], "tr-0002:1")
 
     def test_a_new_name_on_its_own_track_and_back(self):
-        rc, out, err = self.team("tracks", "car", "move", "tr-0001:2", "--n", "c7")
+        rc, out, err = self.team("tracks", "car", "move", "tr-0001:2", "--n", "c7")  # noqa: RUF059
         self.assertEqual(rc, 0, err)
         tr = self.tracks()
         self.assertEqual([x["n"] for x in tr.get("tr-0001")["cars"]], ["0", "1", "c7"])  # its place kept
         self.assertEqual(tr.car("tr-0001:2")[1]["n"], "c7")
         self.assertEqual(self.trains().get("katalog")["cars"], ["tr-0001:0", "tr-0001:1", "tr-0001:c7"])
         tr.car_add("tr-0001", "d", after=["c7"])
-        rc, out, err = self.team("tracks", "car", "move", "tr-0001:c7", "--n", "2", "--at", "1")
+        rc, _out, err = self.team("tracks", "car", "move", "tr-0001:c7", "--n", "2", "--at", "1")
         self.assertEqual(rc, 0, err)
         tr = self.tracks()
         t = tr.get("tr-0001")
@@ -599,7 +599,7 @@ class CarMoveTest(TracksBase):
         rc, out, err = self.team("tracks", "car", "move", "tr-0001:1", "--to", "tr-0002", "--n", "0")
         self.assertEqual(rc, 1)
         self.assertIn("номер занят: tr-0002:0 — x (ждёт); свободный номер — --n 1", err)
-        rc, out, err = self.team("tracks", "car", "move", "tr-0001:1", "--to", "tr-0001")
+        rc, out, err = self.team("tracks", "car", "move", "tr-0001:1", "--to", "tr-0001")  # noqa: RUF059
         self.assertIn("tr-0001:1 stays where it is", err)
         self.assertEqual(self.team("tracks", "car", "move", "tr-0001:1")[0], 1)  # neither --at nor --to/--n
         from depot2.merge import FILE, MergeQueue
@@ -607,7 +607,7 @@ class CarMoveTest(TracksBase):
         write_json(self.t.state.path(FILE), {"next": 2, "entries": [
             {"id": "mq-0001", "pr": 302, "car": "tr-0001:1", "st": None, "status": "stopped"}]})
         self.assertEqual(len(MergeQueue(self.t.state).entries(open_only=True)), 1)
-        rc, out, err = self.team("tracks", "car", "move", "tr-0001:1", "--to", "tr-0002", "--n", "9")
+        rc, _out, err = self.team("tracks", "car", "move", "tr-0001:1", "--to", "tr-0002", "--n", "9")
         self.assertIn("tr-0001:1 не переносится: его PR #302 в мердж-очереди (mq-0001)", err)
         self.assertNotIn("moved_out", self.tracks().get("tr-0001"))  # nothing written
 

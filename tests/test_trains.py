@@ -51,7 +51,7 @@ class ModelTest(TracksBase):
         tr.add("print", "Печать дальше", cars=["tr-0002:0"])  # free again
         self.assertEqual(self.trains().of_car("tr-0002:0")["name"], "print")
         # a scrapped train lets its cars go
-        rc, out, err = self.team("trains", "drop", "print", "--why", "передумали")
+        rc, _out, err = self.team("trains", "drop", "print", "--why", "передумали")
         self.assertEqual(rc, 0, err)
         self.assertIsNone(self.trains().of_car("tr-0002:0"))
         with self.assertRaises(TrainError):  # scrapped only with a reason
@@ -191,7 +191,7 @@ class ModelTest(TracksBase):
             self.assertEqual(rc, 2, word)
             self.assertIn(cmd, err)
         self.assertEqual(self.trains().get("export")["state"], "design")
-        rc, out, err = self.team("trains", "state", "export", "имплементация", "--force", "--why", "старт")
+        rc, out, err = self.team("trains", "state", "export", "имплементация", "--force", "--why", "старт")  # noqa: RUF059
         self.assertEqual(rc, 0, err)
         self.assertEqual(self.trains().get("export")["state"], "impl")
         self.assertEqual(self.team("trains", "set", "export", "--owner-word")[0], 0)
@@ -210,7 +210,7 @@ class ModelTest(TracksBase):
         # a scrapped (or arrived) train keeps its list of cars: no drop, no move
         self.assertEqual(self.team("trains", "drop", "export", "--why", "передумали")[0], 0)
         for argv in (("drop", "export", "tr-0001:0"), ("move", "export", "tr-0001:0", "--at", "1")):
-            rc, out, err = self.team("trains", "car", *argv)
+            rc, _out, err = self.team("trains", "car", *argv)
             self.assertEqual(rc, 1, argv)
             self.assertIn("error: export is списан: its cars stay as they were", err)
         self.assertEqual(self.trains().get("export")["cars"], ["tr-0001:0"])
@@ -222,7 +222,7 @@ class ModelTest(TracksBase):
         fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)  # another depot2
         wait, store.LOCK_WAIT_S = store.LOCK_WAIT_S, 0.3
         try:
-            rc, out, err = self.team("trains", "add", "--name", "export", "--title", "Экспорт")
+            rc, _out, err = self.team("trains", "add", "--name", "export", "--title", "Экспорт")
         finally:
             store.LOCK_WAIT_S = wait
             os.close(fd)

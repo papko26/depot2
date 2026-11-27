@@ -368,7 +368,7 @@ def link_text(x, n=None):
 
 def car_lines(car):
     """`car show`: its returns, its claims, what it repairs."""
-    kind, rec = where(car)
+    _kind, rec = where(car)
     if rec is None:
         return []
     L = []

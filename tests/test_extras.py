@@ -225,7 +225,7 @@ class BrainstormTest(Base):
     def test_the_brainstorm_round_runs_on_its_topic(self):
         self.unanimous()
         before = Ledger(self.t.state).balances()
-        r, runner = self.play({("builder", "r1"): dict(ans([("Q2", "none", 3, "мой ответ")]), proposals=[])}, "brainstorm",
+        r, _runner = self.play({("builder", "r1"): dict(ans([("Q2", "none", 3, "мой ответ")]), proposals=[])}, "brainstorm",
                               brainstorm="bs-0001")
         self.assertTrue(r["id"].endswith("-brainstorm"))
         rep = r["report"]
@@ -333,11 +333,11 @@ class OrdersTest(Base):
         res = os.path.join(self.out, "run.json")
         with open(res, "w") as f:
             f.write('{"p90": 6.2}\n')
-        rc, out, err = self.team("order", "settle", "ord-0001", "moved", "--reason", "рано")
+        rc, out, err = self.team("order", "settle", "ord-0001", "moved", "--reason", "рано")  # noqa: RUF059
         self.assertEqual(rc, 1)
         self.assertIn("only a done order is settled", err)
         for oid in ("ord-0001", "ord-0002", "ord-0003"):
-            rc, out, err = self.team("order", "done", oid, "--result", res, "--note", "nice 10, CPU")
+            rc, _out, err = self.team("order", "done", oid, "--result", res, "--note", "nice 10, CPU")
             self.assertEqual(rc, 0, err)
         dest = os.path.join(self.t.cfg["orders"]["results_dir"], "ord-0001", "run.json")
         self.assertEqual(slurp(dest), '{"p90": 6.2}\n')
@@ -361,7 +361,7 @@ class OrdersTest(Base):
         self.assertIn("заказ ord-0001: сдвинул решение, цена назад и +1, +6", rep)
         self.assertIn("«Сейчас» сходится с журналом", rep)
         # The next round's bundle lists the results once.
-        r2_, runner = self.play({})
+        r2_, _runner = self.play({})
         bundle = slurp(os.path.join(r2_["dir"], "bundle.md"))
         self.assertIn("## Результаты заказов (замеры и прогоны)", bundle)
         self.assertIn("### ord-0001: Строитель, раунд {}".format(r["id"]), bundle)

@@ -36,7 +36,7 @@ class QueueTakeTest(TakeBase):
         self.assertIn("wl-0001 → tr-0001:1: новый вагон «заметки о выпуске» (тележка)", out)
         self.assertIn("## Трек tr-0001 Некритичные баги", out)  # the car on its track
         self.assertIn("| — | (пусто) |", out)  # the open wishes: none left
-        t, c = self.tracks().car("tr-0001:1")
+        _t, c = self.tracks().car("tr-0001:1")
         self.assertEqual((c["title"], c["size"], c["status"], c["stage"], c["from"]),
                          ("заметки о выпуске", "M", "waiting", "bogie", ["wl-0001"]))
         self.assertEqual(len(c["notes"]), 1)
@@ -161,7 +161,7 @@ class StackTakeTest(TakeBase):
         out = self.ok("stack", "take", "st-0001", "--to", "tr-0001")
         self.assertIn("st-0001 → tr-0001:1: новый вагон «обложка в карточке, а в списке нет» (ждёт, эскиз); st-0001 — его "
                       "объект: «tr-0001:1 Некритичные баги — обложка в карточке, а в списке нет»", out)
-        t, c = self.tracks().car("tr-0001:1")
+        t, c = self.tracks().car("tr-0001:1")  # noqa: RUF059
         self.assertEqual((c["st"], c["status"], c["stage"], c["size"], c["brief"], c["from"]),
                          ("st-0001", "waiting", "sketch", "S", "/tmp/brief-cover.md", ["st-0001"]))
         self.assertIn("из st-0001 — объект стека (в очереди; добавлен ", c["notes"][0])
@@ -172,7 +172,7 @@ class StackTakeTest(TakeBase):
         self.ok("stack", "take", "st-0002", "--to", "tr-0001", "--title", "счётчик")
         self.assertEqual(self.tracks().car("tr-0001:2")[1]["status"], "running")
         self.ok("stack", "take", "st-0003", "--to", "tr-0001")
-        t, c = self.tracks().car("tr-0001:3")
+        _t, c = self.tracks().car("tr-0001:3")
         self.assertEqual((c["status"], c["pr"]), ("pr", 77))
         self.assertTrue(self.tracks().posted(c))
         # refused: a car's object already, one that left

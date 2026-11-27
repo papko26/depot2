@@ -494,7 +494,7 @@ class GatesTest(GateBase):
         self.assertIn("--force --why", err)
         board = self.team("board")[1]
         self.assertIn("DoR: в брифе нет разделов трёх проверок", board)
-        rc, out, err = self.team("stack", "start", o1["id"], "--force", "--why", "старый эскиз без разделов")
+        rc, _out, err = self.team("stack", "start", o1["id"], "--force", "--why", "старый эскиз без разделов")
         self.assertEqual(rc, 0, err)
         row = Stack(self.t.state, self.t.cfg).get(o1["id"])["stages"][-1]
         self.assertEqual(row["gates"]["DoR"], ["в брифе нет разделов трёх проверок: «Сверка с кодом», «Проверка по "

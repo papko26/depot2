@@ -155,7 +155,7 @@ class TodoTest(QBase):
                              text=True).stdout.strip()
         self.assertEqual(repo_version({"deep_repo": {"clone": d}}), f"2.4.0, main {sha}")
         self.assertIsNone(repo_version({"deep_repo": {"clone": ""}}))
-        rc, out, err = super(QBase, self).team("--set", "deep_repo.clone=" + d, "todo", "add", "--text", "x")
+        rc, _out, err = super(QBase, self).team("--set", "deep_repo.clone=" + d, "todo", "add", "--text", "x")
         self.assertEqual(rc, 0, err)
         self.assertEqual(Todo(self.t.state).get("td-0001")["version"], f"2.4.0, main {sha}")
 

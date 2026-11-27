@@ -119,7 +119,7 @@ class DodTest(GateBase):
         rc, _, err = self.team("stack", "post", "st-0001", "--scan", "CLEAN", "--shots", "n/a")
         self.assertEqual(rc, 1)
         self.assertIn("DoD (вход в приёмку) — CI: красный, Heavy: local.", err)  # a red CI stays: the post does not hide it
-        rc, out, err = self.team("stack", "post", "st-0001", "--ci", "green", "--heavy", "green (412/412)", "--scan",
+        rc, _out, err = self.team("stack", "post", "st-0001", "--ci", "green", "--heavy", "green (412/412)", "--scan",
                                  "CLEAN", "--shots", "n/a")  # a refused post wrote nothing
         self.assertEqual(rc, 0, err)
         o = self.stk().get("st-0001")
@@ -208,7 +208,7 @@ class TrainGateTest(GateBase):
         rc, out, err = self.team("tracks", "car", "stack", "tr-0001:0", "--start", "--force", "--why", "бриф в голове")
         self.assertEqual(rc, 0, err)
         self.assertIn("tr-0001:0: ворота пройдены с --force (бриф в голове): DoR (вход в сборку) — нет брифа", out)
-        t, c = Tracks(self.t.state, self.t.cfg).car("tr-0001:0")
+        _t, c = Tracks(self.t.state, self.t.cfg).car("tr-0001:0")
         o = self.stk().get(c["st"])
         self.assertEqual((o["stages"][-1]["forced"], o["stages"][-1]["gates"]), (True, {"DoR": ["нет брифа"]}))
         j = json.loads(self.team("car", "show", "tr-0001:0", "--json")[1])
@@ -425,7 +425,7 @@ class DocsTest(GateBase):
         self.assertEqual((it["stage"], it["docs"]["state"], it["gate"]), ("acceptance", "passed", None))
 
     def test_the_flag_wins_and_force_passes(self):
-        rc, out, err = self.team("tracks", "car", "set", "tr-0001:0", "--docs", "no")
+        rc, out, err = self.team("tracks", "car", "set", "tr-0001:0", "--docs", "no")  # noqa: RUF059
         self.assertEqual(rc, 0, err)
         self.assertIs(self.car()["docs"], False)
         self.assertIsNone(json.loads(self.team("car", "show", "tr-0001:0", "--json")[1])["docs"]["need"])
@@ -437,7 +437,7 @@ class DocsTest(GateBase):
         self.assertEqual(rc, 1)
         self.assertIn("документация: не сделана (нужна — флаг вагона (tracks car set --docs yes); depot2 car stage "
                       "tr-0001:1 docs)", err)
-        rc, out, err = self.team("stack", "post", "st-0002", *self.HANDED + ["--force", "--why", "доки едут отдельно"])
+        rc, _out, err = self.team("stack", "post", "st-0002", *self.HANDED + ["--force", "--why", "доки едут отдельно"])
         self.assertEqual(rc, 0, err)
         row = self.stk().get("st-0002")["stages"][-1]
         self.assertEqual((row["from"], row["stage"], row["forced"], row["gates"]),

@@ -110,7 +110,7 @@ class StackTest(Base):
         md = Stack(self.t.state, self.t.cfg).md()
         self.assertIn("≈ 1%UW (24 MTok) / 0.6%UW (14.4 MTok)", md)
         self.assertIn("≈ 0.12%UW (3 MTok) / —", md)
-        rc, out, err = self.team("stack", "set", "st-0002", "--est-pct", "0.5", "--spent-mtok", "2.5")
+        rc, _out, err = self.team("stack", "set", "st-0002", "--est-pct", "0.5", "--spent-mtok", "2.5")
         self.assertEqual(rc, 0, err)
         o = Stack(self.t.state, self.t.cfg).get("st-0002")
         self.assertEqual((o["est_mtok"], o["spent_mtok"]), (5.0, 2.5))
@@ -322,12 +322,12 @@ class LockPassTest(Base):
 
     def test_unlock_met_and_owner_only_owner_opens_the_gate(self):
         self.play({("builder", "r3"): lock("st-0001"), ("keeper", "r3"): lock("st-0002")})
-        rc, out, err = self.team("stack", "unlock", "st-0001", "--met", "--reason", "тест зелёный, CI #5")
+        rc, out, err = self.team("stack", "unlock", "st-0001", "--met", "--reason", "тест зелёный, CI #5")  # noqa: RUF059
         self.assertEqual(rc, 0, err)
         self.assertEqual(changes_since(self.t.state, "builder"), ([], []))
-        rc, out, err = self.team("stack", "unlock", "st-0002", "--owner", "--reason", "беру на себя")
+        rc, _out, err = self.team("stack", "unlock", "st-0002", "--owner", "--reason", "беру на себя")
         self.assertEqual(rc, 0, err)
-        owner, dec = changes_since(self.t.state, "keeper")
+        _owner, dec = changes_since(self.t.state, "keeper")
         self.assertEqual(len(dec), 1)
         self.assertIn("Владелец снял замок lk-0002 (st-0002", dec[0]["text"])
         self.assertEqual(Ledger(self.t.state).balance("keeper"), 10)  # the price stays spent
