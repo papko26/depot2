@@ -50,7 +50,7 @@ class Ledger:
         return max([e["seq"] for e in entries] or [0])
 
     def get(self, tx_id, entries=None):
-        for e in (self.entries() if entries is None else entries):
+        for e in self.entries() if entries is None else entries:
             if e["id"] == tx_id:
                 return e
         raise LedgerError(f"no transaction {tx_id}")
@@ -72,16 +72,27 @@ class Ledger:
         elif typ not in DEBITS + CREDITS:
             raise LedgerError(f"unknown transaction type {typ!r}")
         elif (typ in DEBITS and amount >= 0) or (typ in CREDITS and amount <= 0):
-            raise LedgerError("%s needs a %s amount, got %d"  # noqa: UP031
-                              % (typ, "negative" if typ in DEBITS else "positive", amount))
+            raise LedgerError(
+                "%s needs a %s amount, got %d"  # noqa: UP031
+                % (typ, "negative" if typ in DEBITS else "positive", amount)
+            )
         entries = self.entries()
         before = self.balance(cid, entries)
         if before + amount < 0:
-            raise OverdraftError("%s has %d, cannot take %d (%s)"  # noqa: UP031
-                                 % (characters.name(cid), before, -amount, typ))
+            raise OverdraftError(
+                "%s has %d, cannot take %d (%s)"  # noqa: UP031
+                % (characters.name(cid), before, -amount, typ)
+            )
         seq = self.last_seq(entries) + 1
-        rec = {"seq": seq, "id": "tx-%06d" % seq, "ts": now_iso(), "type": typ,  # noqa: UP031
-               "character": cid, "amount": amount, "balance_after": before + amount}
+        rec = {
+            "seq": seq,
+            "id": "tx-%06d" % seq,  # noqa: UP031
+            "ts": now_iso(),
+            "type": typ,
+            "character": cid,
+            "amount": amount,
+            "balance_after": before + amount,
+        }
         for k, v in fields.items():
             if v is not None:
                 rec[k] = v
@@ -106,8 +117,7 @@ class Ledger:
     def payout(self, cid, amount, reason, round_id=None, point=None, settles=None):
         if amount <= 0:
             raise LedgerError("a payout is at least 1")
-        return self._append("payout", cid, int(amount), reason=reason, round=round_id,
-                            point=point, settles=settles)
+        return self._append("payout", cid, int(amount), reason=reason, round=round_id, point=point, settles=settles)
 
     def fine(self, cid, amount, reason, round_id=None, point=None):
         """The owner's fine of `amount` tokens. The balance never goes below zero: the code takes
@@ -122,16 +132,24 @@ class Ledger:
     def brainstorm_fee(self, cid, amount, round_id, brainstorm_id, role, reason=None):
         if amount < 1:
             raise LedgerError("a brainstorm fee is at least 1")
-        return self._append("brainstorm_fee", cid, -int(amount), round=round_id, brainstorm=brainstorm_id,
-                            role=role, reason=reason)
+        return self._append(
+            "brainstorm_fee", cid, -int(amount), round=round_id, brainstorm=brainstorm_id, role=role, reason=reason
+        )
 
     def brainstorm_refund(self, fee_tx, reason, round_id=None):
         if fee_tx["type"] != "brainstorm_fee":
             raise LedgerError("{} is not a brainstorm fee".format(fee_tx["id"]))
         if any(e["type"] == "brainstorm_refund" and e.get("ref") == fee_tx["id"] for e in self.entries()):
             raise LedgerError("{} already refunded".format(fee_tx["id"]))
-        return self._append("brainstorm_refund", fee_tx["character"], -fee_tx["amount"], ref=fee_tx["id"],
-                            brainstorm=fee_tx.get("brainstorm"), round=round_id, reason=reason)
+        return self._append(
+            "brainstorm_refund",
+            fee_tx["character"],
+            -fee_tx["amount"],
+            ref=fee_tx["id"],
+            brainstorm=fee_tx.get("brainstorm"),
+            round=round_id,
+            reason=reason,
+        )
 
     def order(self, cid, price, round_id, order_id, reason=None):
         if price < 1:
@@ -148,9 +166,16 @@ class Ledger:
             raise LedgerError("{} already settled".format(order_tx.get("order", order_tx["id"])))
         price = -order_tx["amount"]
         amount = {"moved": price + int(bonus), "refund": price, "burn": 0}[outcome]
-        return self._append("order_settle", order_tx["character"], amount, ref=order_tx["id"],
-                            order=order_tx.get("order"), round=order_tx.get("round"), outcome=outcome,
-                            reason=reason)
+        return self._append(
+            "order_settle",
+            order_tx["character"],
+            amount,
+            ref=order_tx["id"],
+            order=order_tx.get("order"),
+            round=order_tx.get("round"),
+            outcome=outcome,
+            reason=reason,
+        )
 
     def lock(self, cid, price, round_id, object_id, reason=None):
         if price < 1:
@@ -162,8 +187,14 @@ class Ledger:
             raise LedgerError("{} is not a lock".format(lock_tx["id"]))
         if any(e["type"] == "lock_refund" and e.get("ref") == lock_tx["id"] for e in self.entries()):
             raise LedgerError("{} already refunded".format(lock_tx["id"]))
-        return self._append("lock_refund", lock_tx["character"], -lock_tx["amount"], ref=lock_tx["id"],
-                            object=lock_tx.get("object"), reason=reason)
+        return self._append(
+            "lock_refund",
+            lock_tx["character"],
+            -lock_tx["amount"],
+            ref=lock_tx["id"],
+            object=lock_tx.get("object"),
+            reason=reason,
+        )
 
     def open_stakes(self, cid=None, round_id=None, point=None, entries=None):
         entries = self.entries() if entries is None else entries
@@ -189,43 +220,77 @@ class Ledger:
         """The plain error when refund or forfeit finds nothing open."""
         what = "{} in {}{}".format(characters.name(cid) if cid else "anyone", round_id, " " + point if point else "")
         entries = self.entries()
-        back = [e for e in self.auto_refunds(round_id, entries)
-                if (not cid or e["character"] == cid) and (not point or e.get("point") == point)]
+        back = [
+            e
+            for e in self.auto_refunds(round_id, entries)
+            if (not cid or e["character"] == cid) and (not point or e.get("point") == point)
+        ]
         if not back:
             return LedgerError(f"no open stakes for {what}")
-        msg = ("nothing open for %s: its stakes came back by themselves when the round ended "  # noqa: UP031
-               "(%d auto refunds, %s … %s), so the owner has nothing to %s"
-               % (what, len(back), back[0]["id"], back[-1]["id"], "keep" if forfeit else "refund"))
+        msg = (
+            "nothing open for %s: its stakes came back by themselves when the round ended "  # noqa: UP031
+            "(%d auto refunds, %s … %s), so the owner has nothing to %s"
+            % (what, len(back), back[0]["id"], back[-1]["id"], "keep" if forfeit else "refund")
+        )
         if forfeit:
             msg += "; to take tokens, fine instead: depot2 fine <character|all> <n> --round {}{} --reason …".format(
-                round_id, " --point " + point if point else "")
+                round_id, " --point " + point if point else ""
+            )
         return LedgerError(msg)
 
     def auto_refund_round(self, round_id, reason=None):
         """Return every open stake of a round, by the code: the stakes come back when the round
         ends. One auto_refund per stake, naming it (ref). Not an owner action. [] when nothing is open.
         """
-        return [self._append("auto_refund", s["character"], -s["amount"], ref=s["id"],
-                             round=s.get("round"), point=s.get("point"), reason=reason or AUTO_REASON)
-                for s in self.open_stakes(round_id=round_id)]
+        return [
+            self._append(
+                "auto_refund",
+                s["character"],
+                -s["amount"],
+                ref=s["id"],
+                round=s.get("round"),
+                point=s.get("point"),
+                reason=reason or AUTO_REASON,
+            )
+            for s in self.open_stakes(round_id=round_id)
+        ]
 
     def refund_stakes(self, cid, round_id, point=None, reason=None):
         """The owner refunds the open stakes of one character (or every one, cid=None) on a round/point."""
         stakes = self.open_stakes(cid=cid, round_id=round_id, point=point)
         if not stakes:
             raise self._nothing_open(cid, round_id, point)
-        return [self._append("refund", s["character"], -s["amount"], ref=s["id"],
-                             round=s.get("round"), point=s.get("point"), reason=reason)
-                for s in stakes]
+        return [
+            self._append(
+                "refund",
+                s["character"],
+                -s["amount"],
+                ref=s["id"],
+                round=s.get("round"),
+                point=s.get("point"),
+                reason=reason,
+            )
+            for s in stakes
+        ]
 
     def forfeit_stakes(self, cid, round_id, point=None, reason=None):
         """Close the open stakes of one character (or every one) without returning them."""
         stakes = self.open_stakes(cid=cid, round_id=round_id, point=point)
         if not stakes:
             raise self._nothing_open(cid, round_id, point, forfeit=True)
-        return [self._append("forfeit", s["character"], 0, ref=s["id"], stake=-s["amount"],
-                             round=s.get("round"), point=s.get("point"), reason=reason)
-                for s in stakes]
+        return [
+            self._append(
+                "forfeit",
+                s["character"],
+                0,
+                ref=s["id"],
+                stake=-s["amount"],
+                round=s.get("round"),
+                point=s.get("point"),
+                reason=reason,
+            )
+            for s in stakes
+        ]
 
 
 class Pending:
@@ -246,8 +311,14 @@ class Pending:
     def add(self, cid, condition, amount=None, ref=None):
         recs = self.records()
         n = len({r["id"] for r in recs}) + 1
-        rec = {"id": "pend-%04d" % n, "op": "open", "ts": now_iso(), "character": cid,  # noqa: UP031
-               "amount": amount, "condition": condition}
+        rec = {
+            "id": "pend-%04d" % n,  # noqa: UP031
+            "op": "open",
+            "ts": now_iso(),
+            "character": cid,
+            "amount": amount,
+            "condition": condition,
+        }
         if ref:
             rec["ref"] = ref
         append_jsonl(self.path, rec)
