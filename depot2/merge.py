@@ -310,7 +310,7 @@ class Resolutions:
         tmp = "%s.tmp-%d" % (dest, os.getpid())  # noqa: UP031
         with open(tmp, "wb") as f:
             f.write(body)
-        os.replace(tmp, dest)
+        Path(tmp).replace(dest)
         with open(dest, "rb") as f:
             if f.read() != body:
                 raise MergeError(f"the resolution did not read back: {dest}")
@@ -2809,7 +2809,7 @@ def ensure(state, cfg, sets=None, wait_s=None):
     lines = [i18n.t("merge.ensure_start", was=i18n.t("merge.ensure_stale_lock", pid=was) if was else "", n=s["open"])]
     log = os.path.join(run_dir(state), RUN_LOG)
     if os.path.exists(log) and Path(log).stat().st_size > RUN_LOG_MAX:
-        os.replace(log, log + ".1")
+        Path(log).replace(log + ".1")
     team = os.path.join(os.path.dirname(os.path.abspath(__file__)), "__main__.py")
     argv = [sys.executable, team, "--state", state.root]
     for x in sets or []:

@@ -23,6 +23,7 @@ import os
 import subprocess
 import sys
 import tempfile
+from pathlib import Path
 
 T0 = "2015-11-12T00:00:00Z"
 T1 = "2015-11-12T00:03:00Z"
@@ -428,7 +429,7 @@ def main():
         rc = fail(f"fake gh: unknown command {argv}")
     with open(path + ".tmp", "w") as f:
         json.dump(d, f)
-    os.replace(path + ".tmp", path)
+    Path(path + ".tmp").replace(path)
     return rc
 
 

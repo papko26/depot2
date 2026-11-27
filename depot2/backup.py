@@ -134,7 +134,7 @@ def save_stamp(state, st):
 def rotate_log(state, name=LOG):
     p = log_path(state, name)
     if os.path.exists(p) and Path(p).stat().st_size > LOG_MAX:
-        os.replace(p, p + ".1")
+        Path(p).replace(p + ".1")
 
 
 @contextlib.contextmanager

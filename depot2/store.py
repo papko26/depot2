@@ -62,7 +62,7 @@ def atomic_write(path, text):
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(text)
         _sync(f)
-    os.replace(tmp, path)
+    Path(tmp).replace(path)
     if read_text(path) != text:
         raise WriteCheckError(f"read-back mismatch: {path}")
 

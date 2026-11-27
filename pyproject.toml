@@ -68,6 +68,7 @@ extend-select = [
     "PTH102", # os-mkdir
     "PTH103", # os-makedirs
     "PTH104", # os-rename
+    "PTH105", # os-replace
     "PTH106", # os-rmdir
     "PTH107", # os-remove
     "PTH108", # os-unlink
