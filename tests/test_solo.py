@@ -1,4 +1,3 @@
-
 import json
 import os
 import unittest
@@ -23,10 +22,15 @@ class SoloRoundTest(Base):
 
     def test_one_character_round_1_and_the_lock_pass_no_debate(self):
         self.stack_one()
-        r, runner = self.play({("keeper", "r1"): dict(ans([("B49", "agree", 3, "дорого, но да"), ("X1", "none", 2,
-                                                                                                     "цена хостинга")]),
-                                                        order=order()),
-                               ("keeper", "r3"): lock("st-0001")}, only="keeper")
+        r, runner = self.play(
+            {
+                ("keeper", "r1"): dict(
+                    ans([("B49", "agree", 3, "дорого, но да"), ("X1", "none", 2, "цена хостинга")]), order=order()
+                ),
+                ("keeper", "r3"): lock("st-0001"),
+            },
+            only="keeper",
+        )
         self.assertEqual([(c[0], c[1]) for c in runner.calls], [("keeper", "r1"), ("keeper", "r3")])
         spec1 = runner.calls[0][3]
         self.assertNotIn("brainstorm_proposal", spec1.schema["properties"])  # a brainstorm needs the team
@@ -41,21 +45,36 @@ class SoloRoundTest(Base):
         # the stakes debited and returned, hers only; the order and the lock debited
         led = Ledger(self.t.state)
         mine = [e for e in led.entries() if e.get("round") == r["id"]]
-        self.assertEqual([(e["type"], e["character"], e["amount"]) for e in mine], [
-            ("stake", "keeper", -3), ("stake", "keeper", -2), ("auto_refund", "keeper", 3),
-            ("auto_refund", "keeper", 2), ("order", "keeper", -5), ("lock", "keeper", -10)])
+        self.assertEqual(
+            [(e["type"], e["character"], e["amount"]) for e in mine],
+            [
+                ("stake", "keeper", -3),
+                ("stake", "keeper", -2),
+                ("auto_refund", "keeper", 3),
+                ("auto_refund", "keeper", 2),
+                ("order", "keeper", -5),
+                ("lock", "keeper", -10),
+            ],
+        )
         self.assertEqual(led.balance("keeper"), 5)
-        self.assertEqual({cid: led.balance(cid) for cid in characters.IDS if cid != "keeper"},
-                         {cid: 20 for cid in characters.IDS if cid != "keeper"})
+        self.assertEqual(
+            {cid: led.balance(cid) for cid in characters.IDS if cid != "keeper"},
+            {cid: 20 for cid in characters.IDS if cid != "keeper"},
+        )
         # thoughts: hers only
         self.assertEqual([cid for cid in characters.IDS if Persona(self.t.state, cid).thoughts(10)], ["keeper"])
         rep = r["report"]
         self.assertIn("# Команда: бюллетень, сольный раунд (Копилка), {}".format(r["id"]), rep)
-        self.assertIn("Сольный раунд: отвечает только Копилка; дебатов нет, мозговой штурм не созывается; ставки, "
-                      "журнал, выплаты, решения и рефлексия — как в полном раунде, только для неё. Капы — на одного: "
-                      "0.076%UW (0.76 MTok), 2 вызова.", rep)
+        self.assertIn(
+            "Сольный раунд: отвечает только Копилка; дебатов нет, мозговой штурм не созывается; ставки, "
+            "журнал, выплаты, решения и рефлексия — как в полном раунде, только для неё. Капы — на одного: "
+            "0.076%UW (0.76 MTok), 2 вызова.",
+            rep,
+        )
         self.assertEqual(list(self.rows(rep, "## Команда").keys()), ["Копилка"])
-        self.assertEqual(self.rows(rep), {"Копилка": ["Копилка", "20", "B49: 3, X1: 2", "5", "5", "0", "-5", "-10", "5"]})
+        self.assertEqual(
+            self.rows(rep), {"Копилка": ["Копилка", "20", "B49: 3, X1: 2", "5", "5", "0", "-5", "-10", "5"]}
+        )
         self.assertIn("- Копилка: согласна (ставка токенов: 3): дорого, но да", rep)
         self.assertNotIn("Строитель", rep)
         self.assertNotIn("## Дебаты", rep)
@@ -65,8 +84,9 @@ class SoloRoundTest(Base):
         self.assertEqual(Ballots(self.t.state).get(r["id"])["title"], "Бюллетень (соло: Копилка)")
         # the reflection gate: the owner's payout on the solo round opens hers, as in a full round
         self.assertEqual(changes_since(self.t.state, "keeper"), ([], []))
-        rc, out, err = self.team("payout", "keeper", "2", "--reason", "цена хостинга в точку", "--round", r["id"],
-                                 "--point", "X1")
+        rc, out, err = self.team(
+            "payout", "keeper", "2", "--reason", "цена хостинга в точку", "--round", r["id"], "--point", "X1"
+        )
         self.assertEqual(rc, 0, err)
         owner, _ = changes_since(self.t.state, "keeper")
         self.assertEqual([e["type"] for e in owner], ["payout"])
@@ -79,6 +99,7 @@ class SoloRoundTest(Base):
     def test_a_resumed_solo_round_keeps_its_lock_pass(self):
         from depot2.executors import FatalError
         from depot2.round import RoundAborted
+
         self.stack_one()
         with self.assertRaises(RoundAborted):
             self.play({("keeper", "r1"): FatalError("API error 500")}, only="keeper")
@@ -107,16 +128,29 @@ class SoloRoundTest(Base):
         self.stack_one()
         lines = []
         from depot2.round import run_round
-        run_round(self.t.state, self.t.cfg, "discuss", self.input, dry_run=True, out=lines.append, only="painter",
-                  snapshot=self.snapshot)
+
+        run_round(
+            self.t.state,
+            self.t.cfg,
+            "discuss",
+            self.input,
+            dry_run=True,
+            out=lines.append,
+            only="painter",
+            snapshot=self.snapshot,
+        )
         text = "\n".join(lines)
-        self.assertIn("SOLO round: only Палитра, Краски answers (round 1 and the lock pass; no debate, no brainstorm)",
-                      text)
+        self.assertIn(
+            "SOLO round: only Палитра, Краски answers (round 1 and the lock pass; no debate, no brainstorm)", text
+        )
         self.assertIn("  round 1: 1 call, up to 4 tool turns each", text)
         self.assertIn("  round 2: none (a solo round: nobody to debate with)", text)
         self.assertIn("round caps: 0.076%UW (0.76 MTok), 2 calls (scaled to one character)", text)
-        self.assertIn("the fuse: stop at 90% of a usage window, and refuse a call when the window's last reading "
-                      "+ the spend since + its cap would reach 90%UW (900 MTok)", text)
+        self.assertIn(
+            "the fuse: stop at 90% of a usage window, and refuse a call when the window's last reading "
+            "+ the spend since + its cap would reach 90%UW (900 MTok)",
+            text,
+        )
         self.assertIn("  round 1: 1 call, up to 4 tool turns each, cap 0.016%UW (0.16 MTok), 900s", text)
         self.assertNotIn("$", text.replace("--max-budget-usd", ""))
         self.assertIn("the lock pass (round 3): up to 1 call,", text)
@@ -138,7 +172,9 @@ class SoloCliTest(unittest.TestCase):
     team = CliTest.team
 
     def test_a_team_stack_item_runs_a_solo_round(self):
-        self.team("seed", "--specs", os.path.join(self.dir, "brief.md"), "--ledger", os.path.join(self.dir, "seed.json"))
+        self.team(
+            "seed", "--specs", os.path.join(self.dir, "brief.md"), "--ledger", os.path.join(self.dir, "seed.json")
+        )
         q = os.path.join(self.dir, "q.md")
         out = self.team("tstack", "add", "--kind", "ballot", "--input", q, "--who", "Копилка").stdout
         self.assertIn("tm-0001 added to the team queue (1/4)", out)

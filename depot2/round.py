@@ -64,8 +64,9 @@ def last_review_since(state):
     if os.path.isdir(rd):
         for d in os.listdir(rd):
             rj = read_json(os.path.join(rd, d, "round.json"))
-            if rj and rj.get("kind") == "review" and rj.get("status") in ("done", "imported") \
-                    and not rj.get("pr"):  # a one-PR review does not move the merge window
+            if (
+                rj and rj.get("kind") == "review" and rj.get("status") in ("done", "imported") and not rj.get("pr")
+            ):  # a one-PR review does not move the merge window
                 ts = to_utc(rj["created"])
                 best = ts if best is None or ts > best else best
     return best
@@ -82,18 +83,20 @@ class Guard:
         self.budget = float(cfg["round"]["budget_mtok"])
         self.max_calls = int(cfg["round"]["max_calls"])
         self.stop_at = float(cfg["round"]["stop_at_utilization"])
-        self.spent = 0.0        # MTok
+        self.spent = 0.0  # MTok
         self.calls = 0
         self.stopped = None
         self.util_first = None
-        self.util_last = None   # ... and after its last one
-        self.week = None        # the usage window's last reading (a share) ...
-        self.since = 0.0        # ... and the MTok spent from the call that read it on
+        self.util_last = None  # ... and after its last one
+        self.week = None  # the usage window's last reading (a share) ...
+        self.since = 0.0  # ... and the MTok spent from the call that read it on
 
     def check(self, call_cap):
         """call_cap: the next call's cap, MTok."""
+
         def f(x):
             return effort.fmt(x, self.cfg)
+
         if self.stopped:
             raise RoundStop(self.stopped)
         if self.calls >= self.max_calls:
@@ -103,8 +106,15 @@ class Guard:
         if self.week is not None:
             ahead = self.week * 100 + (self.since + call_cap) / effort.per_pct(self.cfg)
             if ahead >= self.stop_at * 100:
-                raise RoundStop("fuse: the window {} + {} since + {} for this call ≈ {}%UW ≥ the stop at {}".format("%.1f%%UW" % (self.week * 100), f(self.since), f(call_cap),
-                                   f"{ahead:.2f}", "%.0f%%UW" % (self.stop_at * 100)))
+                raise RoundStop(
+                    "fuse: the window {} + {} since + {} for this call ≈ {}%UW ≥ the stop at {}".format(
+                        "%.1f%%UW" % (self.week * 100),
+                        f(self.since),
+                        f(call_cap),
+                        f"{ahead:.2f}",
+                        "%.0f%%UW" % (self.stop_at * 100),
+                    )
+                )
 
     def record(self, res):
         self.calls += 1
@@ -135,13 +145,16 @@ def repo_snapshot(cfg, out=print, commit_wanted=None):
         return None, None
 
     def git(*args, **kw):
-        return subprocess.run(["git", "-C", clone, *list(args)], capture_output=True,
-                              timeout=120, **kw)
+        return subprocess.run(["git", "-C", clone, *list(args)], capture_output=True, timeout=120, **kw)
 
     if r.get("fetch"):
         f = git("fetch", "-q", "origin", commit_wanted or "main")
         if f.returncode != 0:
-            out("warning: git fetch failed, reading what is already fetched: {}".format(f.stderr.decode("utf-8", "replace").strip()[:200]))
+            out(
+                "warning: git fetch failed, reading what is already fetched: {}".format(
+                    f.stderr.decode("utf-8", "replace").strip()[:200]
+                )
+            )
     rev = git("rev-parse", "--verify", (commit_wanted or r.get("ref", "origin/main")) + "^{commit}")
     if rev.returncode != 0:
         return None, None
@@ -212,7 +225,9 @@ def solo_caps(cfg, lock_calls):
     """
     planned = float(cfg["free"]["budget_mtok_r1"]) + (float(cfg["lock"]["budget_mtok"]) if lock_calls else 0.0)
     given = cfg["solo"]["budget_mtok"]
-    budget = float(given) if given is not None else max(float(cfg["round"]["budget_mtok"]) / len(characters.IDS), planned)
+    budget = (
+        float(given) if given is not None else max(float(cfg["round"]["budget_mtok"]) / len(characters.IDS), planned)
+    )
     return round(budget, 4), min(int(cfg["round"]["max_calls"]), 1 + lock_calls)
 
 
@@ -221,15 +236,42 @@ def read_dirs(cfg):
     return [os.path.expanduser(d) for d in cfg["read_dirs"] if os.path.isdir(os.path.expanduser(d))]
 
 
-def run_round(state, cfg, kind, input_path=None, contexts=(), since=None, dry_run=False,
-              runner=None, out=print, gh=None, snapshot=None, pr=None, brainstorm=None, only=None, resume=None):
+def run_round(
+    state,
+    cfg,
+    kind,
+    input_path=None,
+    contexts=(),
+    since=None,
+    dry_run=False,
+    runner=None,
+    out=print,
+    gh=None,
+    snapshot=None,
+    pr=None,
+    brainstorm=None,
+    only=None,
+    resume=None,
+):
     snapshot = snapshot or repo_snapshot
     if resume is not None:
         rec = resumable(state, resume)
         holder = {"pr": rec.get("pr"), "only": rec.get("only"), "resume": rec}
         try:
-            return _run_round(state, cfg, rec["kind"], rec.get("input"), rec.get("contexts") or (), rec.get("since"),
-                              dry_run, runner, out, gh, snapshot, holder)
+            return _run_round(
+                state,
+                cfg,
+                rec["kind"],
+                rec.get("input"),
+                rec.get("contexts") or (),
+                rec.get("since"),
+                dry_run,
+                runner,
+                out,
+                gh,
+                snapshot,
+                holder,
+            )
         finally:
             if holder.get("dir"):
                 shutil.rmtree(holder["dir"], ignore_errors=True)
@@ -250,8 +292,7 @@ def run_round(state, cfg, kind, input_path=None, contexts=(), since=None, dry_ru
         input_path = entry["topic_file"]
         holder["brainstorm"] = entry
     try:
-        return _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, out, gh,
-                          snapshot, holder)
+        return _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, out, gh, snapshot, holder)
     finally:
         if holder.get("dir"):
             shutil.rmtree(holder["dir"], ignore_errors=True)
@@ -267,11 +308,16 @@ def resumable(state, rid):
     if rec is None:
         raise ValueError(f"no round {rid} in {state.rounds_dir()}")
     if rec.get("status") != "aborted":
-        raise ValueError("round {} is {}: --resume goes on only with an aborted round (a fatal error in round 1 "
-                         "or 2)".format(rid, rec.get("status")))
+        raise ValueError(
+            "round {} is {}: --resume goes on only with an aborted round (a fatal error in round 1 or 2)".format(
+                rid, rec.get("status")
+            )
+        )
     if rec.get("kind") == "brainstorm" or rec.get("brainstorm_of"):
-        raise ValueError(f"round {rid} is a brainstorm: its fee came back when it aborted, so it is not resumed; the "
-                         "owner approves it again and it runs anew")
+        raise ValueError(
+            f"round {rid} is a brainstorm: its fee came back when it aborted, so it is not resumed; the "
+            "owner approves it again and it runs anew"
+        )
     if not os.path.isfile(os.path.join(rdir, "bundle.md")):
         raise ValueError(f"round {rid} has no bundle.md: nothing to go on with")
     return rec
@@ -287,17 +333,18 @@ def saved_answers(rdir):
     d = os.path.join(rdir, "answers")
     out = {}
     for f in sorted(os.listdir(d)) if os.path.isdir(d) else ():
-        cid, _, stage = f[:-len(".json")].rpartition("-") if f.endswith(".json") else ("", "", "")
+        cid, _, stage = f[: -len(".json")].rpartition("-") if f.endswith(".json") else ("", "", "")
         if cid in characters.IDS and stage in ("r1", "r2"):
             out[(cid, stage)] = read_json(os.path.join(d, f))
     return out
 
 
-def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, out, gh, snapshot,
-               holder):
+def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, out, gh, snapshot, holder):
     if runner is None:
+
         def runner(spec):
             return run_call(spec, cfg, validate=schema.validate)
+
     ledger = Ledger(state)
     pr = holder.get("pr")
     only = holder.get("only")
@@ -308,17 +355,26 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
         if kind == "review" and since is None and pr is None:
             since = last_review_since(state)
         since_utc = to_utc(since) if since else None
-        b = bundle_mod.build(kind, cfg, input_path, contexts, since_utc, pr=pr, state=state,
-                             **({"gh": gh} if gh else {}))
+        b = bundle_mod.build(
+            kind, cfg, input_path, contexts, since_utc, pr=pr, state=state, **({"gh": gh} if gh else {})
+        )
         # The results of the orders done since they were last shown: the characters read the facts.
         shown = extras.Orders(state).unshown_done()
         if shown:
-            b.add(t("round.orders_results"), _orders_text(shown),
-                  cfg["bundle"]["context_max_chars"], t("round.orders_results_what"))
+            b.add(
+                t("round.orders_results"),
+                _orders_text(shown),
+                cfg["bundle"]["context_max_chars"],
+                t("round.orders_results_what"),
+            )
         # The stack (with its ids and locks) and the owner's ballot queue: what the team works within.
         b.add(t("round.stack"), stk.md(heading=False), cfg["bundle"]["context_max_chars"], t("round.stack_what"))
-        b.add(t("round.ballots"), stack_mod.Ballots(state).md(heading=False),
-              cfg["bundle"]["context_max_chars"], t("round.ballots_what"))
+        b.add(
+            t("round.ballots"),
+            stack_mod.Ballots(state).md(heading=False),
+            cfg["bundle"]["context_max_chars"],
+            t("round.ballots_what"),
+        )
         points = [dict(p) for p in b.points] + extras.standing_points(cfg)  # X1, X2 after the input's own
         bundle_mod.check_unique(points)
         context = b.text(cfg["bundle"]["max_chars"])
@@ -355,26 +411,66 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
         return None
     if dry_run:
         planned = ["<a snapshot of %s>" % (f"PR #{pr}'s head" if pr else cfg["deep_repo"].get("ref")), *dirs]
-        _print_plan(out, cfg, kind, b, points, r1_prompts(planned), balances, sch1, planned, only=only,
-                    lock_pass=not stk.empty())
+        _print_plan(
+            out,
+            cfg,
+            kind,
+            b,
+            points,
+            r1_prompts(planned),
+            balances,
+            sch1,
+            planned,
+            only=only,
+            lock_pass=not stk.empty(),
+        )
         if holder.get("brainstorm"):
             e = holder["brainstorm"]
-            out("brainstorm {}: called by {} in {}; topic file {}".format(e["id"], characters.name(e["initiator"]),
-                                                                   e["round"], e["topic_file"]))
-        out("results of %d done orders go into the bundle%s" % (len(shown), (": " + ", ".join(o["id"] for o in shown))  # noqa: UP031
-                                                                 if shown else ""))
-        out("the stack: %d in slots, %d waiting; the lock pass (round 3): %s"  # noqa: UP031
-            % (len(stk.in_slots()), len(stk.queue()), "skipped, the stack is empty" if stk.empty() else
-               "up to %d call%s, up to %d tool turns each, cap %s, %d tok. a lock"  # noqa: UP031
-               % (len(cast), "" if len(cast) == 1 else "s", cfg["lock"]["max_tool_turns"],
-                  effort.fmt(cfg["lock"]["budget_mtok"], cfg), cfg["lock"]["price"])))
+            out(
+                "brainstorm {}: called by {} in {}; topic file {}".format(
+                    e["id"], characters.name(e["initiator"]), e["round"], e["topic_file"]
+                )
+            )
+        out(
+            "results of %d done orders go into the bundle%s"  # noqa: UP031
+            % (
+                len(shown),
+                (": " + ", ".join(o["id"] for o in shown)) if shown else "",
+            )
+        )
+        out(
+            "the stack: %d in slots, %d waiting; the lock pass (round 3): %s"  # noqa: UP031
+            % (
+                len(stk.in_slots()),
+                len(stk.queue()),
+                "skipped, the stack is empty"
+                if stk.empty()
+                else "up to %d call%s, up to %d tool turns each, cap %s, %d tok. a lock"  # noqa: UP031
+                % (
+                    len(cast),
+                    "" if len(cast) == 1 else "s",
+                    cfg["lock"]["max_tool_turns"],
+                    effort.fmt(cfg["lock"]["budget_mtok"], cfg),
+                    cfg["lock"]["price"],
+                ),
+            )
+        )
         out("the ballot queue: %d open" % len(stack_mod.Ballots(state).entries(open_only=True)))  # noqa: UP031
         return None
 
-    settings = {"model": model, "effort": effort_level, "tools": tools, "free": free,
-                "layout": cfg["prompt_layout"], "round": cfg["round"],
-                "brainstorm": cfg["brainstorm"], "orders": cfg["orders"], "lock": cfg["lock"],
-                "stack": cfg["stack"], "usage": {k: cfg["usage"][k] for k in ("mtok_per_pct", "usd_per_mtok")}}
+    settings = {
+        "model": model,
+        "effort": effort_level,
+        "tools": tools,
+        "free": free,
+        "layout": cfg["prompt_layout"],
+        "round": cfg["round"],
+        "brainstorm": cfg["brainstorm"],
+        "orders": cfg["orders"],
+        "lock": cfg["lock"],
+        "stack": cfg["stack"],
+        "usage": {k: cfg["usage"][k] for k in ("mtok_per_pct", "usd_per_mtok")},
+    }
     guard = Guard(cfg)
     costs = []
     notes = []  # what the report should say about the process
@@ -386,14 +482,23 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
         for sub in ("prompts", "raw", "answers"):
             os.makedirs(os.path.join(rdir, sub), exist_ok=True)
         _w(state, os.path.join(rdir, "bundle.md"), context)
-        rec = {"id": rid, "kind": kind, "created": now_iso(), "status": "running",
-               "input": os.path.abspath(os.path.expanduser(input_path)) if input_path else None,
-               "contexts": [os.path.abspath(os.path.expanduser(c)) for c in contexts or ()],
-               "since": since_utc, "pr": pr, "pr_title": (b.pr or {}).get("title"),
-               "sources": b.sources, "cuts": b.cuts, "points": points,
-               "balances_before": balances,
-               "settings": settings,
-               "orders_shown": [o["id"] for o in shown]}
+        rec = {
+            "id": rid,
+            "kind": kind,
+            "created": now_iso(),
+            "status": "running",
+            "input": os.path.abspath(os.path.expanduser(input_path)) if input_path else None,
+            "contexts": [os.path.abspath(os.path.expanduser(c)) for c in contexts or ()],
+            "since": since_utc,
+            "pr": pr,
+            "pr_title": (b.pr or {}).get("title"),
+            "sources": b.sources,
+            "cuts": b.cuts,
+            "points": points,
+            "balances_before": balances,
+            "settings": settings,
+            "orders_shown": [o["id"] for o in shown],
+        }
         if only:
             rec["only"] = only
         if holder.get("brainstorm"):
@@ -417,12 +522,24 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
         notes += [quarantine_note(q) for q in quarantined]
         rec = dict(resume)
         why = rec.pop("reason", None)
-        rec.setdefault("resumed", []).append({"at": now_iso(), "aborted": rec.pop("finished", None), "reason": why,
-                                              "kept": ["{}-{}".format(*k) for k in sorted(saved)],
-                                              "repo_commit": resume.get("repo_commit")})
+        rec.setdefault("resumed", []).append(
+            {
+                "at": now_iso(),
+                "aborted": rec.pop("finished", None),
+                "reason": why,
+                "kept": ["{}-{}".format(*k) for k in sorted(saved)],
+                "repo_commit": resume.get("repo_commit"),
+            }
+        )
         rec.update(status="running", points=points, settings=settings)
-        notes.append(t("round.resumed", why=(why or "—")[:200], n=len(saved),
-                       kept=", ".join("{}-{}".format(*k) for k in sorted(saved)) or "—"))
+        notes.append(
+            t(
+                "round.resumed",
+                why=(why or "—")[:200],
+                n=len(saved),
+                kept=", ".join("{}-{}".format(*k) for k in sorted(saved)) or "—",
+            )
+        )
         # the tree the kept answers read, without a fetch: it was fetched for them
         commit_wanted = resume.get("repo_commit")
         snap_cfg = dict(cfg, deep_repo=dict(cfg["deep_repo"], fetch=False))
@@ -443,18 +560,36 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
             state.touch(sys_path)
         _w(state, os.path.join(rdir, "prompts", f"{cid}-{stage}.user.md"), user_text)
         raw_path = os.path.join(rdir, "raw", f"{cid}-{stage}.jsonl")
-        spec = CallSpec(f"{rid}/{cid}-{stage}", model, effort_level, sys_path, user_text, sch,
-                        tools=tools, max_tool_turns=max_tool_turns, budget_mtok=budget,
-                        budget_usd=effort.to_usd(budget, cfg), timeout_s=timeout, cwd=rdir, add_dirs=readable,
-                        deny=cfg["deny_read"], raw_path=raw_path)
+        spec = CallSpec(
+            f"{rid}/{cid}-{stage}",
+            model,
+            effort_level,
+            sys_path,
+            user_text,
+            sch,
+            tools=tools,
+            max_tool_turns=max_tool_turns,
+            budget_mtok=budget,
+            budget_usd=effort.to_usd(budget, cfg),
+            timeout_s=timeout,
+            cwd=rdir,
+            add_dirs=readable,
+            deny=cfg["deny_read"],
+            raw_path=raw_path,
+        )
         res = None
         try:
             res = runner(spec)
             return res
         except (CallFailed, FatalError) as e:
-            res = e.result or {"call": spec.call_id, "model": model, "effort": effort_level,
-                               "status": "fatal" if isinstance(e, FatalError) else "failed",
-                               "reason": str(e), "cost_usd": None}
+            res = e.result or {
+                "call": spec.call_id,
+                "model": model,
+                "effort": effort_level,
+                "status": "fatal" if isinstance(e, FatalError) else "failed",
+                "reason": str(e),
+                "cost_usd": None,
+            }
             raise
         finally:
             if res is not None:
@@ -470,13 +605,13 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
                 _wj(state, os.path.join(rdir, "costs.json"), _cost_summary(costs, guard))
 
     point_ids = [p["id"] for p in points]
-    answers = {}      # cid -> the round-1 answer
-    finals = {}       # cid -> {pid: position}
+    answers = {}  # cid -> the round-1 answer
+    finals = {}  # cid -> {pid: position}
     rebuttals = []
     trims = {}
     proposals, invalid = [], []  # the brainstorm proposals of round 1, and the ones the code refused
-    votes, took_part = {}, {}    # cid -> {proposal: (vote, line)}; cid -> its debate call succeeded
-    order_asks = []              # (cid, stage, the order as asked)
+    votes, took_part = {}, {}  # cid -> {proposal: (vote, line)}; cid -> its debate call succeeded
+    order_asks = []  # (cid, stage, the order as asked)
     context2 = context
     try:
         # --- round 1: independent ------------------------------------------------------------
@@ -490,8 +625,16 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
                 continue
             else:
                 try:
-                    res = call(cid, "r1", system_text, user_text, sch1, free["budget_mtok_r1"],
-                               free["timeout_s"], free["max_tool_turns_r1"])
+                    res = call(
+                        cid,
+                        "r1",
+                        system_text,
+                        user_text,
+                        sch1,
+                        free["budget_mtok_r1"],
+                        free["timeout_s"],
+                        free["max_tool_turns_r1"],
+                    )
                 except CallFailed as e:
                     notes.append(t("round.r1_failed", name=characters.name(cid), error=e))
                     continue
@@ -507,9 +650,14 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
                 prop.update(id="BR%d" % (len(proposals) + 1), initiator=cid)  # noqa: UP031
                 proposals.append(prop)
             elif why_not:
-                invalid.append({"initiator": cid, "status": "failed",
-                                "reasons": [t("round.proposal_refused", why=why_not)],
-                                "topic": (a1.get("brainstorm_proposal") or {}).get("topic") or ""})
+                invalid.append(
+                    {
+                        "initiator": cid,
+                        "status": "failed",
+                        "reasons": [t("round.proposal_refused", why=why_not)],
+                        "topic": (a1.get("brainstorm_proposal") or {}).get("topic") or "",
+                    }
+                )
             if a1.get("order"):
                 order_asks.append((cid, "r1", a1["order"]))
 
@@ -523,10 +671,17 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
             for prop in (answers.get(cid) or {}).get("proposals") or []:
                 n += 1
                 pid = "N%d" % n  # noqa: UP031
-                points.append({"id": pid, "title": prop["title"].strip(), "question": prop["question"].strip(),
-                               "recommendation": "", "source": "proposal", "author": cid})
-                finals[cid][pid] = {"position": "agree", "stake": max(0, int(prop.get("stake") or 0)),
-                                    "comment": ""}
+                points.append(
+                    {
+                        "id": pid,
+                        "title": prop["title"].strip(),
+                        "question": prop["question"].strip(),
+                        "recommendation": "",
+                        "source": "proposal",
+                        "author": cid,
+                    }
+                )
+                finals[cid][pid] = {"position": "agree", "stake": max(0, int(prop.get("stake") or 0)), "comment": ""}
         point_ids = [p["id"] for p in points]
         for cid in characters.IDS:
             cut = trim_to(finals[cid], ledger.balance(cid), point_ids, free_max)
@@ -546,12 +701,21 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
                     a2 = saved[(cid, "r2")]
                 else:
                     ident = prompts.identity(personas[cid], cid, bal, cfg["thoughts_in_prompt"])
-                    task = prompts.task_r2(cid, finals[cid], points, bal, cfg, free["max_tool_turns_r2"], readable,
-                                           pids)
+                    task = prompts.task_r2(
+                        cid, finals[cid], points, bal, cfg, free["max_tool_turns_r2"], readable, pids
+                    )
                     system_text, user_text = prompts.layout(cfg, rules, context2, ident, task)
                     try:
-                        res = call(cid, "r2", system_text, user_text, sch2, free["budget_mtok_r2"],
-                                   free["timeout_s"], free["max_tool_turns_r2"])
+                        res = call(
+                            cid,
+                            "r2",
+                            system_text,
+                            user_text,
+                            sch2,
+                            free["budget_mtok_r2"],
+                            free["timeout_s"],
+                            free["max_tool_turns_r2"],
+                        )
                     except CallFailed as e:
                         notes.append(t("round.r2_failed", name=characters.name(cid), error=e))
                         continue
@@ -574,18 +738,27 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
                     trims.setdefault(cid, []).extend(cut)
                 for rb in a2.get("rebuttals") or []:
                     if rb["to"] != cid:
-                        rebuttals.append({"from": cid, "to": rb["to"], "point": rb["point"],
-                                          "text": rb["text"].strip()})
+                        rebuttals.append(
+                            {"from": cid, "to": rb["to"], "point": rb["point"], "text": rb["text"].strip()}
+                        )
     except FatalError as e:
         rec.update(status="aborted", reason=str(e), finished=now_iso(), points=points, quarantined=quarantined)
         if holder.get("brainstorm"):  # the brainstorm died: its fee comes back, the one exception
-            rec["brainstorm_refunds"] = _brainstorm_failed(state, ledger, holder["brainstorm"], rid,
-                                                           f"fatal error in {rid}: {str(e)[:200]}")
+            rec["brainstorm_refunds"] = _brainstorm_failed(
+                state, ledger, holder["brainstorm"], rid, f"fatal error in {rid}: {str(e)[:200]}"
+            )
         _wj(state, os.path.join(rdir, "round.json"), rec)
         state.commit(f"team: round {rid} ABORTED: {str(e)[:120]}")
-        raise RoundAborted("round {} aborted, no stakes debited{}: {}{}".format(rid, ", the brainstorm's fee returned" if holder.get("brainstorm") else "", e,  # noqa: B904
-                              "" if holder.get("brainstorm") else
-                              f"; the answers saved stay: depot2 round --resume {rid} calls only for the missing ones"))
+        raise RoundAborted(  # noqa: B904
+            "round {} aborted, no stakes debited{}: {}{}".format(
+                rid,
+                ", the brainstorm's fee returned" if holder.get("brainstorm") else "",
+                e,
+                ""
+                if holder.get("brainstorm")
+                else f"; the answers saved stay: depot2 round --resume {rid} calls only for the missing ones",
+            )
+        )
 
     stake_txs = []
     for cid in characters.IDS:
@@ -604,8 +777,14 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
     # Each character decides alone, after the debate and the round's debits, with the stack in
     # the bundle. No calls when the stack is empty. It counts against the round's caps.
     fatal = None
-    locks = {"pass": "skipped", "why": t("round.stack_empty"), "calls": 0, "placed": [], "refused": [],
-             "lifted": lifted}
+    locks = {
+        "pass": "skipped",
+        "why": t("round.stack_empty"),
+        "calls": 0,
+        "placed": [],
+        "refused": [],
+        "lifted": lifted,
+    }
     lock_asks = []
     if not stk.empty():
         locks.update(**{"pass": "ran", "why": None})
@@ -615,15 +794,29 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
         for cid in cast:
             bal = ledger.balance(cid)
             if bal < int(lc["price"]):
-                locks["refused"].append({"character": cid, "object": None, "reason":
-                                         t("round.lock_cannot_pay", bal=int(bal), price=int(lc["price"]))})
+                locks["refused"].append(
+                    {
+                        "character": cid,
+                        "object": None,
+                        "reason": t("round.lock_cannot_pay", bal=int(bal), price=int(lc["price"])),
+                    }
+                )
                 continue
             ident = prompts.identity(personas[cid], cid, bal, cfg["thoughts_in_prompt"])
-            system_text, user_text = prompts.layout(cfg, rules, context3, ident,
-                                                    prompts.task_r3(bal, cfg, lc["max_tool_turns"], readable))
+            system_text, user_text = prompts.layout(
+                cfg, rules, context3, ident, prompts.task_r3(bal, cfg, lc["max_tool_turns"], readable)
+            )
             try:
-                res = call(cid, "r3", system_text, user_text, sch3, float(lc["budget_mtok"]), float(lc["timeout_s"]),
-                           int(lc["max_tool_turns"]))
+                res = call(
+                    cid,
+                    "r3",
+                    system_text,
+                    user_text,
+                    sch3,
+                    float(lc["budget_mtok"]),
+                    float(lc["timeout_s"]),
+                    int(lc["max_tool_turns"]),
+                )
             except CallFailed as e:
                 notes.append(t("round.r3_failed", name=characters.name(cid), error=e))
                 continue
@@ -649,13 +842,30 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
         extras.Brainstorms(state).add(holder["brainstorm"]["id"], "done", ran_in=rid)
     balances_after = ledger.balances()
     summary = _cost_summary(costs, guard)
-    rec.update(mtok=summary["mtok"], status="done", finished=now_iso(), points=points, finals=finals,
-               rebuttals=rebuttals, trims=trims, notes=notes,
-               stakes=[x["id"] for x in stake_txs], auto_refunds=[x["id"] for x in back_txs],
-               brainstorm=bs, orders=orders, locks=locks, stack_history_n=len(stk.history()),
-               balances_after=balances_after, quarantined=quarantined,
-               cost_usd=summary["total_usd"], tokens=summary["tokens"], calls=summary["calls"],
-               utilization=summary["utilization"], genders=genders, ledger_seq=ledger.last_seq())
+    rec.update(
+        mtok=summary["mtok"],
+        status="done",
+        finished=now_iso(),
+        points=points,
+        finals=finals,
+        rebuttals=rebuttals,
+        trims=trims,
+        notes=notes,
+        stakes=[x["id"] for x in stake_txs],
+        auto_refunds=[x["id"] for x in back_txs],
+        brainstorm=bs,
+        orders=orders,
+        locks=locks,
+        stack_history_n=len(stk.history()),
+        balances_after=balances_after,
+        quarantined=quarantined,
+        cost_usd=summary["total_usd"],
+        tokens=summary["tokens"],
+        calls=summary["calls"],
+        utilization=summary["utilization"],
+        genders=genders,
+        ledger_seq=ledger.last_seq(),
+    )
     _wj(state, os.path.join(rdir, "round.json"), rec)
     _wj(state, os.path.join(rdir, "costs.json"), summary)
     # The report reads only what was just saved, so `depot2 report --round` rebuilds it exactly.
@@ -664,15 +874,26 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
     add_to_ballots(state, rec)  # the owner's ballot queue: every finished round, as waiting
     state.commit("team: round %s (%d calls, %s)" % (rid, summary["calls"], effort.fmt(summary["mtok"], cfg)))  # noqa: UP031
     out("")
-    out("round %s: %d calls, %d tool turns, %d tokens, %.0fs, %s; window %s; report %s"  # noqa: UP031
-        % (rid, summary["calls"], summary["tool_turns"], summary["tokens"]["total"], summary["duration_s"],
-           effort.fmt(summary["mtok"], cfg), _window(summary["utilization"]), os.path.join(rdir, "report.md")))
+    out(
+        "round %s: %d calls, %d tool turns, %d tokens, %.0fs, %s; window %s; report %s"  # noqa: UP031
+        % (
+            rid,
+            summary["calls"],
+            summary["tool_turns"],
+            summary["tokens"]["total"],
+            summary["duration_s"],
+            effort.fmt(summary["mtok"], cfg),
+            _window(summary["utilization"]),
+            os.path.join(rdir, "report.md"),
+        )
+    )
     return {"id": rid, "dir": rdir, "report": report, "costs": summary, "fatal": fatal}
 
 
 def add_to_ballots(state, rec):
     """Append a finished round to the owner's ballot queue, its points in the report's order."""
     from .report import order_points
+
     order = [p["id"] for p, _ in order_points(rec.get("points") or [], rec.get("finals") or {})]
     return stack_mod.Ballots(state).add(rec, order, stack_mod.round_title(rec))
 
@@ -691,8 +912,16 @@ def _locks_lifted_since_last_round(state, stk):
     for h in stk.history()[seen:]:
         if h["event"] == "unlock":
             lk = h["lock"]
-            out.append({"object": h["object"], "id": lk["id"], "by": lk["by"], "condition": lk["condition"],
-                        "how": h.get("how"), "reason": h.get("reason")})
+            out.append(
+                {
+                    "object": h["object"],
+                    "id": lk["id"],
+                    "by": lk["by"],
+                    "condition": lk["condition"],
+                    "how": h.get("how"),
+                    "reason": h.get("reason"),
+                }
+            )
     return out
 
 
@@ -703,14 +932,19 @@ def _place_locks(state, cfg, ledger, stk, rid, asks):
     price = int(cfg["lock"]["price"])
     placed, refused, seen = [], [], set()
     for cid, ask in asks:
-        item = {"character": cid, "object": (ask.get("object") or "").strip(),
-                "condition": " ".join((ask.get("condition") or "").split()), "why": " ".join((ask.get("why") or "").split())}
+        item = {
+            "character": cid,
+            "object": (ask.get("object") or "").strip(),
+            "condition": " ".join((ask.get("condition") or "").split()),
+            "why": " ".join((ask.get("why") or "").split()),
+        }
         why_not = None
         if cid in seen:
             why_not = t("round.lock_second")
         elif not item["object"] or not item["condition"] or not item["why"]:
-            why_not = t("round.lock_unfilled",
-                        fields=", ".join(k for k in ("object", "condition", "why") if not item[k]))
+            why_not = t(
+                "round.lock_unfilled", fields=", ".join(k for k in ("object", "condition", "why") if not item[k])
+            )
         elif not any(o["id"] == item["object"] for o in stk.objects()):
             why_not = t("round.lock_no_object", id=item["object"])
         elif stk.get(item["object"]).get("lock"):
@@ -722,7 +956,9 @@ def _place_locks(state, cfg, ledger, stk, rid, asks):
             item["reason"] = why_not
             refused.append(item)
             continue
-        tx = ledger.lock(cid, price, rid, item["object"], "lock on {}: {}".format(item["object"], item["condition"][:80]))
+        tx = ledger.lock(
+            cid, price, rid, item["object"], "lock on {}: {}".format(item["object"], item["condition"][:80])
+        )
         lock = stk.lock(item["object"], cid, item["condition"], item["why"], rid, tx["id"], price)
         item.update(id=lock["id"], tx=tx["id"], price=price, title=stk.get(item["object"])["title"])
         placed.append(item)
@@ -733,9 +969,12 @@ def _orders_text(orders):
     out = []
     for o in orders:
         out.append(t("round.order_head", id=o["id"], name=characters.name(o["character"]), round=o["round"]))
-        out += [t("round.order_command", command=o["command"], seeds=o["seeds"], hardware=o["hardware"]),
-                t("round.order_threshold", text=o["threshold"]), t("round.order_forecast", text=o["forecast"]),
-                t("round.order_why", text=o["why"])]
+        out += [
+            t("round.order_command", command=o["command"], seeds=o["seeds"], hardware=o["hardware"]),
+            t("round.order_threshold", text=o["threshold"]),
+            t("round.order_forecast", text=o["forecast"]),
+            t("round.order_why", text=o["why"]),
+        ]
         out += [t("round.order_result", text=r) for r in o.get("results") or []]
         if o.get("note"):
             out.append(t("round.order_note", text=o["note"]))
@@ -760,14 +999,39 @@ def _brainstorm_check(state, cfg, ledger, rid, proposals, invalid, votes, took_p
         item["took_part"] = {cid: bool(took_part.get(cid)) for cid in characters.IDS}
         if r["status"] == "approved":
             bid = log.next_id()
-            txs = [ledger.brainstorm_fee(cid, r["fees"][cid], rid, bid, "initiator" if cid == r["initiator"] else "member",
-                                         "the team's brainstorm {}: «{}»".format(bid, r["topic"][:80]))
-                   for cid in characters.IDS if r["fees"][cid] > 0]
-            entry = {"id": bid, "round": rid, "initiator": r["initiator"], "topic": r["topic"], "why": r["why"],
-                     "questions": r["questions"]}
+            txs = [
+                ledger.brainstorm_fee(
+                    cid,
+                    r["fees"][cid],
+                    rid,
+                    bid,
+                    "initiator" if cid == r["initiator"] else "member",
+                    "the team's brainstorm {}: «{}»".format(bid, r["topic"][:80]),
+                )
+                for cid in characters.IDS
+                if r["fees"][cid] > 0
+            ]
+            entry = {
+                "id": bid,
+                "round": rid,
+                "initiator": r["initiator"],
+                "topic": r["topic"],
+                "why": r["why"],
+                "questions": r["questions"],
+            }
             path = extras.write_topic(cfg, entry, genders.get(r["initiator"]))
-            log.add(bid, "approved", round=rid, initiator=r["initiator"], topic=r["topic"], why=r["why"],
-                    questions=r["questions"], topic_file=path, votes=item["votes"], fees=[x["id"] for x in txs])
+            log.add(
+                bid,
+                "approved",
+                round=rid,
+                initiator=r["initiator"],
+                topic=r["topic"],
+                why=r["why"],
+                questions=r["questions"],
+                topic_file=path,
+                votes=item["votes"],
+                fees=[x["id"] for x in txs],
+            )
             item.update(brainstorm=bid, topic_file=path, fee_txs=[x["id"] for x in txs])
             out["approved"] = bid
         out["proposals"].append(item)
@@ -778,9 +1042,12 @@ def _brainstorm_check(state, cfg, ledger, rid, proposals, invalid, votes, took_p
 def _brainstorm_failed(state, ledger, entry, rid, reason):
     """The brainstorm round died on a fatal error (or never ran): every fee comes back."""
     entries = ledger.entries()
-    refunds = [ledger.brainstorm_refund(ledger.get(x, entries), reason, round_id=rid)["id"] for x in entry.get("fees") or []]
-    extras.Brainstorms(state).add(entry["id"], "failed" if rid else "cancelled", reason=reason, refunds=refunds,
-                                  ran_in=rid)
+    refunds = [
+        ledger.brainstorm_refund(ledger.get(x, entries), reason, round_id=rid)["id"] for x in entry.get("fees") or []
+    ]
+    extras.Brainstorms(state).add(
+        entry["id"], "failed" if rid else "cancelled", reason=reason, refunds=refunds, ran_in=rid
+    )
     return refunds
 
 
@@ -810,8 +1077,16 @@ def _place_orders(state, cfg, ledger, rid, asks, snap_dir):
         seen.add(cid)
         oid = log.next_id()
         tx = ledger.order(cid, price, rid, oid, "order {}: {}".format(oid, o["command"][:80]))
-        log.add(oid, "queued", character=cid, round=rid, stage=stage, tx=tx["id"], price=price,
-                **{k: o[k] for k in (*extras.ORDER_FIELDS, "script")})
+        log.add(
+            oid,
+            "queued",
+            character=cid,
+            round=rid,
+            stage=stage,
+            tx=tx["id"],
+            price=price,
+            **{k: o[k] for k in (*extras.ORDER_FIELDS, "script")},
+        )
         item.update(id=oid, tx=tx["id"], price=price, **{k: o[k] for k in extras.ORDER_FIELDS})
         placed.append(item)
     return {"placed": placed, "refused": refused}
@@ -830,17 +1105,21 @@ def _cost_summary(costs, guard=None):
         for k in tok:
             tok[k] += (c.get("usage") or {}).get(k, 0)
     tok["total"] = sum(tok.values())
-    return {"calls": len(costs), "mtok": round(sum(c.get("mtok") or 0.0 for c in costs), 6),
-            "mtok_from_cost_calls": sum(1 for c in costs if effort.by_cost_only(c)),
-            "stream_calls": sum(1 for c in costs if c.get("usage_from_stream")),
-            "total_usd": round(total, 6),
-            "unknown_cost_calls": sum(1 for c in costs if c.get("cost_usd") is None),
-            "duration_s": round(sum(c.get("duration_s") or 0.0 for c in costs), 1),
-            "turns": sum(c.get("num_turns") or 0 for c in costs),
-            "tool_turns": sum(c.get("tool_turns") or 0 for c in costs),
-            "tokens": tok,
-            "utilization": {"before": guard.util_first, "after": guard.util_last} if guard else None,
-            "by_model": _by(costs, "model"), "items": costs}
+    return {
+        "calls": len(costs),
+        "mtok": round(sum(c.get("mtok") or 0.0 for c in costs), 6),
+        "mtok_from_cost_calls": sum(1 for c in costs if effort.by_cost_only(c)),
+        "stream_calls": sum(1 for c in costs if c.get("usage_from_stream")),
+        "total_usd": round(total, 6),
+        "unknown_cost_calls": sum(1 for c in costs if c.get("cost_usd") is None),
+        "duration_s": round(sum(c.get("duration_s") or 0.0 for c in costs), 1),
+        "turns": sum(c.get("num_turns") or 0 for c in costs),
+        "tool_turns": sum(c.get("tool_turns") or 0 for c in costs),
+        "tokens": tok,
+        "utilization": {"before": guard.util_first, "after": guard.util_last} if guard else None,
+        "by_model": _by(costs, "model"),
+        "items": costs,
+    }
 
 
 def _by(costs, key):
@@ -869,26 +1148,49 @@ def _print_resume_plan(out, state, cfg, rec, cast, stk):
     rdir = os.path.join(state.rounds_dir(), rec["id"])
     saved = saved_answers(rdir)
     old = read_json(os.path.join(rdir, "costs.json")) or {}
+
     def names(ids):
         return ", ".join(characters.name(c) for c in ids)
+
     out("DRY RUN: no model calls, nothing written.")
-    out("RESUME round {} ({}), aborted {}: {}".format(rec["id"], rec["kind"], rec.get("finished") or "?",
-                                                  (rec.get("reason") or "—")[:200]))
+    out(
+        "RESUME round {} ({}), aborted {}: {}".format(
+            rec["id"], rec["kind"], rec.get("finished") or "?", (rec.get("reason") or "—")[:200]
+        )
+    )
     out("kept from the aborted pass: %s" % (", ".join("{}-{}".format(*k) for k in sorted(saved)) or "nothing"))
     r1_closed = any(stage == "r2" for _, stage in saved)
     r1 = [] if r1_closed else [c for c in cast if (c, "r1") not in saved]
-    out("round 1: %s" % (("calls for " + names(r1)) if r1 else "no calls"
-                         + (" (round 2 had begun: round 1 stays as it was)" if r1_closed else "")))
+    out(
+        "round 1: %s"
+        % (
+            ("calls for " + names(r1))
+            if r1
+            else "no calls" + (" (round 2 had begun: round 1 stays as it was)" if r1_closed else "")
+        )
+    )
     if rec.get("only"):
         out("round 2: none (a solo round: nobody to debate with)")
     else:
         r2 = [c for c in characters.IDS if (c, "r2") not in saved]
         out("round 2: %s" % (("calls for " + names(r2)) if r2 else "no calls"))
-    out("the lock pass (round 3): %s" % ("skipped, the stack is empty" if stk.empty() else
-                                         "as in any round, cap {} a call".format(effort.fmt(cfg["lock"]["budget_mtok"], cfg))))
-    out("spent so far: %d calls, %s; they count against the round caps now: %s, %d calls"  # noqa: UP031
-        % (len(old.get("items") or []), effort.fmt(old.get("mtok") or 0.0, cfg),
-           effort.fmt(cfg["round"]["budget_mtok"], cfg), cfg["round"]["max_calls"]))
+    out(
+        "the lock pass (round 3): %s"
+        % (
+            "skipped, the stack is empty"
+            if stk.empty()
+            else "as in any round, cap {} a call".format(effort.fmt(cfg["lock"]["budget_mtok"], cfg))
+        )
+    )
+    out(
+        "spent so far: %d calls, %s; they count against the round caps now: %s, %d calls"  # noqa: UP031
+        % (
+            len(old.get("items") or []),
+            effort.fmt(old.get("mtok") or 0.0, cfg),
+            effort.fmt(cfg["round"]["budget_mtok"], cfg),
+            cfg["round"]["max_calls"],
+        )
+    )
 
 
 def _print_plan(out, cfg, kind, b, points, r1_prompts, balances, sch1, readable, only=None, lock_pass=True):
@@ -900,18 +1202,29 @@ def _print_plan(out, cfg, kind, b, points, r1_prompts, balances, sch1, readable,
         out(f"  - {s}")
     for c in b.cuts:
         out(f"  cut: {c}")
-    out("points: %d (%s)" % (len(points), ", ".join(p["id"] for p in points[:20])  # noqa: UP031
-                              + (" …" if len(points) > 20 else "")))
+    out(
+        "points: %d (%s)"  # noqa: UP031
+        % (
+            len(points),
+            ", ".join(p["id"] for p in points[:20]) + (" …" if len(points) > 20 else ""),
+        )
+    )
     out("layout %s; schema %d chars" % (cfg["prompt_layout"], len(json.dumps(sch1))))  # noqa: UP031
     sys_sizes = {len(s) for s, _ in r1_prompts.values()}
     for cid, (s, u) in r1_prompts.items():
-        out("  %-17s balance %3d  system %6d chars (~%d tok)  user %6d chars (~%d tok)"  # noqa: UP031
-            % (characters.name(cid), balances[cid], len(s), len(s) // 3, len(u), len(u) // 3))
+        out(
+            "  %-17s balance %3d  system %6d chars (~%d tok)  user %6d chars (~%d tok)"  # noqa: UP031
+            % (characters.name(cid), balances[cid], len(s), len(s) // 3, len(u), len(u) // 3)
+        )
     if len(sys_sizes) == 1 and cfg["prompt_layout"] == "cache" and not only:
         out("  the system prompt is identical for every character: the calls after the first read it from the cache")
     f = cfg["free"]
     tools = ",".join(cfg["tools"]) or "none"
-    out("every pass: {}, effort {}, tools {} (read-only, deny rules on top)".format(cfg["model"], cfg["effort"] or "(not passed)", tools))
+    out(
+        "every pass: {}, effort {}, tools {} (read-only, deny rules on top)".format(
+            cfg["model"], cfg["effort"] or "(not passed)", tools
+        )
+    )
     out("every pass reads the same --add-dir list (round 1 and round 2):")
     for d in readable:
         out(f"  --add-dir {d}")
@@ -919,28 +1232,50 @@ def _print_plan(out, cfg, kind, b, points, r1_prompts, balances, sch1, readable,
     for d in missing:
         out(f"  (read_dirs: {d} does not exist, left out)")
     out("  deny rules on top: %d (depot2 config lists them)" % len(cfg["deny_read"]))  # noqa: UP031
-    out(f"planned calls, one after another (caps in %UW (MTok), 1%UW = {effort.per_pct(cfg):g} MTok; the CLI's --max-budget-usd "
-        f"gets the cap x usage.usd_per_mtok {effort.usd_per_mtok(cfg):g}):")
+    out(
+        f"planned calls, one after another (caps in %UW (MTok), 1%UW = {effort.per_pct(cfg):g} MTok; the CLI's --max-budget-usd "
+        f"gets the cap x usage.usd_per_mtok {effort.usd_per_mtok(cfg):g}):"
+    )
     n = len(r1_prompts)
-    out("  round 1: %d call%s, up to %d tool turns each, cap %s, %ds"  # noqa: UP031
-        % (n, "" if n == 1 else "s", f["max_tool_turns_r1"], effort.fmt(f["budget_mtok_r1"], cfg), f["timeout_s"]))
+    out(
+        "  round 1: %d call%s, up to %d tool turns each, cap %s, %ds"  # noqa: UP031
+        % (n, "" if n == 1 else "s", f["max_tool_turns_r1"], effort.fmt(f["budget_mtok_r1"], cfg), f["timeout_s"])
+    )
     if only:
         out("  round 2: none (a solo round: nobody to debate with)")
     else:
-        out("  round 2: %d call%s, up to %d tool turns each, cap %s, %ds"  # noqa: UP031
-            % (n, "" if n == 1 else "s", f["max_tool_turns_r2"], effort.fmt(f["budget_mtok_r2"], cfg), f["timeout_s"]))
-    out("round caps: %s, %d calls%s" % (effort.fmt(cfg["round"]["budget_mtok"], cfg), cfg["round"]["max_calls"],  # noqa: UP031
-                                       " (scaled to one character)" if only else ""))
-    out("the fuse: stop at {:.0f}% of a usage window, and refuse a call when the window's last reading + the "
-        "spend since + its cap would reach {}".format(cfg["round"]["stop_at_utilization"] * 100,
-                                                 effort.share(cfg["round"]["stop_at_utilization"], cfg)))
+        out(
+            "  round 2: %d call%s, up to %d tool turns each, cap %s, %ds"  # noqa: UP031
+            % (n, "" if n == 1 else "s", f["max_tool_turns_r2"], effort.fmt(f["budget_mtok_r2"], cfg), f["timeout_s"])
+        )
+    out(
+        "round caps: %s, %d calls%s"  # noqa: UP031
+        % (
+            effort.fmt(cfg["round"]["budget_mtok"], cfg),
+            cfg["round"]["max_calls"],
+            " (scaled to one character)" if only else "",
+        )
+    )
+    out(
+        "the fuse: stop at {:.0f}% of a usage window, and refuse a call when the window's last reading + the "
+        "spend since + its cap would reach {}".format(
+            cfg["round"]["stop_at_utilization"] * 100, effort.share(cfg["round"]["stop_at_utilization"], cfg)
+        )
+    )
     out("stakes: debited when the round ends, then at once returned (auto_refund), before the report")
     bc, oc = cfg["brainstorm"], cfg["orders"]
-    out("standing questions: %s" % (", ".join("{} «{}»".format(q["id"], q["title"]) for q in cfg["standing_questions"]) or "none"))
+    out(
+        "standing questions: %s"
+        % (", ".join("{} «{}»".format(q["id"], q["title"]) for q in cfg["standing_questions"]) or "none")
+    )
     if only:
         out("the team's brainstorm: not in a solo round (it needs the team's quorum)")
     else:
-        out("the team's brainstorm: quorum %s, fee %d from the initiator + %d from each other (not returned)"  # noqa: UP031
-            % (bc["quorum"], bc["fee_initiator"], bc["fee_other"]))
-    out("orders: %d tok. each, one per character per round, hardware %s; the orchestrator runs them"  # noqa: UP031
-        % (oc["price"], "/".join(oc["hardware"])))
+        out(
+            "the team's brainstorm: quorum %s, fee %d from the initiator + %d from each other (not returned)"  # noqa: UP031
+            % (bc["quorum"], bc["fee_initiator"], bc["fee_other"])
+        )
+    out(
+        "orders: %d tok. each, one per character per round, hardware %s; the orchestrator runs them"  # noqa: UP031
+        % (oc["price"], "/".join(oc["hardware"]))
+    )
