@@ -3,6 +3,7 @@ import os
 import tempfile
 import time
 import unittest
+from pathlib import Path
 
 from helpers import FAKE, slurp
 
@@ -55,7 +56,7 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual(res["usage"]["cache_read"], 900)
         self.assertEqual(res["utilization"], 0.25)
         self.assertEqual(res["tool_turns"], 0)  # StructuredOutput is not a tool turn
-        self.assertTrue(os.path.getsize(os.path.join(self.dir, "raw.jsonl")) > 0)
+        self.assertTrue(Path(self.dir, "raw.jsonl").stat().st_size > 0)
 
     def test_turn_cap_kills_the_process(self):
         t0 = time.monotonic()

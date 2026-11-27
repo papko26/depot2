@@ -17,6 +17,7 @@ import tarfile
 import tempfile
 import time
 import unittest
+from pathlib import Path
 
 from helpers import HERE, TempState
 
@@ -131,7 +132,7 @@ class BackupBase(unittest.TestCase):
     def spawned(self):
         """The mtime of the marker a start writes before it detaches, or None: no start."""
         p = self.t.state.path(backup.DIR, backup.SPAWNED)
-        return os.path.getmtime(p) if os.path.exists(p) else None
+        return Path(p).stat().st_mtime if os.path.exists(p) else None
 
     def folder(self):
         d = os.path.join(self.cloud, "depot2-backup")
@@ -160,7 +161,7 @@ class BackupNowTest(BackupBase):
         self.assertRegex(name, r"^team-testhost-\d{8}T\d{6}Z\.tar\.gz$")
         self.assertEqual(self.folder(), [name])
         path = os.path.join(self.cloud, "depot2-backup", name)
-        self.assertEqual(os.path.getsize(path), st["size"])
+        self.assertEqual(Path(path).stat().st_size, st["size"])
         self.assertIsNone(st["last_error"])
         self.assertEqual(st["source"], self.t.state.root)
         base = os.path.basename(self.root)
@@ -454,7 +455,7 @@ class RealRcloneTest(BackupBase):
             self.assertEqual(f.read(8), b"RCLONE\x00\x00")  # rclone crypt's file header
         out = self.team("backup", "--drive", "--verify").stdout
         self.assertIn("git fsck --full ok", out)
-        self.assertEqual(os.path.getsize(conf), 0)  # rclone.conf untouched
+        self.assertEqual(Path(conf).stat().st_size, 0)  # rclone.conf untouched
         self.assert_no_secret()
 
 

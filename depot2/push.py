@@ -21,6 +21,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from pathlib import Path
 
 from . import backup
 from .i18n import t
@@ -228,7 +229,7 @@ def due(state, st, g, n, now):
     if n < int(g["every_commits"]) or _needs_person(st):
         return False
     sp = state.path(backup.DIR, SPAWNED)
-    if os.path.exists(sp) and now - os.path.getmtime(sp) < wait_min(g, st) * 60:  # noqa: SIM103
+    if os.path.exists(sp) and now - Path(sp).stat().st_mtime < wait_min(g, st) * 60:  # noqa: SIM103
         return False  # one start per window; a push still going holds its lock anyway
     return True
 

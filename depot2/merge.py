@@ -35,6 +35,7 @@ import sys
 import tempfile
 import time
 import types
+from pathlib import Path
 
 from . import hooks, i18n, mergeauto
 from .mergetrials import TrialsMixin, trial_brief, trial_cell
@@ -2807,7 +2808,7 @@ def ensure(state, cfg, sets=None, wait_s=None):
     was = lock_pid(state)
     lines = [i18n.t("merge.ensure_start", was=i18n.t("merge.ensure_stale_lock", pid=was) if was else "", n=s["open"])]
     log = os.path.join(run_dir(state), RUN_LOG)
-    if os.path.exists(log) and os.path.getsize(log) > RUN_LOG_MAX:
+    if os.path.exists(log) and Path(log).stat().st_size > RUN_LOG_MAX:
         os.replace(log, log + ".1")
     team = os.path.join(os.path.dirname(os.path.abspath(__file__)), "__main__.py")
     argv = [sys.executable, team, "--state", state.root]

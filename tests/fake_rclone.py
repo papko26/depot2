@@ -23,6 +23,7 @@ import os
 import shutil
 import sys
 import time
+from pathlib import Path
 
 
 def obscure(s):
@@ -101,7 +102,7 @@ def main():
             sys.stderr.write("ERROR : : error listing: directory not found\n")
             return 3
         out = [
-            {"Path": n, "Name": n, "Size": os.path.getsize(os.path.join(folder, n)), "ModTime": "x", "IsDir": False}
+            {"Path": n, "Name": n, "Size": Path(folder, n).stat().st_size, "ModTime": "x", "IsDir": False}
             for n in sorted(os.listdir(folder))
         ]
         print(json.dumps(out))

@@ -13,6 +13,7 @@ import sys
 import tempfile
 import time
 import unittest
+from pathlib import Path
 
 from helpers import BALLOT, HERE, TempState, slurp
 
@@ -102,7 +103,7 @@ class PushBase(unittest.TestCase):
 
     def spawned(self):
         p = self.t.state.path(backup.DIR, push.SPAWNED)
-        return os.path.getmtime(p) if os.path.exists(p) else None
+        return Path(p).stat().st_mtime if os.path.exists(p) else None
 
     def age_marker(self, minutes):
         p = self.t.state.path(backup.DIR, push.SPAWNED)

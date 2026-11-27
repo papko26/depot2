@@ -21,6 +21,7 @@ import subprocess
 import sys
 import tempfile
 import time
+from pathlib import Path
 
 from .i18n import t
 from .store import read_json, write_json
@@ -132,7 +133,7 @@ def save_stamp(state, st):
 
 def rotate_log(state, name=LOG):
     p = log_path(state, name)
-    if os.path.exists(p) and os.path.getsize(p) > LOG_MAX:
+    if os.path.exists(p) and Path(p).stat().st_size > LOG_MAX:
         os.replace(p, p + ".1")
 
 
@@ -396,7 +397,7 @@ class Runner:
         if p.returncode != 0:
             raise BackupError(t("backup.tar", code=p.returncode), "snapshot", p.stderr.strip()[-500:])
         self.say(
-            f"snapshot: {os.path.basename(tar_path)}, {os.path.getsize(tar_path) / 1e6:.1f} MB, the state lock held {held:.1f} s (waited {time.time() - t0 - held:.1f} s)"
+            f"snapshot: {os.path.basename(tar_path)}, {Path(tar_path).stat().st_size / 1e6:.1f} MB, the state lock held {held:.1f} s (waited {time.time() - t0 - held:.1f} s)"
         )
         p = subprocess.run(
             _nice(["gzip", "-6", "-n", tar_path]), stdin=subprocess.DEVNULL, capture_output=True, text=True
@@ -408,7 +409,7 @@ class Runner:
         with open(local, "rb") as f:
             for chunk in iter(lambda: f.read(1 << 20), b""):
                 h.update(chunk)
-        return local, os.path.getsize(local), h.hexdigest()
+        return local, Path(local).stat().st_size, h.hexdigest()
 
     def upload(self, local, name):
         p = self.rclone("copyto", "copyto", "--immutable", local, self.obj(name), *NET)
@@ -515,7 +516,7 @@ class Runner:
         for root, dirs, fs in os.walk(self.state.root):
             if os.path.abspath(root) == self.state.root:
                 dirs[:] = [d for d in dirs if d != DIR]
-            size += sum(os.path.getsize(os.path.join(root, f)) for f in fs if f != ".lock")
+            size += sum(Path(root, f).stat().st_size for f in fs if f != ".lock")
         keep, drop = plan_retention([*list(files), name], self.host, self.b["keep_daily"])
         self.say(f"would write: {name} (the state is {size / 1e6:.1f} MB before gzip)")
         self.say(f"would upload: rclone copyto --immutable <tmp>/{name} {self.crypt}:{name}, then lsjson + cryptcheck")
@@ -552,7 +553,7 @@ class Runner:
             p = self.rclone("copyto", "copyto", self.obj(name), local, *NET)
             if p.returncode != 0:
                 raise self.rclone_error("copyto", p)
-            size = os.path.getsize(local)
+            size = Path(local).stat().st_size
             if size != files[name]:
                 raise BackupError(t("backup.v_size", got=size, want=files[name]), "verify")
             h = hashlib.sha256()
@@ -659,7 +660,7 @@ def due(state, st, b, now):
     if st.get("source") and st["source"] != state.root:
         return False  # a copied state dir: its archives would carry this host's name
     sp = state.path(DIR, SPAWNED)
-    if os.path.exists(sp) and now - os.path.getmtime(sp) < float(b["retry_min"]) * 60:  # noqa: SIM103
+    if os.path.exists(sp) and now - Path(sp).stat().st_mtime < float(b["retry_min"]) * 60:  # noqa: SIM103
         return False  # one start per retry window; a run still going holds its lock anyway
     return True
 

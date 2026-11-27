@@ -69,7 +69,9 @@ extend-select = [
     "PTH121", # os-path-samefile
     "PTH124", # py-path
     "PTH201", # path-constructor-current-directory
+    "PTH202", # os-path-getsize
     "PTH203", # os-path-getatime
+    "PTH204", # os-path-getmtime
     "PTH205", # os-path-getctime
     "PTH210", # invalid-pathlib-with-suffix
     "Q",      # flake8-quotes
