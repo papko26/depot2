@@ -420,9 +420,9 @@ class MergeStagesTest(MergeBase):
         self.team("merge", "add", "301", "--word", "301 — мердж")
         rc, out, err = self.team("merge", "run")
         self.assertEqual(rc, 0, out + err)
-        self.assertIn("%s: в пути → прибыл" % oid, out)  # its own car first
+        self.assertIn(f"{oid}: в пути → прибыл", out)  # its own car first
         self.assertIn("tr-0001:1: в пути → прибыл (слит руками ", out)
-        self.assertIn("%s: в пути → прибыл (слит руками " % left, out)
+        self.assertIn(f"{left}: в пути → прибыл (слит руками ", out)
         c1 = Tracks(self.t.state, self.t.cfg).car("tr-0001:1")[1]
         self.assertEqual((c1["stage"], c1["stages"][-1]["why"], c1["stages"][-1]["by"]),
                          ("arrived", "выкачен с #301 (mq-0001): слит руками раньше", "merge run (mq-0001, слит руками)"))
@@ -440,8 +440,8 @@ class MigrateArrivalsTest(Base):
              "merge-queue.json")
 
     def ride(self, n, pr, ts, status="merged", **kw):
-        e = {"id": "mq-%04d" % n, "pr": pr, "branch": "b%d" % pr, "title": "PR %d" % pr, "status": status,
-             "added": ts, "merged": {"sha": "%07d" % pr, "ts": ts} if status == "merged" or kw.get("merged") else None}
+        e = {"id": "mq-%04d" % n, "pr": pr, "branch": "b%d" % pr, "title": "PR %d" % pr, "status": status,  # noqa: UP031
+             "added": ts, "merged": {"sha": "%07d" % pr, "ts": ts} if status == "merged" or kw.get("merged") else None}  # noqa: UP031
         e.update(kw)
         return e
 
@@ -504,7 +504,7 @@ class MigrateArrivalsTest(Base):
                          [(5, {"tr-0001:1": "mq-0001", "tr-0001:2": "mq-0002"}, "mq-0002")])
         snap = {f: slurp(self.t.state.path(f)) for f in before}
         self.assertEqual(migrate.run(self.t.state, self.t.cfg),
-                         (["миграция данных депо: нечего переносить (схема %d)" % migrate.SCHEMA], 0))
+                         (["миграция данных депо: нечего переносить (схема %d)" % migrate.SCHEMA], 0))  # noqa: UP031
         self.assertEqual({f: slurp(self.t.state.path(f)) for f in before}, snap)
         lines = migrate.step_arrivals(self.t.state, self.t.cfg, dry_run=True)  # cut short and run again: nothing left
         self.assertIn("последняя выкатка мердж-очереди: #302 (mq-0002), слит 2015-11-18 12:00; вагонов «в пути» до "

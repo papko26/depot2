@@ -26,7 +26,7 @@ class PriorityError(ValueError):
 
 def parse(value):
     if isinstance(value, bool):
-        raise PriorityError("priority is a whole number %d–%d, got %r" % (MIN, MAX, value))
+        raise PriorityError("priority is a whole number %d–%d, got %r" % (MIN, MAX, value))  # noqa: UP031
     if isinstance(value, int):
         n = value
     else:
@@ -36,11 +36,11 @@ def parse(value):
                 return p
         m = RE_P.match(s)
         if not m:
-            raise PriorityError("priority is a whole number %d–%d (10 — the most important; or high 8, normal 5, "
+            raise PriorityError("priority is a whole number %d–%d (10 — the most important; or high 8, normal 5, "  # noqa: UP031
                                 "later 2), got %r" % (MIN, MAX, value))
         n = int(m.group(1))
     if not MIN <= n <= MAX:
-        raise PriorityError("priority is %d–%d (10 — the most important), got %d" % (MIN, MAX, n))
+        raise PriorityError("priority is %d–%d (10 — the most important), got %d" % (MIN, MAX, n))  # noqa: UP031
     return n
 
 
@@ -57,7 +57,7 @@ def add_arg(parser, synonym=False):
     """--priority N on an add or a set (and --prio, its synonym, where the queues had it)."""
     flags = ("--priority", "--prio") if synonym else ("--priority",)
     parser.add_argument(*flags, dest="priority", type=arg, metavar="N",
-                        help="priority %d–%d, 10 — the most important (default %d)%s" % (
+                        help="priority %d–%d, 10 — the most important (default %d)%s" % (  # noqa: UP031
                             MIN, MAX, DEFAULT, "; --prio high|normal|later = 8 / 5 / 2" if synonym else ""))
 
 
@@ -68,7 +68,7 @@ def of(rec):
 
 
 def cell(rec):
-    return "P%d" % of(rec)
+    return "P%d" % of(rec)  # noqa: UP031
 
 
 def counts(recs):
@@ -80,7 +80,7 @@ def counts(recs):
 
 
 def counts_cell(c, sep=" · "):
-    return sep.join("P%d %d" % (p, c[p]) for p in sorted(c, reverse=True)) or "—"
+    return sep.join("P%d %d" % (p, c[p]) for p in sorted(c, reverse=True)) or "—"  # noqa: UP031
 
 
 def ordered(rows, rec=lambda x: x):
@@ -124,7 +124,7 @@ def get_any(state, cfg, ref):
     if kind == "car":
         tr = Trains(state, cfg).tracks
         trk, c = tr.car(ref)
-        return kind, "%s:%s" % (trk["id"], c["n"]), c
+        return kind, "{}:{}".format(trk["id"], c["n"]), c
     if kind in ("stack", "tstack"):
         stk = (Stack if kind == "stack" else TeamStack)(state, cfg)
         if not stk._dep_open(ref):
@@ -155,7 +155,7 @@ def set_any(state, cfg, ref, n, by="priority"):
         twin = c.get("st") if c.get("st") and tr.stack._dep_open(c["st"]) else None
         label = t("priority.label_twin", car=car_ref, st=twin) if twin else car_ref
         if ref not in (car_ref, twin):
-            label = "%s → %s" % (ref, label)  # a moved car's old ref
+            label = f"{ref} → {label}"  # a moved car's old ref
     elif kind in ("stack", "tstack"):
         from .stack import Stack
         from .tstack import TeamStack

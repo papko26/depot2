@@ -77,18 +77,18 @@ class Persona:
         if versions:
             # The current file must still be the newest recorded version before we move on.
             if sha256_text(old) != versions[-1]["sha256"]:
-                raise WriteCheckError("%s: portrait.md differs from v%04d; refusing to replace"
+                raise WriteCheckError("%s: portrait.md differs from v%04d; refusing to replace"  # noqa: UP031
                                       % (self.cid, versions[-1]["version"]))
         elif old:
-            raise WriteCheckError("%s: portrait.md exists without an index" % self.cid)
+            raise WriteCheckError(f"{self.cid}: portrait.md exists without an index")
         n = (versions[-1]["version"] if versions else 0) + 1
-        hist = os.path.join(self.history_dir, "v%04d.md" % n)
+        hist = os.path.join(self.history_dir, "v%04d.md" % n)  # noqa: UP031
         write_new(hist, text)
         self.state.touch(hist)
         en = None
         if summary_en and summary_en.strip():
             en_text = cut_text(summary_en, summary_cap)[0] + "\n"
-            en = os.path.join(self.history_dir, "v%04d.en.md" % n)
+            en = os.path.join(self.history_dir, "v%04d.en.md" % n)  # noqa: UP031
             write_new(en, en_text)
             self.state.touch(en)
         atomic_write(self.portrait_path, text)
@@ -116,13 +116,13 @@ class Persona:
         for v in versions:
             body = read_text(os.path.join(self.dir, v["path"]))
             if body is None or sha256_text(body) != v["sha256"]:
-                raise WriteCheckError("%s v%04d does not match its sha256" % (self.cid, v["version"]))
+                raise WriteCheckError("%s v%04d does not match its sha256" % (self.cid, v["version"]))  # noqa: UP031
             if v.get("summary_en_path"):
                 en = read_text(os.path.join(self.dir, v["summary_en_path"]))
                 if en is None or sha256_text(en) != v["summary_en_sha256"]:
-                    raise WriteCheckError("%s v%04d.en does not match its sha256" % (self.cid, v["version"]))
+                    raise WriteCheckError("%s v%04d.en does not match its sha256" % (self.cid, v["version"]))  # noqa: UP031
         if versions and sha256_text(self.portrait()) != versions[-1]["sha256"]:
-            raise WriteCheckError("%s portrait.md is not v%04d" % (self.cid, versions[-1]["version"]))
+            raise WriteCheckError("%s portrait.md is not v%04d" % (self.cid, versions[-1]["version"]))  # noqa: UP031
         return len(versions)
 
     def summary_en(self):
@@ -166,7 +166,7 @@ class Persona:
         self.write_spec("\n".join(keep) + ("\n\n" + line if line else "\n"))
         self.update_meta(gender=gender)
         if self.gender() != gender or characters.spec_gender_line(gender) not in self.spec():
-            raise WriteCheckError("%s: gender did not read back" % self.cid)
+            raise WriteCheckError(f"{self.cid}: gender did not read back")
         return gender
 
     # --- reflection markers -------------------------------------------------------------------

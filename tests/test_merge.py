@@ -28,7 +28,7 @@ EXAMPLE_PLUGIN = os.path.join(os.path.dirname(HERE), "examples", "plugins", "exa
 def sh(cwd, *argv, check=True):
     p = subprocess.run(list(argv), cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if check and p.returncode != 0:
-        raise AssertionError("%s failed: %s %s" % (argv, p.stdout, p.stderr))
+        raise AssertionError(f"{argv} failed: {p.stdout} {p.stderr}")
     return p.stdout.strip()
 
 
@@ -68,7 +68,7 @@ class MergeBase(unittest.TestCase):
         b = os.path.join(self.tmp, "bin")
         os.makedirs(b)
         with open(os.path.join(b, "gh"), "w") as f:
-            f.write("#!/bin/sh\nexec %s -S %s \"$@\"\n" % (sys.executable, FAKE_GH))
+            f.write(f"#!/bin/sh\nexec {sys.executable} -S {FAKE_GH} \"$@\"\n")
         os.chmod(os.path.join(b, "gh"), 0o755)
         os.symlink(FAKE_GIT, os.path.join(b, "git"))
         self.bare = os.path.join(self.tmp, "origin.git")
@@ -102,10 +102,10 @@ class MergeBase(unittest.TestCase):
         self.sets = ["merge.clone=" + self.clone, "merge.worktrees=" + self.wt, "merge.poll_s=0",
                      "merge.scan=" + FAKE_SCAN, "merge.githubstatus=null", "merge.github_rerun_after_min=0",
                      "merge.github_wait_max_min=0", "merge.site_check=[\"echo\", \"200\"]",
-                     "merge.smoke=" + json.dumps([sys.executable, "-c", "print(%r)" % SMOKE_OK]),
+                     "merge.smoke=" + json.dumps([sys.executable, "-c", f"print({SMOKE_OK!r})"]),
                      "plugins=" + json.dumps([EXAMPLE_PLUGIN]),
                      "merge.after_resolve=" + json.dumps([[sys.executable, "-c",
-                                                           "open(%r, 'a').write('checked\\n')" % self.marker]])]
+                                                           f"open({self.marker!r}, 'a').write('checked\\n')"]])]
 
     def tearDown(self):
         merge.CLOCK, merge.SLEEP = self.real_clock
@@ -142,7 +142,7 @@ class MergeBase(unittest.TestCase):
         self.g(self.seed, "push", "-q", "origin", branch)
         self.g(self.seed, "checkout", "-q", "main")
         self.gh = self.load_gh()
-        self.gh["prs"][str(n)] = {"number": n, "title": title or "PR %d" % n, "state": "OPEN", "headRefName": branch,
+        self.gh["prs"][str(n)] = {"number": n, "title": title or "PR %d" % n, "state": "OPEN", "headRefName": branch,  # noqa: UP031
                                   "baseRefName": "main", "isDraft": False}
         self.save_gh()
         if not os.path.isdir(self.clone):
@@ -151,10 +151,10 @@ class MergeBase(unittest.TestCase):
         self.g(self.clone, "worktree", "add", "-q", "-b", branch, os.path.join(self.wt, branch), "origin/" + branch)
         if stack:
             s = Stack(self.t.state, self.t.cfg)
-            o = s.add(title or "PR %d" % n, branch=branch, pr=n)
+            o = s.add(title or "PR %d" % n, branch=branch, pr=n)  # noqa: UP031
             s.post(o["id"])
-            s.set(o["id"], status="PR #%d: CI green" % n)
-            self.t.state.commit("test: %s" % o["id"])
+            s.set(o["id"], status="PR #%d: CI green" % n)  # noqa: UP031
+            self.t.state.commit("test: {}".format(o["id"]))
             return o["id"]
         return None
 
@@ -272,8 +272,8 @@ class AddTest(MergeBase):
         with r.run_lock():
             rc, _, err = self.team("merge", "run")
             self.assertEqual(rc, 1)
-            self.assertIn("another merge run holds the queue (pid %d)" % os.getpid(), err)
-            self.assertIn("работает (pid %d)" % os.getpid(), self.team("merge")[1])
+            self.assertIn("another merge run holds the queue (pid %d)" % os.getpid(), err)  # noqa: UP031
+            self.assertIn("работает (pid %d)" % os.getpid(), self.team("merge")[1])  # noqa: UP031
         self.assertEqual(self.entry(301)["status"], "waiting")
 
     def test_a_probe_of_the_lock_at_the_runners_start_refuses_nothing(self):
@@ -339,8 +339,8 @@ class EnsureTest(unittest.TestCase):
 
     def put(self, n, status="waiting", **kw):
         q = merge.MergeQueue(self.t.state)
-        e = dict({"id": q.new_id(), "pr": n, "title": "PR %d" % n, "branch": "b-%d" % n, "worktree": "/nowhere",
-                  "st": None, "car": None, "status": status, "word": "%d — мердж" % n, "added": merge.stamp(),
+        e = dict({"id": q.new_id(), "pr": n, "title": "PR %d" % n, "branch": "b-%d" % n, "worktree": "/nowhere",  # noqa: UP031
+                  "st": None, "car": None, "status": status, "word": "%d — мердж" % n, "added": merge.stamp(),  # noqa: UP031
                   "step": None, "log": []}, **kw)
         q.data["entries"].append(e)
         q.save("add", e["id"])
@@ -351,7 +351,7 @@ class EnsureTest(unittest.TestCase):
         with merge.Rider(self.t.state, self.t.cfg).run_lock():
             rc, out, err = self.team("merge", "run", "--ensure")
         self.assertEqual(rc, 0, err)
-        self.assertIn("уже едет (pid %d): второго не запускаю" % os.getpid(), out)
+        self.assertIn("уже едет (pid %d): второго не запускаю" % os.getpid(), out)  # noqa: UP031
         self.assertEqual(self.spawned, [])
 
     def test_an_empty_queue_has_nothing_to_carry(self):
@@ -377,16 +377,16 @@ class EnsureTest(unittest.TestCase):
         self.assertEqual(argv[1:], [os.path.join(os.path.dirname(HERE), "depot2", "__main__.py"), "--state", self.t.dir,
                                     "--set", "merge.poll_s=0", "merge", "run"])
         self.assertIn("исполнитель не едет (в замке был pid 99999999, замок свободен), в очереди 2: запускаю", out)
-        self.assertIn("исполнитель едет (pid %d); лог: %s" % (pid, log), out)
+        self.assertIn("исполнитель едет (pid %d); лог: %s" % (pid, log), out)  # noqa: UP031
         with open(log) as f:
             text = f.read()
         self.assertIn("merge run --ensure: start, 2 in the queue", text)
         self.assertIn("stand-in rides", text)
         rc, out, err = self.team("merge", "run", "--ensure")
         self.assertEqual(rc, 0, err)
-        self.assertIn("уже едет (pid %d)" % pid, out)
+        self.assertIn("уже едет (pid %d)" % pid, out)  # noqa: UP031
         self.assertEqual(len(self.spawned), 1)
-        self.assertIn("Исполнитель: работает (pid %d)." % pid, self.team("merge")[1])
+        self.assertIn("Исполнитель: работает (pid %d)." % pid, self.team("merge")[1])  # noqa: UP031
         j = json.loads(self.team("merge", "--json")[1])
         self.assertEqual((j["runner_pid"], j["runner_idle"]), (str(pid), None))
 
@@ -395,7 +395,7 @@ class EnsureTest(unittest.TestCase):
         self.exit_code = 1
         rc, out, err = self.team("merge", "run", "--ensure")
         self.assertEqual(rc, 1, err)
-        self.assertIn("исполнитель (pid %d) вышел сразу, код 1; лог: " % self.procs[0].pid, out)
+        self.assertIn("исполнитель (pid %d) вышел сразу, код 1; лог: " % self.procs[0].pid, out)  # noqa: UP031
         self.assertIn("\n  boom\n", out)
 
     def test_a_stopped_queue_waits_for_a_person(self):
@@ -456,7 +456,7 @@ class OrderTest(MergeBase):
         rows = [h for h in s.history() if h["event"] == "done"]
         self.assertEqual([(h["object"], h["outcome"]) for h in rows], [("st-0002", "merged"), ("st-0001", "merged"),
                                                                        ("st-0003", "merged")])
-        self.assertIn("merged #302 as %s (mq-0001; слово владельца: «302 — мердж»)" % m302[:7], rows[0]["reason"])
+        self.assertIn(f"merged #302 as {m302[:7]} (mq-0001; слово владельца: «302 — мердж»)", rows[0]["reason"])
         self.assertTrue(Tracks(self.t.state, self.t.cfg).pr_merged(302))
         e = self.entry(301)
         self.assertEqual(e["merged"]["sha"], m301)
@@ -467,11 +467,11 @@ class OrderTest(MergeBase):
         self.assertTrue(e["usage"]["lines"][0].startswith("finished at "))
         self.assertIn("== done: #303", out)
         self.assertIn("origin/main is in feat-b already: its head stays", out)
-        self.assertIn("the main clone → %s" % self.bare_head("refs/heads/main")[:7], out)
+        self.assertIn("the main clone → {}".format(self.bare_head("refs/heads/main")[:7]), out)
         # the report, for the owner
         rc, rep, _ = self.team("merge", "report", "--last", "2")
         self.assertEqual(rc, 0)
-        self.assertIn("#301 Первый — смерджен %s" % m301[:7], rep)
+        self.assertIn(f"#301 Первый — смерджен {m301[:7]}", rep)
         self.assertIn("#303 Третий — смерджен", rep)
         self.assertNotIn("#302", rep)
         self.assertIn("выкатка: CI/CD success, деплой success, сайт 200", rep)
@@ -610,7 +610,7 @@ class RideTest(MergeBase):
         self.assertTrue(e["merged"]["sha"])
         self.assertIn("«Deploy» (queued)", e["github"]["reason"])
         self.assertIsNone(self.q().stopped())  # not a stop
-        self.assertIn("Последний мердж: #301 %s (" % e["merged"]["sha"][:7], self.team("merge")[1])
+        self.assertIn("Последний мердж: #301 {} (".format(e["merged"]["sha"][:7]), self.team("merge")[1])
         self.assertIn("; сейчас: ждёт GitHub; копия удалена (", self.team("merge")[1])
         self.assertIn("| Мердж-очередь | ждёт GitHub 1, ждёт 1 |", self.team("queues", "--md")[1])
         self.assertEqual([c[2] for c in self.gh_calls("pr", "merge")], ["301"])
@@ -644,7 +644,7 @@ class CdRunnerTest(MergeBase):
     def runners(self, primary, spare_1="online", **extra):
         self.gh = self.load_gh()
         self.gh["runners"] = [runner("primary-ci-%d" % i, primary, "project-ci", "primary") for i in (1, 2, 3)] + \
-            [runner("spare-1", spare_1, "spare", "project-ci")]
+            [runner("spare-1", spare_1, "spare", "project-ci")]  # noqa: UP031
         self.gh["variables"] = {"CD_RUNNER": PRIMARY}
         self.gh.update(extra)
         self.save_gh()
@@ -691,9 +691,9 @@ class CdRunnerTest(MergeBase):
         self.assertIn("--failed", ch[2])
         self.assertTrue(all(c[c.index("-R") + 1] == "test-owner/no-such-repo" for c in ch))
         self.assertEqual(self.load_gh()["variables"], {"CD_RUNNER": PRIMARY})
-        self.assertIn("no primary runner online, «Deploy» queued 20+ min: CD_RUNNER → %s (spare-1), "
-                      "gh run cancel %s, then rerun --failed" % (THE_SPARE, rid), out)
-        self.assertIn("CD_RUNNER → %s again (run %s, attempt 2: success)" % (PRIMARY, rid), out)
+        self.assertIn(f"no primary runner online, «Deploy» queued 20+ min: CD_RUNNER → {THE_SPARE} (spare-1), "
+                      f"gh run cancel {rid}, then rerun --failed", out)
+        self.assertIn(f"CD_RUNNER → {PRIMARY} again (run {rid}, attempt 2: success)", out)
         self.assertNotIn("STOP", out)
         fb = e["cd_runner"]
         self.assertEqual((fb["run"], fb["attempt"], fb["to"], fb["back_to"], fb["spare"]),
@@ -702,7 +702,7 @@ class CdRunnerTest(MergeBase):
         self.assertEqual((e["status"], e["deploy"]["deploy_job"], e["deploy"]["site"]), ("merged", "success", "200"))
         self.assertIn("cd_runner_back", [h["event"] for h in self.q().history()])
         line = ("  CD_RUNNER: primary не в сети, «Deploy» ждал 20+ мин → выкатка на spare "
-                "(прогон %s: отмена, перезапуск упавших); CD_RUNNER снова %s (" % (rid, PRIMARY))
+                f"(прогон {rid}: отмена, перезапуск упавших); CD_RUNNER снова {PRIMARY} (")
         rep = self.team("merge", "report")[1]
         self.assertEqual([ln for ln in rep.splitlines() if "CD_RUNNER" in ln][0][:len(line)], line)
         self.assertLess(rep.index("CD_RUNNER:"), rep.index("после мерджа"))
@@ -715,7 +715,7 @@ class CdRunnerTest(MergeBase):
         self.assertEqual(rc, 0, out + err)
         self.assertEqual(self.load_gh()["variables"], {"CD_RUNNER": THE_SPARE})
         self.assertIn("gh variable set CD_RUNNER refused (HTTP 403: Resource not accessible by integration): set it back "
-                      "by hand: gh variable set CD_RUNNER --body '%s' -R test-owner/no-such-repo" % PRIMARY, out)
+                      f"by hand: gh variable set CD_RUNNER --body '{PRIMARY}' -R test-owner/no-such-repo", out)
         self.assertIn("CD_RUNNER НЕ вернулся (HTTP 403", self.team("merge", "report")[1])
 
     def test_a_refused_cancel_sets_the_variable_back_at_once(self):
@@ -738,7 +738,7 @@ class CdRunnerTest(MergeBase):
         self.assertEqual((self.gh_calls("run", "cancel"), self.gh_calls("run", "rerun")), ([], []))
         self.assertEqual(out.count("gh variable set CD_RUNNER refused (HTTP 403"), 1)
         self.assertNotIn("then rerun --failed", out)  # the switch is said only once the variable changed
-        self.assertIn("сменить CD_RUNNER на %s не удалось (HTTP 403" % THE_SPARE, self.team("merge", "report")[1])
+        self.assertIn(f"сменить CD_RUNNER на {THE_SPARE} не удалось (HTTP 403", self.team("merge", "report")[1])
 
     def test_the_runner_leaving_mid_fallback_the_next_run_sets_it_back(self):
         self.runners("offline", cancel_lag=1)
@@ -749,11 +749,11 @@ class CdRunnerTest(MergeBase):
         e = self.entry(301)
         self.assertEqual((e["status"], e["step"]), ("github", "deploy"))
         self.assertEqual(self.load_gh()["variables"], {"CD_RUNNER": THE_SPARE})
-        self.assertIn("CD_RUNNER пока %s: вернётся на %s, когда прогон закончится" % (THE_SPARE, PRIMARY),
+        self.assertIn(f"CD_RUNNER пока {THE_SPARE}: вернётся на {PRIMARY}, когда прогон закончится",
                       self.team("merge", "report")[1])
         self.assertEqual(merge.fallback_notes(e), [
-            "note: CD_RUNNER is still %s (the deploy's fallback, run %s): once that run is over, gh variable set "
-            "CD_RUNNER --body '%s' -R test-owner/no-such-repo" % (THE_SPARE, e["cd_runner"]["run"], PRIMARY)])
+            "note: CD_RUNNER is still {} (the deploy's fallback, run {}): once that run is over, gh variable set "
+            "CD_RUNNER --body '{}' -R test-owner/no-such-repo".format(THE_SPARE, e["cd_runner"]["run"], PRIMARY)])
         rc, out, err = self.team("merge", "run")  # goes on from the deploy: the cancel landed, the rerun, back
         self.assertEqual(rc, 0, out + err)
         self.assertEqual(self.load_gh()["variables"], {"CD_RUNNER": PRIMARY})
@@ -799,10 +799,10 @@ class CiRunnerTest(MergeBase):
                                                ["run", "rerun", rid], ["variable", "set", "CI_RUNNER"]])
         self.assertEqual([c[c.index("--body") + 1] for c in ch if c[0] == "variable"], [THE_SPARE, PRIMARY])
         self.assertEqual(self.load_gh()["variables"], {"CD_RUNNER": PRIMARY, "CI_RUNNER": PRIMARY})
-        self.assertIn("no primary runner online, «Test and build» queued 20+ min: CI_RUNNER → %s (spare-1), "
-                      "gh run cancel %s, then rerun --failed" % (THE_SPARE, rid), out)
-        self.assertIn("gh run rerun %s --failed (CI to spare" % rid, out)
-        self.assertIn("CI_RUNNER → %s again (run %s, attempt 2: success)" % (PRIMARY, rid), out)
+        self.assertIn(f"no primary runner online, «Test and build» queued 20+ min: CI_RUNNER → {THE_SPARE} (spare-1), "
+                      f"gh run cancel {rid}, then rerun --failed", out)
+        self.assertIn(f"gh run rerun {rid} --failed (CI to spare", out)
+        self.assertIn(f"CI_RUNNER → {PRIMARY} again (run {rid}, attempt 2: success)", out)
         self.assertEqual((fb["var"], fb["job"], fb["to"], fb["back_to"]), (
             "CI_RUNNER", "Test and build", ["self-hosted", "spare"], ["self-hosted", "primary"]))
         self.assertTrue(fb["back"] and fb["rerun"])
@@ -810,7 +810,7 @@ class CiRunnerTest(MergeBase):
         self.assertEqual(e["status"], "merged")
         self.assertIn("ci_runner_back", [h["event"] for h in self.q().history()])
         line = ("  CI_RUNNER: primary не в сети, «Test and build» ждал 20+ мин → CI на spare "
-                "(прогон %s: отмена, перезапуск упавших); CI_RUNNER снова %s (" % (rid, PRIMARY))
+                f"(прогон {rid}: отмена, перезапуск упавших); CI_RUNNER снова {PRIMARY} (")
         rep = self.team("merge", "report")[1]
         self.assertEqual([ln for ln in rep.splitlines() if "CI_RUNNER" in ln][0][:len(line)], line)
 
@@ -863,8 +863,7 @@ class ConflictTest(MergeBase):
         head = self.g(self.wt_a, "rev-parse", "HEAD")
         rc, out, err = self.team("merge", "run")
         self.assertEqual(rc, 1, out + err)
-        self.assertIn("STOP: no prepared resolution for a.txt (%s / %s): depot2 merge resolve add a.txt --ours %s --theirs %s"
-                      % (self.ours[:12], self.theirs[:12], self.ours, self.theirs), out)
+        self.assertIn(f"STOP: no prepared resolution for a.txt ({self.ours[:12]} / {self.theirs[:12]}): depot2 merge resolve add a.txt --ours {self.ours} --theirs {self.theirs}", out)
         self.assertEqual(self.g(self.wt_a, "rev-parse", "HEAD"), head)  # the merge was aborted
         self.assertEqual(self.g(self.wt_a, "status", "--porcelain"), "")
         self.assertFalse(os.path.exists(os.path.join(self.wt_a, ".git")) and
@@ -889,7 +888,7 @@ class ConflictTest(MergeBase):
                                  "--note", "both lines kept")
         self.assertEqual(rc, 0, err)
         self.assertIn("added a prepared resolution for a.txt", out)
-        self.assertTrue(os.path.isfile(self.t.state.path(merge.RES_DIR, "%s-%s" % (self.ours, self.theirs))))
+        self.assertTrue(os.path.isfile(self.t.state.path(merge.RES_DIR, f"{self.ours}-{self.theirs}")))
         self.assertIn("a.txt", self.team("merge", "resolve", "list")[1])
         rc, out, err = self.team("merge", "run")
         self.assertEqual(rc, 0, out + err)
@@ -901,7 +900,7 @@ class ConflictTest(MergeBase):
         rc, out, err = self.team("merge", "resolve", "drop", self.ours[:16], "--reason", "landed")
         self.assertEqual(rc, 0, err)
         self.assertEqual(merge.Resolutions(self.t.state).items(), [])
-        self.assertFalse(os.path.exists(self.t.state.path(merge.RES_DIR, "%s-%s" % (self.ours, self.theirs))))
+        self.assertFalse(os.path.exists(self.t.state.path(merge.RES_DIR, f"{self.ours}-{self.theirs}")))
 
     def test_a_resolutions_path_is_the_repos(self):
         f = os.path.join(self.tmp, "ci.resolved")
@@ -951,7 +950,7 @@ class AheadTest(MergeBase):
         rc, out, err = self.team("merge", "run")
         self.assertEqual(rc, 0, out + err)
         self.assertIn("is 1 commit(s) ahead of origin/feat-a", out)
-        self.assertIn("pushed the local head of feat-a: %s" % local[:7], out)
+        self.assertIn(f"pushed the local head of feat-a: {local[:7]}", out)
         self.assertEqual(len(self.pushes()), 1)
         self.assertEqual(self.bare_head("refs/heads/feat-a"), local)
         ci = [c for c in self.gh_calls("run", "list") if "feat-a" in c]
@@ -973,7 +972,7 @@ class AheadTest(MergeBase):
             q.save("test", e["id"])
         rc, out, err = self.team("merge", "run")
         self.assertEqual(rc, 0, out + err)
-        self.assertIn("not the head %s: back to the sync, which pushes it" % local[:7], out)
+        self.assertIn(f"not the head {local[:7]}: back to the sync, which pushes it", out)
         self.assertEqual(self.bare_head("refs/heads/feat-a"), local)
         self.assertEqual(self.entry(301)["status"], "merged")
 
@@ -1041,10 +1040,10 @@ class CarTest(MergeBase):
         t = tr.add("Поиск")
         refs = []
         for i, n in enumerate(prs, 1):
-            tr.car_add(t["id"], "вагон %d" % i, n=str(i), branch="feat-%d" % (n or i))
-            refs.append("%s:%d" % (t["id"], i))
+            tr.car_add(t["id"], "вагон %d" % i, n=str(i), branch="feat-%d" % (n or i))  # noqa: UP031
+            refs.append("%s:%d" % (t["id"], i))  # noqa: UP031
             if n:
-                self.pr(n, "feat-%d" % n, {"f%d.txt" % n: "%d\n" % n}, stack=False)
+                self.pr(n, "feat-%d" % n, {"f%d.txt" % n: "%d\n" % n}, stack=False)  # noqa: UP031
         args = ["trains", "add", "--name", name, "--title", "Т", "--slots", "all-free"]
         for r in refs:
             args += ["--car", r]
@@ -1055,8 +1054,8 @@ class CarTest(MergeBase):
             if not n:
                 continue
             k += 1
-            for argv in (("tracks", "car", "stack", r, "--start"), ("stack", "set", "st-%04d" % k, "--pr", str(n)),
-                         ("stack", "post", "st-%04d" % k)):
+            for argv in (("tracks", "car", "stack", r, "--start"), ("stack", "set", "st-%04d" % k, "--pr", str(n)),  # noqa: UP031
+                         ("stack", "post", "st-%04d" % k)):  # noqa: UP031
                 rc, out, err = self.team(*argv)
                 self.assertEqual(rc, 0, out + err)
         return refs
@@ -1160,14 +1159,14 @@ class WorktreeTest(MergeBase):
         w = self.entry(301)["wt"]
         self.assertTrue(w["removed"])
         self.assertGreater(w["freed"], 8192)
-        self.assertIn("рабочая копия %s удалена: освобождено " % self.wt_of("feat-a"), out)
+        self.assertIn("рабочая копия {} удалена: освобождено ".format(self.wt_of("feat-a")), out)
         self.assertIn("(ветка feat-a осталась)", out)
         # feat-b: as it was, the reason in the runner's output, the entry's log and its `wt`
         self.assertTrue(os.path.exists(os.path.join(self.wt_of("feat-b"), "notes.txt")))
         w = self.entry(302)["wt"]
         self.assertFalse(w["removed"])
         self.assertEqual(w["reason"], "грязная: ?? notes.txt")
-        self.assertIn("рабочая копия %s не тронута: грязная: ?? notes.txt" % self.wt_of("feat-b"), out)
+        self.assertIn("рабочая копия {} не тронута: грязная: ?? notes.txt".format(self.wt_of("feat-b")), out)
         self.assertTrue(any("не тронута: грязная" in ln for ln in self.entry(302)["log"]))
         # seen: `merge` (the last merge), `merge --all`, `merge report`, `merge --json` (the web view), the history
         self.assertIn("Последний мердж: #302", self.team("merge")[1])
@@ -1217,16 +1216,16 @@ class WorktreeTest(MergeBase):
         rc, out, err = self.team("merge", "prune-worktrees")
         self.assertEqual(rc, 0, out + err)
         self.assertEqual(sorted(os.listdir(self.wt)), [d for d in before if d != "feat-a"])
-        self.assertIn("каталогов 9 (рабочих копий %s 8)" % self.clone, out)
+        self.assertIn(f"каталогов 9 (рабочих копий {self.clone} 8)", out)
         self.assertIn("удалены (1, освобождено ", out)
         self.assertIn("  - feat-a: PR #301 слит; ", out)
         self.assertIn("не тронуты (8):", out)
         head_d = self.g(self.wt_of("feat-d"), "rev-parse", "HEAD")
         for line in ("  - feat-b: грязная: M b.txt", "  - feat-c: открыт PR #303",
-                     "  - feat-d: HEAD %s не в origin/main (коммитов сверх: 1)" % head_d[:7],
-                     "  - feat-e: ветка не слита (PR нет)", "  - feat-f: в слоте: %s" % o["id"],
+                     f"  - feat-d: HEAD {head_d[:7]} не в origin/main (коммитов сверх: 1)",
+                     "  - feat-e: ветка не слита (PR нет)", "  - feat-f: в слоте: {}".format(o["id"]),
                      "  - feat-g: заперта (git worktree lock: on a stick)",
-                     "  - look: отсоединённая HEAD, не ветка", "  - other-repo: не рабочая копия %s" % self.clone):
+                     "  - look: отсоединённая HEAD, не ветка", f"  - other-repo: не рабочая копия {self.clone}"):
             self.assertIn(line, out)
         self.assertIn("итого: удалены 1, не тронуто 8, освобождено ", out)
         self.assertEqual(self.g(self.clone, "rev-parse", "refs/heads/feat-a"), self.bare_head("refs/heads/feat-a"))
@@ -1245,7 +1244,7 @@ class DryRunTest(MergeBase):
         self.pr(301, "feat-a", {"a.txt": "from a\n", "d.txt": "d\n"})
         self.pr(303, "feat-c", {"c.txt": "C\n"})
         for n in (302, 301, 303):
-            self.team("merge", "add", str(n), "--word", "мердж %d" % n)
+            self.team("merge", "add", str(n), "--word", "мердж %d" % n)  # noqa: UP031
         files = (merge.FILE, merge.HISTORY, "stack.json")
         before = {p: self.bytes(p) for p in files}
         heads = {b: self.g(os.path.join(self.wt, b), "rev-parse", "HEAD") for b in ("feat-a", "feat-b", "feat-c")}
@@ -1320,7 +1319,7 @@ class PartsTest(unittest.TestCase):
             same = "2015-11-12T08:00:00+00:00"
             for n, ts, status in ((302, same, "merged"), (301, same, "merged"), (303, same, "merged"),
                                   (304, "2015-11-12T07:59:59+00:00", "merged"), (305, "2015-11-12T08:00:05+00:00", "dropped")):
-                q.data["entries"].append({"id": "mq-%d" % n, "pr": n, "status": status, "merged": {"sha": "a" * 40, "ts": ts}})
+                q.data["entries"].append({"id": "mq-%d" % n, "pr": n, "status": status, "merged": {"sha": "a" * 40, "ts": ts}})  # noqa: UP031
             self.assertEqual(merge.last_merged(q)["pr"], 303)  # a tie: the later entry; a dropped one never
             q.data["entries"][0]["merged"]["ts"] = "2015-11-12T08:00:01+00:00"
             self.assertEqual(merge.last_merged(q)["pr"], 302)  # a later stamp wins whatever the order

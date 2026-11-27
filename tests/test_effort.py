@@ -31,7 +31,7 @@ class CalibrationTest(unittest.TestCase):
         self.assertEqual(config.DEFAULTS["usage"]["usd_per_mtok"], 2.5)   # the CLI's ≈$ per MTok
         # every cap on the spend is MTok; no $ key is left in the config
         self.assertEqual([k for k, _ in walk(config.DEFAULTS) if "usd" in k and k != "usage.usd_per_mtok"], [])
-        caps = {"%s.%s" % k: config.DEFAULTS[k[0]][k[1]] for k in config.MTOK_KEYS}
+        caps = {"{}.{}".format(*k): config.DEFAULTS[k[0]][k[1]] for k in config.MTOK_KEYS}
         self.assertEqual(caps, {"free.budget_mtok_r1": 0.16, "free.budget_mtok_r2": 0.2, "reflect.budget_mtok": 0.28,
                                 "round.budget_mtok": 1.8, "solo.budget_mtok": None, "lock.budget_mtok": 0.6})
 

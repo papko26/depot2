@@ -68,7 +68,7 @@ def slug(title):
 def unique(name, taken):
     n, i = name, 2
     while n in taken:
-        n = "%s-%d" % (name, i)
+        n = "%s-%d" % (name, i)  # noqa: UP031
         i += 1
     taken.add(n)
     return n
@@ -105,7 +105,7 @@ def plan(old, names=None):
         state = "impl" if any(has_build(c) for c in open_) else "design"
         st = old_t.get("start") or {}
         tn = {"name": name, "title": old_t["title"], "state": state,
-              "cars": ["%s:%s" % (old_t["id"], c["n"]) for c in open_],
+              "cars": ["{}:{}".format(old_t["id"], c["n"]) for c in open_],
               "start": {"after": list(st.get("after") or []), "not_before": st.get("not_before"),
                         "owner": bool(st.get("owner")), "note": st.get("note")},
               "slots": old_t.get("slots") or {"policy": "max", "n": 1}, "est_mtok": None, "notes": [],
@@ -135,7 +135,7 @@ def plan(old, names=None):
 
 def cars_of(tracks_or_trains):
     """{ref: (status, stage, pr)} over the tracks (or an old trains.json's trains)."""
-    return {"%s:%s" % (t["id"], c["n"]): (c["status"], c.get("stage"), c.get("pr"))
+    return {"{}:{}".format(t["id"], c["n"]): (c["status"], c.get("stage"), c.get("pr"))
             for t in tracks_or_trains for c in t["cars"]}
 
 
@@ -146,12 +146,12 @@ def verify(old, track_data, train_data):
     if before != after:
         lost = sorted(set(before) - set(after))
         odd = sorted(r for r in set(before) & set(after) if before[r] != after[r])
-        raise MigrateError("cars differ after the migration: lost %s, changed %s" % (lost[:5], odd[:5]))
+        raise MigrateError(f"cars differ after the migration: lost {lost[:5]}, changed {odd[:5]}")
     seen = set()
     for tn in train_data["trains"]:
         for r in tn["cars"]:
             if r not in after or after[r][0] in CAR_DONE or r in seen:
-                raise MigrateError("train %s: car %s is not an open car of a track, or rides twice" % (tn["name"], r))
+                raise MigrateError("train {}: car {} is not an open car of a track, or rides twice".format(tn["name"], r))
             seen.add(r)
 
 
@@ -177,8 +177,8 @@ def run(state, cfg, dry_run=False, names=None):
     from .merge import lock_held
     pid = lock_held(state)
     if pid:
-        raise MigrateError("the merge queue is riding (pid %s): its old code would write the old trains.json; "
-                           "stop it (or let it finish), then migrate" % pid)
+        raise MigrateError(f"the merge queue is riding (pid {pid}): its old code would write the old trains.json; "
+                           "stop it (or let it finish), then migrate")
     L = []
     if v < 2:
         L += step_tracks_trains(state, dry_run, names)
@@ -229,7 +229,7 @@ def step_marks(state, dry_run=False, planned=False):
     stack_data = read_json(state.path("stack.json"))
     words = legacy_words(stack_data)
     L = [t("migrate.head_3"),
-         t("migrate.legacy_words", words=", ".join("%s (%s)" % (k, v) for k, v in sorted(words.items())))
+         t("migrate.legacy_words", words=", ".join(f"{k} ({v})" for k, v in sorted(words.items())))
          if words else t("migrate.legacy_none"),
          t("migrate.marks_empty")]
     if dry_run:
@@ -300,7 +300,7 @@ def step_priority(state, dry_run=False, planned=False):
         state.touch(path)
         state.touch(hpath)
     tracks = read_json(state.path("tracks.json")) if not planned else None
-    cars = {"%s:%s" % (trk["id"], c["n"]): c
+    cars = {"{}:{}".format(trk["id"], c["n"]): c
             for trk in (tracks or {}).get("tracks") or [] for c in trk.get("cars") or []}
     by_st = {c["st"]: c for c in cars.values() if c.get("st")}
     for f in STACK_FILES:

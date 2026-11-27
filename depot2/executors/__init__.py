@@ -67,7 +67,7 @@ def adapter(cfg):
     try:
         return importlib.import_module(name)
     except ImportError as e:
-        raise FatalError("executor %s: %s" % (name, e))
+        raise FatalError(f"executor {name}: {e}")
 
 
 def run_call(spec, cfg, validate=None):
@@ -93,7 +93,7 @@ def describe(res, cfg):
     u = res.get("usage") or {}
     util = res.get("utilization")
     mtok = res.get("mtok") if res.get("mtok") is not None else effort.call_mtok(res, cfg)
-    return ("%-30s %-16s %-6s %6.1fs  %s%s  %s%d tok (in %d, cache r %d w %d, out %d)  turns %s, "
+    return ("%-30s %-16s %-6s %6.1fs  %s%s  %s%d tok (in %d, cache r %d w %d, out %d)  turns %s, "  # noqa: UP031
             "tool turns %d%s  %s%s" % (
                 res.get("call"), res.get("model"), res.get("effort") or "-", res.get("duration_s") or 0,
                 "≈" if res.get("usage_from_stream") or effort.by_cost_only(res) else "", effort.fmt(mtok, cfg),

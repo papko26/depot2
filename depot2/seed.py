@@ -40,7 +40,7 @@ def init_empty(state, balance=5):
     role) and their opening balances. Refused when the depot has a ledger already."""
     led = Ledger(state)
     if os.path.isdir(state.root) and led.entries():
-        raise ValueError("%s is a depot already (its ledger has entries)" % state.root)
+        raise ValueError(f"{state.root} is a depot already (its ledger has entries)")
     state.init_git()
     cfg_path = state.path("config.json")
     if not os.path.exists(cfg_path):
@@ -49,7 +49,7 @@ def init_empty(state, balance=5):
     for cid in characters.IDS:
         c = characters.BY_ID[cid]
         p = Persona(state, cid)
-        p.write_spec("# %s («%s»)\n\n%s.\n" % (c["name"], c["full"], characters.role(cid)))
+        p.write_spec("# {} («{}»)\n\n{}.\n".format(c["name"], c["full"], characters.role(cid)))
         p.set_gender(p.gender())
     for cid in characters.IDS:
         led.seed(cid, int(balance), "init")
@@ -78,7 +78,7 @@ def seed_ledger(state, seed):
     got = led.balances()
     want = {cid: int(seed["expect"][cid]) for cid in characters.IDS}
     if got != want:
-        raise ValueError("seeded balances %s != expected %s" % (got, want))
+        raise ValueError(f"seeded balances {got} != expected {want}")
     pend = Pending(state)
     for p in seed.get("pending", []):
         pend.add(p["character"], p["condition"], amount=p.get("amount"), ref=p.get("ref"))
@@ -113,7 +113,7 @@ def vote_lines(text, cid):
             if l.startswith(name + ":"):
                 rest = l[len(name) + 1:].strip()
                 if rest and rest not in ("—", "-"):
-                    out.append("- %s %s: %s" % (m.group(1), m.group(2)[:80], rest))
+                    out.append(f"- {m.group(1)} {m.group(2)[:80]}: {rest}")
     return out
 
 
@@ -157,7 +157,7 @@ def material(cid, ballot_dir, review_dir, cap):
     for r in reviews:
         lines = mention_lines(read_text(r), cid)
         if lines:
-            rv.append("### %s" % os.path.basename(r))
+            rv.append(f"### {os.path.basename(r)}")
             rv.extend(lines)
     parts.append((t("seed.part_reviews"), rv, cap // 2))
     out = []
@@ -169,7 +169,7 @@ def material(cid, ballot_dir, review_dir, cap):
                 continue
             body.append(l)
             used += len(l) + 1
-        out.append("## %s\n%s%s" % (title, "\n".join(body) or t("seed.part_none"),
+        out.append("## {}\n{}{}".format(title, "\n".join(body) or t("seed.part_none"),
                                    "\n" + t("seed.part_cut", n=cut) if cut else ""))
     return "\n\n".join(out)
 
@@ -186,7 +186,7 @@ def seed_portraits(state, cfg, ballot_dir, review_dir, only=None, dry_run=False,
     for cid in ([only] if only else characters.IDS):
         p = Persona(state, cid)
         if p.version():
-            out("%s already has a portrait (v%04d); skipped" % (characters.name(cid), p.version()))
+            out("%s already has a portrait (v%04d); skipped" % (characters.name(cid), p.version()))  # noqa: UP031
             continue
         owner, dec = changes_since(state, cid)
         ident = prompts.identity(p, cid, balances[cid], 0)

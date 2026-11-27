@@ -54,10 +54,10 @@ class EventLog:
         for it in self.items():
             if it["id"] == item_id:
                 return it
-        raise ValueError("no %s in %s" % (item_id, self.filename))
+        raise ValueError(f"no {item_id} in {self.filename}")
 
     def next_id(self):
-        return "%s-%04d" % (self.prefix, len({r["id"] for r in self.records()}) + 1)
+        return "%s-%04d" % (self.prefix, len({r["id"] for r in self.records()}) + 1)  # noqa: UP031
 
     def add(self, item_id, status, **fields):
         rec = {"id": item_id, "status": status, "ts": now_iso()}
@@ -189,17 +189,17 @@ def topic_text(entry, gender):
                round=entry["round"]), "",
              t("extras.topic_why"), "", entry.get("why") or "—", "",
              t("extras.topic_questions"), ""]
-    lines += ["%d. %s" % (i, q) for i, q in enumerate(entry["questions"], 1)]
-    lines += ["", "— %s" % who, ""]
+    lines += ["%d. %s" % (i, q) for i, q in enumerate(entry["questions"], 1)]  # noqa: UP031
+    lines += ["", f"— {who}", ""]
     return "\n".join(lines)
 
 
 def write_topic(cfg, entry, gender):
     d = os.path.expanduser(cfg["brainstorm"]["topics_dir"])
-    base = os.path.join(d, "%s-brainstorm-%s" % (today(), slugify(entry["topic"])))
+    base = os.path.join(d, "{}-brainstorm-{}".format(today(), slugify(entry["topic"])))
     path, n = base + ".md", 2
     while os.path.exists(path):
-        path, n = "%s-%d.md" % (base, n), n + 1
+        path, n = "%s-%d.md" % (base, n), n + 1  # noqa: UP031
     write_new(path, topic_text(entry, gender))
     return path
 

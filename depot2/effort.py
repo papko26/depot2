@@ -103,13 +103,13 @@ def from_transcript(path):
             for api, k in API_KEYS.items():
                 tok[k] += u.get(api) or 0
     if not n:
-        raise EffortError("no usage in %s" % path)
+        raise EffortError(f"no usage in {path}")
     return round(weighted_mtok(tok), 4)
 
 
 def size_mtok(size, cfg):
     if size not in sizes(cfg):
-        raise EffortError("a size is one of %s (usage.sizes, in %%UW)" % ", ".join(sorted(sizes(cfg))))
+        raise EffortError("a size is one of {} (usage.sizes, in %UW)".format(", ".join(sorted(sizes(cfg)))))
     return float(sizes(cfg)[size]) * per_pct(cfg)
 
 
@@ -134,7 +134,7 @@ def parse_mtok(text):
     try:
         return float(t)
     except ValueError:
-        raise EffortError("an effort is a number of MTok or a range like 10-13, got %r" % text)
+        raise EffortError(f"an effort is a number of MTok or a range like 10-13, got {text!r}")
 
 
 def est_from(cfg, pct=None, mtok=None, allow_range=False):
@@ -149,7 +149,7 @@ def est_from(cfg, pct=None, mtok=None, allow_range=False):
 
 
 def _num(x, nd):
-    return ("%.*f" % (nd, x)).rstrip("0").rstrip(".") or "0"
+    return ("%.*f" % (nd, x)).rstrip("0").rstrip(".") or "0"  # noqa: UP031
 
 
 def _small(x, nd):
@@ -166,8 +166,8 @@ def fmt(mtok, cfg):
     k = per_pct(cfg)
     if isinstance(mtok, (list, tuple)):
         lo, hi = mtok
-        return "%s–%s%%UW (%s–%s MTok)" % (_small(lo / k, 2), _small(hi / k, 2), _mt(lo), _mt(hi))
-    return "%s%%UW (%s MTok)" % (_small(mtok / k, 2), _mt(mtok))
+        return f"{_small(lo / k, 2)}–{_small(hi / k, 2)}%UW ({_mt(lo)}–{_mt(hi)} MTok)"
+    return f"{_small(mtok / k, 2)}%UW ({_mt(mtok)} MTok)"
 
 
 def share(u, cfg):
@@ -182,7 +182,7 @@ def cell(expected, spent, cfg):
     """The expected / spent cell of every table."""
     if expected is None and spent is None:
         return "—"
-    return "%s / %s" % (("≈ " + fmt(expected, cfg)) if expected is not None else "—", fmt(spent, cfg))
+    return "{} / {}".format(("≈ " + fmt(expected, cfg)) if expected is not None else "—", fmt(spent, cfg))
 
 
 def item_expected(obj, cfg):
@@ -198,5 +198,5 @@ def item_expected(obj, cfg):
 
 
 def legend(cfg):
-    s = ", ".join("%s %s" % (k, _num(v, 2)) for k, v in sorted(sizes(cfg).items(), key=lambda x: x[1]))
+    s = ", ".join(f"{k} {_num(v, 2)}" for k, v in sorted(sizes(cfg).items(), key=lambda x: x[1]))
     return t("effort.legend", per=_num(per_pct(cfg), 2), sizes=s)

@@ -53,7 +53,7 @@ class Board:
               with_gates=True, merge=None):
         rows = rec.get("stages") or []
         recs = [r for r in (car, obj) if r is not None] or [rec]
-        cref = "%s:%s" % (track["id"], car["n"]) if car is not None else None
+        cref = "{}:{}".format(track["id"], car["n"]) if car is not None else None
         tn = self.tr.train_of(cref) if cref else None
         it = {"ref": ref, "kind": kind, "object": (obj or {}).get("id") if obj is not None else None,
               "car": cref, "track": track["id"] if track else None, "track_title": track["title"] if track else None,
@@ -108,7 +108,7 @@ class Board:
             e = self._entry_of(st=o["id"])
             if c is not None:
                 s = self.tr.stage_of(c)
-                out.append(self._item("car", "%s:%s" % (t["id"], c["n"]), c, s, c["title"], track=t, car=c, obj=o,
+                out.append(self._item("car", "{}:{}".format(t["id"], c["n"]), c, s, c["title"], track=t, car=c, obj=o,
                                       where=where, since=_since(o, fall), with_gates=with_gates, merge=e))
             else:
                 out.append(self._item("stack", o["id"], o, self.stk.stage_of(o), o["title"], obj=o, where=where,
@@ -120,7 +120,7 @@ class Board:
                 s = self.tr.stage_of(c)
                 if s in stages.TERMINAL and not all_:
                     continue
-                ref = "%s:%s" % (t["id"], c["n"])
+                ref = "{}:{}".format(t["id"], c["n"])
                 e = self._entry_of(car=ref, pr=c.get("pr") if c["status"] in ("pr", "merged") else None)
                 where = "merge" if e else "parked" if self.tr.parked(c) else "track"
                 out.append(self._item("car", ref, c, s, c["title"], track=t, car=c, where=where,
@@ -142,7 +142,7 @@ class Board:
             out.append(self._item("left", oid, o, s, o.get("title") or "", where="merge" if e else None,
                                   since=h.get("ts"), with_gates=False, merge=e))
         known_st = live | set(last)
-        cars = {"%s:%s" % (t["id"], c["n"]) for t in self.tr.tracks() for c in t["cars"]}
+        cars = {"{}:{}".format(t["id"], c["n"]) for t in self.tr.tracks() for c in t["cars"]}
         cars_pr = {c.get("pr") for t in self.tr.tracks() for c in t["cars"] if c.get("pr")}
         from .merge import OPEN
         for e in self.mq.entries():
@@ -153,7 +153,7 @@ class Board:
                 continue
             if s in stages.TERMINAL and not all_:
                 continue
-            out.append(self._item("merge", "#%d" % e["pr"], e, s, e.get("title") or "", where="merge",
+            out.append(self._item("merge", "#%d" % e["pr"], e, s, e.get("title") or "", where="merge",  # noqa: UP031
                                   since=(e.get("merged") or {}).get("ts") if s == "rolling" else e.get("added"),
                                   with_gates=False, merge=e))
         for q in (Wishes(self.state), Think(self.state)):
@@ -169,10 +169,10 @@ class Board:
 
     def _next_entry(self, state, rec, track=None, car=None, why=None, command=None):
         if car is not None:
-            ref, obj = "%s:%s" % (track["id"], car["n"]), car.get("st")
+            ref, obj = "{}:{}".format(track["id"], car["n"]), car.get("st")
         else:
             trk, c = self.tr.car_by_stack(rec["id"])
-            ref, obj, track = ("%s:%s" % (trk["id"], c["n"]) if c is not None else rec["id"]), rec["id"], trk
+            ref, obj, track = ("{}:{}".format(trk["id"], c["n"]) if c is not None else rec["id"]), rec["id"], trk
         tn = self.tr.train_of(ref) if track is not None else None
         return {"state": state, "state_ru": NEXT_RU[state], "ref": ref, "object": obj,
                 "track": track["id"] if track else None, "train": tn["name"] if tn else None,
@@ -191,11 +191,11 @@ class Board:
         cells += [{"n": n + 1, "ref": None} for n in range(len(cells), cap)]
         nx = self.trains.next()
         reps = [o["id"] for o in nx["repairs"]]
-        nxt = [self._next_entry("now", o, why=t("board.why_repair"), command="depot2 stack start %s" % o["id"])
+        nxt = [self._next_entry("now", o, why=t("board.why_repair"), command="depot2 stack start {}".format(o["id"]))
                for o in nx["repairs"]]
         nxt += [self._next_entry("now", None, p["track"], p["car"], t("board.why_train", name=p["train"]["name"]),
                                  p["command"]) for p in nx["picks"]]
-        nxt += [self._next_entry("now", o, why=t("board.why_autostart"), command="depot2 stack start %s" % o["id"])
+        nxt += [self._next_entry("now", o, why=t("board.why_autostart"), command="depot2 stack start {}".format(o["id"]))
                 for o in nx["stack"] if o["id"] not in reps]
         for u in nx["upcoming"]:
             nxt.append(self._next_entry("next", None, u["track"], u["car"],
@@ -221,7 +221,7 @@ class Board:
             if not c.get("ref"):
                 L.append(t("board.slot_free_row", n=c["n"]))
                 continue
-            L.append("| %d | %s | %s | %s | %s | %s | %s |" % (
+            L.append("| %d | %s | %s | %s | %s | %s | %s |" % (  # noqa: UP031
                 c["n"], ref_cell(c) if "kind" in c else c["ref"], _cell(clip(c.get("title"), 70)),
                 _cell(clip(train_cell(c), 40)), _cell(clip(track_cell(c), 40)),
                 age_ru(c["in_slot"], now) if c.get("in_slot") else "—", _cell(gate_cell(c)) if "kind" in c else "—"))
@@ -231,8 +231,8 @@ class Board:
         for s, es in groups:
             if not es:
                 continue
-            shown = ["%s%s" % (e["ref"], (" (%s)" % clip(e["why"], 60)) if e.get("why") else "") for e in es[:per]]
-            parts.append("%s — %s%s" % (NEXT_RU[s], "; ".join(shown),
+            shown = ["{}{}".format(e["ref"], (" ({})".format(clip(e["why"], 60))) if e.get("why") else "") for e in es[:per]]
+            parts.append("{} — {}{}".format(NEXT_RU[s], "; ".join(shown),
                                          (" " + t("board.more", n=len(es) - per)) if len(es) > per else ""))
         L.append(t("board.next", parts=". ".join(parts)) if parts else t("board.next_none"))
         return L
@@ -244,7 +244,7 @@ class Board:
 
     def columns(self, all_=False, view="all"):
         if view not in VIEWS:
-            raise ValueError("--view: %s" % ", ".join(VIEWS))
+            raise ValueError("--view: {}".format(", ".join(VIEWS)))
         items = self.items(all_=all_)
         lim = gates.limits(self.stk)
         keys = STACK_VIEW if view == "stack" else [s for s in stages.STAGES if all_ or s not in stages.TERMINAL]
@@ -280,14 +280,14 @@ class Board:
         L.append("|---|---|---|---|")
         for c in cols:
             longest = min((it for it in c["items"] if it.get("since")), key=lambda it: it["since"], default=None)
-            L.append("| %s | %d | %s | %s |" % (c["ru"], c["count"], limit_cell(c["limit"]),
-                                               ("%s (%s)" % (longest["ref"], age_ru(longest["since"], now)))
+            L.append("| %s | %d | %s | %s |" % (c["ru"], c["count"], limit_cell(c["limit"]),  # noqa: UP031
+                                               ("{} ({})".format(longest["ref"], age_ru(longest["since"], now)))
                                                if longest else "—"))
         L.append("")
         L.append(legend())
         for c in cols:
             L.append("")
-            L.append("### %s — %d%s" % (c["ru"][0].upper() + c["ru"][1:], c["count"],
+            L.append("### %s — %d%s" % (c["ru"][0].upper() + c["ru"][1:], c["count"],  # noqa: UP031
                                         (" · " + limit_cell(c["limit"])) if c["limit"] else ""))
             L.append("")
             if not c["items"]:
@@ -297,8 +297,8 @@ class Board:
             L.append("|---|---|---|---|---|---|---|---|---|")
             shown = c["items"] if not limit else c["items"][:limit]
             for it in shown:
-                L.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
-                    ref_cell(it), "P%d" % it["priority"] if it.get("priority") else "—", _cell(clip(it["title"], 90)),
+                L.append("| {} | {} | {} | {} | {} | {} | {} | {} | {} |".format(
+                    ref_cell(it), "P%d" % it["priority"] if it.get("priority") else "—", _cell(clip(it["title"], 90)),  # noqa: UP031
                     _cell(clip(train_cell(it), 40)),
                     _cell(clip(track_cell(it), 40)), it["size"] or "—",
                     where_cell(it), age_ru(it["since"], now) if it.get("since") else "—", _cell(gate_cell(it))))
@@ -324,14 +324,14 @@ def limit_cell(lim):
         return t("board.limit_over", what=lim["what"], used=lim["used"], max=lim["max"])
     if lim["used"] >= lim["max"]:
         return t("board.limit_full", what=lim["what"], used=lim["used"], max=lim["max"])
-    return "%s %d/%d" % (lim["what"], lim["used"], lim["max"])
+    return "%s %d/%d" % (lim["what"], lim["used"], lim["max"])  # noqa: UP031
 
 
 def ref_cell(it):
     if it["kind"] == "car" and it.get("object"):
-        out = "%s (%s)" % (it["ref"], it["object"])
+        out = "{} ({})".format(it["ref"], it["object"])
     elif it["kind"] == "merge":
-        out = "%s (%s)" % (it["ref"], it["merge"])
+        out = "{} ({})".format(it["ref"], it["merge"])
     else:
         out = it["ref"]
     rep = it.get("repair")
@@ -343,11 +343,11 @@ def ref_cell(it):
 
 
 def train_cell(it):
-    return "%s «%s»" % (it["train"], it.get("train_title") or "") if it.get("train") else "—"
+    return "{} «{}»".format(it["train"], it.get("train_title") or "") if it.get("train") else "—"
 
 
 def track_cell(it):
-    return "%s %s" % (it["track"], it.get("track_title") or "") if it.get("track") else "—"
+    return "{} {}".format(it["track"], it.get("track_title") or "") if it.get("track") else "—"
 
 
 def where_cell(it):
@@ -355,7 +355,7 @@ def where_cell(it):
     if it.get("merge") and it.get("where") != "merge":
         w += ", " + t("board.where_in_merge", id=it["merge"])
     if it.get("pr"):
-        w += ", PR #%s" % it["pr"]
+        w += ", PR #{}".format(it["pr"])
     return w
 
 
@@ -363,7 +363,7 @@ def gate_cell(it):
     g = it.get("gate")
     out = ""
     if g:
-        out = gates.gate_text(g, t("board.gate_passed", name=g["name"]), "%s: " % g["name"])
+        out = gates.gate_text(g, t("board.gate_passed", name=g["name"]), "{}: ".format(g["name"]))
     if it.get("forced"):
         out = (out + " · " if out else "") + "⚑ --force"
     return out or "—"

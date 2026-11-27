@@ -66,7 +66,7 @@ class PushBase(unittest.TestCase):
                            text=True, env=e, timeout=120)
         self.outputs.append(p.stdout + p.stderr)
         if ok and p.returncode != 0:
-            raise AssertionError("depot2 %s failed (%d): %s %s" % (args, p.returncode, p.stdout, p.stderr))
+            raise AssertionError("depot2 %s failed (%d): %s %s" % (args, p.returncode, p.stdout, p.stderr))  # noqa: UP031
         return p
 
     def add_remote(self, url=None):
@@ -75,11 +75,11 @@ class PushBase(unittest.TestCase):
     def commits(self, k, text=None):
         for _ in range(k):
             self.n += 1
-            name = "note-%03d.txt" % self.n
+            name = "note-%03d.txt" % self.n  # noqa: UP031
             with open(os.path.join(self.root, name), "w") as f:
-                f.write((text or "note %d" % self.n) + "\n")
+                f.write((text or "note %d" % self.n) + "\n")  # noqa: UP031
             git(self.root, "add", "--", name)
-            git(self.root, "commit", "-q", "-m", "test: note %d" % self.n)
+            git(self.root, "commit", "-q", "-m", "test: note %d" % self.n)  # noqa: UP031
 
     def head(self):
         return git(self.root, "rev-parse", "HEAD").stdout.strip()
@@ -162,7 +162,7 @@ class FirstPushTest(PushBase):
         self.assertIsNone(self.spawned())
         self.assertEqual(self.scans(), [])
         out = self.team("backup", "--push").stdout
-        self.assertIn("ok: backup/%s at %s" % (self.branch, self.head()), out)
+        self.assertIn(f"ok: backup/{self.branch} at {self.head()}", out)
         self.assertEqual(self.remote_head(), self.head())
         # Two scans: what the push carries (all of the history: every blob, the commit messages),
         # then the files on disk, with the owner's arguments.
@@ -210,7 +210,7 @@ class EveryTenTest(PushBase):
         # The push scanned only what it carried: the 10 new notes' blobs, not the old history.
         s = self.scans()[2]
         blobs = sorted(os.path.basename(f) for f in s["files"] if f.startswith("blobs/"))
-        self.assertEqual(blobs, ["note-%03d.txt" % i for i in range(1, 11)])
+        self.assertEqual(blobs, ["note-%03d.txt" % i for i in range(1, 11)])  # noqa: UP031
         started = self.spawned()
         self.assertEqual(self.team("stack").stderr, "")
         self.assertEqual(self.spawned(), started)
@@ -323,7 +323,7 @@ class FailureTest(PushBase):
 
     def test_the_network_and_a_token_in_the_url(self):
         token = "tok3n-" + "q" * 20
-        self.add_remote("https://someone:%s@127.0.0.1:9/state.git" % token)
+        self.add_remote(f"https://someone:{token}@127.0.0.1:9/state.git")
         out = self.team("backup", "--status").stdout
         self.assertIn("https://***@127.0.0.1:9/state.git", out)
         p = self.team("backup", "--push", ok=False)
@@ -390,7 +390,7 @@ class ScanTest(PushBase):
         self.spawns = True
         self.first_push()
         pushed = self.head()
-        self.commits(1, text="a line with %s in it" % HIT)
+        self.commits(1, text=f"a line with {HIT} in it")
         with open(os.path.join(self.root, "note-001.txt"), "w") as f:
             f.write("redacted\n")
         git(self.root, "commit", "-q", "-am", "test: redact")
@@ -479,7 +479,7 @@ class RawGateTest(unittest.TestCase):
         self.assertFalse(os.path.exists(self.q))
 
     def test_a_dirty_stream_goes_to_the_quarantine_and_a_marker_stays(self):
-        p = self.raw("chronicler-r1.jsonl", '{"text": "a %s here"}\n' % HIT)
+        p = self.raw("chronicler-r1.jsonl", f'{{"text": "a {HIT} here"}}\n')
         lines = []
         q = push.gate_raw(self.t.state, self.t.cfg, p, lines.append)
         self.assertEqual(q["file"], os.path.join("rounds", "r", "raw", "chronicler-r1.jsonl"))
@@ -489,17 +489,17 @@ class RawGateTest(unittest.TestCase):
         self.assertEqual((marker["type"], marker["to"], marker["why"]),
                          ("quarantined", q["to"], "приватный скан не CLEAN"))
         self.assertEqual(len(lines), 1)
-        self.assertIn("в карантине %s (вне депо)" % q["to"], lines[0])
+        self.assertIn("в карантине {} (вне депо)".format(q["to"]), lines[0])
         for text in lines + [slurp(p)]:
             self.assertNotIn(HIT, text)  # nothing the scan found is shown or kept in the state
-        p = self.raw("chronicler-r1.jsonl", '{"text": "%s again"}\n' % HIT)  # a later one keeps the first
+        p = self.raw("chronicler-r1.jsonl", f'{{"text": "{HIT} again"}}\n')  # a later one keeps the first
         self.assertEqual(push.gate_raw(self.t.state, self.t.cfg, p, lines.append)["to"], q["to"] + ".2")
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf):
             push.status(self.t.state, self.t.cfg)
-        self.assertIn("quarantine: 2 raw streams in %s (outside the depot" % self.q, buf.getvalue())
+        self.assertIn(f"quarantine: 2 raw streams in {self.q} (outside the depot", buf.getvalue())
         shutil.rmtree(self.q)
-        self.assertTrue(push.quarantine_line(self.t.cfg["backup"]["git"]).startswith("quarantine: empty in %s " % self.q))
+        self.assertTrue(push.quarantine_line(self.t.cfg["backup"]["git"]).startswith(f"quarantine: empty in {self.q} "))
 
     def test_no_scan_means_not_clean(self):
         self.t.cfg["backup"]["git"]["scan"] = os.path.join(self.tmp, "no-such-scan.sh")
@@ -544,4 +544,4 @@ class RawGateTest(unittest.TestCase):
         # the round goes on (`round --resume`); its report names the stream in the quarantine
         r = run_round(self.t.state, self.t.cfg, None, resume=rid, runner=FakeRunner(self.t.state, {}),
                       out=lambda *a: None)
-        self.assertIn("%s: сырой поток в карантине (приватный скан не CLEAN)" % rel, r["report"])
+        self.assertIn(f"{rel}: сырой поток в карантине (приватный скан не CLEAN)", r["report"])

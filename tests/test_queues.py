@@ -153,11 +153,11 @@ class TodoTest(QBase):
         git("update-ref", "refs/remotes/origin/main", "HEAD")
         sha = subprocess.run(["git", "-C", d, "rev-parse", "--short=7", "HEAD"], stdout=subprocess.PIPE,
                              text=True).stdout.strip()
-        self.assertEqual(repo_version({"deep_repo": {"clone": d}}), "2.4.0, main %s" % sha)
+        self.assertEqual(repo_version({"deep_repo": {"clone": d}}), f"2.4.0, main {sha}")
         self.assertIsNone(repo_version({"deep_repo": {"clone": ""}}))
         rc, out, err = super(QBase, self).team("--set", "deep_repo.clone=" + d, "todo", "add", "--text", "x")
         self.assertEqual(rc, 0, err)
-        self.assertEqual(Todo(self.t.state).get("td-0001")["version"], "2.4.0, main %s" % sha)
+        self.assertEqual(Todo(self.t.state).get("td-0001")["version"], f"2.4.0, main {sha}")
 
 
 class TeamStackTest(QBase):
@@ -185,7 +185,7 @@ class TeamStackTest(QBase):
         self.assertEqual(Stack(self.t.state, self.t.cfg).objects(), [])
         self.assertTrue(os.path.exists(os.path.join(self.t.dir, "team-stack.json")))
         self.assertEqual(ts.command(ts.get("tm-0001")),
-                         "depot2 round --kind discuss --input %s --only keeper --item tm-0001 --dry-run" % topic)
+                         f"depot2 round --kind discuss --input {topic} --only keeper --item tm-0001 --dry-run")
         # the spend from the round's own tokens: 10 + 200000 × 1.25 + 3e6 × 0.1 + 40000 × 5 = 0.75 MTok
         ts.record_round("tm-0001", "2015-11-06-discuss-solo-keeper", {"total_usd": 0.4321, "tokens": {
             "input": 10, "cache_write": 200000, "cache_read": 3000000, "output": 40000, "total": 3240010}})
@@ -284,7 +284,7 @@ class PrioTest(QBase):
         rc, out, err = self.team("think", "add", "--topic", "подсказки", "--prio", "high")
         self.assertEqual(rc, 0, err)
         self.assertIn("| № | Тема | Дата | Вопросы | Поднял | Связано | Приоритет | Статус |", out)
-        self.assertIn("| 1 | th-0002 подсказки | %s | — | — | — | P8 | ждёт |" % Think(self.t.state).get("th-0002")["date"],
+        self.assertIn("| 1 | th-0002 подсказки | {} | — | — | — | P8 | ждёт |".format(Think(self.t.state).get("th-0002")["date"]),
                       out)
         self.assertEqual(self.team("think", "set", "th-0001", "--prio", "later")[0], 0)
         self.assertEqual(Think(self.t.state).get("th-0001")["priority"], 2)

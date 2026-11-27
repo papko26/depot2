@@ -42,12 +42,12 @@ class CatalogTest(unittest.TestCase):
         for key in en:
             if key.startswith(i18n.INPUT):
                 continue  # regex fragments, never formatted
-            self.assertIsInstance(en[key], str, "%s: the English message is one string (no gender)" % key)
+            self.assertIsInstance(en[key], str, f"{key}: the English message is one string (no gender)")
             want = fields(en[key])
             for form in variants(ru[key]):
-                self.assertEqual(fields(form), want, "%s: ru fields differ from en" % key)
+                self.assertEqual(fields(form), want, f"{key}: ru fields differ from en")
             if isinstance(ru[key], dict):
-                self.assertEqual(sorted(ru[key]), ["f", "m"], "%s: a gender pair is f and m" % key)
+                self.assertEqual(sorted(ru[key]), ["f", "m"], f"{key}: a gender pair is f and m")
             for form in variants(en[key]) + variants(ru[key]):
                 form.format(**{f.split(".")[0].split("[")[0]: "x" for f in want})  # braces balanced, fields named
 
@@ -67,11 +67,11 @@ class CatalogTest(unittest.TestCase):
             for m in RE_KEY.finditer(text):
                 key = m.group(1) or m.group(2)
                 if key not in en:
-                    missing.append("%s: %s" % (os.path.relpath(path, ROOT), key))
+                    missing.append(f"{os.path.relpath(path, ROOT)}: {key}")
         with open(os.path.join(PKG, "web", "index.html"), encoding="utf-8") as f:
             page = f.read()
         web = i18n.web_messages("en")
-        missing += ["depot2/web/index.html: web.%s" % k for k in RE_WEB_KEY.findall(page) if k not in web]
+        missing += [f"depot2/web/index.html: web.{k}" for k in RE_WEB_KEY.findall(page) if k not in web]
         self.assertEqual(missing, [])
 
     def test_every_label_family_resolves_in_both(self):
@@ -83,7 +83,7 @@ class CatalogTest(unittest.TestCase):
                 if isinstance(v, i18n.Labels):
                     for k in v:
                         for lang in i18n.LANGS:
-                            self.assertIn("%s.%s" % (v.prefix, k), i18n.catalog(lang), "%s.%s" % (mod.name, name))
+                            self.assertIn(f"{v.prefix}.{k}", i18n.catalog(lang), f"{mod.name}.{name}")
 
     def test_no_russian_outside_the_russian_catalog(self):
         """The code, its comments and the web page are English; Russian lives in depot2/catalogs/ru.py alone."""
@@ -95,8 +95,8 @@ class CatalogTest(unittest.TestCase):
             with open(path, encoding="utf-8") as f:
                 for n, line in enumerate(f, 1):
                     if CYRILLIC.search(line):
-                        bad.append("%s:%d" % (os.path.relpath(path, ROOT), n))
-        self.assertEqual(bad, [], "%d lines with Russian outside ru.py" % len(bad))
+                        bad.append("%s:%d" % (os.path.relpath(path, ROOT), n))  # noqa: UP031
+        self.assertEqual(bad, [], "%d lines with Russian outside ru.py" % len(bad))  # noqa: UP031
 
 
 class LanguageTest(unittest.TestCase):

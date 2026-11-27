@@ -77,7 +77,7 @@ class PBase(Base):
 
     def ok(self, *argv):
         rc, out, err = self.team(*argv)
-        self.assertEqual(rc, 0, "%s: %s" % (" ".join(argv), err))
+        self.assertEqual(rc, 0, "{}: {}".format(" ".join(argv), err))
         return out
 
     def pc(self):
@@ -92,7 +92,7 @@ class ImportTest(PBase):
         original = "\n".join(strip_banner(slurp(path))) + "\n"  # a file rendered before carries the banner already
         out = self.ok("principles", "import", path, "--dry-run")
         self.assertIn("DRY RUN: would import", out)
-        self.assertIn("the render equals the file line for line (%d lines), but the banner «Собран из депо» and the "
+        self.assertIn("the render equals the file line for line (%d lines), but the banner «Собран из депо» and the "  # noqa: UP031
                       "sections' headings in today's words" % len(original.splitlines()), out)
         self.assertFalse(os.path.exists(os.path.join(self.t.dir, "principles.json")))  # the dry run wrote nothing
         self.assertEqual(strip_banner(slurp(path)), original.splitlines())
@@ -166,7 +166,7 @@ class ImportTest(PBase):
         p = self.pc()
         by = {}
         for e in p.ordered():
-            by.setdefault(e["section"], []).append(e["n"] if not e["suffix"] else "%d%s" % (e["n"], e["suffix"]))
+            by.setdefault(e["section"], []).append(e["n"] if not e["suffix"] else "%d%s" % (e["n"], e["suffix"]))  # noqa: UP031
         self.assertEqual(by["core"], [17, 4, 1])
         self.assertEqual(by["mechanics"], [2, 3, "3a", 5, 6, 7, 19, 20])
         self.assertEqual(len(p.ordered()), 20)
@@ -243,7 +243,7 @@ class QueueTest(PBase):
         live, config.DEFAULT_STATE = config.DEFAULT_STATE, os.path.join(self.files, "team")  # the target in its tree
         try:
             out = self.ok("principles", "set", "pc-0001", "--text", "Тело на копии.")
-            self.assertIn("%s: not rendered: it is the live depot's and this depot (%s) another" % (self.path, self.t.dir), out)
+            self.assertIn(f"{self.path}: not rendered: it is the live depot's and this depot ({self.t.dir}) another", out)
             self.assertIn("principles render --out PATH", out)
             self.assertEqual(slurp(self.path), before)
             self.assertEqual(self.pc().get("pc-0001")["text"], "Тело на копии.")  # the depot's own data changed
@@ -480,7 +480,7 @@ class GatesTest(GateBase):
         self.assertEqual(gates.checks_missing(self.brief), [])
         for head in ("### Проверка по принципам", "**Проверка по принципам (кратко)**",
                      "## ПРОВЕРКА ПО  ПРИНЦИПАМ ДИЗАЙНА", "## Проверка по принципам"):
-            self.assertEqual(gates.checks_missing(write(self.t.dir, "h.md", "## Сверка с кодом\n\n%s\n" % head)), [],
+            self.assertEqual(gates.checks_missing(write(self.t.dir, "h.md", f"## Сверка с кодом\n\n{head}\n")), [],
                              head)
         self.assertEqual(gates.checks_missing(write(self.t.dir, "h.md", "## Сверка с кодом\n\n## Принципы\n")),
                          ["Проверка по принципам"])
@@ -511,7 +511,7 @@ class GatesTest(GateBase):
             d = read_json(path)
             for t in d["tracks"]:
                 for c in t["cars"]:
-                    if "%s:%s" % (t["id"], c["n"]) in cars:
+                    if "{}:{}".format(t["id"], c["n"]) in cars:
                         c["added"] = day + "T12:00:00+02:00"
             write_json(path, d)
         if objects:

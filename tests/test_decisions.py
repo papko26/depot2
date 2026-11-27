@@ -83,7 +83,7 @@ class DecisionsTest(Base):
         self.assertIn(" · все — Вагон tr-0904:16: и ", lines[2])
         self.assertTrue(lines[2].endswith("(связи: tr-0904:16, tr-0907:2x-alt, tr-0904, wl-0007, td-0045, dec-000001, "
                                           "#946, #12)"), lines[2])
-        self.assertIn(" · %s · раунд 2015-11-19-discuss п. Q2 — Второе" % characters.name("builder"), lines[3])
+        self.assertIn(" · {} · раунд 2015-11-19-discuss п. Q2 — Второе".format(characters.name("builder")), lines[3])
         rc, out, _ = self.team("decisions", "--md", "--grep", "импорт")
         self.assertTrue(out.startswith("## Решения владельца (1 из 3, по «импорт»: найдено 1)\n"))
         rc, out, _ = self.team("decisions", "--grep", "нет такого")

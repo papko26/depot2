@@ -102,7 +102,7 @@ def dod_unmet(cfg, obj, principles=None, docs=None):
         v = "ok" if item == "ci" and i18n.matches(s, "stack.ci.green") else verdict(s)
         if v in ("ok", "na"):
             continue
-        out.append("%s: %s" % (ITEM_RU.get(item, item), t("gates.not_handed") if v is None else s))
+        out.append("{}: {}".format(ITEM_RU.get(item, item), t("gates.not_handed") if v is None else s))
     return out
 
 
@@ -115,7 +115,7 @@ def dod_cells(cfg, obj, principles=None, docs=None):
             if docs and docs["need"]:
                 out.append(t("gates.cell_docs", word=docs_word(docs)))
         else:
-            out.append("%s %s" % (ITEM_RU.get(i, i), item_state(obj, i) or t("gates.not_handed")))
+            out.append("{} {}".format(ITEM_RU.get(i, i), item_state(obj, i) or t("gates.not_handed")))
     return " · ".join(out)
 
 
@@ -205,7 +205,7 @@ def _checks_unmet(items, brief):
     if path and os.path.isfile(path):
         missing = checks_missing(path)
         if missing:
-            return [t("gates.checks_missing", sections=", ".join("«%s»" % m for m in missing))]
+            return [t("gates.checks_missing", sections=", ".join(f"«{m}»" for m in missing))]
     elif "brief" not in items:
         return [t("gates.checks_no_brief")]
     return []
@@ -240,7 +240,7 @@ def dor_unmet(stack, tracks, obj=None, car=None, track=None, items=None):
         out.append(t("gates.brief_not_found", path=brief))
     qs = open_questions(recs) if "questions" in items else []
     if qs:
-        out.append(t("gates.open_questions", n=len(qs), list="; ".join("%d. %s" % (q["n"], q["q"]) for q in qs[:3])
+        out.append(t("gates.open_questions", n=len(qs), list="; ".join("%d. %s" % (q["n"], q["q"]) for q in qs[:3])  # noqa: UP031
                      + (" …" if len(qs) > 3 else "")))
     if after and car is not None and tracks is not None and track is not None:
         b = tracks.car_blockers(track, car, lock=False)
@@ -249,7 +249,7 @@ def dor_unmet(stack, tracks, obj=None, car=None, track=None, items=None):
     elif after and obj is not None:
         deps = [d for d in obj.get("depends_on") or [] if stack.dep_waiting(d)]
         if deps:
-            out.append("%s depends on %s, not done yet" % (obj["id"], ", ".join(deps)))
+            out.append("{} depends on {}, not done yet".format(obj["id"], ", ".join(deps)))
     need = project_need(recs) if "project" in items else None
     if need and not project_passed(recs):
         out.append(t("gates.project_required", need=need))
@@ -260,7 +260,7 @@ def dor_unmet(stack, tracks, obj=None, car=None, track=None, items=None):
 
 def slots_unmet(stack):
     used, cap = len(stack.in_slots()), stack.slots_n
-    return ["no free slot (%d/%d), stack.slots" % (used, cap)] if used >= cap else []
+    return ["no free slot (%d/%d), stack.slots" % (used, cap)] if used >= cap else []  # noqa: UP031
 
 
 def post_unmet(stack, oid, where):
@@ -287,7 +287,7 @@ def check(unmet, force, why, ref, target, cmd, error=GateError):
     unmet = dict((k, list(v)) for k, v in unmet.items() if v)
     if not unmet:
         return None
-    text = "; ".join("%s — %s" % (GATE_RU.get(k, k), ", ".join(v)) for k, v in unmet.items())
+    text = "; ".join("{} — {}".format(GATE_RU.get(k, k), ", ".join(v)) for k, v in unmet.items())
     if not force:
         raise error(t("gates.refused", ref=ref, target=target, text=text, cmd=cmd))
     if not (why or "").strip():
@@ -298,9 +298,9 @@ def check(unmet, force, why, ref, target, cmd, error=GateError):
 def gate_text(g, passed, failed):
     notes = "; ".join(g.get("notes") or [])
     if not g["unmet"]:
-        return passed + (" (%s)" % notes if notes else "")
+        return passed + (f" ({notes})" if notes else "")
     return failed + "; ".join(g["unmet"]) + (" · " + notes if notes else "")
 
 
 def gates_text(gates):
-    return "; ".join("%s — %s" % (GATE_RU.get(k, k), ", ".join(v)) for k, v in (gates or {}).items())
+    return "; ".join("{} — {}".format(GATE_RU.get(k, k), ", ".join(v)) for k, v in (gates or {}).items())

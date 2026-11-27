@@ -46,15 +46,13 @@ def legend():
     return t("marks.legend", section=section())
 
 
-RE_SECTION = re.compile(r"(?i)%s" % rx("in.marks.section"))
-RE_SUBLABEL = re.compile(r"(?i)%s" % rx("in.marks.sublabel"))  # a sub-heading inside the section, not its end
+RE_SECTION = re.compile(r"(?i){}".format(rx("in.marks.section")))
+RE_SUBLABEL = re.compile(r"(?i){}".format(rx("in.marks.sublabel")))  # a sub-heading inside the section, not its end
 RE_HEAD = re.compile(r"^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$")
 RE_BOLD = re.compile(r"^\s{0,3}\*\*(.+?)\*\*")
 RE_FENCE = re.compile(r"^\s{0,3}(```|~~~)")
-RE_ITEM = re.compile(r"^\s*[-*+]\s+(?:%s\s+)?(\d+)((?:[a-z]|%s)?)\b\s*[:.)—–-]?\s*(.*)$"
-                     % (rx("in.marks.principle"), rx("in.marks.suffix_a")), re.I)
-RE_MARK = re.compile(r"^(%s|%s|%s)(?![\w/])\s*[—–:,.;-]*\s*(.*)$"
-                     % (rx("in.marks.na"), rx("in.marks.bad"), rx("in.marks.ok")), re.I)
+RE_ITEM = re.compile(r"^\s*[-*+]\s+(?:{}\s+)?(\d+)((?:[a-z]|{})?)\b\s*[:.)—–-]?\s*(.*)$".format(rx("in.marks.principle"), rx("in.marks.suffix_a")), re.I)
+RE_MARK = re.compile(r"^({}|{}|{})(?![\w/])\s*[—–:,.;-]*\s*(.*)$".format(rx("in.marks.na"), rx("in.marks.bad"), rx("in.marks.ok")), re.I)
 
 
 class MarksError(ValueError):
@@ -71,7 +69,7 @@ def mark_of(word):
 
 def norm_label(n, suffix=""):
     s = (suffix or "").lower()
-    return "%d%s" % (int(n), "a" if s and i18n.is_word(s, "in.marks.suffix_a") else s)
+    return "%d%s" % (int(n), "a" if s and i18n.is_word(s, "in.marks.suffix_a") else s)  # noqa: UP031
 
 
 def _clip(text, n=120):
@@ -137,7 +135,7 @@ def from_pr(old, parsed, pr, at=None):
     new = {k: dict(v) for k, v in (old or {}).items() if is_hand(v.get("by"))}
     for label, m in parsed["marks"].items():
         if label not in new:
-            new[label] = {"mark": m["mark"], "text": m["text"], "by": "PR #%s" % pr, "at": at}
+            new[label] = {"mark": m["mark"], "text": m["text"], "by": f"PR #{pr}", "at": at}
     return new
 
 
@@ -150,7 +148,7 @@ def by_hand(old, label, mark, text=None, at=None):
 # --- the verdict: the gates and the score ----------------------------------------------------------------------
 
 def signed(n):
-    return "+%d" % n if n > 0 else ("−%d" % -n if n < 0 else "0")
+    return "+%d" % n if n > 0 else ("−%d" % -n if n < 0 else "0")  # noqa: UP031
 
 
 def evaluate(marks, plist):
@@ -209,7 +207,7 @@ def text(v):
         return t("marks.text_not_needed")
     if not v["read"]:
         return t("marks.text_not_read", section=section())
-    return "%s · %s" % (gate_ru(v), score_ru(v))
+    return f"{gate_ru(v)} · {score_ru(v)}"
 
 
 def cell(v):
@@ -217,7 +215,7 @@ def cell(v):
         return t("marks.cell_not_needed")
     if not v["read"]:
         return t("marks.unchecked")
-    return "%s, %s" % (gate_ru(v), score_ru(v, full=False))
+    return f"{gate_ru(v)}, {score_ru(v, full=False)}"
 
 
 def compact(v):
@@ -243,7 +241,7 @@ def md(ref, v, heading=True):
     L.append(t("marks.md_header"))
     L.append("|---|---|---|---|---|")
     for i in v["items"]:
-        L.append("| %s. %s | %s | %s | %s | %s |" % (
+        L.append("| {}. {} | {} | {} | {} | {} |".format(
             i["label"], _cell(i["title"]), t("marks.md_priority_1") if i["priority"] == 1 else t("marks.md_priority_2"),
             i["mark_ru"], _cell(i["text"] or "—"), _cell(i["by"] or "—")))
     L.append("")
@@ -257,15 +255,15 @@ def _cell(x):
 
 def lines(v, title=None):
     """`car show`: the verdict and the principles with a mark or a gate's missing line, one line each."""
-    L = ["%s: %s." % (title or t("marks.title"), v["text"])]
+    L = ["{}: {}.".format(title or t("marks.title"), v["text"])]
     if v["read"]:
         for i in v["items"]:
             if i["mark"] or i["priority"] == 1:
-                L.append("- %s (%s) %s — %s%s%s" % (i["label"], t("marks.kind_gate") if i["priority"] == 1 else
+                L.append("- {} ({}) {} — {}{}{}".format(i["label"], t("marks.kind_gate") if i["priority"] == 1 else
                                                      t("marks.kind_score"),
                                                      _clip(i["title"], 50), i["mark_ru"],
                                                      ": " + _clip(i["text"], 100) if i["text"] else "",
-                                                     " (%s)" % i["by"] if i["by"] else ""))
+                                                     " ({})".format(i["by"]) if i["by"] else ""))
     return L
 
 
@@ -340,7 +338,7 @@ class Reading:
 
     def lines(self):
         """What the reading says: what the PR's section gave, what it could not read, and the verdict."""
-        who = self.ref or ("PR #%s" % self.pr)
+        who = self.ref or (f"PR #{self.pr}")
         if not self.plist:
             return []
         L = []
@@ -361,7 +359,7 @@ class Reading:
             kept = [k for k in self.new if is_hand(self.new[k].get("by")) and k in self.parsed["marks"]]
             if kept:
                 L.append(t("marks.read_hand_kept", labels=", ".join(sorted(kept))))
-        L.append("%s: %s" % (who, self.verdict["text"]))
+        L.append("{}: {}".format(who, self.verdict["text"]))
         return L
 
     def row(self):

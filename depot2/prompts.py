@@ -44,7 +44,7 @@ def identity(state_persona, cid, balance, n_thoughts):
     thoughts = state_persona.thoughts(n_thoughts)
     head = t("prompts.identity_head", gender=characters.check_gender(state_persona.gender()),
              label=characters.label(cid))
-    said = "\n".join("- [%s] %s" % (th.get("round", ""), th["thought"]) for th in thoughts) or t("prompts.none")
+    said = "\n".join("- [{}] {}".format(th.get("round", ""), th["thought"]) for th in thoughts) or t("prompts.none")
     return head + "\n\n" + t("prompts.identity_body", spec=state_persona.spec().strip() or t("prompts.none"),
                                version=int(version), portrait=portrait or t("prompts.portrait_empty"), thoughts=said,
                                balance=int(balance))
@@ -56,7 +56,7 @@ def points_list(points):
         if p.get("author"):
             out.append(t("prompts.point_by", id=p["id"], title=p["title"], name=characters.name(p["author"])))
         else:
-            out.append("- %s. %s" % (p["id"], p["title"]))
+            out.append("- {}. {}".format(p["id"], p["title"]))
     return "\n".join(out) or t("prompts.no_points")
 
 
@@ -116,9 +116,9 @@ def compact_answer(points, positions, max_comment=220):
         a = positions.get(p["id"])
         if not a:
             continue
-        s = "%s: %s" % (p["id"], POS_RU[a["position"]])
+        s = "{}: {}".format(p["id"], POS_RU[a["position"]])
         if a["stake"]:
-            s += " (%d)" % a["stake"]
+            s += " (%d)" % a["stake"]  # noqa: UP031
         if a.get("comment"):
             s += ": " + _clip(a["comment"], max_comment)
         out.append("- " + s)
@@ -132,7 +132,7 @@ def r1_table(points, finals, max_comment=220, title=None):
         if p.get("author"):
             out.append(t("prompts.r1_point_by", id=p["id"], title=p["title"], name=characters.name(p["author"])))
         else:
-            out.append("### %s. %s" % (p["id"], p["title"]))
+            out.append("### {}. {}".format(p["id"], p["title"]))
         if p.get("source") == "proposal":
             out.append(_clip(p.get("question", ""), 500))
         elif p.get("recommendation"):
@@ -147,7 +147,7 @@ def r1_table(points, finals, max_comment=220, title=None):
                 s = t("prompts.r1_voice_stake", name=characters.name(cid), pos=POS_RU[a["position"]],
                       n=int(a["stake"]))
             else:
-                s = "- %s: %s" % (characters.name(cid), POS_RU[a["position"]])
+                s = "- {}: {}".format(characters.name(cid), POS_RU[a["position"]])
             if a.get("comment"):
                 s += ": " + _clip(a["comment"], max_comment)
             out.append(s)
@@ -167,8 +167,8 @@ def proposals_table(proposals, cfg):
         out.append(t("prompts.bs_proposal", id=p["id"], topic=p["topic"], name=characters.name(p["initiator"])))
         if p.get("why"):
             out.append(t("prompts.bs_why", text=_clip(p["why"], 500)))
-        out += ["%d. %s" % (i, q) for i, q in enumerate(p["questions"], 1)]
-        out.append(t("prompts.bs_fee", fees=", ".join("%s %d" % (characters.name(c), f[c]) for c in characters.IDS)))
+        out += ["%d. %s" % (i, q) for i, q in enumerate(p["questions"], 1)]  # noqa: UP031
+        out.append(t("prompts.bs_fee", fees=", ".join("%s %d" % (characters.name(c), f[c]) for c in characters.IDS)))  # noqa: UP031
     return "\n".join(out)
 
 
@@ -207,7 +207,7 @@ def outcome_text(points, finals, bs, orders):
     if placed:
         out.append("")
         out.append(t("prompts.outcome_orders"))
-        out += ["- %s %s: `%s`" % (o["id"], characters.name(o["character"]), o["command"]) for o in placed]
+        out += ["- {} {}: `{}`".format(o["id"], characters.name(o["character"]), o["command"]) for o in placed]
     return "\n".join(out)
 
 

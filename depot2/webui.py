@@ -75,7 +75,7 @@ def board(state, cfg, q):
     from .board import VIEWS, Board
     view = (q.get("view") or ["all"])[-1]
     if view not in VIEWS:
-        raise NotFound("view: %s" % ", ".join(VIEWS))
+        raise NotFound("view: {}".format(", ".join(VIEWS)))
     return Board(state, cfg).to_json(all_=_flag(q, "all"), view=view)
 
 
@@ -202,7 +202,7 @@ def queue_meta():
          "tstack": ((), {}, {"kind": tstack.KIND_RU, "who": who}),
          "orders": (extras.Orders.OPEN, extras.Orders.STATUS_RU, {"who": who}),
          "brainstorms": (extras.Brainstorms.OPEN, extras.Brainstorms.STATUS_RU, {"who": who})}
-    return [{"name": n, "title": i18n.t(title), "command": "depot2 %s" % c, "open": list(q[n][0]),
+    return [{"name": n, "title": i18n.t(title), "command": f"depot2 {c}", "open": list(q[n][0]),
              "status_ru": plain(q[n][1]), "labels": {k: plain(v) for k, v in q[n][2].items()}}
             for n, title, c in QUEUES]
 
@@ -251,9 +251,9 @@ def code_stamp(root=CODE_ROOT):
     for f in code_files(root):
         try:
             st = os.stat(f)
-            h.update(("%s %d %d\n" % (os.path.relpath(f, root), st.st_size, st.st_mtime_ns)).encode("utf-8"))
+            h.update(("%s %d %d\n" % (os.path.relpath(f, root), st.st_size, st.st_mtime_ns)).encode("utf-8"))  # noqa: UP031
         except OSError:
-            h.update(("%s gone\n" % f).encode("utf-8"))
+            h.update((f"{f} gone\n").encode())
     return h.hexdigest()[:12]
 
 
@@ -281,7 +281,7 @@ def code_broken(root=CODE_ROOT):
             with open(f, encoding="utf-8") as fh:
                 compile(fh.read(), f, "exec")
         except (OSError, SyntaxError, ValueError) as e:
-            return "%s: %s" % (os.path.relpath(f, root), e)
+            return f"{os.path.relpath(f, root)}: {e}"
     return None
 
 
@@ -346,12 +346,12 @@ def csp_for(html):
     """The page's Content-Security-Policy: its own inline script and style by their hashes, nothing else."""
     def hashes(tag):
         out = []
-        for m in re.finditer(r"<%s>(.*?)</%s>" % (tag, tag), html, re.S):
+        for m in re.finditer(rf"<{tag}>(.*?)</{tag}>", html, re.S):
             h = base64.b64encode(hashlib.sha256(m.group(1).encode("utf-8")).digest()).decode()
-            out.append("'sha256-%s'" % h)
+            out.append(f"'sha256-{h}'")
         return " ".join(out) or "'none'"
-    return ("default-src 'none'; script-src %s; style-src %s; connect-src 'self'; img-src data:; "
-            "base-uri 'none'; form-action 'none'; frame-ancestors 'none'" % (hashes("script"), hashes("style")))
+    return ("default-src 'none'; script-src {}; style-src {}; connect-src 'self'; img-src data:; "
+            "base-uri 'none'; form-action 'none'; frame-ancestors 'none'".format(hashes("script"), hashes("style")))
 
 
 def page_html(html, lang=None):
@@ -360,7 +360,7 @@ def page_html(html, lang=None):
     every `<` in it is written \\u003c, so no text in a message can end or open a tag there."""
     lang = lang or i18n.language()
     msgs = json.dumps(i18n.web_messages(lang), ensure_ascii=False, sort_keys=True).replace("<", "\\u003c")
-    html = RE_LANG.sub('<html lang="%s">' % lang, html, count=1)
+    html = RE_LANG.sub(f'<html lang="{lang}">', html, count=1)
     return RE_MESSAGES.sub(lambda m: m.group(1) + msgs + m.group(3), html, count=1)
 
 
@@ -403,7 +403,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def log_message(self, fmt, *args):
         if self.server.verbose:
-            sys.stderr.write("%s %s\n" % (self.log_date_time_string(), fmt % args))
+            sys.stderr.write(f"{self.log_date_time_string()} {fmt % args}\n")
 
     def headers_common(self, length, ctype, allow=False):
         self.send_header("Content-Type", ctype)
@@ -478,7 +478,7 @@ class Server(http.server.ThreadingHTTPServer):
     def __init__(self, state, sets=None, port=PORT, host=HOST, read_dirs=READ_DIRS, doc_base=DOC_BASE,
                  docs_base=DOCS_BASE, verbose=False, code_root=CODE_ROOT, follow_code=True):
         if host not in LOOPBACK:  # no flag opens it: there is no authorization yet
-            raise ValueError("%s web listens on loopback only (%s), not %r" % (NAME, ", ".join(LOOPBACK), host))
+            raise ValueError("{} web listens on loopback only ({}), not {!r}".format(NAME, ", ".join(LOOPBACK), host))
         if host == "::1":
             self.address_family = socket.AF_INET6
         self.state, self.sets, self.verbose = state, sets, verbose
@@ -505,17 +505,17 @@ class Server(http.server.ThreadingHTTPServer):
             os.set_inheritable(self.socket.fileno(), False)
             self.server_address = self.socket.getsockname()[:2]
         p = self.server_address[1]
-        self.hosts = {"%s:%d" % (n, p) for n in OWN_NAMES + tuple(self.names)}
+        self.hosts = {"%s:%d" % (n, p) for n in OWN_NAMES + tuple(self.names)}  # noqa: UP031
 
     @property
     def url(self):
         h = self.server_address[0]
-        return "http://%s:%d/" % ("[%s]" % h if ":" in h else h, self.server_address[1])
+        return "http://%s:%d/" % (f"[{h}]" if ":" in h else h, self.server_address[1])  # noqa: UP031
 
     @property
     def urls(self):
         """The same server by the names of `web.hosts`: the same port, still this computer only."""
-        return ["http://%s:%d/" % (n, self.server_address[1]) for n in self.names]
+        return ["http://%s:%d/" % (n, self.server_address[1]) for n in self.names]  # noqa: UP031
 
     def authorize(self, h):
         """The one place a request is let in (a login goes here later): a loopback peer, a Host that names this

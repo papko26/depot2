@@ -57,13 +57,13 @@ def read_text(path, default=None):
 def atomic_write(path, text):
     """Write via a temp file and rename, then read back and compare."""
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    tmp = "%s.tmp-%d" % (path, os.getpid())
+    tmp = "%s.tmp-%d" % (path, os.getpid())  # noqa: UP031
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(text)
         _sync(f)
     os.replace(tmp, path)
     if read_text(path) != text:
-        raise WriteCheckError("read-back mismatch: %s" % path)
+        raise WriteCheckError(f"read-back mismatch: {path}")
 
 
 def write_new(path, text):
@@ -74,7 +74,7 @@ def write_new(path, text):
         f.write(text)
         _sync(f)
     if read_text(path) != text:
-        raise WriteCheckError("read-back mismatch: %s" % path)
+        raise WriteCheckError(f"read-back mismatch: {path}")
 
 
 def write_json(path, obj):
@@ -106,7 +106,7 @@ def append_jsonl(path, rec):
         f.seek(max(0, size - len(line.encode("utf-8")) - 1))
         tail = f.read().decode("utf-8")
     if tail.rstrip("\n").split("\n")[-1] != line:
-        raise WriteCheckError("append did not read back: %s" % path)
+        raise WriteCheckError(f"append did not read back: {path}")
     return rec
 
 
@@ -122,7 +122,7 @@ def read_jsonl(path):
             try:
                 out.append(json.loads(line))
             except ValueError:
-                raise ValueError("%s:%d is not valid JSON" % (path, n))
+                raise ValueError("%s:%d is not valid JSON" % (path, n))  # noqa: UP031
     return out
 
 
@@ -174,9 +174,9 @@ class State:
                     break
                 except OSError:
                     if time.time() >= deadline:
-                        raise LockBusy("another depot2 has held %s for over %g s, nothing was written: run the "
+                        raise LockBusy("another depot2 has held {} for over {:g} s, nothing was written: run the "
                                        "command again in a moment (a write of the merge runner or the backup's snapshot "
-                                       "holds it for about a second, a team round for its whole run)" % (
+                                       "holds it for about a second, a team round for its whole run)".format(
                                            self.path(".lock"), LOCK_WAIT_S if wait_s is None else wait_s))
                     time.sleep(0.2)
             yield
@@ -216,6 +216,6 @@ class State:
                  "commit", "-q", "-m", message)
         left = self.git("status", "--porcelain", "--", *rel).stdout.strip()
         if left:
-            raise WriteCheckError("state commit left changes: %s" % left)
+            raise WriteCheckError(f"state commit left changes: {left}")
         self.touched.clear()
         return self.git("rev-parse", "HEAD").stdout.strip()

@@ -30,9 +30,8 @@ BRIEF_TEXT = "# бриф\n\n## Сверка с кодом\n\n## Проверка
 
 NO_NET = tempfile.mkdtemp(prefix="team-test-gh-")
 with open(os.path.join(NO_NET, "gh"), "w") as _f:
-    _f.write('#!/bin/sh\nif [ -n "$FAKE_GH_STATE" ]; then exec %s -S %s "$@"; fi\n'
-             'echo "gh: the tests reach no GitHub (no FAKE_GH_STATE)" >&2\nexit 4\n'
-             % (sys.executable, os.path.join(HERE, "fake_gh.py")))
+    _f.write('#!/bin/sh\nif [ -n "$FAKE_GH_STATE" ]; then exec {} -S {} "$@"; fi\n'
+             'echo "gh: the tests reach no GitHub (no FAKE_GH_STATE)" >&2\nexit 4\n'.format(sys.executable, os.path.join(HERE, "fake_gh.py")))
 os.chmod(os.path.join(NO_NET, "gh"), 0o755)
 os.environ["PATH"] = NO_NET + os.pathsep + os.environ.get("PATH", "")
 
@@ -52,7 +51,7 @@ class TempState:
             self.state.init_git()
         led = Ledger(self.state)
         for cid in characters.IDS:
-            Persona(self.state, cid).write_spec("spec of %s" % cid)
+            Persona(self.state, cid).write_spec(f"spec of {cid}")
             led.seed(cid, (balances or {}).get(cid, 5), "test seed")
         self.cfg = config.load(self.dir)
         self.cfg["bundle"]["decisions_glob"] = os.path.join(self.dir, "no-decisions-*.md")

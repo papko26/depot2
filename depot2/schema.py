@@ -28,39 +28,39 @@ def validate(value, schema, path="$"):
     if typ is not None:
         types = typ if isinstance(typ, list) else [typ]
         if not any(_is_type(value, t) for t in types):
-            return ["%s: expected %s, got %s" % (path, "/".join(types), type(value).__name__)]
+            return ["{}: expected {}, got {}".format(path, "/".join(types), type(value).__name__)]
     if "enum" in schema and value not in schema["enum"]:
-        errs.append("%s: %r not in %s" % (path, value, schema["enum"]))
+        errs.append("{}: {!r} not in {}".format(path, value, schema["enum"]))
     if isinstance(value, str):
         if "maxLength" in schema and len(value) > schema["maxLength"]:
-            errs.append("%s: longer than %d" % (path, schema["maxLength"]))
+            errs.append("%s: longer than %d" % (path, schema["maxLength"]))  # noqa: UP031
         if "minLength" in schema and len(value) < schema["minLength"]:
-            errs.append("%s: shorter than %d" % (path, schema["minLength"]))
+            errs.append("%s: shorter than %d" % (path, schema["minLength"]))  # noqa: UP031
     if _is_type(value, "number"):
         if "minimum" in schema and value < schema["minimum"]:
-            errs.append("%s: below %s" % (path, schema["minimum"]))
+            errs.append("{}: below {}".format(path, schema["minimum"]))
         if "maximum" in schema and value > schema["maximum"]:
-            errs.append("%s: above %s" % (path, schema["maximum"]))
+            errs.append("{}: above {}".format(path, schema["maximum"]))
     if isinstance(value, list):
         if "maxItems" in schema and len(value) > schema["maxItems"]:
-            errs.append("%s: more than %d items" % (path, schema["maxItems"]))
+            errs.append("%s: more than %d items" % (path, schema["maxItems"]))  # noqa: UP031
         if "minItems" in schema and len(value) < schema["minItems"]:
-            errs.append("%s: fewer than %d items" % (path, schema["minItems"]))
+            errs.append("%s: fewer than %d items" % (path, schema["minItems"]))  # noqa: UP031
         if "items" in schema:
             for i, item in enumerate(value):
-                errs.extend(validate(item, schema["items"], "%s[%d]" % (path, i)))
+                errs.extend(validate(item, schema["items"], "%s[%d]" % (path, i)))  # noqa: UP031
     if isinstance(value, dict):
         props = schema.get("properties", {})
         for key in schema.get("required", []):
             if key not in value:
-                errs.append("%s: missing %s" % (path, key))
+                errs.append(f"{path}: missing {key}")
         if schema.get("additionalProperties") is False:
             for key in value:
                 if key not in props:
-                    errs.append("%s: unexpected %s" % (path, key))
+                    errs.append(f"{path}: unexpected {key}")
         for key, sub in props.items():
             if key in value:
-                errs.extend(validate(value[key], sub, "%s.%s" % (path, key)))
+                errs.extend(validate(value[key], sub, f"{path}.{key}"))
     return errs
 
 

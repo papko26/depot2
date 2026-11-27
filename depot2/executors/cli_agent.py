@@ -69,7 +69,7 @@ def build_argv(spec, executor_bin):
         argv += ["--effort", spec.effort]
     argv += ["--system-prompt-file", spec.system_path,
             "--json-schema", json.dumps(spec.schema, ensure_ascii=False, separators=(",", ":")),
-            "--max-budget-usd", "%.2f" % spec.budget_usd,
+            "--max-budget-usd", f"{spec.budget_usd:.2f}",
             "--tools", ",".join(spec.tools)]
     if spec.tools:
         # Variadic options go last.
@@ -146,7 +146,7 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
                                     stderr=subprocess.PIPE, cwd=spec.cwd, env=child_env(),
                                     start_new_session=True)
         except OSError as e:
-            raise FatalError("cannot start %s: %s" % (executor_bin, e))
+            raise FatalError(f"cannot start {executor_bin}: {e}")
 
         def feed():
             try:
@@ -183,7 +183,7 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
         while True:
             left = deadline - time.monotonic()
             if left <= 0:
-                kill_reason = "timeout after %ds" % spec.timeout_s
+                kill_reason = "timeout after %ds" % spec.timeout_s  # noqa: UP031
                 _kill(proc)
                 break
             try:
@@ -212,7 +212,7 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
                     if mid not in tool_msgs:
                         tool_msgs.append(mid)
                     if len(tool_msgs) > spec.max_tool_turns:
-                        kill_reason = "tool-turn cap %d reached" % spec.max_tool_turns
+                        kill_reason = "tool-turn cap %d reached" % spec.max_tool_turns  # noqa: UP031
                         _kill(proc)
                         break
             elif typ == "rate_limit_event":
@@ -254,24 +254,23 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
         if kill_reason:
             fail(CallFailed, kill_reason)
         tail = stderr.strip().splitlines()[-3:]
-        fail(FatalError, "the runner exited %s without a result: %s" % (proc.returncode, " | ".join(tail)))
+        fail(FatalError, "the runner exited {} without a result: {}".format(proc.returncode, " | ".join(tail)))
     if kill_reason:
         fail(CallFailed, kill_reason)
     if rate and rate.get("status") not in (None, "allowed", "allowed_warning"):
-        fail(FatalError, "usage limit: %s (%s)" % (rate.get("status"), rate.get("rateLimitType")))
+        fail(FatalError, "usage limit: {} ({})".format(rate.get("status"), rate.get("rateLimitType")))
     if result.get("is_error"):
         sub = result.get("subtype") or ""
         text = str(result.get("result") or "") + " " + " ".join(map(str, result.get("errors") or []))
         if sub == "error_max_budget_usd":
-            fail(CallFailed, "budget cap %s reached (--max-budget-usd %.2f)"
-                 % ("%.4g MTok" % spec.budget_mtok if spec.budget_mtok is not None else "of the call",
+            fail(CallFailed, "budget cap {} reached (--max-budget-usd {:.2f})".format(f"{spec.budget_mtok:.4g} MTok" if spec.budget_mtok is not None else "of the call",
                     spec.budget_usd))
         if result.get("api_error_status") or result.get("terminal_reason") == "api_error" \
                 or FATAL_TEXT.search(text):
-            fail(FatalError, "API error %s: %s" % (result.get("api_error_status"), text.strip()[:300]))
+            fail(FatalError, "API error {}: {}".format(result.get("api_error_status"), text.strip()[:300]))
         if sub.startswith("error_max"):
-            fail(CallFailed, "%s: %s" % (sub, text.strip()[:200]))
-        fail(FatalError, "runner error %s: %s" % (sub, text.strip()[:300]))
+            fail(CallFailed, f"{sub}: {text.strip()[:200]}")
+        fail(FatalError, f"runner error {sub}: {text.strip()[:300]}")
     structured = result.get("structured_output")
     if structured is None:
         fail(CallFailed, "no structured output")
@@ -327,7 +326,7 @@ def parse_ts(text):
         t = t[:-1] + "+00:00"
     m = re.match(r"^(.*T\d\d:\d\d:\d\d)\.(\d+)(.*)$", t)
     if m:  # Python 3.8 takes 3 or 6 digits only
-        t = "%s.%s%s" % (m.group(1), (m.group(2) + "000000")[:6], m.group(3))
+        t = "{}.{}{}".format(m.group(1), (m.group(2) + "000000")[:6], m.group(3))
     try:
         d = datetime.datetime.fromisoformat(t)
     except ValueError:
@@ -435,18 +434,17 @@ def find_transcript(cfg, agent_id):
     """The log of a run by its id (the runner's agent id): one file, or AgentError."""
     m = RE_AGENT_ID.match(str(agent_id or "").strip())
     if not m:
-        raise _error("an agentId is letters and digits (the runner's, e.g. a0f1c2d3e4b5a6978), got %r"
-                         % agent_id)
+        raise _error(f"an agentId is letters and digits (the runner's, e.g. a0f1c2d3e4b5a6978), got {agent_id!r}")
     if not (cfg.get("agents") or {}).get("projects"):
         raise _error("agents.projects is not set: the dir the runner keeps its runs' logs in (or --transcript PATH)")
     root = os.path.expanduser(cfg["agents"]["projects"])
-    name = "agent-%s.jsonl" % m.group(1)
+    name = f"agent-{m.group(1)}.jsonl"
     found = sorted(set(glob.glob(os.path.join(root, "*", "*", "subagents", name)) +
                        glob.glob(os.path.join(root, "*", "*", "subagents", "**", name), recursive=True)))
     if not found:
-        raise _error("no transcript %s under %s/*/*/subagents/ (yet?): --transcript PATH" % (name, root))
+        raise _error(f"no transcript {name} under {root}/*/*/subagents/ (yet?): --transcript PATH")
     if len(found) > 1:
-        raise _error("%d transcripts named %s: %s; say which with --transcript PATH"
+        raise _error("%d transcripts named %s: %s; say which with --transcript PATH"  # noqa: UP031
                          % (len(found), name, ", ".join(_tilde(p) for p in found)))
     return found[0]
 

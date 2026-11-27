@@ -68,7 +68,7 @@ class DorTest(GateBase):
         def un(oid):
             s = self.stk()
             return gates.dor_unmet(s, None, obj=s.get(oid))
-        self.assertEqual(un("st-0001"), ["бриф не найден: %s" % missing])
+        self.assertEqual(un("st-0001"), [f"бриф не найден: {missing}"])
         self.assertEqual(un("st-0002"), ["проект обязателен (размер L), этапа «проект» не было (depot2 car stage … "
                                          "project)"])
         self.assertEqual(un("st-0003"), ["st-0003 depends on st-0002, not done yet"])
@@ -278,7 +278,7 @@ class BoardTest(GateBase):
                          (1, 10, ["st-0002"]))
         self.assertIn("Доска (`depot2 board`): тележка 3 · эскиз 1 · сборка 1; стек — её вид", self.team("stack")[1])
         for n in range(3):
-            self.team("wishes", "add", "--title", "ещё %d" % n, "--words", "w")
+            self.team("wishes", "add", "--title", "ещё %d" % n, "--words", "w")  # noqa: UP031
         md = self.team("board", "--limit", "2")[1]
         self.assertIn("… и ещё 4 (`depot2 board --limit 0`).", md)
 
@@ -501,7 +501,7 @@ def rows_of(rec):
 class MergePlaceTest(MergeBase):
     def test_add_at_and_move_never_ahead_of_a_ride(self):
         for n, br in ((301, "feat-a"), (302, "feat-b"), (303, "feat-c")):
-            self.pr(n, br, {"%s.txt" % br: br})
+            self.pr(n, br, {f"{br}.txt": br})
         self.team("merge", "add", "301", "--word", "301 мердж")
         self.team("merge", "add", "302", "--word", "302 мердж")
         rc, out, err = self.team("merge", "add", "303", "--word", "303 — сначала фикс", "--at", "1")

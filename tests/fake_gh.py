@@ -118,12 +118,12 @@ def fail(msg, code=1):
 def pr_view(d, n, argv=()):
     pr = d["prs"].get(str(n))
     if pr is None:
-        return fail("no pull requests found for %s" % n)
+        return fail(f"no pull requests found for {n}")
     pr = dict(pr)
     seq = d.get("view_states", {}).get(str(n))
     if seq and "state" in (opt(list(argv), "--json") or "").split(","):
         pr["state"] = seq.pop(0) if len(seq) > 1 else seq[0]
-    pr.setdefault("url", "https://github.com/x/y/pull/%s" % n)
+    pr.setdefault("url", f"https://github.com/x/y/pull/{n}")
     pr.setdefault("mergeCommit", None)
     if pr["state"] == "OPEN" and d.get("bare"):
         pr["headRefOid"] = head_of(d, pr["headRefName"])
@@ -141,13 +141,13 @@ def pr_list(d, argv):
 def pr_merge(d, n, argv):
     pr = d["prs"].get(str(n))
     if pr is None or pr["state"] != "OPEN":
-        return fail("pull request #%s is not open" % n)
+        return fail(f"pull request #{n} is not open")
     if int(n) in d.get("merge_refuse", []):
         return fail("GraphQL: Pull request is not mergeable")
     want = opt(argv, "--match-head-commit")
     head = head_of(d, pr["headRefName"])
     if want and want != head:
-        return fail("head branch was modified. Review and try the merge again (head %s, wanted %s)" % (head, want))
+        return fail(f"head branch was modified. Review and try the merge again (head {head}, wanted {want})")
     tmp = tempfile.mkdtemp(prefix="fake-gh-merge-")
     try:
         ident = ["-c", "user.name=fake-gh", "-c", "user.email=gh@localhost"]
@@ -155,9 +155,9 @@ def pr_merge(d, n, argv):
             git(d, *args)
         git(d, "checkout", "-q", pr["baseRefName"], cwd=tmp)
         p = git(d, *(ident + ["merge", "--no-ff", "-q", "origin/" + pr["headRefName"], "-m",
-                              "Merge pull request #%s from x/%s" % (n, pr["headRefName"])]), cwd=tmp)
+                              "Merge pull request #{} from x/{}".format(n, pr["headRefName"])]), cwd=tmp)
         if p.returncode != 0:
-            return fail("merge conflict: %s" % p.stdout + p.stderr)
+            return fail(f"merge conflict: {p.stdout}" + p.stderr)
         git(d, "push", "-q", "origin", pr["baseRefName"], cwd=tmp)
         sha = git(d, "rev-parse", "HEAD", cwd=tmp).stdout.strip()
     finally:
@@ -170,7 +170,7 @@ def pr_merge(d, n, argv):
 
 def run_list(d, argv):
     branch, sha = opt(argv, "--branch"), opt(argv, "--commit")
-    key = "%s@%s" % (branch, sha)
+    key = f"{branch}@{sha}"
     ids = d.setdefault("ids", {})
     r = d.get("runs", {}).get(str(ids.get(key)))
     if r is not None and r.get("cancelled") == r["attempt"]:  # cancelled: the script waits for its rerun
@@ -182,7 +182,7 @@ def run_list(d, argv):
         status, concl = STATES[state]
         return out([{"databaseId": rid, "status": status, "conclusion": concl, "headSha": sha,
                      "event": "push" if branch == "main" else "pull_request", "createdAt": T0, "attempt": r["attempt"],
-                     "url": "https://github.com/x/y/actions/runs/%d" % rid}])
+                     "url": "https://github.com/x/y/actions/runs/%d" % rid}])  # noqa: UP031
     script = d["ci"].get(branch) or ["success"]
     pos = d.setdefault("pos", {}).get(branch, 0)
     item = script[min(pos, len(script) - 1)]
@@ -201,15 +201,15 @@ def run_list(d, argv):
     status, concl = STATES[state]
     return out([{"databaseId": rid, "status": status, "conclusion": concl, "headSha": sha,
                  "event": "push" if branch == "main" else "pull_request", "createdAt": T0, "attempt": r["attempt"],
-                 "url": "https://github.com/x/y/actions/runs/%d" % rid}])
+                 "url": "https://github.com/x/y/actions/runs/%d" % rid}])  # noqa: UP031
 
 
 def rerun(d, rid):
     r = d.get("runs", {}).get(str(rid))
     if r is None:
-        return fail("run %s not found" % rid)
+        return fail(f"run {rid} not found")
     if STATES.get(r["state"], ("",))[0] != "completed":
-        return fail("run %s cannot be rerun; its workflow file may be broken or it is still running" % rid)
+        return fail(f"run {rid} cannot be rerun; its workflow file may be broken or it is still running")
     r["attempt"] += 1
     d["pos"][r["branch"]] = d["pos"].get(r["branch"], 0) + 1
     return 0
@@ -218,7 +218,7 @@ def rerun(d, rid):
 def cancel(d, rid):
     r = d.get("runs", {}).get(str(rid))
     if r is None:
-        return fail("run %s not found" % rid)
+        return fail(f"run {rid} not found")
     if d.get("cancel_refuse"):
         return fail("HTTP 500: cancel refused")
     if STATES.get(r["state"], ("",))[0] == "completed":
@@ -230,7 +230,7 @@ def cancel(d, rid):
 def run_view(d, rid, argv):
     r = d.get("runs", {}).get(str(rid))
     if r is None:
-        return fail("run %s not found" % rid)
+        return fail(f"run {rid} not found")
     if "--log-failed" in argv:
         sys.stdout.write(d.get("failed_log", {}).get(r["branch"], ""))
         return 0
@@ -263,7 +263,7 @@ def api(d, argv):
         return out([{"workflow_runs": d.get("usage_runs", [])}])
     if "/actions/artifacts" in path:
         return out([{"artifacts": d.get("artifacts", [])}])
-    return fail("fake gh: no such endpoint %s" % path)
+    return fail(f"fake gh: no such endpoint {path}")
 
 
 def main():
@@ -299,7 +299,7 @@ def main():
     elif argv[:1] == ["api"]:
         rc = api(d, argv)
     else:
-        rc = fail("fake gh: unknown command %s" % argv)
+        rc = fail(f"fake gh: unknown command {argv}")
     with open(path + ".tmp", "w") as f:
         json.dump(d, f)
     os.replace(path + ".tmp", path)

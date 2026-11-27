@@ -22,7 +22,7 @@ class ModelTest(TracksBase):
         for title in ("Экспорт", "Печать"):
             t = tk.add(title)
             for x in ("a", "b", "c"):
-                tk.car_add(t["id"], "%s %s" % (title, x), size="S")
+                tk.car_add(t["id"], f"{title} {x}", size="S")
 
     def test_a_name_a_car_in_one_train_and_the_order(self):
         for bad in ("Export", "export_n", "-x", "x-", "tr-0001", "st-0040", "123", "", "a" * 41):
@@ -227,8 +227,7 @@ class ModelTest(TracksBase):
             store.LOCK_WAIT_S = wait
             os.close(fd)
         self.assertEqual(rc, 1)
-        self.assertIn("error: another depot2 has held %s for over 0.3 s, nothing was written: run the command again"
-                      % self.t.state.path(".lock"), err)
+        self.assertIn("error: another depot2 has held {} for over 0.3 s, nothing was written: run the command again".format(self.t.state.path(".lock")), err)
         self.assertNotIn("Traceback", err)
         self.assertEqual(read_json(self.t.state.path("trains.json")), before)
 
@@ -257,11 +256,11 @@ class ModelTest(TracksBase):
         self.assertIn(line % ("живых", 2, data["effort"]["live"]["text"]), out)
         self.assertNotIn("Цена прибывших", out)  # the done trains are not in the table
         for name in ("first", "own"):
-            self.assertIn("| %s |" % by[name]["text"], out)
+            self.assertIn("| {} |".format(by[name]["text"]), out)
         out = self.team("trains", "--all")[1]
         self.assertIn(line % ("прибывших и снятых", 1, data["effort"]["done"]["text"]), out)
-        self.assertIn("| %s |" % by["gone"]["text"], out)
-        self.assertIn("Effort (ожидаемо / потрачено): %s." % by["first"]["text"], self.team("train", "first")[1])
+        self.assertIn("| {} |".format(by["gone"]["text"]), out)
+        self.assertIn("Effort (ожидаемо / потрачено): {}.".format(by["first"]["text"]), self.team("train", "first")[1])
         self.assertEqual(json.loads(self.team("train", "first", "--json")[1])["effort"], by["first"])
 
 
@@ -285,7 +284,7 @@ class NextTest(TracksBase):
         tr.set_state("poisk", "impl")
         nx = self.trains().next(PAST)
         self.assertEqual(nx["free"], 3)
-        self.assertEqual(["%s:%s" % (p["track"]["id"], p["car"]["n"]) for p in nx["picks"]],
+        self.assertEqual(["{}:{}".format(p["track"]["id"], p["car"]["n"]) for p in nx["picks"]],
                          ["tr-0002:R0", "tr-0001:0", "tr-0001:1"])  # every free slot, in the train's order
         self.assertEqual([p["train"]["name"] for p in nx["picks"]], ["poisk"] * 3)
         self.assertEqual(nx["stack"], [])                           # the train came first
@@ -330,7 +329,7 @@ class NextTest(TracksBase):
         self.assertEqual([r["train"]["name"] for r in tr.next(PAST)["ready"]], ["second"])
         tr.set_state("second", "impl")
         nx = self.trains().next(PAST)
-        self.assertEqual(["%s:%s" % (p["track"]["id"], p["car"]["n"]) for p in nx["picks"]], ["tr-0002:0"])
+        self.assertEqual(["{}:{}".format(p["track"]["id"], p["car"]["n"]) for p in nx["picks"]], ["tr-0002:0"])
         md = self.trains().md(now=PAST)
         self.assertIn("| 1 | second «Второй» | P5 | имплементация | с 20", md)
         self.assertNotIn("first «Первый»", md)  # an arrived train only with --all
@@ -500,7 +499,7 @@ class MigrateTest(TracksBase):
         # a second run changes nothing
         snap = files_of(self.t.dir)
         lines, n = migrate.run(self.t.state, self.t.cfg)
-        self.assertEqual((n, lines), (0, ["миграция данных депо: нечего переносить (схема %d)" % migrate.SCHEMA]))
+        self.assertEqual((n, lines), (0, ["миграция данных депо: нечего переносить (схема %d)" % migrate.SCHEMA]))  # noqa: UP031
         self.assertEqual(files_of(self.t.dir), snap)
 
     def test_a_run_cut_short_runs_again_and_the_tool_migrates_first(self):

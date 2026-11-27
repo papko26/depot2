@@ -29,7 +29,7 @@ class TrialsMixin:
         return int(self.m.get("presync_depth") or 0)
 
     def trial_branch(self, n):
-        return "%s%d" % (self.m.get("trial_prefix") or "mq/", int(n))
+        return "%s%d" % (self.m.get("trial_prefix") or "mq/", int(n))  # noqa: UP031
 
     def tree(self, cwd, ref):
         if not ref:
@@ -47,7 +47,7 @@ class TrialsMixin:
             return self._presync(eid)
         except Exception as ex:
             from .merge import clip
-            self.out("trials: %s: %s (the ride goes on)" % (type(ex).__name__, clip(ex, 200)))
+            self.out(f"trials: {type(ex).__name__}: {clip(ex, 200)} (the ride goes on)")
             return False
 
     def trial_chain(self, q, cur):
@@ -75,7 +75,7 @@ class TrialsMixin:
             return False
         if self.git(self.clone, "fetch", "-q", self.remote, timeout=300)[0] != 0:
             return False
-        main_ref = "%s/%s" % (self.remote, self.base)
+        main_ref = f"{self.remote}/{self.base}"
         main = self.rev(self.clone, main_ref)
         if cur.get("merged"):  # main has it: the trials go on top of main
             base = main
@@ -85,11 +85,11 @@ class TrialsMixin:
             if not base or not self.rev(self.clone, base) or not main or not self.is_ancestor(self.clone, main, base):
                 return False  # not synced yet, or main moved past it: a trial on it would miss what main has
             before = main
-        bases = [("main", before), ("#%d" % cur["pr"], base)]
-        label = "%s + #%d" % (main_ref, cur["pr"])
+        bases = [("main", before), ("#%d" % cur["pr"], base)]  # noqa: UP031
+        label = "%s + #%d" % (main_ref, cur["pr"])  # noqa: UP031
         retry = float(self.m.get("trial_retry_min") or 10) * 60
         for e2 in chain:
-            own = self.rev(self.clone, "%s/%s" % (self.remote, e2["branch"]))
+            own = self.rev(self.clone, "{}/{}".format(self.remote, e2["branch"]))
             base_tree = self.tree(self.clone, base)
             t = e2.get("trial") or {}
             fresh = bool(t) and t.get("base_tree") == base_tree and t.get("own") == own and not (
@@ -99,8 +99,8 @@ class TrialsMixin:
             if t.get("status") not in TRIAL_OK:
                 return False  # the chain stops where a trial would stop: the ones behind would be thrown away
             base = t["sha"]
-            label = "%s + #%d" % (label, e2["pr"])
-            bases.append(("#%d" % e2["pr"], base))
+            label = "%s + #%d" % (label, e2["pr"])  # noqa: UP031
+            bases.append(("#%d" % e2["pr"], base))  # noqa: UP031
         return False
 
     # --- one trial ---
@@ -114,10 +114,10 @@ class TrialsMixin:
                "ts": stamp(self.clock()), "status": None}
         try:
             if not own:
-                raise Hold("blocked", "no %s/%s" % (self.remote, br))
+                raise Hold("blocked", f"no {self.remote}/{br}")
             pr = self.pr_view(n)
             if pr["state"] == "MERGED":
-                raise Hold("blocked", "PR #%d is merged on GitHub already" % n)
+                raise Hold("blocked", "PR #%d is merged on GitHub already" % n)  # noqa: UP031
             try:
                 self.check_pr(e2, pr)
                 self.gates(e2)
@@ -131,8 +131,7 @@ class TrialsMixin:
                     return self.trial_put(e2, rec)
                 rec.update(auto=res["auto"], resolved=res["resolved"])
                 if res.get("golden"):
-                    raise Hold("golden", "%s takes main's side and is re-recorded at its turn: the trial is not pushed"
-                               % ((self.m.get("auto") or {}).get("golden") or {}).get("file"))
+                    raise Hold("golden", "{} takes main's side and is re-recorded at its turn: the trial is not pushed".format(((self.m.get("auto") or {}).get("golden") or {}).get("file")))
                 if not res["push"]:  # main and the PRs ahead are in its head already: the head is the trial
                     rec.update(status="same", sha=own, tree=self.tree(tw, own))
                     return self.trial_put(e2, rec)
@@ -150,7 +149,7 @@ class TrialsMixin:
         except Stop as s:  # the throwaway worktree, a git step
             rec.update(status="failed", reason=s.reason)
         except Exception as ex:
-            rec.update(status="failed", reason="%s: %s" % (type(ex).__name__, clip(ex, 200)))
+            rec.update(status="failed", reason=f"{type(ex).__name__}: {clip(ex, 200)}")
         return self.trial_put(e2, rec)
 
     def scan_trial(self, tw, name, head, parents):
@@ -170,12 +169,12 @@ class TrialsMixin:
             export_range(tw, None, head, d, spec=[head, "--not"] + [p for p in parents if p])
             argv = [os.path.expanduser(self.m["scan"])] + [x.replace("{dir}", d) for x in self.m["trial_scan_args"]]
             if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):
-                raise Stop("no private scan %s (merge.scan): no push" % argv[0])
+                raise Stop(f"no private scan {argv[0]} (merge.scan): no push")
             code, out, _ = self.sh.run(_nice(argv), cwd=tempfile.gettempdir(), timeout=int(self.m["scan_timeout_s"]))
             if code is None:
-                raise Stop("the private scan of %s took over %d s: no push" % (name, int(self.m["scan_timeout_s"])))
+                raise Stop("the private scan of %s took over %d s: no push" % (name, int(self.m["scan_timeout_s"])))  # noqa: UP031
             if not is_clean(out):  # its lines name private things: only the verdict
-                raise Stop("the private scan of what %s carries is not CLEAN: no push" % name)
+                raise Stop(f"the private scan of what {name} carries is not CLEAN: no push")
         finally:
             shutil.rmtree(d, ignore_errors=True)
 
@@ -206,9 +205,9 @@ class TrialsMixin:
         if remote and not self.is_ancestor(tw, remote, head):
             code, out, err = self.git(tw, "push", "-q", self.remote, "--delete", name, timeout=300)
             if code != 0:
-                return False, "git push --delete %s: %s" % (name, clip(err or out, 160))
-        code, out, err = self.git(tw, "push", "-q", self.remote, "%s:refs/heads/%s" % (head, name), timeout=300)
-        return (True, None) if code == 0 else (False, "git push %s: %s" % (name, clip(err or out, 160)))
+                return False, f"git push --delete {name}: {clip(err or out, 160)}"
+        code, out, err = self.git(tw, "push", "-q", self.remote, f"{head}:refs/heads/{name}", timeout=300)
+        return (True, None) if code == 0 else (False, f"git push {name}: {clip(err or out, 160)}")
 
     def trial_put(self, e2, rec):
         """The record on e2 (still waiting), a line in its log and in the history, the line printed. → rec or None."""
@@ -231,7 +230,7 @@ class TrialsMixin:
         if not self.remote_head(self.clone, name):
             return None
         code, out, err = self.git(self.clone, "push", "-q", self.remote, "--delete", name, timeout=300)
-        return None if code == 0 else clip(err or out or "exit %s" % code, 160)
+        return None if code == 0 else clip(err or out or f"exit {code}", 160)
 
     def discard_trials(self, why):
         """Every open entry's trial thrown away (the PR they stood on stopped): the branches deleted."""
@@ -243,8 +242,8 @@ class TrialsMixin:
             if not t:
                 continue
             err = self.delete_trial(t["branch"]) if t.get("status") == "pushed" else None
-            line = "trial %s of #%d thrown away: %s%s" % (t["branch"], e2["pr"], why, "" if not err else
-                                                          " (its branch not deleted: %s)" % err)
+            line = "trial %s of #%d thrown away: %s%s" % (t["branch"], e2["pr"], why, "" if not err else  # noqa: UP031
+                                                          f" (its branch not deleted: {err})")
             with self.edit() as q:
                 e = q.get(e2["id"])
                 e["trial"] = None
@@ -258,7 +257,7 @@ class TrialsMixin:
         if self.depth() <= 0 or not os.path.isdir(self.clone):
             return []
         prefix = self.m.get("trial_prefix") or "mq/"
-        code, out, _ = self.git(self.clone, "ls-remote", self.remote, "refs/heads/%s*" % prefix, timeout=120)
+        code, out, _ = self.git(self.clone, "ls-remote", self.remote, f"refs/heads/{prefix}*", timeout=120)
         if code != 0:
             return []
         q = MergeQueue(self.state)
@@ -273,7 +272,7 @@ class TrialsMixin:
             name = parts[1][len("refs/heads/"):]
             if name in ours and (name, parts[0]) not in keep:
                 err = self.delete_trial(name)
-                lines.append("trial %s deleted%s" % (name, "" if not err else ": not deleted (%s)" % err))
+                lines.append("trial {} deleted{}".format(name, "" if not err else f": not deleted ({err})"))
         return lines
 
     # --- at its own turn ---
@@ -284,9 +283,9 @@ class TrialsMixin:
             return None
         tree = self.tree(wt, head)
         if tree == t["tree"]:
-            return "the tree of %s (%s) is the trial %s's (%s): CI has tested it" % (
+            return "the tree of {} ({}) is the trial {}'s ({}): CI has tested it".format(
                 head[:7], tree[:7], t["branch"], (t.get("sha") or "?")[:7])
-        return "the tree of %s (%s) is not the trial %s's (%s): CI anew" % (head[:7], (tree or "?")[:7], t["branch"],
+        return "the tree of {} ({}) is not the trial {}'s ({}): CI anew".format(head[:7], (tree or "?")[:7], t["branch"],
                                                                              t["tree"][:7])
 
 
@@ -304,17 +303,17 @@ def trial_line(n, rec):
     """The runner's line for a trial record."""
     from .merge import clip
     st, name = rec.get("status"), rec.get("branch")
-    head = "trial %s (#%d on %s)" % (name, n, rec.get("on"))
-    auto = "; the queue resolved: %s" % "; ".join(rec["auto"]) if rec.get("auto") else ""
+    head = "trial %s (#%d on %s)" % (name, n, rec.get("on"))  # noqa: UP031
+    auto = "; the queue resolved: {}".format("; ".join(rec["auto"])) if rec.get("auto") else ""
     if st == "pushed":
-        return "%s: %s pushed after the scan, tree %s: CI on %s%s" % (head, (rec.get("sha") or "?")[:7],
+        return "{}: {} pushed after the scan, tree {}: CI on {}{}".format(head, (rec.get("sha") or "?")[:7],
                                                                      (rec.get("tree") or "?")[:7], name, auto)
     if st == "same":
-        return "%s: its head %s has them already: the head is the trial (nothing pushed)" % (head, (rec.get("sha") or "?")[:7])
+        return "{}: its head {} has them already: the head is the trial (nothing pushed)".format(head, (rec.get("sha") or "?")[:7])
     if st == "stop" and rec.get("conflicts"):
         return t("mergetrials.line_conflict", head=head, n=n, conflicts=conflicts_ru(rec),
                  reason=clip(rec.get("reason"), 240))
-    return "%s: %s: %s" % (head, {"stop": "it would stop", "golden": "not pushed", "blocked": "not built",
+    return "{}: {}: {}".format(head, {"stop": "it would stop", "golden": "not pushed", "blocked": "not built",
                                   "failed": "failed"}.get(st, st), clip(rec.get("reason"), 240))
 
 
@@ -329,7 +328,7 @@ def trial_brief(n, rec):
         return t("mergetrials.brief_same", n=n, sha=(rec.get("sha") or "?")[:7], on=rec.get("on"))
     if st == "stop" and rec.get("conflicts"):
         return t("merge.conflict_n", n=n, conflicts=conflicts_ru(rec))
-    return "#%d — %s: %s" % (n, TRIAL_BRIEF.get(st, st), clip(rec.get("reason"), 140))
+    return "#%d — %s: %s" % (n, TRIAL_BRIEF.get(st, st), clip(rec.get("reason"), 140))  # noqa: UP031
 
 
 def trial_cell(rec):

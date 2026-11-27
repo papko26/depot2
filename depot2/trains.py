@@ -63,7 +63,7 @@ class TrainError(ValueError):
 def check_name(name):
     n = (name or "").strip()
     if not RE_NAME.match(n) or RE_ID.match(n) or len(n) > NAME_MAX or not re.search(r"[a-z]", n):
-        raise TrainError("a train's name is a slug: lower-case latin letters, digits and hyphens, with a letter, up to "
+        raise TrainError("a train's name is a slug: lower-case latin letters, digits and hyphens, with a letter, up to "  # noqa: UP031
                          "%d (e.g. north-wing), and not like an id (tr-0001); got %r" % (NAME_MAX, name))
     return n
 
@@ -72,18 +72,18 @@ def check_name(name):
 
 def parse_slots(text):
     if isinstance(text, dict):
-        text = "all-free" if text.get("policy") == "all-free" else "max %s" % text.get("n")
+        text = "all-free" if text.get("policy") == "all-free" else "max {}".format(text.get("n"))
     t = " ".join(str(text or "").lower().replace("≤", "max ").split())
     if i18n.is_word(t, "in.trains.all_free"):
         return {"policy": "all-free", "n": None}
     m = re.match(r"^(?:max\s*)?(\d+)$", t)
     if not m or int(m.group(1)) < 1:
-        raise TrainError("a slot policy is `max N` (N ≥ 1) or `all-free`, got %r" % text)
+        raise TrainError(f"a slot policy is `max N` (N ≥ 1) or `all-free`, got {text!r}")
     return {"policy": "max", "n": int(m.group(1))}
 
 
 def slots_ru(s):
-    return i18n.t("trains.slots_all_free") if s["policy"] == "all-free" else "≤ %d" % s["n"]
+    return i18n.t("trains.slots_all_free") if s["policy"] == "all-free" else "≤ %d" % s["n"]  # noqa: UP031
 
 
 def parse_state(text):
@@ -102,7 +102,7 @@ def parse_when(text):
     try:
         d = datetime.datetime.fromisoformat(t)
     except ValueError:
-        raise TrainError("not a date-time: %r (want 2031-04-08 or 2031-04-08T15:00)" % text)
+        raise TrainError(f"not a date-time: {text!r} (want 2031-04-08 or 2031-04-08T15:00)")
     if d.tzinfo is None:
         d = d.astimezone()  # local time
     return d
@@ -114,7 +114,7 @@ def when_iso(text):
 
 def fmt_when(iso):
     d = parse_when(iso)
-    s = "%s %s" % (WEEKDAY_RU[WEEKDAYS[d.weekday()]], d.strftime("%Y-%m-%d"))
+    s = "{} {}".format(WEEKDAY_RU[WEEKDAYS[d.weekday()]], d.strftime("%Y-%m-%d"))
     return s + (d.strftime(" %H:%M") if (d.hour, d.minute) != (0, 0) else "")
 
 
@@ -150,7 +150,7 @@ class Trains:
     def get(self, name):
         t = self.find(name)
         if t is None:
-            raise TrainError("no train %s" % name)
+            raise TrainError(f"no train {name}")
         return t
 
     def of_car(self, ref):
@@ -195,19 +195,19 @@ class Trains:
             for ref, t, c in open_:
                 miss = self.tracks.dor_of(t, c)
                 if miss:
-                    dor.append("%s: %s" % (ref, "; ".join(miss)))
+                    dor.append("{}: {}".format(ref, "; ".join(miss)))
             return {"start": self.start_blockers(tn, now), "DoR": dor}
         if to == "merge":
             out = []
             for ref, t, c in open_:
                 s = self.tracks.stage_of(c)
                 if s not in GREEN:
-                    out.append("%s: %s" % (ref, stages.ru(s)))
+                    out.append(f"{ref}: {stages.ru(s)}")
                 elif not c.get("pr"):
                     out.append(i18n.t("trains.no_pr", ref=ref))
             return {"PR": out}
         if to == "arrived":
-            return {"cars": ["%s (%s)" % (ref, CAR_RU[c["status"]]) for ref, t, c in open_]}
+            return {"cars": ["{} ({})".format(ref, CAR_RU[c["status"]]) for ref, t, c in open_]}
         return {}
 
     def next_state(self, tn):
@@ -219,7 +219,7 @@ class Trains:
         to = self.next_state(tn)
         if to is None:
             return "—"
-        miss = ["%s: %s" % (g, "; ".join(v)) for g, v in self.unmet(tn, to, now).items() if v]
+        miss = ["{}: {}".format(g, "; ".join(v)) for g, v in self.unmet(tn, to, now).items() if v]
         state = STATE_RU[to]
         if not miss:
             if to == "arrived":
@@ -281,14 +281,14 @@ class Trains:
                 repairs.append(o)
                 left -= 1
             else:
-                repairs_next.append({"stack": o, "command": "depot2 stack start %s" % o["id"]})
+                repairs_next.append({"stack": o, "command": "depot2 stack start {}".format(o["id"])})
         upcoming += repairs_next
         for tn in pri.ordered(self.trains(include_done=False)):
             if tn["state"] != "impl":
                 waiting.append((tn, [STATE_RU[tn["state"]] + ": " + self.gate_line(tn, now)]))
                 if tn["state"] == "design" and not any(self.unmet(tn, "impl", now).values()):
                     ready.append({"train": tn, "owner": bool(tn["start"].get("owner")),
-                                  "command": "depot2 trains state %s impl" % tn["name"]})
+                                  "command": "depot2 trains state {} impl".format(tn["name"])})
                 continue
             cars = []
             for ref, t, c in pri.ordered(self.cars_of(tn), lambda x: x[2]):
@@ -313,7 +313,7 @@ class Trains:
                 continue
             if any(stk.dep_waiting(d) for d in o.get("depends_on") or []):
                 continue
-            cmd = "depot2 stack start %s" % o["id"]
+            cmd = "depot2 stack start {}".format(o["id"])
             dor = stack_dor(o)
             if dor and o.get("autostart"):
                 gated.append({"stack": o, "dor": dor, "command": cmd})
@@ -350,30 +350,29 @@ class Trains:
         of its own."""
         for r in refs or ():
             if r == tn["name"] or r in tn["cars"]:
-                raise TrainError("a train cannot wait for itself or its own car (%s)" % r)
+                raise TrainError(f"a train cannot wait for itself or its own car ({r})")
             self.tracks.ref_state(r)
 
     def _check_car(self, tn, ref):
         """A car may join a train: it exists, it is open, it is in no other live train, not in this one yet."""
         if not RE_CAR.match(ref or ""):
-            raise TrainError("a car is named tr-NNNN:<car>, e.g. tr-0001:2; got %r" % ref)
+            raise TrainError(f"a car is named tr-NNNN:<car>, e.g. tr-0001:2; got {ref!r}")
         t, c = self.tracks.car(ref)
-        ref = "%s:%s" % (t["id"], c["n"])  # a moved car's old ref: the train keeps its ref now
+        ref = "{}:{}".format(t["id"], c["n"])  # a moved car's old ref: the train keeps its ref now
         if c["status"] in CAR_DONE:
-            raise TrainError("%s is %s: a closed car joins no train" % (ref, CAR_RU[c["status"]]))
+            raise TrainError("{} is {}: a closed car joins no train".format(ref, CAR_RU[c["status"]]))
         if ref in tn["cars"]:
-            raise TrainError("%s is in train %s already" % (ref, tn["name"]))
+            raise TrainError("{} is in train {} already".format(ref, tn["name"]))
         other = self.of_car(ref)
         if other is not None and other is not tn:
-            raise TrainError("%s is in train %s already: a car rides one train (`depot2 trains car drop %s %s`)"
-                             % (ref, other["name"], other["name"], ref))
+            raise TrainError("{} is in train {} already: a car rides one train (`depot2 trains car drop {} {}`)".format(ref, other["name"], other["name"], ref))
         return ref
 
     def add(self, name, title, cars=(), at=None, after=(), not_before=None, owner=False, note=None, slots=None,
             est_mtok=None, by="trains add", priority=None):
         name = check_name(name)
         if self.find(name) is not None:
-            raise TrainError("the name %s is taken" % name)
+            raise TrainError(f"the name {name} is taken")
         if not (title or "").strip():
             raise TrainError("a train needs a title")
         now = now_iso()
@@ -405,7 +404,7 @@ class Trains:
         if new_name is not None and new_name != name:
             new_name = check_name(new_name)
             if self.find(new_name) is not None:
-                raise TrainError("the name %s is taken" % new_name)
+                raise TrainError(f"the name {new_name} is taken")
             tn["name"] = changed["new_name"] = new_name
             for o in self.data["trains"]:
                 o["start"]["after"] = [new_name if r == name else r for r in o["start"].get("after") or []]
@@ -430,7 +429,7 @@ class Trains:
         elif est_mtok is not None:
             tn["est_mtok"] = changed["est_mtok"] = eff.parse_mtok(est_mtok)
         if add_note:
-            tn["notes"].append("%s: %s" % (now_iso()[:10], add_note))
+            tn["notes"].append(f"{now_iso()[:10]}: {add_note}")
             changed["note_added"] = add_note
         if priority is not None:
             tn["priority"] = changed["priority"] = pri.parse(priority)
@@ -461,18 +460,18 @@ class Trains:
         tn = self.get(name)
         was = tn["state"]
         if to not in STATES:
-            raise TrainError("a train's state is one of %s" % ", ".join(STATES))
+            raise TrainError("a train's state is one of {}".format(", ".join(STATES)))
         if to == was:
-            raise TrainError("%s is in «%s» already" % (name, STATE_RU[to]))
+            raise TrainError(f"{name} is in «{STATE_RU[to]}» already")
         if to not in MOVES[was]:
-            raise TrainError("%s: «%s» → «%s» is no move (from «%s»: %s)" % (
+            raise TrainError("{}: «{}» → «{}» is no move (from «{}»: {})".format(
                 name, STATE_RU[was], STATE_RU[to], STATE_RU[was], ", ".join(STATE_RU[m] for m in MOVES[was]) or "—"))
         if to == "scrapped" and not (why or "").strip():
             raise TrainError(i18n.t("trains.scrap_needs_why"))
         forced = None
         if to in GATED:
             forced = gates.check(self.unmet(tn, to, now), force, why, name, STATE_RU[to],
-                                 "depot2 trains state %s %s" % (name, to), error=TrainError)
+                                 f"depot2 trains state {name} {to}", error=TrainError)
         lines = []
         if to == "merge":
             if not (word or "").strip():
@@ -505,7 +504,7 @@ class Trains:
                     raise TrainError(i18n.t("trains.enqueue_failed", name=tn["name"], ref=ref, said=_pr_said(n, x),
                                             back="\n".join(back), state=STATE_RU[tn["state"]]))
                 added.append((ref, e))
-                out += ["%s: %s" % (ref, x) for x in lines[:1]]
+                out += [f"{ref}: {x}" for x in lines[:1]]
         finally:
             self.tracks = Tracks(self.state, self.cfg, trains=self)  # merge.add moved the cars' stages: read them again
         return out
@@ -563,7 +562,7 @@ class Trains:
     def _live(self, name, what="it takes no cars"):
         tn = self.get(name)
         if tn["state"] not in LIVE:
-            raise TrainError("%s is %s: %s" % (name, STATE_RU[tn["state"]], what))
+            raise TrainError("{} is {}: {}".format(name, STATE_RU[tn["state"]], what))
         return tn
 
     def car_add(self, name, ref, at=None):
@@ -588,7 +587,7 @@ class Trains:
             except ValueError:
                 pass
         if ref not in tn["cars"]:
-            raise TrainError("%s has no car %s" % (tn["name"], ref))
+            raise TrainError("{} has no car {}".format(tn["name"], ref))
         return ref
 
     def car_move(self, name, ref, at):
@@ -693,7 +692,7 @@ class Trains:
         if tn["state"] in ("impl", "merge"):
             parts.append(i18n.t("trains.since", date=(tn.get("started") or "?")[:10]))
         elif tn["state"] in ("arrived", "scrapped"):
-            parts.append("%s %s" % (STATE_RU[tn["state"]], (tn.get("finished") or "?")[:10]))
+            parts.append("{} {}".format(STATE_RU[tn["state"]], (tn.get("finished") or "?")[:10]))
         else:
             if st.get("not_before"):
                 parts.append(i18n.t("trains.not_before", when=fmt_when(st["not_before"])))
@@ -703,7 +702,7 @@ class Trains:
                 parts.append(i18n.t("trains.owner_word"))
         s = "; ".join(parts) or i18n.t("trains.at_once")
         if st.get("note"):
-            s += " (%s)" % st["note"]
+            s += " ({})".format(st["note"])
         return s
 
     def status_cell(self, tn, now=None):
@@ -721,7 +720,7 @@ class Trains:
         rows = self.trains(include_done)
         for i, tn in enumerate(rows, 1):
             cars = [c for r, t, c in self.cars_of(tn)]
-            L.append("| %d | %s «%s» | %s | %s | %s | %s | %s | %s | %s | %s |" % (
+            L.append("| %d | %s «%s» | %s | %s | %s | %s | %s | %s | %s | %s |" % (  # noqa: UP031
                 i, tn["name"], _cell(tn["title"]), pri.cell(tn), _cell(self.status_cell(tn, now)),
                 _cell(self.start_cell(tn, now)),
                 counts_text(cars), slots_ru(tn["slots"]), self.effort_cell(tn), _cell(self.gate_line(tn, now)),
@@ -743,7 +742,7 @@ class Trains:
         L = [i18n.t("trains.free_slots", free=nx["free"], slots=nx["slots"])]
         reps = [] if train is not None else nx["repairs"]
         if reps:  # out of turn: before the trains (claims.py)
-            L.append(i18n.t("trains.repairs", list="; ".join("%s «%s» — `depot2 stack start %s`" % (
+            L.append(i18n.t("trains.repairs", list="; ".join("{} «{}» — `depot2 stack start {}`".format(
                 o["id"], o["title"], o["id"]) for o in reps)))
         picks = [p for p in nx["picks"] if train is None or p["train"] is train]
         if picks:
@@ -753,22 +752,22 @@ class Trains:
                 for p in picks)))
         stack_picks = [] if train is not None else [o for o in nx["stack"] if o not in reps]
         if stack_picks:
-            L.append(i18n.t("trains.then_stack", list="; ".join("%s «%s» (%s) — `depot2 stack start %s`" % (
+            L.append(i18n.t("trains.then_stack", list="; ".join("{} «{}» ({}) — `depot2 stack start {}`".format(
                 o["id"], o["title"], pri.cell(o), o["id"]) for o in stack_picks)))
         if not picks and not stack_picks and not reps:
             L.append(i18n.t("trains.can_now_nothing") if nx["free"] else i18n.t("trains.can_now_nothing_full"))
         up = [u for u in nx["upcoming"] if train is None or u.get("train") is train]
         if up:
             L.append(i18n.t("trains.when_free", list="; ".join(
-                ("%s:%s «%s»" % (u["track"]["id"], u["car"]["n"], u["car"]["title"])) if u.get("car") else
-                ("%s «%s»" % (u["stack"]["id"], u["stack"]["title"])) for u in up)))
+                ("{}:{} «{}»".format(u["track"]["id"], u["car"]["n"], u["car"]["title"])) if u.get("car") else
+                ("{} «{}»".format(u["stack"]["id"], u["stack"]["title"])) for u in up)))
         ready = [r for r in nx["ready"] if train is None or r["train"] is train]
         if ready:
             L.append(i18n.t("trains.ready_impl", list="; ".join(
                 i18n.t("trains.ready_item_owner", name=r["train"]["name"], cmd=r["command"]) if r["owner"]
-                else "%s — `%s`" % (r["train"]["name"], r["command"]) for r in ready)))
+                else "{} — `{}`".format(r["train"]["name"], r["command"]) for r in ready)))
         mine = {r for r in (train["cars"] if train is not None else ())}
-        parked = [p for p in nx["parked"] if train is None or "%s:%s" % (p[0]["id"], p[1]["n"]) in mine]
+        parked = [p for p in nx["parked"] if train is None or "{}:{}".format(p[0]["id"], p[1]["n"]) in mine]
         ok = [tracks.parked_line(*p) for p in parked if not p[2]]
         if ok:
             L.append(i18n.t("trains.ready_merge", list="; ".join(ok)))
@@ -782,12 +781,12 @@ class Trains:
         if gated:
             L.append(i18n.t("trains.gated", list="; ".join(
                 i18n.t("trains.gated_item",
-                       ref=("%s:%s" % (g["track"]["id"], g["car"]["n"])) if g.get("car") else g["stack"]["id"],
+                       ref=("{}:{}".format(g["track"]["id"], g["car"]["n"])) if g.get("car") else g["stack"]["id"],
                        title=(g.get("car") or g.get("stack"))["title"], dor=", ".join(g["dor"]), cmd=g["command"])
                 for g in gated)))
         if train is None and nx["owner_word"]:
             L.append(i18n.t("trains.owner_word_head"))
-            L += ["- %s «%s» — %s: `%s`" % (w["stack"]["id"], w["stack"]["title"], w["why"], w["command"])
+            L += ["- {} «{}» — {}: `{}`".format(w["stack"]["id"], w["stack"]["title"], w["why"], w["command"])
                   for w in nx["owner_word"]]
         L.append(i18n.t("trains.order"))
         return L
@@ -803,8 +802,8 @@ class Trains:
         L.append(i18n.t("trains.car_md_header"))
         L.append("|---|---|---|---|---|---|---|---|---|")
         for i, (ref, t, c) in enumerate(self.cars_of(tn), 1):
-            bp = " / ".join(x for x in (c.get("branch"), ("PR #%s" % c["pr"]) if c.get("pr") else None) if x) or "—"
-            L.append("| %d | %s | %s | %s %s | %s | %s | %s | %s | %s |" % (
+            bp = " / ".join(x for x in (c.get("branch"), ("PR #{}".format(c["pr"])) if c.get("pr") else None) if x) or "—"
+            L.append("| %d | %s | %s | %s %s | %s | %s | %s | %s | %s |" % (  # noqa: UP031
                 i, ref, pri.cell(c), t["id"], _cell(t["title"]), _cell(c["title"]), _cell(bp), c.get("st") or "—",
                 _cell(self.tracks.car_status_cell(t, c)), stages.ru(self.tracks.stage_of(c))))
         if not tn["cars"]:
@@ -816,7 +815,7 @@ class Trains:
         L.append(stage_legend())
         L.append(states_legend())
         for n in tn.get("notes") or []:
-            L.append("- %s" % n)
+            L.append(f"- {n}")
         return "\n".join(L) + "\n"
 
     def train_json(self, tn, now=None):
@@ -835,7 +834,7 @@ class Trains:
         nx = self.next(now)
 
         def car(p):
-            return "%s:%s" % (p["track"]["id"], p["car"]["n"])
+            return "{}:{}".format(p["track"]["id"], p["car"]["n"])
         return {"v": 1, "states": [{"state": s, "ru": STATE_RU[s], "means": STATE_MEANS[s]} for s in STATES],
                 "trains": [self.train_json(t, now) for t in self.data["trains"]],
                 "effort": dict(self.effort_groups(), note=effort_note()),
@@ -845,7 +844,7 @@ class Trains:
                          "stack": [o["id"] for o in nx["stack"]], "repairs": [o["id"] for o in nx["repairs"]],
                          "owner_word": [{"id": w["stack"]["id"], "why": w["why"], "command": w["command"]}
                                         for w in nx["owner_word"]],
-                         "parked": [{"car": "%s:%s" % (t["id"], c["n"]), "pr": c.get("pr"), "ready": not b,
+                         "parked": [{"car": "{}:{}".format(t["id"], c["n"]), "pr": c.get("pr"), "ready": not b,
                                      "waits": b} for t, c, b in nx["parked"]],
                          "post": [{"id": o["id"], "pr": o.get("pr"), "ci": o.get("ci"),
                                    "since": (o.get("posted") or {}).get("ts"), "car": self.tracks.car_ref(o["id"])}
@@ -861,7 +860,7 @@ class Trains:
 
 def _pr_said(n, x):
     text = str(x).replace("\n", "\n  ")
-    return text if "#%s" % n in text else "PR #%s: %s" % (n, text)
+    return text if f"#{n}" in text else f"PR #{n}: {text}"
 
 
 def _add(a, b):
@@ -889,7 +888,7 @@ def freed_slot_lines(state, cfg):
         [i18n.t("trains.freed_pick", track=p["track"]["id"], n=p["car"]["n"], train=p["train"]["name"],
                 tp=pri.cell(p["train"]), cp=pri.cell(p["car"]), cmd=p["command"])
          for p in nx["picks"]] + \
-        ["%s (%s) — `depot2 stack start %s`" % (o["id"], pri.cell(o), o["id"]) for o in nx["stack"]
+        ["{} ({}) — `depot2 stack start {}`".format(o["id"], pri.cell(o), o["id"]) for o in nx["stack"]
          if o not in nx["repairs"]]
     if picks:
         return [i18n.t("trains.freed_takes", list="; ".join(picks))]

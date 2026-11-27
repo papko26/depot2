@@ -55,14 +55,14 @@ def default_head():
     return [t("principles.default_head"), ""]
 
 
-RE_BANNER = re.compile(r"^> %s\b" % rx("in.principles.banner"))
+RE_BANNER = re.compile(r"^> {}\b".format(rx("in.principles.banner")))
 
 RE_ITEM = re.compile(r"^(\d+)([a-z]?)\. (.*)$")
 RE_SUB = re.compile(r"^( +)- (.*)$")
 RE_ID = re.compile(r"^pc-(\d{4})([a-z]?)$")
 DATE = re.compile(r"\b(20\d\d-\d\d-\d\d)\b")
 QUOTE = re.compile(r"«([^«»]*(?:«[^«»]*»[^«»]*)*)»")
-OWNER = re.compile(r"(?i)%s" % rx("in.principles.owner"))
+OWNER = re.compile(r"(?i){}".format(rx("in.principles.owner")))
 LINKS = re.compile(r"\b(?:dec-\d{6}|(?:wl|th|td|st|tm)-\d{4}|tr-\d{4}(?::\w+)?)\b")
 TIGHT = ",.:;!?)"  # a text that starts with one of these follows the bold title with no space
 
@@ -74,7 +74,7 @@ def checks_frame():
             (t("principles.check2_title"), t("principles.check2_text")))
 
 
-FRAME = re.compile(r"(?i)^\*\*[^*]*%s" % rx("in.principles.frame"))
+FRAME = re.compile(r"(?i)^\*\*[^*]*{}".format(rx("in.principles.frame")))
 RE_THIRD = re.compile(rx("in.principles.third_check"), re.I)
 
 STATUS_RU = i18n.Labels("principles.status", ("active", "replaced", "dropped"))
@@ -117,38 +117,38 @@ class Principles(Queue):
                  "section": e["section"], "priority": priority(e)} for e in self.checked()]
 
     def headline(self, e):
-        return "%s. %s" % (label(e), e.get("title") or _clip(e.get("text"), 70))
+        return "{}. {}".format(label(e), e.get("title") or _clip(e.get("text"), 70))
 
     # --- checking --------------------------------------------------------------------------------
 
     def check(self, e):
         super().check(e)
         if e.get("section") not in SECTION_TITLE:
-            raise QueueError("%s: section must be one of %s" % (e["id"], ", ".join(SECTION_TITLE)))
+            raise QueueError("{}: section must be one of {}".format(e["id"], ", ".join(SECTION_TITLE)))
         if not ((e.get("title") or "").strip() or (e.get("text") or "").strip()):
-            raise QueueError("%s: a principle needs a title or a text" % e["id"])
+            raise QueueError("{}: a principle needs a title or a text".format(e["id"]))
         for k in ("title", "text"):
             if "\n" in (e.get(k) or ""):
-                raise QueueError("%s: %s is one line (its subs are --sub)" % (e["id"], k))
+                raise QueueError("{}: {} is one line (its subs are --sub)".format(e["id"], k))
         for s in e.get("subs") or []:
             if not isinstance(s, str) or not s.strip() or "\n" in s:
-                raise QueueError("%s: a sub is one line of text" % e["id"])
+                raise QueueError("{}: a sub is one line of text".format(e["id"]))
         for w in e.get("words") or []:
             if not isinstance(w, dict) or not (w.get("text") or "").strip():
-                raise QueueError("%s: a word is {date, text}" % e["id"])
+                raise QueueError("{}: a word is {{date, text}}".format(e["id"]))
         if not isinstance(e.get("check"), bool):
-            raise QueueError("%s: check is yes or no" % e["id"])
+            raise QueueError("{}: check is yes or no".format(e["id"]))
         if not isinstance(e.get("gap"), int) or e["gap"] < 0:
-            raise QueueError("%s: gap is a number of blank lines >= 0" % e["id"])
+            raise QueueError("{}: gap is a number of blank lines >= 0".format(e["id"]))
         if e["status"] == "replaced" and not e.get("by"):
-            raise QueueError("%s: replaced by whom (--by pc-…)" % e["id"])
+            raise QueueError("{}: replaced by whom (--by pc-…)".format(e["id"]))
 
     # --- writing ---------------------------------------------------------------------------------
 
     def _make(self, n, suffix, fields, by):
         eid = pc_id(n, suffix)
         if any(x["id"] == eid for x in self.data["entries"]):
-            raise QueueError("%s is there already (a number is never reused)" % eid)
+            raise QueueError(f"{eid} is there already (a number is never reused)")
         e = {"id": eid, "n": n, "suffix": suffix or "", "added": now_iso(), "status": "active", "by": None,
              "replaces": [], "reason": None, "words": [], "subs": [], "links": [], "notes": [], "check": False,
              "gap": 0}
@@ -182,7 +182,7 @@ class Principles(Queue):
         appended, `--sub-set N TEXT` and `--sub-drop N` (from 1) on one sub."""
         e = self.get(eid)
         if e["status"] != "active":
-            raise QueueError("%s is %s: only an active principle changes" % (eid, STATUS_RU[e["status"]]))
+            raise QueueError("{} is {}: only an active principle changes".format(eid, STATUS_RU[e["status"]]))
         changed, before = {}, {}
         fields = {k: v for k, v in fields.items() if v is not None}
         if "section" in fields:
@@ -200,7 +200,7 @@ class Principles(Queue):
             if k in self.LIST_FIELDS:
                 add = [x for x in (v if isinstance(v, (list, tuple)) else [v]) if x not in (e.get(k) or [])]
                 if k == "notes":
-                    add = ["%s: %s" % (today(), x) for x in add]
+                    add = [f"{today()}: {x}" for x in add]
                 if add:
                     e[k] = (e.get(k) or []) + add
                     changed[k] = add
@@ -209,7 +209,7 @@ class Principles(Queue):
                     before[k], e[k] = e.get(k), v
                     changed[k] = v
             else:
-                raise QueueError("principles have no field %s" % k)
+                raise QueueError(f"principles have no field {k}")
         new_words = [word(w, today()) for w in words or ()]
         new_words = [w for w in new_words if w not in e["words"]]
         if new_words:
@@ -235,10 +235,10 @@ class Principles(Queue):
         """It is replaced by another principle (an active one, not itself): out of the file, in --all."""
         e, b = self.get(eid), self.get(by)
         if eid == by:
-            raise QueueError("%s cannot replace itself" % eid)
+            raise QueueError(f"{eid} cannot replace itself")
         for x in (e, b):
             if x["status"] != "active":
-                raise QueueError("%s is %s" % (x["id"], STATUS_RU[x["status"]]))
+                raise QueueError("{} is {}".format(x["id"], STATUS_RU[x["status"]]))
         if eid not in b["replaces"]:
             b["replaces"].append(eid)
         return self.to_status(eid, "replaced", reason=reason, by=by)
@@ -246,7 +246,7 @@ class Principles(Queue):
     def drop(self, eid, reason):
         e = self.get(eid)
         if e["status"] != "active":
-            raise QueueError("%s is %s" % (eid, STATUS_RU[e["status"]]))
+            raise QueueError("{} is {}".format(eid, STATUS_RU[e["status"]]))
         if not (reason or "").strip():
             raise QueueError("drop needs --reason")
         e["reason"] = reason
@@ -268,8 +268,7 @@ class Principles(Queue):
         if any(ln.startswith("## ") for ln in lines):
             raise QueueError("the head cannot hold a section («## …»): the sections come from the principles")
         if any(RE_BANNER.match(ln) for ln in lines):
-            raise QueueError("the banner «%s» is the render's own: leave it out of --text"
-                             % t("principles.banner_words"))
+            raise QueueError("the banner «{}» is the render's own: leave it out of --text".format(t("principles.banner_words")))
         old = self.head()
         title = old[0] if old and old[0].startswith("# ") else default_head()[0]
         if lines[0].startswith("# "):
@@ -291,14 +290,14 @@ class Principles(Queue):
         import writes the entries, then renders the file in place (read-only)."""
         path = os.path.abspath(os.path.expanduser(path))
         if self.imported(path):
-            raise QueueError("%s was imported already (%s)" % (path, self.imported(path)[0]["ts"]))
+            raise QueueError("{} was imported already ({})".format(path, self.imported(path)[0]["ts"]))
         text = read_text(path)
         if text is None:
-            raise QueueError("no such file: %s" % path)
+            raise QueueError(f"no such file: {path}")
         head, items = parse(text, os.path.basename(path))
         for it in items:
             if any(x["id"] == pc_id(it["n"], it["suffix"]) for x in self.data["entries"]):
-                raise QueueError("%s is in the depot already: nothing imported" % pc_id(it["n"], it["suffix"]))
+                raise QueueError("{} is in the depot already: nothing imported".format(pc_id(it["n"], it["suffix"])))
         lost = diff_lines(today_headings(strip_banner(text)), render_text(head, items, banner=False).splitlines())
         if lost:
             raise QueueError(t("principles.import_lossy", lost=lost))
@@ -360,14 +359,14 @@ class Principles(Queue):
         rows = self.ordered(open_only)
         for e in rows[:limit] if limit else rows:
             words = e.get("words") or []
-            w = ("«%s» (%s)" % (_clip(words[0]["text"], 60), words[0].get("date") or "—")) if words else "—"
+            w = ("«{}» ({})".format(_clip(words[0]["text"], 60), words[0].get("date") or "—")) if words else "—"
             if len(words) > 1:
-                w += " (+%d)" % (len(words) - 1)
-            st = STATUS_RU[e["status"]] + (" → %s" % e["by"] if e.get("by") else "")
-            L.append("| %s | %s | %s | %s | %s | %s |" % tuple(_cell(x) for x in (
-                "%s · %s%s" % (e["id"], self.headline(e), " · ③ %s" % CHECK_MARK[priority(e)] if e.get("check") else ""),
+                w += " (+%d)" % (len(words) - 1)  # noqa: UP031
+            st = STATUS_RU[e["status"]] + (" → {}".format(e["by"]) if e.get("by") else "")
+            L.append("| {} | {} | {} | {} | {} | {} |".format(*tuple(_cell(x) for x in (
+                "{} · {}{}".format(e["id"], self.headline(e), f" · ③ {CHECK_MARK[priority(e)]}" if e.get("check") else ""),
                 SECTION_TITLE.get(e["section"], e["section"]), e.get("date") or "—", w,
-                str(len(e.get("subs") or [])) if e.get("subs") else "—", st)))
+                str(len(e.get("subs") or [])) if e.get("subs") else "—", st))))
         if not rows:
             L.append(t("principles.md_empty"))
         L.append("")
@@ -399,11 +398,11 @@ class Principles(Queue):
                    check=t("principles.show_check", mark=CHECK_MARK[priority(e)]) if e.get("check") else ""))
         if e.get("words"):
             L.append(t("principles.show_words"))
-            L += ["  - %s: «%s»" % (w.get("date") or "—", w["text"]) for w in e["words"]]
+            L += ["  - {}: «{}»".format(w.get("date") or "—", w["text"]) for w in e["words"]]
         for k in ("by", "replaces", "reason", "links", "source_ref", "notes"):
             v = e.get(k)
             if v:
-                L.append("- %s: %s" % (t("principles.field." + k), ", ".join(v) if isinstance(v, list) else v))
+                L.append("- {}: {}".format(t("principles.field." + k), ", ".join(v) if isinstance(v, list) else v))
         return "\n".join(L) + "\n"
 
     def checks(self):
@@ -423,13 +422,13 @@ class Principles(Queue):
         L = [t("principles.checks_heading"), "", t("principles.checks_intro"), ""]
         cs = self.checks()
         for c in cs[:2]:
-            L.append("%d. **%s** — %s" % (c["n"], c["title"], c["text"]))
+            L.append("%d. **%s** — %s" % (c["n"], c["title"], c["text"]))  # noqa: UP031
         third = cs[2]
         L.append(t("principles.checks_third", title=third["title"], format=format_line()))
         for pr in third["priorities"]:
             ps = [p for p in third["principles"] if p["priority"] == pr["priority"]]
-            L.append("   - **%s** — %s:" % (pr["title"], pr["means"]))
-            L += ["     - %s. %s (%s)" % (p["label"], p["title"], p["id"]) for p in ps] or \
+            L.append("   - **{}** — {}:".format(pr["title"], pr["means"]))
+            L += ["     - {}. {} ({})".format(p["label"], p["title"], p["id"]) for p in ps] or \
                 [t("principles.checks_none")]
         L.append("")
         L.append(t("principles.checks_where", section=section()))
@@ -438,7 +437,7 @@ class Principles(Queue):
     def round_line(self):
         """The bundle's line about the three checks."""
         pri = self.checks()[2]["priorities"]
-        third = "; ".join("%s: %s" % (p["title"].lower(), ", ".join(p["labels"]) or t("principles.round_none"))
+        third = "; ".join("{}: {}".format(p["title"].lower(), ", ".join(p["labels"]) or t("principles.round_none"))
                           for p in pri) if any(p["labels"] for p in pri) else t("principles.round_no_checks")
         return t("principles.round_line", third=third)
 
@@ -446,11 +445,11 @@ class Principles(Queue):
 # --- the file: parse and render ----------------------------------------------------------------------
 
 def pc_id(n, suffix=""):
-    return "pc-%04d%s" % (int(n), suffix or "")
+    return "pc-%04d%s" % (int(n), suffix or "")  # noqa: UP031
 
 
 def label(e):
-    return "%d%s" % (e["n"], e.get("suffix") or "")
+    return "%d%s" % (e["n"], e.get("suffix") or "")  # noqa: UP031
 
 
 def priority(e):
@@ -470,7 +469,7 @@ def section_key(name):
     for key in SECTION_CODES:
         if i18n.is_word(k, "in.principles.section." + key):
             return key
-    raise QueueError("section must be one of %s" % ", ".join(SECTION_CODES))
+    raise QueueError("section must be one of {}".format(", ".join(SECTION_CODES)))
 
 
 def norm_section(code):
@@ -501,7 +500,7 @@ def _num(x):
 def _sub_index(e, n):
     n = int(n)
     if not 1 <= n <= len(e["subs"]):
-        raise QueueError("%s has subs 1..%d, not %d" % (e["id"], len(e["subs"]), n))
+        raise QueueError("%s has subs 1..%d, not %d" % (e["id"], len(e["subs"]), n))  # noqa: UP031
     return n - 1
 
 
@@ -537,8 +536,8 @@ def diff_lines(want, got):
         a = want[i] if i < len(want) else None
         b = got[i] if i < len(got) else None
         if a != b:
-            return t("principles.diff_line", n=i + 1, was="«%s»" % _clip(a, 90) if a is not None else
-                     t("principles.diff_eof"), got="«%s»" % _clip(b, 90) if b is not None else t("principles.diff_eof"))
+            return t("principles.diff_line", n=i + 1, was=f"«{_clip(a, 90)}»" if a is not None else
+                     t("principles.diff_eof"), got=f"«{_clip(b, 90)}»" if b is not None else t("principles.diff_eof"))
     return None
 
 
@@ -599,7 +598,7 @@ def parse(text, name="PRINCIPLES.md"):
             continue
         m = RE_ITEM.match(line)
         if m:
-            cur = _item(m, section, len([x for x in items if x["section"] == section]) + 1, "%s:%d" % (name, no))
+            cur = _item(m, section, len([x for x in items if x["section"] == section]) + 1, "%s:%d" % (name, no))  # noqa: UP031
             items.append(cur)
             continue
         if not line.strip():
@@ -643,16 +642,16 @@ def _item(m, section, order, ref):
 
 
 def render_item(e):
-    words = [w for w in e.get("words") or [] if "«%s»" % w["text"] not in
+    words = [w for w in e.get("words") or [] if "«{}»".format(w["text"]) not in
              " ".join([e.get("title") or "", e.get("text") or ""] + list(e.get("subs") or []))]
     text = e.get("text") or ""
     if words:  # the owner's words the text does not quote: in a bracket after the title
         said = t("principles.owner_said",
-                 words="; ".join("%s: «%s»" % (w.get("date") or "—", w["text"]) for w in words))
+                 words="; ".join("{}: «{}»".format(w.get("date") or "—", w["text"]) for w in words))
         text = said + ("." if text else "") + (" " + text if text else "")
-    line = "%s. " % label(e)
+    line = f"{label(e)}. "
     if e.get("title"):
-        line += "**%s**" % e["title"]
+        line += "**{}**".format(e["title"])
         if text:
             line += ("" if text[0] in TIGHT else " ") + text
     else:

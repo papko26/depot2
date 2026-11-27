@@ -62,7 +62,7 @@ def main():
             "status": "allowed", "unifiedWindows": {"seven_day": {"utilization": 0.25}}}})
     if mode == "tools":
         for i in range(200):
-            emit({"type": "assistant", "message": {"id": "msg_%d" % i, "usage": {
+            emit({"type": "assistant", "message": {"id": "msg_%d" % i, "usage": {  # noqa: UP031
                 "input_tokens": 1, "cache_read_input_tokens": 100, "output_tokens": 10}, "content": [
                 {"type": "tool_use", "name": "Read", "input": {"file_path": "x"}}]}})
             time.sleep(0.05)

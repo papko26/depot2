@@ -42,5 +42,4 @@ ignore = [
     "RET503", # implicit-return
     "UP022",  # replace-stdout-stderr
     "UP028",  # yield-in-for-loop
-    "UP031",  # printf-string-formatting
 ]

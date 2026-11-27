@@ -66,7 +66,7 @@ def ref_of_pr(stk, tr, n):
     for trk in tr.data["tracks"]:
         for c in trk["cars"]:
             if str(c.get("pr")) == str(n):
-                return "%s:%s" % (trk["id"], c["n"])
+                return "{}:{}".format(trk["id"], c["n"])
     for o in stk.objects():
         if str(o.get("pr")) == str(n):
             return o["id"]
@@ -177,7 +177,7 @@ def add(state, cfg, of, bug=None, title=None, brief=None, why=None, size=None, b
                      t("claims.no_bugs_file", path=bugs_path(cfg)))
     # the gate's name is a shown word (it is kept in the forced history row as it is shown, in the run's language)
     forced = gates.check({t("claims.gate"): unmet}, force, why, ref or bug, t("claims.target"),
-                         "depot2 repair add --of %s" % of, error=ClaimError)
+                         f"depot2 repair add --of {of}", error=ClaimError)
     if not _text(title):
         what = bugs.get(bug, {}).get("what") if bug else None
         title = ((t("claims.title_bug_what", bug=bug, what=clip(what, 80)) if what else t("claims.title_bug", bug=bug))
@@ -227,7 +227,7 @@ def link(state, cfg, repair, of, why=None, by="repair link", force=False):
     if old:
         unmet.append(t("claims.move_unmet", repair=rref, old=old, of=xref))
     forced = gates.check({t("claims.gate"): unmet}, force, why, xref, t("claims.target"),
-                         "depot2 repair link %s --of %s" % (repair, of), error=ClaimError)
+                         f"depot2 repair link {repair} --of {of}", error=ClaimError)
     L = []
     if old:
         ocar = resolve(state, cfg, old, stk, tr, what="old_culprit")
@@ -256,15 +256,15 @@ def universe(stk, tr):
     for track in tr.data["tracks"]:
         for c in track["cars"]:
             if c.get("st"):
-                objs_of.setdefault("%s:%s" % (track["id"], c["n"]), set()).add(c["st"])
+                objs_of.setdefault("{}:{}".format(track["id"], c["n"]), set()).add(c["st"])
     for h in tr.history():
         if h.get("st") and h.get("track") and h.get("car") is not None:
-            objs_of.setdefault("%s:%s" % (h["track"], h["car"]), set()).add(h["st"])
+            objs_of.setdefault("{}:{}".format(h["track"], h["car"]), set()).add(h["st"])
     car_st = set().union(*objs_of.values()) if objs_of else set()
     out = []
     for track in tr.data["tracks"]:
         for c in track["cars"]:
-            ref = "%s:%s" % (track["id"], c["n"])
+            ref = "{}:{}".format(track["id"], c["n"])
             out.append({"ref": ref, "kind": "car", "rec": c, "track": track, "objects": sorted(objs_of.get(ref, ()))})
     live = set()
     for o in stk.objects():
@@ -330,7 +330,7 @@ def migrate(state, cfg, stk, tr, dry_run=False):
     n = sum(len(v) for v in fix.values())
     total = sum(x for v in fix.values() for (_, x) in v.values())
     return [t("claims.migrated", n=n, total=total) + (
-        (": " + ", ".join("%s %d" % (r, x) for v in fix.values() for r, (_, x) in sorted(v.items()))) if n else "")], n
+        (": " + ", ".join("%s %d" % (r, x) for v in fix.values() for r, (_, x) in sorted(v.items()))) if n else "")], n  # noqa: UP031
 
 
 # --- the views: car show, the report -----------------------------------------------------------------------------
@@ -348,7 +348,7 @@ def objects_of(car):
         return [car.ref] if car.ref.startswith("st-") else []
     ref = canon(car)
     out = {car.car.get("st")} | {h["st"] for h in car.tracks.history()
-                                 if h.get("st") and "%s:%s" % (h.get("track"), h.get("car")) == ref}
+                                 if h.get("st") and "{}:{}".format(h.get("track"), h.get("car")) == ref}
     return sorted(x for x in out if x)
 
 
@@ -362,8 +362,8 @@ def link_text(x, n=None):
                         t("claims.tail_bug", id=x["bug"]) if x.get("bug") else None,
                         "--force" if x.get("forced") else None) if b]
     why = x.get("why") or "—"
-    return "№%d %s: %s%s" % (x["n"], (x.get("at") or "?")[:10], clip(why, n) if n else why,
-                             (" (%s)" % ", ".join(tail)) if tail else "")
+    return "№%d %s: %s%s" % (x["n"], (x.get("at") or "?")[:10], clip(why, n) if n else why,  # noqa: UP031
+                             (" ({})".format(", ".join(tail))) if tail else "")
 
 
 def car_lines(car):
@@ -384,7 +384,7 @@ def car_lines(car):
         L.append(t(key + ("_bug" if rec.get("bug") else ""), of=rec.get("repairs"), ref=canon(car), bug=rec.get("bug")))
     fx = [f for f in fixes_of(car) if f["of"] != rec.get("repairs")]
     if fx:
-        L.append(t("claims.fixes_line", list="; ".join("%s №%d" % (f["of"], f["n"]) for f in fx)))
+        L.append(t("claims.fixes_line", list="; ".join("%s №%d" % (f["of"], f["n"]) for f in fx)))  # noqa: UP031
     return L
 
 
@@ -463,21 +463,21 @@ def report_md(data):
     if data["tracks"]:
         L += ["", t("claims.by_tracks"), "", t("claims.tracks_table"), "|---|---|---|---|"]
         for r in data["tracks"]:
-            L.append("| %s | %d | %d | %d |" % (_cell(clip("%s %s" % (r["id"], r["title"]), 60)) if r["id"] else
+            L.append("| %s | %d | %d | %d |" % (_cell(clip("{} {}".format(r["id"], r["title"]), 60)) if r["id"] else  # noqa: UP031
                                                t("claims.off_tracks"), r["cars"], r["returns"], r["claims"]))
         L += ["", t("claims.cars_head"), "", t("claims.cars_table"), "|---|---|---|---|---|---|"]
         for c in data["cars"]:
             det = [t("claims.det_return", at=(e["at"] or "?")[:10], why=clip(e.get("why") or "—", 70))
                    for e in c["returns"]]
             det += [t("claims.det_claim", link=link_text(x, 70)) for x in c["claims"]]
-            L.append("| %s | %s | %s | %d | %d | %s |" % (c["ref"], _cell(clip(c["title"], 60)),
-                                                          ("#%s" % c["pr"]) if c.get("pr") else "—", len(c["returns"]),
+            L.append("| %s | %s | %s | %d | %d | %s |" % (c["ref"], _cell(clip(c["title"], 60)),  # noqa: UP031
+                                                          ("#{}".format(c["pr"])) if c.get("pr") else "—", len(c["returns"]),
                                                           len(c["claims"]), _cell("; ".join(det))))
     if data["repairs"]:
         L += ["", t("claims.repairs_head"), "", t("claims.repairs_table"), "|---|---|---|---|---|"]
         for r in data["repairs"]:
-            L.append("| %s | %s | %s | %s | %s |" % (r["ref"], _cell(clip(r["title"], 60)), r["stage_ru"], r["of"] or "—",
-                                                    _cell(("%s (%s)" % (r["bug"], clip(r["bug_status"], 40))) if
+            L.append("| {} | {} | {} | {} | {} |".format(r["ref"], _cell(clip(r["title"], 60)), r["stage_ru"], r["of"] or "—",
+                                                    _cell(("{} ({})".format(r["bug"], clip(r["bug_status"], 40))) if
                                                           r.get("bug_status") else r["bug"] or "—")))
     if not data["cars"] and not data["repairs"]:
         L += ["", t("claims.none", period=period)]

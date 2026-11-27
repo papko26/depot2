@@ -265,7 +265,7 @@ def parse_set(items):
     over = {}
     for item in items or []:
         if "=" not in item:
-            raise ValueError("--set wants key=value, got %r" % item)
+            raise ValueError(f"--set wants key=value, got {item!r}")
         key, raw = item.split("=", 1)
         try:
             val = json.loads(raw)
@@ -288,13 +288,12 @@ def drop_obsolete(over, where, warn=None):
             continue
         val = over.pop(key)
         if new is None:
-            msgs.append("%s: %s is obsolete (the paid passes are gone) and ignored; remove it" % (where, key))
+            msgs.append(f"{where}: {key} is obsolete (the paid passes are gone) and ignored; remove it")
         elif new in over:
-            msgs.append("%s: %s is the old name of %s, which is set too; %s ignored; remove it"
-                        % (where, key, new, key))
+            msgs.append(f"{where}: {key} is the old name of {new}, which is set too; {key} ignored; remove it")
         else:
             over[new] = val
-            msgs.append("%s: %s is the old name of %s; used as %s; rename it" % (where, key, new, new))
+            msgs.append(f"{where}: {key} is the old name of {new}; used as {new}; rename it")
     for m in msgs:
         if warn is not None:
             warn(m)
@@ -305,7 +304,7 @@ def _rate(usage):
     for key in ("usd_per_mtok", "mtok_per_pct"):
         v = usage.get(key)
         if isinstance(v, bool) or not isinstance(v, (int, float)) or v <= 0:
-            raise ValueError("usage.%s must be a number > 0" % key)
+            raise ValueError(f"usage.{key} must be a number > 0")
     return float(usage["usd_per_mtok"]), float(usage["mtok_per_pct"])
 
 
@@ -321,20 +320,18 @@ def convert_usd(over, where, usage, warn=None):
             continue
         val = node.pop(old)
         if new in node:
-            msgs.append("%s: %s.%s is deprecated and %s.%s is set too; %s.%s ignored; remove it"
-                        % (where, sect, old, sect, new, sect, old))
+            msgs.append(f"{where}: {sect}.{old} is deprecated and {sect}.{new} is set too; {sect}.{old} ignored; remove it")
             continue
         if val is None:
             node[new] = None
-            msgs.append("%s: %s.%s is deprecated; read as %s.%s = null; rename it" % (where, sect, old, sect, new))
+            msgs.append(f"{where}: {sect}.{old} is deprecated; read as {sect}.{new} = null; rename it")
             continue
         if isinstance(val, bool) or not isinstance(val, (int, float)):
-            raise ValueError("%s: %s.%s must be a number" % (where, sect, old))
+            raise ValueError(f"{where}: {sect}.{old} must be a number")
         mtok = round(float(val) / rate, 6)
         node[new] = mtok
-        msgs.append("%s: %s.%s is deprecated (the limits are in MTok now); read as %s.%s = %s: %s "
-                    "(%g / usage.usd_per_mtok %g); rename it"
-                    % (where, sect, old, sect, new, "%.6g" % mtok,
+        msgs.append("{}: {}.{} is deprecated (the limits are in MTok now); read as {}.{} = {}: {} "
+                    "({:g} / usage.usd_per_mtok {:g}); rename it".format(where, sect, old, sect, new, f"{mtok:.6g}",
                        effort.fmt(mtok, {"usage": {"mtok_per_pct": per_pct}}), val, rate))
     for m in msgs:
         if warn is not None:
@@ -356,7 +353,7 @@ def load(state_root, sets=None, warn=_warn_once):
     if project:
         project = os.path.expanduser(project)
         if not os.path.isfile(project):
-            raise ValueError("DEPOT2_CONFIG=%s: no such file" % project)
+            raise ValueError(f"DEPOT2_CONFIG={project}: no such file")
         with open(project, encoding="utf-8") as f:
             over = json.load(f)
         drop_obsolete(over, project, warn)
@@ -386,7 +383,7 @@ def load(state_root, sets=None, warn=_warn_once):
             # a share above 1 can only be meant as percent: the fuse would never fire
             cfg[sect][key] = u / 100.0
             if warn is not None:
-                warn("%s.%s %g is a share of a window (0.9 = 90 %%); read as %g" % (sect, key, u, u / 100.0))
+                warn(f"{sect}.{key} {u:g} is a share of a window (0.9 = 90 %); read as {u / 100.0:g}")
     check(cfg)
     from . import i18n
     i18n.configure(cfg["language"])
@@ -402,30 +399,30 @@ def check(cfg):
     from . import i18n
     i18n.check_language(cfg.get("language"))
     if cfg["effort"] is not None and cfg["effort"] not in EFFORTS:
-        raise ValueError("effort must be one of %s or null" % (EFFORTS,))
+        raise ValueError(f"effort must be one of {EFFORTS} or null")
     bad = [t for t in cfg["tools"] if t not in ("Read", "Grep", "Glob")]
     if bad:
-        raise ValueError("only read-only tools are allowed, got %s" % bad)
+        raise ValueError(f"only read-only tools are allowed, got {bad}")
     if cfg["prompt_layout"] not in ("cache", "brief"):
         raise ValueError("prompt_layout must be cache or brief")
     if cfg["brainstorm"]["quorum"] not in QUORUMS:
-        raise ValueError("brainstorm.quorum must be one of %s" % (QUORUMS,))
+        raise ValueError(f"brainstorm.quorum must be one of {QUORUMS}")
     for k in ("fee_initiator", "fee_other"):
         if int(cfg["brainstorm"][k]) < 0:
-            raise ValueError("brainstorm.%s must be >= 0" % k)
+            raise ValueError(f"brainstorm.{k} must be >= 0")
     for key in ("stack", "team_stack"):
         if int(cfg[key]["slots"]) < 0 or int(cfg[key]["queue_max"]) < 0:
-            raise ValueError("%s.slots and %s.queue_max must be >= 0" % (key, key))
+            raise ValueError(f"{key}.slots and {key}.queue_max must be >= 0")
     if int(cfg["stack"].get("post_max", 0)) < 0:
         raise ValueError("stack.post_max must be >= 0")
     from .gates import DOD, DOR
     for key, known in (("dor", DOR), ("dod", DOD)):
         bad = [i for i in cfg["gates"].get(key) or [] if i not in known]
         if bad:
-            raise ValueError("gates.%s: unknown %s (known: %s)" % (key, ", ".join(map(str, bad)), ", ".join(known)))
+            raise ValueError("gates.{}: unknown {} (known: {})".format(key, ", ".join(map(str, bad)), ", ".join(known)))
     since = cfg["gates"].get("checks_since")
     if since is not None and not (isinstance(since, str) and re.match(r"^\d{4}-\d{2}-\d{2}$", since)):
-        raise ValueError("gates.checks_since must be a day, YYYY-MM-DD (got %r)" % (since,))
+        raise ValueError(f"gates.checks_since must be a day, YYYY-MM-DD (got {since!r})")
     if not isinstance(cfg["usage"]["mtok_per_pct"], (int, float)) or cfg["usage"]["mtok_per_pct"] <= 0:
         raise ValueError("usage.mtok_per_pct must be a number > 0 (MTok in 1%% of the usage window)")
     if not isinstance(cfg["usage"]["usd_per_mtok"], (int, float)) or cfg["usage"]["usd_per_mtok"] <= 0:
@@ -435,7 +432,7 @@ def check(cfg):
         if v is None and sect == "solo":
             continue
         if isinstance(v, bool) or not isinstance(v, (int, float)) or v <= 0:
-            raise ValueError("%s.%s must be a number of MTok > 0%s" % (sect, key, " or null" if sect == "solo" else ""))
+            raise ValueError("{}.{} must be a number of MTok > 0{}".format(sect, key, " or null" if sect == "solo" else ""))
     u = cfg["round"]["stop_at_utilization"]
     if isinstance(u, bool) or not isinstance(u, (int, float)) or not 0 < u <= 1:
         raise ValueError("round.stop_at_utilization is a share of a window, 0 < x <= 1 (0.9 = 90 %)")
@@ -450,7 +447,7 @@ def check(cfg):
         raise ValueError("agents.tail must be a whole number >= 1")
     for size, pct in cfg["usage"]["sizes"].items():
         if not isinstance(pct, (int, float)) or pct < 0:
-            raise ValueError("usage.sizes.%s must be a number of %%UW >= 0" % size)
+            raise ValueError(f"usage.sizes.{size} must be a number of %UW >= 0")
     if not isinstance(cfg["backup"].get("drive"), bool):
         raise ValueError("backup.drive must be true or false (the daily Drive run)")
     if int(cfg["lock"]["price"]) < 1:
@@ -459,7 +456,7 @@ def check(cfg):
         raise ValueError("orders.price must be >= 1")
     ids = [q["id"] for q in cfg["standing_questions"]]
     if len(set(ids)) != len(ids):
-        raise ValueError("standing_questions: duplicate ids %s" % ids)
+        raise ValueError(f"standing_questions: duplicate ids {ids}")
     if not isinstance(cfg.get("plugins"), list) or not all(isinstance(x, str) and x for x in cfg["plugins"]):
         raise ValueError("plugins must be a list of module names or .py paths")
     if not isinstance(cfg.get("executor"), str) or not cfg["executor"]:
@@ -478,7 +475,7 @@ def check_merge(m):
         if v is None and nullable:
             return
         if isinstance(v, bool) or not isinstance(v, (int, float)) or v < 0:
-            raise ValueError("merge.%s must be a number >= 0%s" % (key, " or null" if nullable else ""))
+            raise ValueError("merge.{} must be a number >= 0{}".format(key, " or null" if nullable else ""))
     for key in ("poll_s", "run_appear_min", "ci_timeout_min", "deploy_timeout_min", "queued_max_min",
                 "github_reruns_max", "github_wait_max_min", "scan_timeout_s", "after_resolve_timeout_s",
                 "smoke_timeout_s", "generate_timeout_s", "golden_timeout_s", "presync_depth", "trial_retry_min",
@@ -502,7 +499,7 @@ def check_merge(m):
                 continue
             if not isinstance(r, dict) or not isinstance(r.get(key), str) or not r[key] or not isinstance(
                     r.get("cmd"), list) or not r["cmd"] or not all(isinstance(x, str) for x in r["cmd"]):
-                raise ValueError("merge.auto.%s must be null or {\"%s\": a path, \"cmd\": [a command]}" % (rule, key))
+                raise ValueError(f"merge.auto.{rule} must be null or {{\"{key}\": a path, \"cmd\": [a command]}}")
         if not isinstance(auto.get("union") or [], list) or not all(isinstance(x, str) and x for x in auto.get("union") or []):
             raise ValueError("merge.auto.union must be a list of path patterns")
     num("github_rerun_after_min", nullable=True)
@@ -511,7 +508,7 @@ def check_merge(m):
         if value is None:
             return
         if not isinstance(value, list) or not value or not all(isinstance(x, str) for x in value):
-            raise ValueError("merge.%s must be a command: a list of strings%s" % (key, ", or null" if key not in (
+            raise ValueError("merge.{} must be a command: a list of strings{}".format(key, ", or null" if key not in (
                 "scan_args",) else ""))
     for key in ("githubstatus", "site_check", "smoke"):
         cmd(key, m.get(key))
@@ -523,10 +520,10 @@ def check_merge(m):
         cmd("after_resolve", c)
     for key in ("remote", "base", "ci_workflow"):
         if not isinstance(m.get(key), str) or not m[key]:
-            raise ValueError("merge.%s must be a non-empty string" % key)
+            raise ValueError(f"merge.{key} must be a non-empty string")
     for key in ("clone", "worktrees", "deploy_job"):
         if m.get(key) is not None and (not isinstance(m[key], str) or not m[key]):
-            raise ValueError("merge.%s must be a non-empty string or null" % key)
+            raise ValueError(f"merge.{key} must be a non-empty string or null")
     if m.get("scan") not in (None, False) and (not isinstance(m["scan"], str) or not m["scan"]):
         raise ValueError("merge.scan must be a command's path, null (not set: no push) or false (push without a scan)")
     if not isinstance(m.get("site_ok"), list) or not m["site_ok"]:
@@ -538,6 +535,5 @@ def check_merge(m):
         if not isinstance(fb, dict) or not isinstance(fb.get("var"), str) or not fb["var"] or not all(
                 isinstance(fb.get(k), list) and fb[k] and all(isinstance(x, str) and x for x in fb[k])
                 for k in ("main", "fallback") + (("jobs",) if key == "ci_fallback" or "jobs" in fb else ())):
-            raise ValueError("merge.%s must be null or {\"var\": a name, \"main\": [labels], \"fallback\": [labels]%s}"
-                             % (key, ", \"jobs\": [job names]" if key == "ci_fallback" else ""))
+            raise ValueError("merge.{} must be null or {{\"var\": a name, \"main\": [labels], \"fallback\": [labels]{}}}".format(key, ", \"jobs\": [job names]" if key == "ci_fallback" else ""))
 

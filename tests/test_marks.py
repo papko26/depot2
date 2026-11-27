@@ -227,7 +227,7 @@ class DepotBase(GateBase):
         super().tearDown()
 
     def prs(self, bodies, branch="feat"):
-        write_json(self.gh, {"prs": {str(n): {"number": n, "title": "PR %d" % n, "state": "OPEN", "headRefName": branch,
+        write_json(self.gh, {"prs": {str(n): {"number": n, "title": "PR %d" % n, "state": "OPEN", "headRefName": branch,  # noqa: UP031
                                               "baseRefName": "main", "isDraft": False, "body": b}
                                      for n, b in bodies.items()}})
 
@@ -236,7 +236,7 @@ class DepotBase(GateBase):
 
     def ok(self, *argv):
         rc, out, err = self.team(*argv)
-        self.assertEqual(rc, 0, "%s: %s" % (" ".join(argv), err))
+        self.assertEqual(rc, 0, "{}: {}".format(" ".join(argv), err))
         return out
 
     def handed(self, oid):
@@ -404,7 +404,7 @@ class ViewsTest(DepotBase):
         self.ok("tracks", "car", "check", "tr-0001:0", "--from-pr")
         cell = "ворота пройдены, балл 0 из 3, не проверено 1"
         show = self.ok("car", "show", "st-0001")
-        self.assertIn("Сдано агентом: CI не сдано · Heavy не сдано · скан не сдано · шоты не сдано · принципы: %s." % cell,
+        self.assertIn(f"Сдано агентом: CI не сдано · Heavy не сдано · скан не сдано · шоты не сдано · принципы: {cell}.",
                       show)
         self.assertIn("Оценка по принципам: ворота пройдены · балл 0 из 3 (ок 1 · не касается 0 · нарушен 1); не "
                       "проверены: 5a.", show)
@@ -415,9 +415,9 @@ class ViewsTest(DepotBase):
         self.assertEqual([(i["label"], i["mark"]) for i in j["principles"]["items"]],
                          [("5", "ok"), ("26", "na"), ("11", "ok"), ("4", "bad"), ("5a", None)])
         self.assertIn("Оценка по принципам", show)
-        self.assertIn("- С1 st-0001 (tr-0001:0): %s" % cell, self.ok("stack", "--md"))
-        self.assertIn("- 0: %s" % cell, self.ok("track", "tr-0001"))
-        self.assertIn("- tr-0001:0: %s" % cell, self.ok("train", "search"))
+        self.assertIn(f"- С1 st-0001 (tr-0001:0): {cell}", self.ok("stack", "--md"))
+        self.assertIn(f"- 0: {cell}", self.ok("track", "tr-0001"))
+        self.assertIn(f"- tr-0001:0: {cell}", self.ok("train", "search"))
         tk = json.loads(self.ok("tracks", "--json"))
         self.assertEqual(tk["tracks"][0]["cars"][0]["principles"]["cell"], cell)
         self.assertEqual(json.loads(self.ok("train", "search", "--json"))["cars"][0]["principles"]["score"], 0)
@@ -472,7 +472,7 @@ class MigrateMarksTest(GateBase):
         before = {f: slurp(self.t.state.path(f)) for f in ("stack.json", "tracks.json", "trains.json")}
         lines, n = migrate.run(self.t.state, self.t.cfg, dry_run=True)
         self.assertEqual((n, lines[0]), (1, "DRY RUN: ничего не записано"))
-        self.assertIn("сданные слова «legacy check» сняты с объектов стека: %s (ok)" % oid, lines)
+        self.assertIn(f"сданные слова «legacy check» сняты с объектов стека: {oid} (ok)", lines)
         self.assertEqual({f: slurp(self.t.state.path(f)) for f in before}, before)  # a dry run writes nothing
         rc, out, err = self.team("stack", "--md")  # any command migrates first
         self.assertEqual(rc, 0, err)
@@ -485,7 +485,7 @@ class MigrateMarksTest(GateBase):
         self.assertEqual([(h["schema"], h.get("legacy_check")) for h in row], [(3, {oid: "ok"}), (4, None), (5, None)])
         snap = {f: slurp(self.t.state.path(f)) for f in before}
         self.assertEqual(migrate.run(self.t.state, self.t.cfg),
-                         (["миграция данных депо: нечего переносить (схема %d)" % SCHEMA], 0))
+                         (["миграция данных депо: нечего переносить (схема %d)" % SCHEMA], 0))  # noqa: UP031
         self.assertEqual({f: slurp(self.t.state.path(f)) for f in before}, snap)
         self.assertIn("сданные слова «legacy check» сняты с объектов стека: таких нет",
                       migrate.step_marks(self.t.state, dry_run=True))

@@ -110,7 +110,7 @@ class WorktreesMixin:
         from .merge import MergeError, clip
         code, out, err = self.git(self.clone, "worktree", "list", "--porcelain")
         if code != 0:
-            raise MergeError("git worktree list in %s: %s" % (self.clone, clip(err or out, 160)))
+            raise MergeError(f"git worktree list in {self.clone}: {clip(err or out, 160)}")
         return {os.path.realpath(w["path"]): w for w in worktree_list(out)[1:]}
 
     def wt_busy(self, branch, but=None):
@@ -150,12 +150,12 @@ class WorktreesMixin:
         if dirty:
             more = t("mergewt.dirty_more", n=len(dirty) - 3) if len(dirty) > 3 else ""
             return t("mergewt.dirty", lines=clip("; ".join(ln.strip() for ln in dirty[:3]), 140), more=more)
-        main = "%s/%s" % (self.remote, self.base)
+        main = f"{self.remote}/{self.base}"
         head = self.rev(path, "HEAD")
         if not head:
             return t("mergewt.no_head")
         if not self.is_ancestor(path, head, main):
-            n = self.git(path, "rev-list", "--count", "%s..%s" % (main, head))[1].strip()
+            n = self.git(path, "rev-list", "--count", f"{main}..{head}")[1].strip()
             return t("mergewt.head_not_in", head=head[:7], main=main, n=n or "?")
         return None
 
@@ -171,7 +171,7 @@ class WorktreesMixin:
         if code != 0:
             if target is not None and os.path.isdir(path) and not os.path.lexists(link):
                 os.symlink(target, link)
-            return {"removed": False, "reason": "git worktree remove: %s" % clip(err or out, 160)}
+            return {"removed": False, "reason": f"git worktree remove: {clip(err or out, 160)}"}
         return {"removed": True, "freed": size}
 
     # --- after the merge (step_merge) ---
@@ -186,7 +186,7 @@ class WorktreesMixin:
             why = self.wt_busy(e["branch"], but=eid) or self.wt_verdict(path, e["branch"], self.wt_known())
             res = self.wt_remove(path) if why is None else {"removed": False, "reason": why}
         except Exception as ex:
-            res = {"removed": False, "reason": "%s: %s" % (type(ex).__name__, clip(ex, 160))}
+            res = {"removed": False, "reason": f"{type(ex).__name__}: {clip(ex, 160)}"}
         res.update(path=path, ts=stamp(self.clock()))
         self.update(eid, "worktree", wt=res, say=wt_line(path, e["branch"], res))
         return res
@@ -206,7 +206,7 @@ class WorktreesMixin:
         from .merge import HISTORY, MergeQueue, clip, expand, stamp
         from .store import append_jsonl
         root = os.path.realpath(expand(self.m["worktrees"]))
-        main = "%s/%s" % (self.remote, self.base)
+        main = f"{self.remote}/{self.base}"
         L = []
         code, out, err = self.git(self.clone, "fetch", "-q", self.remote, timeout=300)
         if code != 0:  # an old origin/main only keeps more of them
@@ -265,9 +265,9 @@ class WorktreesMixin:
                       n=len(rows) + others, clone=self.clone, wts=len(rows), main=main,
                       sha=(self.rev(self.clone, main) or "?")[:7]))
         L.append(t("mergewt.prune_removed_" + how, n=len(removed), size=size_text(freed)))
-        L += ["  - %s: %s" % (n, x) for n, x, _ in removed] or ["  —"]
+        L += [f"  - {n}: {x}" for n, x, _ in removed] or ["  —"]
         L.append(t("mergewt.prune_kept", n=len(kept)))
-        L += ["  - %s: %s" % (n, x) for n, x in sorted(kept)] or ["  —"]
+        L += [f"  - {n}: {x}" for n, x in sorted(kept)] or ["  —"]
         L.append(t("mergewt.prune_total_" + how, n=len(removed), kept=len(kept), size=size_text(freed)))
         if not dry_run:
             with self.state.lock():
@@ -276,5 +276,5 @@ class WorktreesMixin:
                                     "removed": [{"name": n, "bytes": b} for n, _, b in removed], "kept": len(kept),
                                     "freed": freed})
                 self.state.touch(path)
-                self.state.commit("team: merge prune-worktrees: %d removed, %s freed" % (len(removed), size_text(freed)))
+                self.state.commit("team: merge prune-worktrees: %d removed, %s freed" % (len(removed), size_text(freed)))  # noqa: UP031
         return L

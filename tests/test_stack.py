@@ -141,12 +141,12 @@ class StackTest(Base):
         rc, out, _ = self.team("stack", "set", "st-0001", "--note", "ждёт CI")
         self.assertEqual(rc, 0)
         day = now_iso()[:10]
-        self.assertIn("st-0001: заметка 1 — %s: ждёт CI" % day, out)
+        self.assertIn(f"st-0001: заметка 1 — {day}: ждёт CI", out)
         rc, out, _ = self.team("stack", "set", "st-0001", "--note", "CI зелёный", "--status", "PR открыт")
         self.assertEqual(rc, 0)
-        self.assertIn("st-0001: заметка 2 — %s: CI зелёный" % day, out)
+        self.assertIn(f"st-0001: заметка 2 — {day}: CI зелёный", out)
         o = json.loads(self.team("stack", "--json")[1])["queue"][0]
-        self.assertEqual((o["notes"], o["status"]), (["%s: ждёт CI" % day, "%s: CI зелёный" % day], "PR открыт"))
+        self.assertEqual((o["notes"], o["status"]), ([f"{day}: ждёт CI", f"{day}: CI зелёный"], "PR открыт"))
         rows = [r for r in Stack(self.t.state, self.t.cfg).history() if r["event"] == "set"]
         self.assertEqual([r.get("note_added") for r in rows], ["ждёт CI", "CI зелёный"])
         self.assertNotIn("notes", rows[0])  # the row keeps the line added, not the whole list again
@@ -216,8 +216,8 @@ class AutostartAndParkTest(Base):
         o = s.get("st-0001")
         self.assertEqual((o["where"], o["branch"], o["pr"], o["status"], o["parked"]["reason"]),
                          ("queue", "bookmarks-size", 205, "PR #205 готов; ждёт замера", "ждёт замера выдачи"))
-        self.assertIn("| 1 | очередь | st-0001 Закладки | P5 | bookmarks-size / PR #205 | PR #205 готов; ждёт замера (запаркован %s: "
-                      "ждёт замера выдачи) | да |" % o["parked"]["ts"][:10], out)
+        self.assertIn("| 1 | очередь | st-0001 Закладки | P5 | bookmarks-size / PR #205 | PR #205 готов; ждёт замера (запаркован {}: "
+                      "ждёт замера выдачи) | да |".format(o["parked"]["ts"][:10]), out)
         # a freed slot never takes it by itself, though its autostart is yes; the next object goes
         from depot2.trains import Trains
         nx = Trains(self.t.state, self.t.cfg).next()
@@ -351,7 +351,7 @@ class BallotsTest(Base):
         r2_, runner = self.play({})
         system = slurp(runner.calls[0][3].system_path)
         self.assertIn("## Очередь бюллетеней владельца (ещё не решены)", system)
-        self.assertIn("| 1 | %s | Бюллетень | ждёт | — | 4: B50, B49, X1, X2 |" % r["id"], system)
+        self.assertIn("| 1 | {} | Бюллетень | ждёт | — | 4: B50, B49, X1, X2 |".format(r["id"]), system)
         self.assertEqual([x["round"] for x in Ballots(self.t.state).entries()], [r["id"], r2_["id"]])
 
     def test_decide_marks_a_point_and_the_commands(self):
@@ -359,19 +359,19 @@ class BallotsTest(Base):
         rid = r["id"]
         rc, out, err = self.team("decide", "all", "--text", "да", "--round", rid, "--point", "B49")
         self.assertEqual(rc, 0, err)
-        self.assertIn("ballot %s: B49 answered; 3 points left (presenting)" % rid, out)
+        self.assertIn(f"ballot {rid}: B49 answered; 3 points left (presenting)", out)
         n = len(read_jsonl(self.t.state.decisions_path))
         rc, out, err = self.team("decide", "all", "--text", " ", "--round", rid, "--point", "B50")
         self.assertEqual((rc, len(read_jsonl(self.t.state.decisions_path))), (1, n))
         self.assertIn("a decision needs its words", err)
         rc, out, err = self.team("decide", "all", "--text", "нет", "--round", rid, "--point", "Z9")
-        self.assertIn("ballot %s: no open point Z9 (open: B50, X1, X2): the ballot is as it was" % rid, out)
+        self.assertIn(f"ballot {rid}: no open point Z9 (open: B50, X1, X2): the ballot is as it was", out)
         rc, out, err = self.team("decide", "all", "--text", "да", "--round", rid, "--point", "b50")
-        self.assertIn("ballot %s: B50 answered; 2 points left (presenting)" % rid, out)
+        self.assertIn(f"ballot {rid}: B50 answered; 2 points left (presenting)", out)
         self.assertEqual(read_jsonl(self.t.state.decisions_path)[-1]["point"], "B50")
         self.assertEqual(self.team("ballots", "at", rid, "X1")[0], 0)
         rc, out, _ = self.team("ballots", "--md")
-        self.assertIn("| 1 | %s | Бюллетень | показываю | X1 | 2: X1, X2 |" % rid, out)
+        self.assertIn(f"| 1 | {rid} | Бюллетень | показываю | X1 | 2: X1, X2 |", out)
         self.assertEqual(self.team("ballots", "point", rid, "B50")[0], 1)  # answered already
         r2_, _ = self.play({})
         self.assertEqual(self.team("ballots", "move", r2_["id"], "--at", "1")[0], 0)

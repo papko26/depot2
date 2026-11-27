@@ -47,7 +47,7 @@ class FakeRunner:
             item = minimal(spec.schema)  # the smallest answer that fits: no positions, no stakes
         errs = schema.validate(item, spec.schema)
         if errs:
-            raise AssertionError("the test's answer does not fit the schema: %s" % errs)
+            raise AssertionError(f"the test's answer does not fit the schema: {errs}")
         res["structured"] = item
         return res
 
@@ -245,7 +245,7 @@ class ResumeTest(unittest.TestCase):
     def test_a_fatal_error_in_round_1_goes_on_with_the_missing_calls_only(self):
         rid, msg = self.abort({("builder", "r1"): ans([("B49", "agree", 2, "x")], thought="одна мысль"),
                                ("painter", "r1"): FatalError("API error 400: the message was refused")})
-        self.assertIn("depot2 round --resume %s calls only for the missing ones" % rid, msg)
+        self.assertIn(f"depot2 round --resume {rid} calls only for the missing ones", msg)
         # the input file may be gone by now: the round goes on from its saved bundle
         os.remove(self.input)
         r, runner, _ = self.resume(rid, {("painter", "r1"): ans([("B50", "agree", 1, "y")])})
@@ -283,7 +283,7 @@ class ResumeTest(unittest.TestCase):
         self.assertEqual(runner.calls[0][3].user, asked)  # the same bundle, the same round-1 table
         rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
         self.assertEqual(rj["status"], "done")
-        self.assertEqual(sorted(rj["resumed"][0]["kept"]), sorted(["%s-r1" % c for c in characters.IDS] +
+        self.assertEqual(sorted(rj["resumed"][0]["kept"]), sorted([f"{c}-r1" for c in characters.IDS] +
                                                                    ["builder-r2"]))
 
     def test_aborted_again_then_resumed_again(self):
@@ -305,7 +305,7 @@ class ResumeTest(unittest.TestCase):
         self.assertEqual(runner.calls, [])
         self.assertEqual(slurp(path), before)
         text = "\n".join(lines)
-        self.assertIn("RESUME round %s (ballot)" % rid, text)
+        self.assertIn(f"RESUME round {rid} (ballot)", text)
         self.assertIn("kept from the aborted pass: builder-r1", text)
         self.assertIn("round 1: calls for Палитра, Краски, ", text)
         self.assertIn("spent so far: 2 calls", text)
@@ -461,7 +461,7 @@ class OldRoundTest(unittest.TestCase):
                ("stake", "painter", -1, {"point": "B50"})]
         for n, (typ, cid, amount, extra) in enumerate(txs, 6):
             bal[cid] += amount
-            rec = {"seq": n, "id": "tx-%06d" % n, "ts": "2015-11-03T12:00:00+02:00", "type": typ,
+            rec = {"seq": n, "id": "tx-%06d" % n, "ts": "2015-11-03T12:00:00+02:00", "type": typ,  # noqa: UP031
                    "character": cid, "amount": amount, "balance_after": bal[cid], "round": self.RID}
             rec.update(extra)
             append_jsonl(self.led.path, rec)
@@ -549,7 +549,7 @@ class ReflectionGateTest(unittest.TestCase):
     def fake(self, spec):
         return {"call": spec.call_id, "model": spec.model, "effort": spec.effort, "duration_s": 0.1,
                 "cost_usd": 0.02, "usage": {}, "status": "ok", "reason": None, "utilization": None,
-                "structured": {"portrait": "Я %s, новая версия." % spec.call_id.split("/")[1],
+                "structured": {"portrait": "Я {}, новая версия.".format(spec.call_id.split("/")[1]),
                                "what_changed": "учёл выплату", "inner_thought": "хм"}}
 
     def test_only_affected_characters_reflect(self):
@@ -769,7 +769,7 @@ class SnapshotAndCostTest(unittest.TestCase):
         for cid, stage, _, spec in runner.calls:
             self.assertEqual(spec.add_dirs, want, (cid, stage))
             self.assertEqual(spec.deny, self.t.cfg["deny_read"], (cid, stage))
-            self.assertIn("Доступно: %s." % ", ".join(want), spec.user, (cid, stage))  # the task says so
+            self.assertIn("Доступно: {}.".format(", ".join(want)), spec.user, (cid, stage))  # the task says so
         self.assertEqual(json.loads(slurp(os.path.join(r["dir"], "round.json")))["readable"], want)
         self.assertIn("Проходы читали origin/main " + "a" * 40, r["report"])
 

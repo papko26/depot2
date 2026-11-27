@@ -45,7 +45,7 @@ class ClaimBase(Base):
 
     def ok(self, *argv):
         rc, out, err = self.team(*argv)
-        self.assertEqual(rc, 0, "%s: %s%s" % (" ".join(argv), out, err))
+        self.assertEqual(rc, 0, "{}: {}{}".format(" ".join(argv), out, err))
         return out
 
     def arrived(self, title="Импорт каталога", pr="142"):
@@ -54,7 +54,7 @@ class ClaimBase(Base):
         oid = out.split()[0]
         self.ok("stack", "start", oid)
         self.ok("stack", "set", oid, "--pr", pr)
-        self.ok("stack", "done", oid, "--reason", "merged #%s" % pr)
+        self.ok("stack", "done", oid, "--reason", f"merged #{pr}")
         self.ok("car", "stage", oid, "arrived", "--why", "выкачен")
         return oid
 
@@ -76,7 +76,7 @@ class ReturnTest(ClaimBase):
         self.ok("stack", "set", "st-0001", "--pr", "401")
         for n in (1, 2):
             self.ok("stack", "post", "st-0001")
-            self.ok("stack", "start", "st-0001", "--reason", "доработать %d" % n)
+            self.ok("stack", "start", "st-0001", "--reason", "доработать %d" % n)  # noqa: UP031
         c = Tracks(self.t.state, self.t.cfg).car("tr-0001:0")[1]
         o = self.stk().get("st-0001")
         self.assertEqual((c["returns"], o["returns"]), (2, 2))
@@ -192,9 +192,9 @@ class RepairTest(ClaimBase):
         other = self.arrived("Другой", "313")
         rc, _, err = self.team("repair", "link", "st-0002", "--of", other)
         self.assertEqual(rc, 1)
-        self.assertIn("st-0002 уже ремонт st-0001: перенести рекламацию на %s" % other, err)
+        self.assertIn(f"st-0002 уже ремонт st-0001: перенести рекламацию на {other}", err)
         out = self.ok("repair", "link", "st-0002", "--of", other, "--force", "--why", "виновник — другой PR")
-        self.assertIn("st-0001: рекламация с ремонтом st-0002 перенесена на %s; рекламаций теперь 0" % other, out)
+        self.assertIn(f"st-0001: рекламация с ремонтом st-0002 перенесена на {other}; рекламаций теперь 0", out)
         old = self.stk().left_obj("st-0001")
         self.assertEqual((old["claims"], old["claim_links"][0]["moved"]["to"]), (0, other))  # kept, marked
         self.assertEqual(self.stk().left_obj(other)["claims"], 1)
@@ -231,8 +231,8 @@ class OutOfTurnTest(ClaimBase):
         self.ok("trains", "add", "--name", "poezd", "--title", "Поезд", "--car", "tr-0001:0")
         self.ok("trains", "state", "poezd", "impl")
         for n in range(3):  # three of the four slots busy: one is free
-            self.ok("stack", "add", "--title", "занят %d" % n, "--brief", self.brief)
-            self.ok("stack", "start", "st-%04d" % (n + 2))
+            self.ok("stack", "add", "--title", "занят %d" % n, "--brief", self.brief)  # noqa: UP031
+            self.ok("stack", "start", "st-%04d" % (n + 2))  # noqa: UP031
         self.ok("repair", "add", "--of", culprit)  # no brief: the DoR holds it, the train's car goes
         nx = Trains(self.t.state, self.t.cfg).next()
         self.assertEqual(([o["id"] for o in nx["repairs"]], [p["car"]["n"] for p in nx["picks"]]), ([], ["0"]))

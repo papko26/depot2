@@ -43,7 +43,7 @@ class Bundle:
     def text(self, max_chars):
         out = []
         for title, body in self.parts:
-            out.append("## %s\n\n%s\n" % (title, body))
+            out.append(f"## {title}\n\n{body}\n")
         body = "\n".join(out)
         if len(body) > max_chars:
             self.cuts.append(t("bundle.cut_all", cap=int(max_chars), n=len(body)))
@@ -90,7 +90,7 @@ def _numbered_points(text):
                 first = re.split(r"(?<=[.?!:])\s", body, 1)
                 title = first[0].rstrip(".:")[:100]
                 rest = first[1].strip() if len(first) > 1 else ""
-            cur = {"id": "Q%s" % m.group(1), "title": title,
+            cur = {"id": f"Q{m.group(1)}", "title": title,
                    "question": body.replace("**", "") if rest else "",
                    "recommendation": "", "source": "input"}
             points.append(cur)
@@ -109,7 +109,7 @@ def check_unique(points):
     seen = set()
     for p in points:
         if p["id"] in seen:
-            raise ValueError("duplicate point id %s in the input" % p["id"])
+            raise ValueError("duplicate point id {} in the input".format(p["id"]))
         seen.add(p["id"])
 
 
@@ -168,7 +168,7 @@ def gh_json(args):
     p = subprocess.run(["gh"] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                        text=True, timeout=120)
     if p.returncode != 0:
-        raise RuntimeError("gh %s failed: %s" % (" ".join(args[:2]), p.stderr.strip()[:300]))
+        raise RuntimeError("gh {} failed: {}".format(" ".join(args[:2]), p.stderr.strip()[:300]))
     return json.loads(p.stdout or "[]")
 
 
@@ -179,7 +179,7 @@ def _pr_block(pr, cap):
         cut = "\n" + t("bundle.pr_body_cut", cap=int(cap), n=len(body))
         body = body[:cap].rstrip()
     when = pr.get("mergedAt") or ("draft" if pr.get("isDraft") else "open")
-    return "### #%s %s (%s)\n\n%s%s\n" % (pr["number"], pr.get("title", ""), when, body, cut)
+    return "### #{} {} ({})\n\n{}{}\n".format(pr["number"], pr.get("title", ""), when, body, cut)
 
 
 PR_FIELDS = ("number,title,body,state,isDraft,mergedAt,author,headRefName,headRefOid,baseRefName,"
@@ -191,19 +191,19 @@ def _one_pr(b, cfg, n, gh):
     bc = cfg["bundle"]
     from .config import repo as repo_of
     pr = gh(["pr", "view", str(int(n)), "-R", repo_of(cfg), "--json", PR_FIELDS])
-    b.sources.append("gh pr view %d -R %s" % (int(n), repo_of(cfg)))
+    b.sources.append("gh pr view %d -R %s" % (int(n), repo_of(cfg)))  # noqa: UP031
     b.pr = pr
     files = pr.get("files") or []
-    head = ["#%s %s" % (pr["number"], pr.get("title", "")),
-            "- state: %s%s; %s → %s; head %s" % (
+    head = ["#{} {}".format(pr["number"], pr.get("title", "")),
+            "- state: {}{}; {} → {}; head {}".format(
                 pr.get("state"), " (draft)" if pr.get("isDraft") else "", pr.get("headRefName"),
                 pr.get("baseRefName"), pr.get("headRefOid")),
-            "- %s files, +%s −%s" % (pr.get("changedFiles", len(files)), pr.get("additions"), pr.get("deletions")),
-            "- %s" % pr.get("url", "")]
+            "- {} files, +{} −{}".format(pr.get("changedFiles", len(files)), pr.get("additions"), pr.get("deletions")),
+            "- {}".format(pr.get("url", ""))]
     b.add(t("bundle.pr_title", n=pr["number"]), "\n".join(head), 2000, t("bundle.pr_title_what"))
     b.add(t("bundle.pr_body", n=pr["number"]), pr.get("body") or t("bundle.empty"), bc["pr_body_max_chars"] * 4,
           t("bundle.pr_body_what", n=pr["number"]))
-    lines = ["- %s (+%s −%s)" % (f.get("path"), f.get("additions"), f.get("deletions")) for f in files]
+    lines = ["- {} (+{} −{})".format(f.get("path"), f.get("additions"), f.get("deletions")) for f in files]
     b.add(t("bundle.pr_files", n=pr["number"], count=len(files)), "\n".join(lines) or t("prompts.none"),
           bc["context_max_chars"], t("bundle.pr_files_what"))
 
@@ -213,7 +213,7 @@ def add_principles(b, state, cfg):
     p = Principles(state, cfg)
     if not p.entries(True):
         return
-    b.sources.append("depot2 principles render (%s)" % state.path("principles.json"))
+    b.sources.append("depot2 principles render ({})".format(state.path("principles.json")))
     b.add(t("bundle.principles"), p.round_line() + "\n\n" + p.render(banner=False),
           cfg["bundle"].get("principles_max_chars", 24000), t("bundle.principles_what"))
 
@@ -226,11 +226,11 @@ def build(kind, cfg, input_path=None, contexts=(), since=None, gh=gh_json, pr=No
         raise ValueError("--pr goes with --kind review")
     if kind in ("ballot", "discuss", "brainstorm"):
         if not input_path:
-            raise ValueError("--input is required for a %s round" % kind)
+            raise ValueError(f"--input is required for a {kind} round")
     if input_path:
         text = read_text(os.path.expanduser(input_path))
         if text is None:
-            raise ValueError("no such input: %s" % input_path)
+            raise ValueError(f"no such input: {input_path}")
         b.sources.append(os.path.abspath(os.path.expanduser(input_path)))
         b.points = parse_points(text)
         if kind == "ballot" and not b.points:
@@ -243,8 +243,7 @@ def build(kind, cfg, input_path=None, contexts=(), since=None, gh=gh_json, pr=No
         repo = repo_of(cfg)
         merged = gh(["pr", "list", "-R", repo, "--state", "merged", "--limit",
                      str(bc["merged_pr_limit"]), "--json", "number,title,mergedAt,body"])
-        b.sources.append("gh pr list -R %s --state merged (%s)"
-                         % (repo, "merged after " + since if since else "the last 10"))
+        b.sources.append("gh pr list -R {} --state merged ({})".format(repo, "merged after " + since if since else "the last 10"))
         merged.sort(key=lambda p: p.get("mergedAt") or "")
         if since:
             merged = [p for p in merged if (p.get("mergedAt") or "") > since]
@@ -256,13 +255,13 @@ def build(kind, cfg, input_path=None, contexts=(), since=None, gh=gh_json, pr=No
               text, bc["max_chars"] // 2, t("bundle.merged_what"))
         opened = gh(["pr", "list", "-R", repo, "--state", "open", "--json",
                      "number,title,isDraft,body"])
-        b.sources.append("gh pr list -R %s --state open" % repo)
+        b.sources.append(f"gh pr list -R {repo} --state open")
         text = "\n".join(_pr_block(p, bc["open_pr_body_max_chars"]) for p in opened) or t("prompts.none")
         b.add(t("bundle.open", n=len(opened)), text, bc["max_chars"] // 4, t("bundle.open_what"))
     for c in contexts or ():
         text = read_text(os.path.expanduser(c))
         if text is None:
-            raise ValueError("no such context file: %s" % c)
+            raise ValueError(f"no such context file: {c}")
         b.sources.append(os.path.abspath(os.path.expanduser(c)))
         b.add(t("bundle.context", name=os.path.basename(c)), text, bc["context_max_chars"], os.path.basename(c))
     dec = latest_decisions(cfg)
@@ -277,6 +276,6 @@ def build(kind, cfg, input_path=None, contexts=(), since=None, gh=gh_json, pr=No
     from . import hooks
     for parts in hooks.call_all(cfg, "round_context", cfg, kind):
         for title, text in parts:
-            b.sources.append("plugin: %s" % title)
+            b.sources.append(f"plugin: {title}")
             b.add(str(title), str(text), bc["context_max_chars"], str(title))
     return b

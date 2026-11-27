@@ -29,9 +29,9 @@ def calls(log):
 
 
 def move_head(state, n):
-    p = os.path.join(state, "scan-moved-%d.txt" % n)
+    p = os.path.join(state, "scan-moved-%d.txt" % n)  # noqa: UP031
     with open(p, "w") as f:
-        f.write("written during the scan %d\n" % n)
+        f.write("written during the scan %d\n" % n)  # noqa: UP031
     subprocess.run(["git", "-C", state, "add", "--", os.path.basename(p)], check=True)
     subprocess.run(["git", "-C", state, "-c", "user.name=t", "-c", "user.email=t@localhost", "commit", "-q", "-m",
                     "moved during the scan"], check=True)
@@ -48,7 +48,7 @@ def main():
     elif "--repo" in argv:
         d, skip_git = argv[argv.index("--repo") + 1], True
     else:
-        sys.stderr.write("fake scan: wants --root or --repo, got %s\n" % argv)
+        sys.stderr.write(f"fake scan: wants --root or --repo, got {argv}\n")
         return 2
     seen = files_under(d, skip_git)
     if log:
@@ -63,15 +63,15 @@ def main():
             with open(os.path.join(d, rel), encoding="utf-8", errors="replace") as f:
                 for ln in f:
                     if hit and hit in ln:
-                        hits.append("HIT file %s: %s" % (rel, ln.strip()))
+                        hits.append(f"HIT file {rel}: {ln.strip()}")
         except OSError:
             pass
     if mode in ("dirty", "dirty0") and not hits:
         hits.append("HIT file somewhere.md: a line with %s in it" % (hit or "a private word"))
-    print("== files under %s" % d)
+    print(f"== files under {d}")
     for h in hits:
         print(h)
-    print("== total hits: %d" % len(hits))
+    print("== total hits: %d" % len(hits))  # noqa: UP031
     if hits:
         print("NOT CLEAN")
         return 0 if mode == "dirty0" else 1

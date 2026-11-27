@@ -29,8 +29,8 @@ class TracksBase(Base):
     def ride(self, tid, name=None, slots="max 1", **kw):
         tr = self.trains()
         t = tr.tracks.get(tid)
-        name = name or "train-%s" % tid[-1]
-        tr.add(name, t["title"], cars=["%s:%s" % (tid, c["n"]) for c in t["cars"] if c["status"] not in ("merged",
+        name = name or f"train-{tid[-1]}"
+        tr.add(name, t["title"], cars=["{}:{}".format(tid, c["n"]) for c in t["cars"] if c["status"] not in ("merged",
                                                                                                       "dropped")],
                slots=slots, **kw)
         tr.set_state(name, "impl")
@@ -91,7 +91,7 @@ class TracksTest(TracksBase):
         self.assertEqual(tr.ref_state("tr-0001"), (False, "tr-0001 Поиск (открыто вагонов: 3)"))
         self.assertEqual(tr.ref_state("tr-0003")[0], False)  # no cars: not done
         for n in ("1", "2", "3"):
-            tr.car_set("tr-0001:%s" % n, status="dropped" if n == "3" else "merged")
+            tr.car_set(f"tr-0001:{n}", status="dropped" if n == "3" else "merged")
         self.assertEqual(tr.ref_state("tr-0001"), (True, "tr-0001 Поиск (пройден)"))
         self.assertNotIn("tr-0001 Поиск", Tracks(self.t.state, self.t.cfg).md(now=PAST))  # done: only with --all
         self.assertIn("Пройденных треков не показано: 1", Tracks(self.t.state, self.t.cfg).md(now=PAST))
@@ -197,7 +197,7 @@ class StackLinkTest(TracksBase):
         self.assertEqual(self.team("stack", "done", "st-0001", "--reason", "слит #201", "--car", "merged")[0], 0)
         tr = self.tracks()
         other = tr.car_add(tr.add("Ещё")["id"], "x", size="S")
-        ref = "%s:%s" % (other[0]["id"], other[1]["n"])
+        ref = "{}:{}".format(other[0]["id"], other[1]["n"])
         rc, out, err = self.team("tracks", "car", "set", ref, "--st", "st-0001")
         self.assertEqual(rc, 1)
         self.assertIn("st-0001 is or was the stack object of tr-0001:0: a car links only to an object of its own", err)
@@ -207,8 +207,8 @@ class StackLinkTest(TracksBase):
         for act in (("start", "st-0002"), ("post", "st-0002", "--reason", "CI")):
             rc, out, err = self.team("stack", *act)
             self.assertEqual(rc, 1, act)
-            self.assertIn("st-0002 is the object of tr-0001:1, which is слит: no stack %s — the object is left over, "
-                          "close it: depot2 stack done st-0002 --car merged --reason «…»" % act[0], err)
+            self.assertIn(f"st-0002 is the object of tr-0001:1, which is слит: no stack {act[0]} — the object is left over, "
+                          "close it: depot2 stack done st-0002 --car merged --reason «…»", err)
         self.assertEqual(self.tracks().car("tr-0001:1")[1]["status"], "merged")
         self.assertEqual(self.team("stack", "done", "st-0002", "--reason", "остался", "--car", "merged")[0], 0)
         self.assertEqual(self.tracks().car("tr-0001:1")[1]["finished"], finished)  # its day kept
@@ -437,7 +437,7 @@ class PrRefTest(TracksBase):
         stk.done("st-0002", "closed: superseded")
         stk.done("st-0003", "ушёл из стека, PR #303 открыт, НЕ слит")
         tr = self.tracks()
-        self.assertEqual([tr.ref_state("#%d" % n)[0] for n in (301, 302, 303, 304)], [True, False, False, False])
+        self.assertEqual([tr.ref_state("#%d" % n)[0] for n in (301, 302, 303, 304)], [True, False, False, False])  # noqa: UP031
         a = tr.add("Т")
         tr.car_add(a["id"], "x", pr=304, status="merged")
         self.assertTrue(self.tracks().ref_state("#304")[0])

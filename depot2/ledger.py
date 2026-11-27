@@ -53,34 +53,34 @@ class Ledger:
         for e in (self.entries() if entries is None else entries):
             if e["id"] == tx_id:
                 return e
-        raise LedgerError("no transaction %s" % tx_id)
+        raise LedgerError(f"no transaction {tx_id}")
 
     def _append(self, typ, cid, amount, **fields):
         if cid not in characters.IDS:
-            raise LedgerError("unknown character %r" % cid)
+            raise LedgerError(f"unknown character {cid!r}")
         if not isinstance(amount, int) or isinstance(amount, bool):
             raise LedgerError("amount must be an int")
         if typ in CLOSERS:
             if amount != 0:
-                raise LedgerError("%s has amount 0, got %d" % (typ, amount))
+                raise LedgerError("%s has amount 0, got %d" % (typ, amount))  # noqa: UP031
         elif typ in FINES:
             if amount > 0:
-                raise LedgerError("%s needs an amount <= 0, got %d" % (typ, amount))
+                raise LedgerError("%s needs an amount <= 0, got %d" % (typ, amount))  # noqa: UP031
         elif typ in SETTLES:
             if amount < 0:
-                raise LedgerError("%s needs an amount >= 0, got %d" % (typ, amount))
+                raise LedgerError("%s needs an amount >= 0, got %d" % (typ, amount))  # noqa: UP031
         elif typ not in DEBITS + CREDITS:
-            raise LedgerError("unknown transaction type %r" % typ)
+            raise LedgerError(f"unknown transaction type {typ!r}")
         elif (typ in DEBITS and amount >= 0) or (typ in CREDITS and amount <= 0):
-            raise LedgerError("%s needs a %s amount, got %d"
+            raise LedgerError("%s needs a %s amount, got %d"  # noqa: UP031
                               % (typ, "negative" if typ in DEBITS else "positive", amount))
         entries = self.entries()
         before = self.balance(cid, entries)
         if before + amount < 0:
-            raise OverdraftError("%s has %d, cannot take %d (%s)"
+            raise OverdraftError("%s has %d, cannot take %d (%s)"  # noqa: UP031
                                  % (characters.name(cid), before, -amount, typ))
         seq = self.last_seq(entries) + 1
-        rec = {"seq": seq, "id": "tx-%06d" % seq, "ts": now_iso(), "type": typ,
+        rec = {"seq": seq, "id": "tx-%06d" % seq, "ts": now_iso(), "type": typ,  # noqa: UP031
                "character": cid, "amount": amount, "balance_after": before + amount}
         for k, v in fields.items():
             if v is not None:
@@ -90,7 +90,7 @@ class Ledger:
         # The write is checked: the new balance must be what we computed.
         after = self.balance(cid)
         if after != before + amount:
-            raise LedgerError("balance check failed for %s: %d != %d" % (cid, after, before + amount))
+            raise LedgerError("balance check failed for %s: %d != %d" % (cid, after, before + amount))  # noqa: UP031
         return rec
 
     # --- operations -------------------------------------------------------------------------
@@ -126,9 +126,9 @@ class Ledger:
 
     def brainstorm_refund(self, fee_tx, reason, round_id=None):
         if fee_tx["type"] != "brainstorm_fee":
-            raise LedgerError("%s is not a brainstorm fee" % fee_tx["id"])
+            raise LedgerError("{} is not a brainstorm fee".format(fee_tx["id"]))
         if any(e["type"] == "brainstorm_refund" and e.get("ref") == fee_tx["id"] for e in self.entries()):
-            raise LedgerError("%s already refunded" % fee_tx["id"])
+            raise LedgerError("{} already refunded".format(fee_tx["id"]))
         return self._append("brainstorm_refund", fee_tx["character"], -fee_tx["amount"], ref=fee_tx["id"],
                             brainstorm=fee_tx.get("brainstorm"), round=round_id, reason=reason)
 
@@ -140,11 +140,11 @@ class Ledger:
     def order_settle(self, order_tx, outcome, bonus, reason):
         """The owner settles an order: moved = the price back + bonus, refund = the price back, burn = 0."""
         if order_tx["type"] != "order":
-            raise LedgerError("%s is not an order" % order_tx["id"])
+            raise LedgerError("{} is not an order".format(order_tx["id"]))
         if outcome not in SETTLE_OUTCOMES:
-            raise LedgerError("an order settles as one of %s" % (SETTLE_OUTCOMES,))
+            raise LedgerError(f"an order settles as one of {SETTLE_OUTCOMES}")
         if any(e["type"] == "order_settle" and e.get("ref") == order_tx["id"] for e in self.entries()):
-            raise LedgerError("%s already settled" % order_tx.get("order", order_tx["id"]))
+            raise LedgerError("{} already settled".format(order_tx.get("order", order_tx["id"])))
         price = -order_tx["amount"]
         amount = {"moved": price + int(bonus), "refund": price, "burn": 0}[outcome]
         return self._append("order_settle", order_tx["character"], amount, ref=order_tx["id"],
@@ -158,9 +158,9 @@ class Ledger:
 
     def lock_refund(self, lock_tx, reason):
         if lock_tx["type"] != "lock":
-            raise LedgerError("%s is not a lock" % lock_tx["id"])
+            raise LedgerError("{} is not a lock".format(lock_tx["id"]))
         if any(e["type"] == "lock_refund" and e.get("ref") == lock_tx["id"] for e in self.entries()):
-            raise LedgerError("%s already refunded" % lock_tx["id"])
+            raise LedgerError("{} already refunded".format(lock_tx["id"]))
         return self._append("lock_refund", lock_tx["character"], -lock_tx["amount"], ref=lock_tx["id"],
                             object=lock_tx.get("object"), reason=reason)
 
@@ -186,17 +186,17 @@ class Ledger:
 
     def _nothing_open(self, cid, round_id, point, forfeit=False):
         """The plain error when refund or forfeit finds nothing open."""
-        what = "%s in %s%s" % (characters.name(cid) if cid else "anyone", round_id, " " + point if point else "")
+        what = "{} in {}{}".format(characters.name(cid) if cid else "anyone", round_id, " " + point if point else "")
         entries = self.entries()
         back = [e for e in self.auto_refunds(round_id, entries)
                 if (not cid or e["character"] == cid) and (not point or e.get("point") == point)]
         if not back:
-            return LedgerError("no open stakes for %s" % what)
-        msg = ("nothing open for %s: its stakes came back by themselves when the round ended "
+            return LedgerError(f"no open stakes for {what}")
+        msg = ("nothing open for %s: its stakes came back by themselves when the round ended "  # noqa: UP031
                "(%d auto refunds, %s … %s), so the owner has nothing to %s"
                % (what, len(back), back[0]["id"], back[-1]["id"], "keep" if forfeit else "refund"))
         if forfeit:
-            msg += "; to take tokens, fine instead: depot2 fine <character|all> <n> --round %s%s --reason …" % (
+            msg += "; to take tokens, fine instead: depot2 fine <character|all> <n> --round {}{} --reason …".format(
                 round_id, " --point " + point if point else "")
         return LedgerError(msg)
 
@@ -244,7 +244,7 @@ class Pending:
     def add(self, cid, condition, amount=None, ref=None):
         recs = self.records()
         n = len({r["id"] for r in recs}) + 1
-        rec = {"id": "pend-%04d" % n, "op": "open", "ts": now_iso(), "character": cid,
+        rec = {"id": "pend-%04d" % n, "op": "open", "ts": now_iso(), "character": cid,  # noqa: UP031
                "amount": amount, "condition": condition}
         if ref:
             rec["ref"] = ref
@@ -254,7 +254,7 @@ class Pending:
 
     def close(self, pend_id, note, tx_id=None):
         if pend_id not in {r["id"] for r in self.open_items()}:
-            raise LedgerError("%s is not an open pending item" % pend_id)
+            raise LedgerError(f"{pend_id} is not an open pending item")
         rec = {"id": pend_id, "op": "close", "ts": now_iso(), "note": note}
         if tx_id:
             rec["tx"] = tx_id
@@ -278,9 +278,9 @@ class Decisions:
 
     def add(self, who, text, round_id=None, point=None):
         if who != "all" and who not in characters.IDS:
-            raise LedgerError("unknown character %r" % who)
+            raise LedgerError(f"unknown character {who!r}")
         seq = self.last_seq() + 1
-        rec = {"seq": seq, "id": "dec-%06d" % seq, "ts": now_iso(), "character": who, "text": text}
+        rec = {"seq": seq, "id": "dec-%06d" % seq, "ts": now_iso(), "character": who, "text": text}  # noqa: UP031
         if round_id:
             rec["round"] = round_id
         if point:

@@ -84,7 +84,7 @@ class BackupBase(unittest.TestCase):
                            text=True, env=e, timeout=60)
         self.outputs.append(p.stdout + p.stderr)
         if ok and p.returncode != 0:
-            raise AssertionError("depot2 %s failed (%d): %s %s" % (args, p.returncode, p.stdout, p.stderr))
+            raise AssertionError("depot2 %s failed (%d): %s %s" % (args, p.returncode, p.stdout, p.stderr))  # noqa: UP031
         return p
 
     def calls(self):
@@ -222,7 +222,7 @@ class BackupNowTest(BackupBase):
 
     def test_missing_pass_entry(self):
         p = self.team("backup", "--drive", "--now", ok=False, FAKE_PASS_SECRETS=json.dumps({PW: self.keys[PW]}))
-        self.assertIn("нет записи pass %s" % SALT, p.stdout)
+        self.assertIn(f"нет записи pass {SALT}", p.stdout)
         self.assertEqual(self.calls(), [])
 
 
@@ -360,12 +360,12 @@ class BackupCheckTest(BackupBase):
 
 class RetentionTest(BackupBase):
     def test_plan(self):
-        names = ["team-h-201508%02dT030000Z.tar.gz" % d for d in range(1, 32)]
-        names += ["team-h-201509%02dT030000Z.tar.gz" % d for d in range(1, 31)]
+        names = ["team-h-201508%02dT030000Z.tar.gz" % d for d in range(1, 32)]  # noqa: UP031
+        names += ["team-h-201509%02dT030000Z.tar.gz" % d for d in range(1, 31)]  # noqa: UP031
         names += ["team-h-20150930T120000Z.tar.gz", "team-other-20150801T000000Z.tar.gz", "notes.txt",
                   "team-h-latest.tar.gz", "team-h-20150815T030000Z.tar.gz.partial"]
         keep, drop = backup.plan_retention(names, "h", 14)
-        days = ["team-h-201509%02dT030000Z.tar.gz" % d for d in range(17, 30)] + ["team-h-20150930T120000Z.tar.gz"]
+        days = ["team-h-201509%02dT030000Z.tar.gz" % d for d in range(17, 30)] + ["team-h-20150930T120000Z.tar.gz"]  # noqa: UP031
         self.assertEqual(keep, ["team-h-20150801T030000Z.tar.gz", "team-h-20150901T030000Z.tar.gz"] + days)
         self.assertNotIn("team-h-20150930T030000Z.tar.gz", keep)  # the same day's older one
         self.assertEqual(len(drop), 31 + 30 + 1 - len(keep))
@@ -376,9 +376,9 @@ class RetentionTest(BackupBase):
     def test_deletes_only_our_old_names_inside_the_folder(self):
         d = os.path.join(self.cloud, "depot2-backup")
         os.makedirs(d)
-        ours = ["team-testhost-201508%02dT030000Z.tar.gz" % x for x in (1, 20)]
-        ours += ["team-testhost-201509%02dT030000Z.tar.gz" % x for x in (1, 2, 30)]
-        ours += ["team-testhost-201510%02dT030000Z.tar.gz" % x for x in range(12, 32)]
+        ours = ["team-testhost-201508%02dT030000Z.tar.gz" % x for x in (1, 20)]  # noqa: UP031
+        ours += ["team-testhost-201509%02dT030000Z.tar.gz" % x for x in (1, 2, 30)]  # noqa: UP031
+        ours += ["team-testhost-201510%02dT030000Z.tar.gz" % x for x in range(12, 32)]  # noqa: UP031
         ours.append("team-testhost-20151030T150000Z.tar.gz")
         foreign = ["team-otherhost-20150801T030000Z.tar.gz", "notes.txt", "team-testhost-latest.tar.gz"]
         for n in ours + foreign:

@@ -76,7 +76,7 @@ def union(text, tag=TAG):
             return None, "a conflict's markers are not whole"
         got = join_hunk(lines[bi + 1:si], lines[i + 1:bi], lines[si + 1:ti])
         if got is None:
-            return None, "both sides changed the common text at line %d" % (len(out) + 1)
+            return None, "both sides changed the common text at line %d" % (len(out) + 1)  # noqa: UP031
         out += got
         n += 1
         i = ti + 1

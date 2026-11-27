@@ -53,7 +53,7 @@ class CliTest(unittest.TestCase):
                             "--set", "orders.results_dir=" + os.path.join(self.dir, "orders")] + list(args),
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if ok and p.returncode != 0:
-            raise AssertionError("depot2 %s failed (%d): %s %s" % (args, p.returncode, p.stdout, p.stderr))
+            raise AssertionError("depot2 %s failed (%d): %s %s" % (args, p.returncode, p.stdout, p.stderr))  # noqa: UP031
         return p
 
     def test_end_to_end(self):
@@ -153,7 +153,7 @@ class CliTest(unittest.TestCase):
         p = self.team("round", "--kind", "ballot", "--input", os.path.join(self.dir, "q.md"), ok=False)
         self.assertEqual(p.returncode, 2)
         rid = [d for d in os.listdir(os.path.join(self.state, "rounds")) if d != "old-review"][0]
-        self.assertIn("depot2 round --resume %s" % rid, p.stderr)
+        self.assertIn(f"depot2 round --resume {rid}", p.stderr)
         os.environ["FAKE_MODE"] = "ok"
         p = self.team("round", "--resume", rid, "--kind", "ballot", ok=False)
         self.assertEqual(p.returncode, 1)
@@ -161,7 +161,7 @@ class CliTest(unittest.TestCase):
         p = self.team("round", "--input", os.path.join(self.dir, "q.md"), ok=False)
         self.assertEqual(p.returncode, 1)
         self.assertIn("round needs --kind (or --resume ROUND_ID", p.stderr)
-        self.assertIn("RESUME round %s" % rid, self.team("round", "--resume", rid, "--dry-run").stdout)
+        self.assertIn(f"RESUME round {rid}", self.team("round", "--resume", rid, "--dry-run").stdout)
         out = self.team("round", "--resume", rid).stdout
         self.assertIn("## Пункты по ставкам", out)
         self.assertIn("раунд продолжен после фатальной ошибки", out)
@@ -194,7 +194,7 @@ class CliTest(unittest.TestCase):
         self.assertNotIn("transactions", json.loads(self.team("ledger", "--json").stdout))
         out = self.team("reflect").stdout
         for name in ("Строитель", "Палитра, Краски", "Счетовод", "Перо, Летописец", "Копилка"):
-            self.assertIn("%s: nothing changed" % name, out)  # the gate stays closed
+            self.assertIn(f"{name}: nothing changed", out)  # the gate stays closed
         p = self.team("refund", "all", "--round", "old-review", "--reason", "x", ok=False)
         self.assertEqual(p.returncode, 1)
         self.assertIn("came back by themselves when the round ended", p.stderr)
@@ -241,7 +241,7 @@ class CliTest(unittest.TestCase):
                             "round", "--kind", "ballot", "--input", os.path.join(self.dir, "q.md"), "--dry-run"],
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         self.assertEqual(p.returncode, 0, p.stderr)
-        self.assertIn("  --add-dir <a snapshot of origin/main>\n  --add-dir %s\n" % self.dir, p.stdout)
+        self.assertIn(f"  --add-dir <a snapshot of origin/main>\n  --add-dir {self.dir}\n", p.stdout)
         from depot2 import config
         warned = []
         cfg = config.load(self.state, ["deep_dirs=[\"/x\"]", "read_dirs=[\"/y\"]"], warn=warned.append)

@@ -45,7 +45,7 @@ class Served:
         c = http.client.HTTPConnection("127.0.0.1", self.port, timeout=20)
         try:
             c.putrequest(method, path, skip_host=True)
-            c.putheader("Host", host or "127.0.0.1:%d" % self.port)
+            c.putheader("Host", host or "127.0.0.1:%d" % self.port)  # noqa: UP031
             c.endheaders()
             r = c.getresponse()
             return r.status, dict(r.getheaders()), r.read()
@@ -129,8 +129,8 @@ class WebTest(WebBase):
         self.assertIn('data-tab="principles"', html)
         self.assertIn('id="view-principles"', html)
         for tab in ("tracks", "trains", "board", "merge", "agents", "principles", "queues"):
-            self.assertIn('data-tab="%s"' % tab, html)
-            self.assertIn('id="view-%s"' % tab, html)
+            self.assertIn(f'data-tab="{tab}"', html)
+            self.assertIn(f'id="view-{tab}"', html)
         self.assertIn('data-tab="board" aria-selected="false" data-t="tab.board">Board</button>\n    <button type="button" role="tab" '
                       'data-tab="merge" aria-selected="false" data-t="tab.merge">Merge queue</button>\n    <button type="button" '
                       'role="tab" data-tab="agents" aria-selected="false" data-t="tab.agents">Agents</button>', html)
@@ -184,7 +184,7 @@ class WebTest(WebBase):
         self.assertIsNone(CYRILLIC.search(html.replace(block, "")))
         main = html[html.index("<script>") + len("<script>"):]
         main = main[:main.index("</script>")]
-        want = "'sha256-%s'" % webui.base64.b64encode(hashlib.sha256(main.encode("utf-8")).digest()).decode()
+        want = "'sha256-{}'".format(webui.base64.b64encode(hashlib.sha256(main.encode("utf-8")).digest()).decode())
         script_src = h["Content-Security-Policy"].split("script-src ")[1].split(";")[0]
         self.assertEqual(script_src, want)
         with open(webui.PAGE, encoding="utf-8") as f:
@@ -201,7 +201,7 @@ class WebTest(WebBase):
         try:
             for p in ["/", "/api/meta", "/api/board", "/api/board?all=1", "/api/trains", "/api/tracks", "/api/stack",
                       "/api/merge", "/api/merge/report", "/api/car/st-0001", "/api/car/tr-0001%3A1", "/api/principles", "/api/decisions",
-                      "/api/agents?all=1"] + ["/api/queue/%s%s" % (n, a) for n, _, _ in webui.QUEUES for a in ("", "?all=1")]:
+                      "/api/agents?all=1"] + [f"/api/queue/{n}{a}" for n, _, _ in webui.QUEUES for a in ("", "?all=1")]:
                 code, _, body = web.get(p)
                 self.assertEqual(code, 200, (p, body[:300]))
             self.assertEqual(characters.IDS, [])
@@ -277,7 +277,7 @@ class WebTest(WebBase):
                  ("/api/queue/tstack", ["tstack", "--json"])]
         for name, argv in (("todo", ["todo"]), ("think", ["think"]), ("wishes", ["wishes"]), ("ballots", ["ballots"]),
                            ("orders", ["orders"]), ("brainstorms", ["brainstorm", "list"])):
-            pairs += [("/api/queue/" + name, argv + ["--json"]), ("/api/queue/%s?all=1" % name, argv + ["--all", "--json"])]
+            pairs += [("/api/queue/" + name, argv + ["--json"]), (f"/api/queue/{name}?all=1", argv + ["--all", "--json"])]
         for path, argv in pairs:
             code, got = self.web.json(path)
             self.assertEqual(code, 200, (path, got))
@@ -407,8 +407,8 @@ class WebTest(WebBase):
         q = merge.MergeQueue(self.t.state)
 
         def put(n, status, **kw):
-            e = dict({"id": q.new_id(), "pr": n, "title": "PR %d" % n, "branch": "feat-%d" % n, "worktree": "/nowhere",
-                      "st": None, "car": None, "status": status, "word": "%d — merge it" % n, "added": NOW, "step": None,
+            e = dict({"id": q.new_id(), "pr": n, "title": "PR %d" % n, "branch": "feat-%d" % n, "worktree": "/nowhere",  # noqa: UP031
+                      "st": None, "car": None, "status": status, "word": "%d — merge it" % n, "added": NOW, "step": None,  # noqa: UP031
                       "log": ["2015-11-12T11:00:00 added"]}, **kw)
             q.data["entries"].append(e)
             return e
@@ -513,10 +513,10 @@ class WebTest(WebBase):
         for host in ("0.0.0.0", "", "192.168.1.10", "::"):
             with self.assertRaises(ValueError):
                 webui.Server(self.t.state, port=0, host=host)
-        code, _, body = self.web.get("/api/board", host="evil.example:%d" % self.web.port)  # DNS rebinding
+        code, _, body = self.web.get("/api/board", host="evil.example:%d" % self.web.port)  # DNS rebinding  # noqa: UP031
         self.assertEqual(code, 403)
         self.assertNotIn(b"columns", body)
-        self.assertEqual(self.web.get("/api/meta", host="localhost:%d" % self.web.port)[0], 200)
+        self.assertEqual(self.web.get("/api/meta", host="localhost:%d" % self.web.port)[0], 200)  # noqa: UP031
         ip = outside_ip()
         if ip:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -535,12 +535,12 @@ class WebTest(WebBase):
 
         def no_popen(*a, **kw):
             runs.append(a)
-            raise AssertionError("a handler ran a command: %r" % (a,))
+            raise AssertionError(f"a handler ran a command: {a!r}")
         paths = ["/", "/api/meta", "/api/board", "/api/board?all=1", "/api/board?view=stack", "/api/trains",
                  "/api/train/search", "/api/tracks", "/api/track/tr-0001", "/api/stack", "/api/merge", "/api/merge/report",
                  "/api/merge/report?last=5", "/api/car/st-0001", "/api/car/tr-0001%3A1",
                  "/api/car/wl-0001", "/api/brief/st-0001", "/api/doc?path=design/sketch.md", "/api/decisions",
-                 "/api/decisions?q=x&limit=1", "/api/agents", "/api/agents?all=1"] + ["/api/queue/%s%s" % (n, a) for n, _, _ in webui.QUEUES for a in ("", "?all=1")]
+                 "/api/decisions?q=x&limit=1", "/api/agents", "/api/agents?all=1"] + [f"/api/queue/{n}{a}" for n, _, _ in webui.QUEUES for a in ("", "?all=1")]
         with mock.patch.object(subprocess, "Popen", no_popen), mock.patch.object(os, "system", no_popen):
             for p in paths:
                 self.assertEqual(self.web.get(p)[0], 200, p)
@@ -588,7 +588,7 @@ class WebTest(WebBase):
             code, j = self.web.json(path)
             self.assertEqual(code, 503, path)
             self.assertTrue(j["migrate"] and j["retry"], path)
-            self.assertIn("данные депо ждут миграции (схема 1 → %d)" % SCHEMA, j["error"])
+            self.assertIn("данные депо ждут миграции (схема 1 → %d)" % SCHEMA, j["error"])  # noqa: UP031
         self.assertEqual(self.web.json("/api/meta")[0], 200)  # the page's constants: so it can say so
         self.assertEqual(tree_hash(self.t.dir), before)
 
@@ -615,7 +615,7 @@ class ReexecTest(unittest.TestCase):
                 def get(path):
                     c = http.client.HTTPConnection("127.0.0.1", port, timeout=20)
                     try:
-                        c.request("GET", path, headers={"Host": "127.0.0.1:%d" % port})
+                        c.request("GET", path, headers={"Host": "127.0.0.1:%d" % port})  # noqa: UP031
                         r = c.getresponse()
                         return r.status, dict(r.getheaders()), r.read()
                     finally:
@@ -678,23 +678,23 @@ class WebHostsTest(WebBase):
         for w in (self.web, self.served("web.hosts=[]")):
             p = w.port
             self.assertEqual((w.srv.names, w.srv.dropped, w.srv.urls), ([], [], []))
-            self.assertEqual(w.srv.hosts, {"127.0.0.1:%d" % p, "localhost:%d" % p, "[::1]:%d" % p})
-            for host, code in (("127.0.0.1:%d" % p, 200), ("localhost:%d" % p, 200), ("mybox.local:%d" % p, 403),
-                               ("mybox.local", 403), ("evil.example:%d" % p, 403)):
+            self.assertEqual(w.srv.hosts, {"127.0.0.1:%d" % p, "localhost:%d" % p, "[::1]:%d" % p})  # noqa: UP031
+            for host, code in (("127.0.0.1:%d" % p, 200), ("localhost:%d" % p, 200), ("mybox.local:%d" % p, 403),  # noqa: UP031
+                               ("mybox.local", 403), ("evil.example:%d" % p, 403)):  # noqa: UP031
                 self.assertEqual(w.get("/api/meta", host=host)[0], code, host)
 
     def test_a_listed_name_with_the_servers_port(self):
         w = self.served('web.hosts=["mybox.local", "Depot.Example"]')
         p = w.port
-        self.assertEqual(w.srv.urls, ["http://mybox.local:%d/" % p, "http://depot.example:%d/" % p])
-        self.assertEqual(w.get("/", host="mybox.local:%d" % p)[0], 200)
-        for host in ("mybox.local:%d" % p, "MYBOX.Local:%d" % p, "depot.example:%d" % p, "127.0.0.1:%d" % p,
-                     "localhost:%d" % p):
+        self.assertEqual(w.srv.urls, ["http://mybox.local:%d/" % p, "http://depot.example:%d/" % p])  # noqa: UP031
+        self.assertEqual(w.get("/", host="mybox.local:%d" % p)[0], 200)  # noqa: UP031
+        for host in ("mybox.local:%d" % p, "MYBOX.Local:%d" % p, "depot.example:%d" % p, "127.0.0.1:%d" % p,  # noqa: UP031
+                     "localhost:%d" % p):  # noqa: UP031
             code, j = w.get("/api/meta", host=host)[0::2]
             self.assertEqual((code, json.loads(j.decode("utf-8"))["name"]), (200, "depot2"), host)
-        for host in ("mybox.local:%d" % (p + 1), "mybox.local:80", "mybox.local", "mybox.local:%d:1" % p,
-                     "other.local:%d" % p, "evil.example:%d" % p, "xmybox.local:%d" % p,
-                     "mybox.local.evil.example:%d" % p, "mybox.local.:%d" % p):
+        for host in ("mybox.local:%d" % (p + 1), "mybox.local:80", "mybox.local", "mybox.local:%d:1" % p,  # noqa: UP031
+                     "other.local:%d" % p, "evil.example:%d" % p, "xmybox.local:%d" % p,  # noqa: UP031
+                     "mybox.local.evil.example:%d" % p, "mybox.local.:%d" % p):  # noqa: UP031
             code, _, body = w.get("/api/board", host=host)
             self.assertEqual(code, 403, host)
             self.assertNotIn(b"columns", body)
@@ -704,7 +704,7 @@ class WebHostsTest(WebBase):
         hosts = 'web.hosts=["mybox.local"]'
         w = self.served(hosts)
         p = w.port
-        names = ("mybox.local:%d" % p, "127.0.0.1:%d" % p, "localhost:%d" % p)
+        names = ("mybox.local:%d" % p, "127.0.0.1:%d" % p, "localhost:%d" % p)  # noqa: UP031
         for addr in ("192.168.1.10", "10.0.0.5", "8.8.8.8", "0.0.0.0", "2001:db8::1", "::ffff:192.168.1.10"):
             for host in names:
                 peer = Peer(addr, host)
@@ -715,7 +715,7 @@ class WebHostsTest(WebBase):
                 peer = Peer(addr, host)
                 self.assertTrue(w.srv.authorize(peer), (addr, host))
                 self.assertEqual(peer.sent, [])
-            self.assertFalse(w.srv.authorize(Peer(addr, "other.local:%d" % p)), addr)
+            self.assertFalse(w.srv.authorize(Peer(addr, "other.local:%d" % p)), addr)  # noqa: UP031
         for host in ("0.0.0.0", "mybox.local", "192.168.1.10", "::"):  # and no name is an address to listen on
             with self.assertRaises(ValueError):
                 webui.Server(self.t.state, sets=self.sets + [hosts], port=0, host=host)
@@ -744,9 +744,9 @@ class WebHostsTest(WebBase):
         w = self.served('web.hosts=["mybox.local:8765", "bad name", "ok.local", "*"]')
         p = w.port
         self.assertEqual((w.srv.names, w.srv.dropped), (["ok.local"], ["mybox.local:8765", "bad name", "*"]))
-        self.assertEqual(w.get("/api/meta", host="ok.local:%d" % p)[0], 200)
-        for host in ("mybox.local:%d" % p, "mybox.local:8765", "mybox.local:8765:%d" % p, "bad name:%d" % p,
-                     "*:%d" % p):
+        self.assertEqual(w.get("/api/meta", host="ok.local:%d" % p)[0], 200)  # noqa: UP031
+        for host in ("mybox.local:%d" % p, "mybox.local:8765", "mybox.local:8765:%d" % p, "bad name:%d" % p,  # noqa: UP031
+                     "*:%d" % p):  # noqa: UP031
             self.assertEqual(w.get("/api/meta", host=host)[0], 403, host)
         self.assertEqual(self.served("web=mybox.local").srv.names, [])  # not an object: no names, no crash
 
@@ -756,12 +756,12 @@ class WebHostsTest(WebBase):
         with open(path, "w", encoding="utf-8") as f:
             json.dump({"web": {"hosts": ["mybox.local"]}}, f)
         w = self.served()
-        self.assertEqual(w.get("/api/meta", host="mybox.local:%d" % w.port)[0], 200)
-        self.assertEqual(self.web.get("/api/meta", host="mybox.local:%d" % self.web.port)[0], 403)  # started before
+        self.assertEqual(w.get("/api/meta", host="mybox.local:%d" % w.port)[0], 200)  # noqa: UP031
+        self.assertEqual(self.web.get("/api/meta", host="mybox.local:%d" % self.web.port)[0], 403)  # started before  # noqa: UP031
         os.remove(path)
-        self.assertEqual(w.get("/api/meta", host="mybox.local:%d" % w.port)[0], 200)  # until it is restarted
+        self.assertEqual(w.get("/api/meta", host="mybox.local:%d" % w.port)[0], 200)  # until it is restarted  # noqa: UP031
         again = self.served()
-        self.assertEqual(again.get("/api/meta", host="mybox.local:%d" % again.port)[0], 403)
+        self.assertEqual(again.get("/api/meta", host="mybox.local:%d" % again.port)[0], 403)  # noqa: UP031
 
 
 class WebCliTest(unittest.TestCase):
@@ -799,11 +799,11 @@ class WebCliTest(unittest.TestCase):
                 first, second = p.stdout.readline(), p.stdout.readline()
                 self.assertRegex(first, r"^depot2: http://127\.0\.0\.1:\d+/ — только показ")
                 port = int(first.split("127.0.0.1:")[1].split("/")[0])
-                self.assertEqual(second, "depot2: и по именам из web.hosts (этот же компьютер): "
+                self.assertEqual(second, "depot2: и по именам из web.hosts (этот же компьютер): "  # noqa: UP031
                                          "http://mybox.local:%d/\n" % port)
                 c = http.client.HTTPConnection("127.0.0.1", port, timeout=10)
                 c.putrequest("GET", "/api/meta", skip_host=True)
-                c.putheader("Host", "mybox.local:%d" % port)
+                c.putheader("Host", "mybox.local:%d" % port)  # noqa: UP031
                 c.endheaders()
                 r = c.getresponse()  # answered: the start's lines are all printed by now
                 self.assertEqual((r.status, json.loads(r.read())["name"]), (200, "depot2"))

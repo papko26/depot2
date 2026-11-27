@@ -71,7 +71,7 @@ def car_notes(c):
 def _known_keys(obj, allowed, where):
     bad = sorted(set(obj) - allowed)
     if bad:
-        raise TrackError("%s: unknown key%s %s (allowed: %s)" % (where, "s" if len(bad) > 1 else "", ", ".join(bad),
+        raise TrackError("{}: unknown key{} {} (allowed: {})".format(where, "s" if len(bad) > 1 else "", ", ".join(bad),
                                                                ", ".join(sorted(allowed))))
 
 
@@ -118,12 +118,12 @@ class Tracks:
         for t in self.data["tracks"]:
             if t["id"] == tid:
                 return t
-        raise TrackError("no track %s" % tid)
+        raise TrackError(f"no track {tid}")
 
     def car(self, ref):
         m = RE_CAR.match(ref or "")
         if not m:
-            raise TrackError("a car is named tr-NNNN:<car>, e.g. tr-0001:2; got %r" % ref)
+            raise TrackError(f"a car is named tr-NNNN:<car>, e.g. tr-0001:2; got {ref!r}")
         seen = set()
         while True:
             t = self.get(m.group(1))
@@ -132,7 +132,7 @@ class Tracks:
                     return t, c
             p = self.pointer(t, m.group(2))
             if p is None or p["to"] in seen:
-                raise TrackError("%s has no car %s" % (t["id"], m.group(2)))
+                raise TrackError("{} has no car {}".format(t["id"], m.group(2)))
             seen.add(p["to"])
             m = RE_CAR.match(p["to"])
 
@@ -146,7 +146,7 @@ class Tracks:
     def canon(self, ref):
         """A car's ref as it stands now (an old ref of a moved car: its new one)."""
         t, c = self.car(ref)
-        return "%s:%s" % (t["id"], c["n"])
+        return "{}:{}".format(t["id"], c["n"])
 
     def moved_note(self, ref):
         if not RE_CAR.match(ref or ""):
@@ -189,7 +189,7 @@ class Tracks:
 
     def car_ref(self, oid):
         t, c = self.car_by_stack(oid)
-        return "%s:%s" % (t["id"], c["n"]) if c is not None else None
+        return "{}:{}".format(t["id"], c["n"]) if c is not None else None
 
     def car_of_stack(self, oid):
         """The car whose object this is, or was: the live link, else the history's last row that names it
@@ -228,7 +228,7 @@ class Tracks:
         if not rows:
             return []
         return [i18n.t("tracks.marks_head")] + \
-            ["- %s: %s" % (n, self.verdict(c)["cell"]) for n, c in rows] + [""]
+            ["- {}: {}".format(n, self.verdict(c)["cell"]) for n, c in rows] + [""]
 
     def train_of(self, ref):
         """The live train a car is in (trains.py), or None."""
@@ -268,7 +268,7 @@ class Tracks:
             return self.stack.stage_of(self.stack.get(st)), i18n.t("tracks.why_as_object", st=st)
         t = t or self.track_of(c)
         mq = self.stack.mq_index()
-        e = mq["car"].get("%s:%s" % (t["id"], c["n"])) if t else None
+        e = mq["car"].get("{}:{}".format(t["id"], c["n"])) if t else None
         if e is None and c.get("pr") and c["status"] in ("pr", "merged"):
             e = mq["pr"].get(c["pr"])
         if e is not None and stages.entry_stage(e):
@@ -283,7 +283,7 @@ class Tracks:
         if not c.get("stage") and default is None:
             default = self.status_stage(c)[0]
         row = stages.record(c, stage, by, why, default=None if c.get("stage") else default, forced=forced, gates=gates)
-        return row, stages.say("%s:%s" % (t["id"], c["n"]), row)
+        return row, stages.say("{}:{}".format(t["id"], c["n"]), row)
 
     def car_stage(self, ref, stage, by, why=None, forced=False):
         """`car stage` and the merge queue: one car's stage, saved."""
@@ -310,19 +310,19 @@ class Tracks:
             t = self.get(ref)
             open_ = [c for c in t["cars"] if c["status"] not in CAR_DONE]
             title = t["title"] if len(t["title"]) <= TITLE_IN_REF else t["title"][:TITLE_IN_REF - 1] + "…"
-            return self.done(t), "%s %s (%s)" % (t["id"], title, i18n.t("tracks.done_word") if self.done(t) else
+            return self.done(t), "{} {} ({})".format(t["id"], title, i18n.t("tracks.done_word") if self.done(t) else
                                                   i18n.t("tracks.open_cars", n=len(open_)) if t["cars"]
                                                   else i18n.t("tracks.no_cars"))
         m = RE_CAR.match(ref)
         if m:
             t, c = self.car(ref)
-            now = "%s:%s" % (t["id"], c["n"])
-            return c["status"] in CAR_DONE, "%s (%s)" % (ref if now == ref else "%s → %s" % (ref, now),
+            now = "{}:{}".format(t["id"], c["n"])
+            return c["status"] in CAR_DONE, "{} ({})".format(ref if now == ref else f"{ref} → {now}",
                                                          CAR_RU[c["status"]])
         if RE_STACK.match(ref):
             stk = self.stack if ref.startswith("st-") else self.tstack
             if not stk._known(ref):
-                raise TrackError("unknown stack object %s" % ref)
+                raise TrackError(f"unknown stack object {ref}")
             open_ = stk._dep_open(ref)
             if not open_ and ref.startswith("st-"):  # a car's object: the car is the truth (a parked one is not done)
                 t, c = self.car_of_stack(ref)
@@ -345,16 +345,16 @@ class Tracks:
         if track is not None:
             for c in track["cars"]:
                 if c["n"] == ref:
-                    return c["status"] in CAR_DONE, "%s (%s)" % (ref, CAR_RU[c["status"]])
+                    return c["status"] in CAR_DONE, "{} ({})".format(ref, CAR_RU[c["status"]])
             if self.pointer(track, ref) is not None:  # a car moved away: where it stands now
-                t, c = self.car("%s:%s" % (track["id"], ref))
-                return c["status"] in CAR_DONE, "%s → %s:%s (%s)" % (ref, t["id"], c["n"], CAR_RU[c["status"]])
-            raise TrackError("%s has no car %s" % (track["id"], ref))
+                t, c = self.car("{}:{}".format(track["id"], ref))
+                return c["status"] in CAR_DONE, "{} → {}:{} ({})".format(ref, t["id"], c["n"], CAR_RU[c["status"]])
+            raise TrackError("{} has no car {}".format(track["id"], ref))
         tn = self.trains.find(ref)  # a train's start rules only: a car's bare name is a car of its track
         if tn is not None:
             from .trains import STATE_RU
             return tn["state"] == "arrived", i18n.t("tracks.ref_train", name=tn["name"], state=STATE_RU[tn["state"]])
-        raise TrackError("%r is not a track, a car (tr-NNNN:N), a train, a stack object or a PR (#N)" % ref)
+        raise TrackError(f"{ref!r} is not a track, a car (tr-NNNN:N), a train, a stack object or a PR (#N)")
 
     def car_stack_ids(self):
         """Every stack object that is or was a track's car: the cars' `st` and the history's."""
@@ -381,13 +381,13 @@ class Tracks:
 
     def check_refs(self, refs, track=None, own=None):
         """Every ref must name something. own: the car itself (it may not wait for itself)."""
-        me = (own, "%s:%s" % (track["id"], own)) if own is not None and track is not None else ()
+        me = (own, "{}:{}".format(track["id"], own)) if own is not None and track is not None else ()
         for r in refs or ():
             if r in me:
-                raise TrackError("a car cannot wait for itself (%s)" % r)
+                raise TrackError(f"a car cannot wait for itself ({r})")
             self.ref_state(r, track)
             if me and self.after_ref(r, track) in me:  # its own old ref, from before a move
-                raise TrackError("a car cannot wait for itself (%s is its old ref)" % r)
+                raise TrackError(f"a car cannot wait for itself ({r} is its old ref)")
 
     # --- a car: what holds it, where its PR waits ------------------------------------------------
 
@@ -433,7 +433,7 @@ class Tracks:
         return out
 
     def parked_line(self, t, c, blockers):
-        pr = ("PR #%s" % c["pr"]) if c.get("pr") else "PR"
+        pr = ("PR #{}".format(c["pr"])) if c.get("pr") else "PR"
         if blockers:
             return i18n.t("tracks.parked_waits", track=t["id"], n=c["n"], pr=pr, blockers=", ".join(blockers))
         return i18n.t("tracks.parked_ready", track=t["id"], n=c["n"], pr=pr)
@@ -444,8 +444,8 @@ class Tracks:
 
     def car_command(self, t, c):
         if c.get("st") and any(o["id"] == c["st"] for o in self.stack.queue()):
-            return "depot2 stack start %s" % c["st"]
-        return "depot2 tracks car stack %s:%s --start" % (t["id"], c["n"])
+            return "depot2 stack start {}".format(c["st"])
+        return "depot2 tracks car stack {}:{} --start".format(t["id"], c["n"])
 
     # --- writing ---------------------------------------------------------------------------------
 
@@ -466,7 +466,7 @@ class Tracks:
     def _new_track(self, title, est_mtok=None):
         if not (title or "").strip():
             raise TrackError("a track needs a title")
-        tid = "tr-%04d" % self.data["next"]
+        tid = "tr-%04d" % self.data["next"]  # noqa: UP031
         self.data["next"] += 1
         return {"id": tid, "title": title.strip(), "est_mtok": eff.parse_mtok(est_mtok), "cars": [], "added": now_iso(),
                 "notes": []}
@@ -474,7 +474,7 @@ class Tracks:
     def add(self, title, at=None, est_mtok=None, note=None):
         t = self._new_track(title, est_mtok=est_mtok)
         if note:
-            t["notes"].append("%s: %s" % (now_iso()[:10], note))
+            t["notes"].append(f"{now_iso()[:10]}: {note}")
         self._place(t, at)
         self._save("add", t["id"], title=t["title"], at=self.data["tracks"].index(t) + 1)
         return t
@@ -494,7 +494,7 @@ class Tracks:
         elif est_mtok is not None:
             t["est_mtok"] = changed["est_mtok"] = eff.parse_mtok(est_mtok)
         if add_note:
-            t["notes"].append("%s: %s" % (now_iso()[:10], add_note))
+            t["notes"].append(f"{now_iso()[:10]}: {add_note}")
             changed["note_added"] = add_note
         if at is not None:
             self._place(t, at)
@@ -512,12 +512,12 @@ class Tracks:
         if not (title or "").strip():
             raise TrackError("a car needs a title")
         if status not in CAR_STATUSES:
-            raise TrackError("a car's status is one of %s" % ", ".join(CAR_STATUSES))
+            raise TrackError("a car's status is one of {}".format(", ".join(CAR_STATUSES)))
         eff.check_size(size, self.cfg)
         n = self.check_n(t, self.next_n(t) if n is None else n)
         e = eff.parse_mtok(est_mtok)
         if isinstance(e, list):
-            raise TrackError("a car's estimate is one number, got the range %r" % (est_mtok,))
+            raise TrackError(f"a car's estimate is one number, got the range {est_mtok!r}")
         if stage is not None and stage not in stages.STAGES:
             raise TrackError(i18n.t("stages.no_stage", stage=stage))
         c = {"n": n, "title": title.strip(), "after": [str(a) for a in after or ()], "size": size, "est_mtok": e,
@@ -534,7 +534,7 @@ class Tracks:
     def check_n(self, t, n, car=None):
         n = str(n).strip()
         if not n or ":" in n:
-            raise TrackError("%s: %r is not a car's name (a number, or a name like B2a)" % (t["id"], n))
+            raise TrackError("{}: {!r} is not a car's name (a number, or a name like B2a)".format(t["id"], n))
         busy = self.taken(t, n)
         p = self.pointer(t, n)
         if busy and not (car is not None and p is not None and self._leads_to(p, car)):
@@ -555,8 +555,8 @@ class Tracks:
         src, n = (self.get(m.group(1)), m.group(2)) if m else (t, r)
         if src is None or self.pointer(src, n) is None or any(c["n"] == n for c in src["cars"]):
             return r
-        nt, nc = self.car("%s:%s" % (src["id"], n))
-        return nc["n"] if not m and nt is t else "%s:%s" % (nt["id"], nc["n"])
+        nt, nc = self.car("{}:{}".format(src["id"], n))
+        return nc["n"] if not m and nt is t else "{}:{}".format(nt["id"], nc["n"])
 
     def car_add(self, tid, title, at=None, **kw):
         t = self.get(tid)
@@ -572,7 +572,7 @@ class Tracks:
         t, c = self.car(ref)
         if src not in (c.get("from") or []):
             c["from"] = list(c.get("from") or []) + [src]
-        c["notes"] = car_notes(c) + ["%s: %s" % (now_iso()[:10], note.strip())]
+        c["notes"] = car_notes(c) + [f"{now_iso()[:10]}: {note.strip()}"]
         c.pop("note", None)
         self._save("car_from", t["id"], car=c["n"], by=by, note_added=note.strip(), **{"from": src})
         return t, c
@@ -591,12 +591,12 @@ class Tracks:
         o = stk.get(oid)
         est = o.get("est_mtok") if not isinstance(o.get("est_mtok"), list) else None
         kw = dict(n=n, size=size or o.get("size"), est_mtok=est, after=list(o.get("depends_on") or ()), src=oid,
-                  by=by, note="%s: %s" % (now_iso()[:10], object_note(o, team)), priority=pri.of(o))
+                  by=by, note=f"{now_iso()[:10]}: {object_note(o, team)}", priority=pri.of(o))
         if team:
             if o["where"] == "slot":
                 raise TrackError(i18n.t("tracks.team_in_slot", oid=oid))
             nt, c = self.car_add(tid, title or o["title"], **kw)
-            ref = "%s:%s" % (nt["id"], c["n"])
+            ref = "{}:{}".format(nt["id"], c["n"])
             stk.done(oid, i18n.t("tracks.taken_reason", ref=ref), by=by)
             return nt, c, [i18n.t("tracks.taken_team", oid=oid, ref=ref, title=clip(c["title"]),
                                   stage=stages.ru(c["stage"]))]
@@ -607,8 +607,8 @@ class Tracks:
         kw.update(brief=o.get("brief"), branch=o.get("branch"), pr=o.get("pr"), spent_mtok=o.get("spent_mtok"),
                   status=status, st=oid, stage=stk.stage_of(o))
         nt, c = self.car_add(tid, title or o["title"], **kw)
-        ref = "%s:%s" % (nt["id"], c["n"])
-        name = "%s %s — %s" % (ref, nt["title"], c["title"])
+        ref = "{}:{}".format(nt["id"], c["n"])
+        name = "{} {} — {}".format(ref, nt["title"], c["title"])
         stk.set(oid, title=name)
         return nt, c, [i18n.t("tracks.taken_obj", oid=oid, ref=ref, title=clip(c["title"]), status=CAR_RU[c["status"]],
                               stage=stages.ru(c["stage"]), name=name)]
@@ -659,10 +659,10 @@ class Tracks:
             c["priority"] = changed["priority"] = pri.parse(priority)
         if st is not None:
             if not self.stack._known(st):
-                raise TrackError("unknown stack object %s" % st)
+                raise TrackError(f"unknown stack object {st}")
             other_t, other_c = self.car_by_stack(st)
             if other_c is not None and other_c is not c:
-                raise TrackError("%s is the stack object of %s:%s already" % (st, other_t["id"], other_c["n"]))
+                raise TrackError("{} is the stack object of {}:{} already".format(st, other_t["id"], other_c["n"]))
             c["st"] = changed["st"] = st
             if c["status"] in CAR_OPEN:  # what `stack done --car back` returns it to
                 c["stacked_from"] = c["status"]
@@ -670,7 +670,7 @@ class Tracks:
                 status = status or "running"
         if status is not None:
             if status not in CAR_STATUSES:
-                raise TrackError("a car's status is one of %s" % ", ".join(CAR_STATUSES))
+                raise TrackError("a car's status is one of {}".format(", ".join(CAR_STATUSES)))
             before = self.stage_of(c)
             self._car_status(c, status)
             changed["status"] = status
@@ -682,18 +682,18 @@ class Tracks:
                 if line:
                     self.stage_lines.append(line)
                 if row and target == "rolling" and by_hand:
-                    cref = "%s:%s" % (t["id"], c["n"])
+                    cref = "{}:{}".format(t["id"], c["n"])
                     self.stage_lines.append(i18n.t("tracks.rolling_hint", ref=cref, hint=stages.arrive_hint(cref)))
         if note is not None and note_replace is not None:
             raise TrackError("give --note (appends) or --note-replace, not both")
         if note is not None:
             if not note.strip():
                 raise TrackError("an empty --note adds nothing (--note-replace '' clears the notes)")
-            c["notes"] = car_notes(c) + ["%s: %s" % (now_iso()[:10], note.strip())]
+            c["notes"] = car_notes(c) + [f"{now_iso()[:10]}: {note.strip()}"]
             c.pop("note", None)
             changed["note_added"] = note.strip()
         if note_replace is not None:
-            c["notes"] = ["%s: %s" % (now_iso()[:10], note_replace.strip())] if note_replace.strip() else []
+            c["notes"] = [f"{now_iso()[:10]}: {note_replace.strip()}"] if note_replace.strip() else []
             c.pop("note", None)
             changed["note_replaced"] = note_replace.strip()
         if not changed:
@@ -703,24 +703,24 @@ class Tracks:
             self.stack.set(c["st"], priority=pri.of(c))
         self._save("car_set", t["id"], car=c["n"], **changed)
         if changed.get("status") in CAR_DONE:
-            self.stage_lines += self.trains.car_closed("%s:%s" % (t["id"], c["n"]), by)
+            self.stage_lines += self.trains.car_closed("{}:{}".format(t["id"], c["n"]), by)
         return t, c
 
     def hand_checks(self, t, c, status=None, st=None):
-        ref = "%s:%s" % (t["id"], c["n"])
+        ref = "{}:{}".format(t["id"], c["n"])
         live = c.get("st") if c.get("st") and self.stack._dep_open(c["st"]) else None
         if status is not None and live and status != c["status"]:
-            raise TrackError("%s: its stack object %s is in the stack, the status goes with it: depot2 stack done %s "
-                             "--car merged|dropped|back --reason «…», stack start %s or stack park %s --reason «…» "
-                             "(--status is for a car with no object in the stack)" % (ref, live, live, live, live))
+            raise TrackError(f"{ref}: its stack object {live} is in the stack, the status goes with it: depot2 stack done {live} "
+                             f"--car merged|dropped|back --reason «…», stack start {live} or stack park {live} --reason «…» "
+                             "(--status is for a car with no object in the stack)")
         if st is not None and st != c.get("st"):
             if live:
-                raise TrackError("%s is linked to %s, which is in the stack: done with it first (depot2 stack done %s "
-                                 "--car back --reason «…»), then --st" % (ref, live, live))
+                raise TrackError(f"{ref} is linked to {live}, which is in the stack: done with it first (depot2 stack done {live} "
+                                 "--car back --reason «…»), then --st")
             ot, oc = self.car_of_stack(st)
             if oc is not None and oc is not c:
-                raise TrackError("%s is or was the stack object of %s:%s: a car links only to an object of its own "
-                                 "(a new one: depot2 tracks car stack %s)" % (st, ot["id"], oc["n"], ref))
+                raise TrackError("{} is or was the stack object of {}:{}: a car links only to an object of its own "
+                                 "(a new one: depot2 tracks car stack {})".format(st, ot["id"], oc["n"], ref))
 
     def _car_status(self, c, status):
         was = c.get("status")
@@ -748,7 +748,7 @@ class Tracks:
         if c["status"] == "merged" or s == "arrived":
             return i18n.t("tracks.blocker_arrived")
         mq = self.stack.mq_index()
-        e = (mq["car"].get("%s:%s" % (t["id"], c["n"])) or (mq["st"].get(c["st"]) if c.get("st") else None)
+        e = (mq["car"].get("{}:{}".format(t["id"], c["n"])) or (mq["st"].get(c["st"]) if c.get("st") else None)
              or (mq["pr"].get(c["pr"]) if c.get("pr") else None))
         if e is not None:
             return i18n.t("tracks.blocker_queued", pr=e["pr"], id=e["id"])
@@ -756,17 +756,16 @@ class Tracks:
 
     def car_relocate(self, ref, to=None, n=None, at=None, why=None, by="tracks car move"):
         t, c = self.car(ref)
-        old, old_n = "%s:%s" % (t["id"], c["n"]), c["n"]
+        old, old_n = "{}:{}".format(t["id"], c["n"]), c["n"]
         nt = self.get(to) if to else t
         new_n = c["n"] if n is None else str(n).strip()
         if nt is t and new_n == old_n:
-            raise TrackError("%s stays where it is: --to another track, or --n another name (--at alone: its place)"
-                             % old)
+            raise TrackError(f"{old} stays where it is: --to another track, or --n another name (--at alone: its place)")
         blocker = self.move_blocker(t, c)
         if blocker:
             raise TrackError(i18n.t("tracks.no_move", old=old, blocker=blocker))
         new_n = self.check_n(nt, new_n, car=c)
-        new = "%s:%s" % (nt["id"], new_n)
+        new = "{}:{}".format(nt["id"], new_n)
         # the objects it had before its live one, linked in the history by its old place: linked to the new one too
         formerly = sorted({h["st"] for h in self.history() if h.get("st") and h.get("track") == t["id"]
                            and h.get("car") == old_n} - {c.get("st")})
@@ -798,12 +797,12 @@ class Tracks:
         for xt in self.data["tracks"]:
             for x in xt["cars"]:
                 if x is c:
-                    after = ["%s:%s" % (t["id"], r) if nt is not t and self._bare(r) else r for r in x["after"]]
+                    after = ["{}:{}".format(t["id"], r) if nt is not t and self._bare(r) else r for r in x["after"]]
                     after = [self.after_ref(r, nt) for r in after]
                 else:
                     after = [follow(r, xt) for r in x["after"]]
                     if after != x["after"]:
-                        waits.append("%s:%s" % (xt["id"], x["n"]))
+                        waits.append("{}:{}".format(xt["id"], x["n"]))
                 x["after"] = list(dict.fromkeys(after))
                 self._rename_in(x, old, new)
         if waits:
@@ -842,8 +841,8 @@ class Tracks:
             fields = {}
             if o["id"] == c.get("st"):
                 title = o.get("title") or ""
-                if title == "%s %s — %s" % (old, t["title"], c["title"]):
-                    fields["title"] = "%s %s — %s" % (new, nt["title"], c["title"])
+                if title == "{} {} — {}".format(old, t["title"], c["title"]):
+                    fields["title"] = "{} {} — {}".format(new, nt["title"], c["title"])
                 elif title.startswith(old + " "):
                     fields["title"] = new + title[len(old):]
             probe = json.loads(json.dumps({k: o.get(k) for k in ("repairs", "claim_links") if o.get(k)}))
@@ -857,29 +856,28 @@ class Tracks:
 
     def car_stack(self, ref, start=False, now=None, force=False, why=None):
         t, c = self.car(ref)
-        ref = "%s:%s" % (t["id"], c["n"])  # an old ref of a moved car: its train and messages are the new one's
+        ref = "{}:{}".format(t["id"], c["n"])  # an old ref of a moved car: its train and messages are the new one's
         stk = self.stack
         msgs = []
         back = self.parked(c)  # a parked PR that needs work again
         if self.posted(c):
-            raise TrackError("%s is in the post-stack (%s, PR #%s): `depot2 stack start %s` brings it back for work"
-                             % (ref, c["st"], c.get("pr"), c["st"]))
+            raise TrackError("{} is in the post-stack ({}, PR #{}): `depot2 stack start {}` brings it back for work".format(ref, c["st"], c.get("pr"), c["st"]))
         if c["status"] not in CAR_OPEN and not back:
-            raise TrackError("%s is %s: only a waiting, a ready or a parked car goes into the stack" % (ref, CAR_RU[c["status"]]))
+            raise TrackError("{} is {}: only a waiting, a ready or a parked car goes into the stack".format(ref, CAR_RU[c["status"]]))
         if c.get("st") and stk._dep_open(c["st"]):
             if not start:
-                raise TrackError("%s is in the stack already (%s)" % (ref, c["st"]))
+                raise TrackError("{} is in the stack already ({})".format(ref, c["st"]))
             obj = stk.get(c["st"])
         else:
             obj = None
         # a parked PR's `after` gates its merge, not the work; with --start the `after` is the DoR's (soft)
         blockers = self.car_blockers(t, c, after=not back and not start)
         if blockers:
-            raise TrackError("%s waits for %s" % (ref, ", ".join(blockers)))
+            raise TrackError("{} waits for {}".format(ref, ", ".join(blockers)))
         if back:
             gate = self.car_blockers(t, c)
             if gate:
-                msgs.append("%s: its after (%s) is not met; it gates the merge, not the work" % (ref, ", ".join(gate)))
+                msgs.append("{}: its after ({}) is not met; it gates the merge, not the work".format(ref, ", ".join(gate)))
         if start:
             tn = self.train_of(ref)
             if tn is not None:
@@ -891,17 +889,17 @@ class Tracks:
                 moved = any((old.get("title") or "").startswith(m.get("from", "") + " ")
                             for m in c.get("moved_from") or ())
                 obj = stk.restore(old, check_queue=not start, branch=c.get("branch"), pr=c.get("pr"),
-                                  title="%s %s — %s" % (ref, t["title"], c["title"]) if moved else None,
+                                  title="{} {} — {}".format(ref, t["title"], c["title"]) if moved else None,
                                   priority=pri.of(c))
-                msgs.append("%s:%s → %s back in the stack queue (PR #%s)" % (t["id"], c["n"], obj["id"], c.get("pr")))
+                msgs.append("{}:{} → {} back in the stack queue (PR #{})".format(t["id"], c["n"], obj["id"], c.get("pr")))
             else:
                 deps = [r for r in c["after"] if r.startswith("st-") and stk._dep_open(r)]
-                obj = stk.add("%s:%s %s — %s" % (t["id"], c["n"], t["title"], c["title"]), brief=c.get("brief"),
+                obj = stk.add("{}:{} {} — {}".format(t["id"], c["n"], t["title"], c["title"]), brief=c.get("brief"),
                               branch=c.get("branch"), pr=c.get("pr"), depends=deps, check_queue=not start,
                               size=c.get("size"), est_mtok=c.get("est_mtok"), stage=self.stage_of(c),
-                              by="tracks car stack", why=i18n.t("tracks.stack_why", ref="%s:%s" % (t["id"], c["n"])),
+                              by="tracks car stack", why=i18n.t("tracks.stack_why", ref="{}:{}".format(t["id"], c["n"])),
                               priority=pri.of(c))
-                msgs.append("%s:%s → %s in the stack queue" % (t["id"], c["n"], obj["id"]))
+                msgs.append("{}:{} → {} in the stack queue".format(t["id"], c["n"], obj["id"]))
             c["st"] = obj["id"]
             if back:
                 self._car_status(c, "ready")
@@ -920,8 +918,8 @@ class Tracks:
         """`tracks car stack --start`, before anything is written: the DoR (from a planning stage; a parked PR
         brought back for work was in the build: none) and the slots. None, or what --force passed."""
         unmet = self.build_unmet(t, c, obj, back)
-        ref = ref or "%s:%s" % (t["id"], c["n"])
-        return gates.check(unmet, force, why, ref, stages.ru("build"), "depot2 tracks car stack %s --start" % ref,
+        ref = ref or "{}:{}".format(t["id"], c["n"])
+        return gates.check(unmet, force, why, ref, stages.ru("build"), f"depot2 tracks car stack {ref} --start",
                            error=TrackError)
 
     def build_unmet(self, t, c, obj, back):
@@ -953,7 +951,7 @@ class Tracks:
         t, c = self.car_by_stack(oid)
         if c is None:
             return []
-        ref = "%s:%s" % (t["id"], c["n"])
+        ref = "{}:{}".format(t["id"], c["n"])
         out = []
         before = c.get("stage") or self.status_stage(c)[0]
         if event == "start":
@@ -967,7 +965,7 @@ class Tracks:
                 c["pr"] = int(pr)
                 if c["status"] in CAR_OPEN + ("running",):
                     self._car_status(c, "pr")
-                out.append("%s → PR #%d" % (ref, int(pr)))
+                out.append("%s → PR #%d" % (ref, int(pr)))  # noqa: UP031
             if spent_mtok is not None:
                 c["spent_mtok"] = float(spent_mtok)
                 out.append(i18n.t("tracks.on_spent", ref=ref, spent=eff.fmt(c["spent_mtok"], self.cfg)))
@@ -1005,7 +1003,7 @@ class Tracks:
                 out.append(i18n.t("tracks.on_back", ref=ref, status=CAR_RU[status], oid=oid))
             else:
                 self._car_status(c, car_status)
-                out.append("%s → %s (%s)" % (ref, CAR_RU[car_status], reason or ""))
+                out.append("{} → {} ({})".format(ref, CAR_RU[car_status], reason or ""))
         else:
             return []
         target = self.object_stage(oid)
@@ -1025,20 +1023,20 @@ class Tracks:
 
     def import_json(self, path, dry_run=False):
         if self.data["tracks"]:
-            raise TrackError("tracks.json has %d tracks already: the import is one-off" % len(self.data["tracks"]))
+            raise TrackError("tracks.json has %d tracks already: the import is one-off" % len(self.data["tracks"]))  # noqa: UP031
         with open(os.path.expanduser(path), encoding="utf-8") as f:
             raw = f.read()
         spec = json.loads(raw)
         items = spec["tracks"] if isinstance(spec, dict) else spec
         made = []
         for it in items:
-            _known_keys(it, TRACK_KEYS, "track %r" % it.get("title"))
+            _known_keys(it, TRACK_KEYS, "track {!r}".format(it.get("title")))
             t = self._new_track(it["title"], est_mtok=eff.est_from(self.cfg, it.get("est_pct"), it.get("est_mtok"),
                                                                   allow_range=True))
             for n in it.get("notes") or []:
                 t["notes"].append(n)
             for ci in it.get("cars") or []:
-                _known_keys(ci, CAR_KEYS, "track %r car %r" % (it.get("title"), ci.get("n")))
+                _known_keys(ci, CAR_KEYS, "track {!r} car {!r}".format(it.get("title"), ci.get("n")))
                 c = self._new_car(t, ci["title"], n=ci.get("n"), after=ci.get("after") or (), size=ci.get("size"),
                                   est_mtok=eff.est_from(self.cfg, ci.get("est_pct"), ci.get("est_mtok")),
                                   brief=ci.get("brief"), branch=ci.get("branch"), pr=ci.get("pr"),
@@ -1052,9 +1050,9 @@ class Tracks:
                 for c in t["cars"]:
                     self.check_refs(c["after"], t, own=c["n"])
                     if c.get("st") and not self.stack._known(c["st"]):
-                        raise TrackError("car %s: unknown stack object %s" % (c["n"], c["st"]))
+                        raise TrackError("car {}: unknown stack object {}".format(c["n"], c["st"]))
             except TrackError as e:
-                raise TrackError("%s %s: %s" % (t["id"], t["title"], e))
+                raise TrackError("{} {}: {}".format(t["id"], t["title"], e))
         if not dry_run:
             self._save("import", None, file=os.path.abspath(os.path.expanduser(path)),
                        sha256=hashlib.sha256(raw.encode("utf-8")).hexdigest(), tracks=[t["id"] for t in made])
@@ -1082,10 +1080,10 @@ class Tracks:
         open_ = [c for c in t["cars"] if c["status"] not in CAR_DONE]
         names = []
         for c in open_:
-            tn = self.train_of("%s:%s" % (t["id"], c["n"]))
+            tn = self.train_of("{}:{}".format(t["id"], c["n"]))
             if tn is not None and tn["name"] not in names:
                 names.append(tn["name"])
-        free = sum(1 for c in open_ if self.train_of("%s:%s" % (t["id"], c["n"])) is None)
+        free = sum(1 for c in open_ if self.train_of("{}:{}".format(t["id"], c["n"])) is None)
         parts = [i18n.t("tracks.open_n", n=len(open_))]
         if names:
             parts.append(i18n.t("tracks.in_trains", names=", ".join(names)))
@@ -1099,7 +1097,7 @@ class Tracks:
         L.append("|---|---|---|---|---|---|")
         rows = [t for t in self.tracks() if include_done or not self.done(t)]
         for i, t in enumerate(rows, 1):
-            L.append("| %d | %s %s | %s | %s | %s | %s |" % (
+            L.append("| %d | %s %s | %s | %s | %s | %s |" % (  # noqa: UP031
                 i, t["id"], _cell(t["title"]), self.counts_cell(t), self.effort_cell(t), _cell(self.status_cell(t)),
                 stages.counts_cell(stages.counts(self.stage_of(c) for c in t["cars"]))))
         if not rows:
@@ -1122,13 +1120,13 @@ class Tracks:
         older = []
         for c in t["cars"]:
             size = ((c["size"] + ": ") if c.get("size") else "") + eff.cell(self.car_est(c), c.get("spent_mtok"), self.cfg)
-            bp = " / ".join(x for x in (c.get("branch"), ("PR #%s" % c["pr"]) if c.get("pr") else None) if x) or "—"
+            bp = " / ".join(x for x in (c.get("branch"), ("PR #{}".format(c["pr"])) if c.get("pr") else None) if x) or "—"
             notes = car_notes(c)
-            what = c["title"] + ((" (%s)" % notes[-1]) if notes else "") + ((" (+%d)" % (len(notes) - 1))
+            what = c["title"] + ((f" ({notes[-1]})") if notes else "") + ((" (+%d)" % (len(notes) - 1))  # noqa: UP031
                                                                              if len(notes) > 1 else "")
-            older += ["%s: %s" % (c["n"], x) for x in notes[:-1]]
-            tn = self.train_of("%s:%s" % (t["id"], c["n"]))
-            L.append("| %s | %s | %s | %s | %s | %s | %s | %s | %s | %s |" % (
+            older += ["{}: {}".format(c["n"], x) for x in notes[:-1]]
+            tn = self.train_of("{}:{}".format(t["id"], c["n"]))
+            L.append("| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |".format(
                 c["n"], pri.cell(c), _cell(what), ", ".join(c["after"]) or "—", size, _cell(bp), c.get("st") or "—",
                 tn["name"] if tn else "—", _cell(self.car_status_cell(t, c)), self.stage_cell(c)))
         if not t["cars"]:
@@ -1144,11 +1142,11 @@ class Tracks:
             L.append(i18n.t("tracks.parked_list", list="; ".join(self.parked_line(*p) for p in parked)))
         L.append(stage_legend())
         for n in t.get("notes") or []:
-            L.append("- %s" % n)
+            L.append(f"- {n}")
         if older:
             L.append("")
             L.append(i18n.t("tracks.car_md_older"))
-            L += ["- %s" % x for x in older]
+            L += [f"- {x}" for x in older]
         return "\n".join(L) + "\n"
 
     def stage_cell(self, c):
@@ -1166,7 +1164,7 @@ class Tracks:
     def pointer_now(self, t, p):
         """Where the car a pointer names stands now (a car moved twice: the end of the chain), or None."""
         try:
-            return self.canon("%s:%s" % (t["id"], p["n"]))
+            return self.canon("{}:{}".format(t["id"], p["n"]))
         except TrackError:
             return None
 
@@ -1174,7 +1172,7 @@ class Tracks:
         out = []
         for p in t.get("moved_out") or ():
             now = self.pointer_now(t, p)
-            out.append("%s → %s «%s» (%s%s)" % (p["n"], now or p["to"], clip(p.get("title")), (p.get("at") or "")[:10],
+            out.append("{} → {} «{}» ({}{})".format(p["n"], now or p["to"], clip(p.get("title")), (p.get("at") or "")[:10],
                                                ": " + p["why"] if p.get("why") else ""))
         return out
 
@@ -1201,8 +1199,8 @@ class Tracks:
         (`principles`, marks.py; None when the third check is empty)."""
         from .marks import compact
         est = self.car_est(c)
-        tn = self.train_of("%s:%s" % (t["id"], c["n"]))
-        return dict(c, ref="%s:%s" % (t["id"], c["n"]), track=t["id"], track_title=t["title"],
+        tn = self.train_of("{}:{}".format(t["id"], c["n"]))
+        return dict(c, ref="{}:{}".format(t["id"], c["n"]), track=t["id"], track_title=t["title"],
                     principles=compact(self.verdict(c)) if self.plist else None,
                     train=tn["name"] if tn else None, train_title=tn["title"] if tn else None,
                     stage=self.stage_of(c), stages=c.get("stages") or [], status_ru=self.car_status_cell(t, c),
@@ -1260,7 +1258,7 @@ def effort_text(tracks, cars, own=None):
 def counts_text(cars):
     live = [c for c in cars if c["status"] != "dropped"]
     done = sum(1 for c in live if c["status"] == "merged")
-    s = "%d / %d" % (done, len(live))
+    s = "%d / %d" % (done, len(live))  # noqa: UP031
     dropped = len(cars) - len(live)
     return s + (" " + i18n.t("tracks.dropped_n", n=dropped) if dropped else "")
 
@@ -1286,9 +1284,8 @@ def status_move(before, status, c):
 
 
 def done_needs_car(oid, t, c):
-    return ("%s is the object of %s:%s (%s): say what the car becomes: --car merged (its PR landed), --car dropped "
-            "(the car is off), or --car back (no PR: back to its track as it was, the link cleared)"
-            % (oid, t["id"], c["n"], CAR_RU[c["status"]]))
+    return ("{} is the object of {}:{} ({}): say what the car becomes: --car merged (its PR landed), --car dropped "
+            "(the car is off), or --car back (no PR: back to its track as it was, the link cleared)".format(oid, t["id"], c["n"], CAR_RU[c["status"]]))
 
 
 def post_line(post, cap, car_by_stack, now=None):
@@ -1298,6 +1295,6 @@ def post_line(post, cap, car_by_stack, now=None):
     for o in post:
         t, c = car_by_stack(o["id"])
         ci = (o.get("ci") or {}).get("state") or "?"
-        items.append(i18n.t("tracks.post_item", id=o["id"], car=(" (%s:%s)" % (t["id"], c["n"])) if c else "",
+        items.append(i18n.t("tracks.post_item", id=o["id"], car=(" ({}:{})".format(t["id"], c["n"])) if c else "",
                             pr=o.get("pr"), ci=ci, age=age_ru((o.get("posted") or {}).get("ts"), now)))
     return i18n.t("tracks.post_line", n=len(post), cap=cap, items="; ".join(items))

@@ -66,7 +66,7 @@ def parse(text):
         if typed == s or any(typed == i18n.fold(f) for f in i18n.forms("stage." + s)):
             return s
     raise StageError(i18n.t("stages.no_stage_list", text=text, stages=", ".join(
-        ("%s (%s)" % (s, STAGE_RU[s])) if STAGE_RU[s] != s else s for s in STAGES)))
+        (f"{s} ({STAGE_RU[s]})") if STAGE_RU[s] != s else s for s in STAGES)))
 
 
 def is_back(cur, stage):
@@ -128,7 +128,7 @@ def start(rec, stage, by, why=None, forced=False, gates=None):
 def hist(row):
     if not row:
         return None
-    return "%s→%s" % (row.get("from") or "", row["stage"])
+    return "{}→{}".format(row.get("from") or "", row["stage"])
 
 
 def say(ref, row):
@@ -156,14 +156,14 @@ def counts(stages_):
 
 
 def counts_cell(c, sep=" · "):
-    return sep.join("%s %d" % (STAGE_RU[s], c[s]) for s in STAGES if c.get(s)) or "—"
+    return sep.join("%s %d" % (STAGE_RU[s], c[s]) for s in STAGES if c.get(s)) or "—"  # noqa: UP031
 
 
 def rows_md(rec):
     """A record's history, one line each, oldest first."""
     out = []
     for r in rec.get("stages") or []:
-        move = ("%s → %s" % (ru(r["from"]), ru(r["stage"]))) if r.get("from") else "→ %s" % ru(r["stage"])
+        move = ("{} → {}".format(ru(r["from"]), ru(r["stage"]))) if r.get("from") else "→ {}".format(ru(r["stage"]))
         tail = [x for x in (r.get("why"), r.get("by")) if x]
         flags = [x for x, on in ((i18n.t("stages.flag_return"), r.get("return")),
                                  (i18n.t("stages.flag_off_route"), r.get("off_route")),
@@ -171,8 +171,8 @@ def rows_md(rec):
         if r.get("gates"):
             from .gates import gates_text
             flags.append(i18n.t("stages.flag_gates", gates=gates_text(r["gates"])))
-        out.append("- %s %s%s%s" % ((r.get("at") or "?")[:16].replace("T", " "), move,
-                                   (" (%s)" % "; ".join(tail)) if tail else "", (" [%s]" % ", ".join(flags)) if flags else ""))
+        out.append("- {} {}{}{}".format((r.get("at") or "?")[:16].replace("T", " "), move,
+                                   (" ({})".format("; ".join(tail))) if tail else "", (" [{}]".format(", ".join(flags))) if flags else ""))
     return out
 
 
@@ -292,7 +292,7 @@ class Car:
 
     @property
     def car_ref(self):
-        return "%s:%s" % (self.track["id"], self.car["n"]) if self.car is not None else None
+        return "{}:{}".format(self.track["id"], self.car["n"]) if self.car is not None else None
 
     @property
     def label(self):
@@ -380,8 +380,8 @@ class Car:
             if stage == "docs" and not self.in_slot():
                 raise StageError(i18n.t(
                     "stages.docs_needs_slot", ref=self.ref, obj=self.ref if self.obj is None else self.obj["id"],
-                    cmd="depot2 tracks car stack %s --start" % self.car_ref if self.car is not None
-                    else "depot2 stack start %s" % self.ref))
+                    cmd=f"depot2 tracks car stack {self.car_ref} --start" if self.car is not None
+                    else f"depot2 stack start {self.ref}"))
             cmd = None if (cur, stage) == ("docs", "build") and self.in_slot() else self.owned(stage)
             if cmd:
                 raise StageError(i18n.t("stages.owned_by_command", ref=self.ref, cur=ru(cur), to=ru(stage), cmd=cmd))
@@ -543,12 +543,12 @@ class Car:
     def show(self):
         from . import priority as pri
         r = self.rec()
-        L = ["# %s — %s" % (self.label, ru(self.stage())), "", self.title(), ""]
+        L = [f"# {self.label} — {ru(self.stage())}", "", self.title(), ""]
         L.append(i18n.t("stages.show_priority", p=pri.cell(r), ref=self.ref))
         if self.car is not None:
             tn = self.train()
             L.append(i18n.t("stages.show_track", track=self.track["id"], title=self.track["title"],
-                            train="%s «%s»" % (tn["name"], tn["title"]) if tn else i18n.t("stages.none")))
+                            train="{} «{}»".format(tn["name"], tn["title"]) if tn else i18n.t("stages.none")))
             if ":" in self.ref and self.ref != self.car_ref:
                 L.append(i18n.t("stages.show_old_ref", ref=self.ref, now=self.car_ref))
             for m in self.car.get("moved_from") or ():
@@ -558,7 +558,7 @@ class Car:
                 from .queues import source_line
                 L.append(i18n.t("stages.show_came_from", sources="; ".join(source_line(x) for x in self.sources())))
         if self.entry is not None and self.entry.get("taken_to"):
-            L.append("%s → %s: %s." % (self.queue.STATUS_RU["taken"].capitalize(), self.entry["taken_to"],
+            L.append("{} → {}: {}.".format(self.queue.STATUS_RU["taken"].capitalize(), self.entry["taken_to"],
                                        ru(stage_of_ref(self.state, self.cfg, self.entry["taken_to"]))))
         if self.left is not None:
             L.append(i18n.t("stages.show_left"))
@@ -571,7 +571,7 @@ class Car:
         L += car_lines(self)
         notes = self.notes()
         if notes:
-            L += ["", i18n.t("stages.show_notes")] + ["- %s" % n for n in notes]
+            L += ["", i18n.t("stages.show_notes")] + [f"- {n}" for n in notes]
         L.append("")
         L.append(i18n.t("stages.show_history"))
         L += rows_md(r) or [i18n.t("stages.show_no_history_left") if self.left is not None
@@ -682,7 +682,7 @@ def migrate(state, cfg, dry_run=False):
                 continue
             s, why = tr.stage_default_why(t, c)
             start(c, s, by, i18n.t("stages.migrated_why", why=why))
-            moved["%s:%s" % (t["id"], c["n"])] = s
+            moved["{}:{}".format(t["id"], c["n"])] = s
     if moved and not dry_run:
         tr._save("migrate_stage", None, cars=moved)
     L.append(i18n.t("stages.migrate_tracks", n=len(moved), counts=counts_cell(counts(moved.values()))))

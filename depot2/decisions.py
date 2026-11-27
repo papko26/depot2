@@ -80,11 +80,11 @@ def md(state, grep=None, limit=None):
     for r in rows:
         where = (" · " + (t("decisions.round_point", round=r["round"], point=r["point"]) if r.get("point") else
                           t("decisions.round", round=r["round"])) if r.get("round") else "")
-        ln = [x for k in LINK_KINDS for x in (["#%d" % p for p in r["links"][k]] if k == "prs" else r["links"][k])
+        ln = [x for k in LINK_KINDS for x in (["#%d" % p for p in r["links"][k]] if k == "prs" else r["links"][k])  # noqa: UP031
               if x != r["id"]]
-        L.append("- **%s** · %s · %s%s — %s%s" % (r["id"], r.get("date") or "—", r["who"], where,
+        L.append("- **{}** · {} · {}{} — {}{}".format(r["id"], r.get("date") or "—", r["who"], where,
                                                  " ".join((r.get("text") or "").split()),
-                                                 (" (%s)" % t("decisions.links", links=", ".join(ln))) if ln else ""))
+                                                 (" ({})".format(t("decisions.links", links=", ".join(ln)))) if ln else ""))
     if not rows:
         L.append(t("decisions.empty"))
     L.append("")

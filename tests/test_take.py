@@ -57,7 +57,7 @@ class QueueTakeTest(TakeBase):
         h = self.tracks().history()[-1]
         self.assertEqual((h["event"], h["car"], h["from"]), ("car_add", "1", "wl-0001"))
         out = self.ok("car", "show", "tr-0001:1")
-        self.assertIn("\nЗаметки:\n- %s\n" % c["notes"][0], out)
+        self.assertIn("\nЗаметки:\n- {}\n".format(c["notes"][0]), out)
         self.assertLess(out.index("Заметки:"), out.index("История этапов:"))
         self.ok("tracks", "car", "stack", "tr-0001:1")
         oid = self.tracks().car("tr-0001:1")[1]["st"]

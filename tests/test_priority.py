@@ -136,8 +136,8 @@ class SetTest(PBase):
         Todo(self.t.state).add("хвост", version="v")
         for ref, n in (("katalog", 9), ("tr-0001:1", 8), ("st-0001", 7), ("tm-0001", 6), ("wl-0001", 4),
                        ("th-0001", 3), ("td-0001", 2)):
-            self.assertIn(": приоритет P5 → P%d" % n, self.ok("priority", ref, str(n)))
-            self.assertIn("%s: приоритет P%d (1–10" % (ref, n), self.ok("priority", ref))
+            self.assertIn(": приоритет P5 → P%d" % n, self.ok("priority", ref, str(n)))  # noqa: UP031
+            self.assertIn("%s: приоритет P%d (1–10" % (ref, n), self.ok("priority", ref))  # noqa: UP031
         self.assertIn("приоритет P2 (был тот же)", self.ok("priority", "td-0001", "2"))
         self.assertIn("трек (тема)", self.refused("priority", "tr-0001", "5"))
         self.assertIn("priority is 1–10", self.refused("priority", "wl-0001", "0"))
@@ -193,14 +193,14 @@ class NextByPriorityTest(PBase):
         self.ride("tr-0001", "first", slots="all-free")
         self.ride("tr-0002", "second", slots="all-free")
         nx = self.trains().next(PAST)  # all at 5: as before, the queue order and the train's order
-        self.assertEqual(["%s:%s" % (p["track"]["id"], p["car"]["n"]) for p in nx["picks"]],
+        self.assertEqual(["{}:{}".format(p["track"]["id"], p["car"]["n"]) for p in nx["picks"]],
                          ["tr-0001:0", "tr-0001:1", "tr-0001:2", "tr-0001:3"])
         self.trains().set("second", priority=8)        # the second train is more important: it goes first
         tk = self.tracks()
         tk.car_set("tr-0001:2", priority=7)           # within a train, by the car's priority
         tk.car_set("tr-0001:3", priority=7)
         nx = self.trains().next(PAST)
-        self.assertEqual(["%s:%s" % (p["track"]["id"], p["car"]["n"]) for p in nx["picks"]],
+        self.assertEqual(["{}:{}".format(p["track"]["id"], p["car"]["n"]) for p in nx["picks"]],
                          ["tr-0002:0", "tr-0001:2", "tr-0001:3", "tr-0001:0"])
         lines = "\n".join(self.trains().next_lines(PAST))
         self.assertIn("tr-0002:0 «b0» (поезд second P8, вагон P5)", lines)
@@ -284,7 +284,7 @@ class MigrateTest(PBase):
         self.assertIn("| P8 | открыт |", out)
         snap = {f: slurp(self.t.state.path(f)) for f in self.FILES}
         self.assertEqual(migrate.run(self.t.state, self.t.cfg),
-                         (["миграция данных депо: нечего переносить (схема %d)" % SCHEMA], 0))
+                         (["миграция данных депо: нечего переносить (схема %d)" % SCHEMA], 0))  # noqa: UP031
         self.assertEqual({f: slurp(self.t.state.path(f)) for f in self.FILES}, snap)
 
     def run_team(self, state_dir, *argv):

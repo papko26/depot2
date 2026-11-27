@@ -30,7 +30,7 @@ class DemoTest(unittest.TestCase):
         p = subprocess.run(["sh", SCRIPT, cls.state], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                            text=True)
         if p.returncode != 0:
-            raise AssertionError("make-demo.sh failed: %s %s" % (p.stdout, p.stderr))
+            raise AssertionError(f"make-demo.sh failed: {p.stdout} {p.stderr}")
 
     @classmethod
     def tearDownClass(cls):
@@ -50,7 +50,7 @@ class DemoTest(unittest.TestCase):
     def test_english_by_default_and_russian_on_request(self):
         for view in VIEWS:
             out = self.depot(*view.split(), lang="en")
-            self.assertIsNone(CYRILLIC.search(out), "%s printed Russian in English: %s" % (view, out))
+            self.assertIsNone(CYRILLIC.search(out), f"{view} printed Russian in English: {out}")
         self.assertIn("## Stack", self.depot("stack", "--md", lang=None))  # no $DEPOT2_LANG, no `language`: English
         self.assertIn("## Стек", self.depot("stack", "--md", lang="ru"))
         self.assertIn("## Стек", self.depot("--set", "language=ru", "stack", "--md", lang=None))  # the config's key

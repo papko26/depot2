@@ -27,7 +27,7 @@ TOPIC = """# Тема
 
 
 def proposal(topic="Поиск и фильтры", n=3):
-    return {"topic": topic, "why": "к релизу всё ломается", "questions": ["Вопрос %d?" % i for i in range(1, n + 1)]}
+    return {"topic": topic, "why": "к релизу всё ломается", "questions": ["Вопрос %d?" % i for i in range(1, n + 1)]}  # noqa: UP031
 
 
 def order(command="node tools/bench/run.mjs --seeds 1-20", hardware="cpu", **kw):
@@ -41,7 +41,7 @@ def r2(votes=(), order_=None, points=()):
     a = {"points": [dict(id=p[0], position=p[1], stake=p[2], comment=p[3]) for p in points],
          "rebuttals": [], "inner_thought": "ок"}
     if votes is not None:
-        a["brainstorm_votes"] = [{"proposal": pid, "vote": v, "line": "потому что %s" % v} for pid, v in votes]
+        a["brainstorm_votes"] = [{"proposal": pid, "vote": v, "line": f"потому что {v}"} for pid, v in votes]
     if order_:
         a["order"] = order_
     return a
@@ -229,7 +229,7 @@ class BrainstormTest(Base):
                               brainstorm="bs-0001")
         self.assertTrue(r["id"].endswith("-brainstorm"))
         rep = r["report"]
-        self.assertTrue(rep.startswith("# Команда: мозговой штурм команды (созвал Счетовод), %s" % r["id"]))
+        self.assertTrue(rep.startswith("# Команда: мозговой штурм команды (созвал Счетовод), {}".format(r["id"])))
         self.assertIn("штурм bs-0001, одобрен в раунде", rep)
         self.assertIn("Тема мозгового штурма команды", slurp(os.path.join(r["dir"], "bundle.md")))
         self.assertEqual([p["id"] for p in json.loads(slurp(os.path.join(r["dir"], "round.json")))["points"]],
@@ -364,9 +364,9 @@ class OrdersTest(Base):
         r2_, runner = self.play({})
         bundle = slurp(os.path.join(r2_["dir"], "bundle.md"))
         self.assertIn("## Результаты заказов (замеры и прогоны)", bundle)
-        self.assertIn("### ord-0001: Строитель, раунд %s" % r["id"], bundle)
+        self.assertIn("### ord-0001: Строитель, раунд {}".format(r["id"]), bundle)
         self.assertIn("- прогноз автора до прогона: 6 мс", bundle)
-        self.assertIn("- результат: %s" % dest, bundle)
+        self.assertIn(f"- результат: {dest}", bundle)
         self.assertIn("- результаты в пакете этого раунда: ord-0001, ord-0002, ord-0003.", r2_["report"])
         r3, _ = self.play({})
         self.assertNotIn("Результаты заказов", slurp(os.path.join(r3["dir"], "bundle.md")))

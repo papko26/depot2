@@ -36,8 +36,8 @@ class NoTeamTest(MergeBase):
 
     def run_ok(self, *argv):
         rc, out, err = self.team(*argv)
-        self.assertEqual(rc, 0, "%s: %s %s" % (argv, out, err))
-        self.assertIsNone(CYRILLIC.search(out + err), "%s printed Russian: %s %s" % (argv, out, err))
+        self.assertEqual(rc, 0, f"{argv}: {out} {err}")
+        self.assertIsNone(CYRILLIC.search(out + err), f"{argv} printed Russian: {out} {err}")
         return out
 
     def test_a_car_goes_all_the_way_to_production(self):

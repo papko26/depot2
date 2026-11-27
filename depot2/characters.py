@@ -48,11 +48,11 @@ def check_config(team):
             raise ValueError("characters: every character is an object")
         for k in ("id", "name", "full", "default_gender", "spec_marker"):
             if not isinstance(c.get(k), str) or not c[k]:
-                raise ValueError("characters: %r needs %s" % (c.get("id"), k))
+                raise ValueError("characters: {!r} needs {}".format(c.get("id"), k))
         if not RE_ID.match(c["id"]) or c["id"] in seen:
-            raise ValueError("characters: id %r must be unique, latin lower-case" % c["id"])
+            raise ValueError("characters: id {!r} must be unique, latin lower-case".format(c["id"]))
         if c["default_gender"] not in GENDERS:
-            raise ValueError("characters: %s default_gender must be f or m" % c["id"])
+            raise ValueError("characters: {} default_gender must be f or m".format(c["id"]))
         seen.add(c["id"])
 
 
@@ -90,13 +90,13 @@ def name(cid):
 
 def label(cid):
     c = BY_ID[cid]
-    extra = [x for x in ("«%s»" % c["full"] if c["full"] != c["name"] else "", c.get("title", "")) if x]
-    return display(cid) + (" (%s)" % ", ".join(extra) if extra else "")
+    extra = [x for x in ("«{}»".format(c["full"]) if c["full"] != c["name"] else "", c.get("title", "")) if x]
+    return display(cid) + (" ({})".format(", ".join(extra)) if extra else "")
 
 
 def check_gender(g):
     if g not in GENDERS:
-        raise ValueError("gender must be f or m, got %r" % (g,))
+        raise ValueError(f"gender must be f or m, got {g!r}")
     return g
 
 
@@ -126,7 +126,7 @@ def extract_specs(brief_text):
         if len(s) > 3 and s[0].isdigit() and s[1:3] == ". " and "**«" in s:
             starts.append(i)
     if len(starts) < len(CHARACTERS):
-        raise ValueError("the spec file has %d character items, expected %d" % (len(starts), len(CHARACTERS)))
+        raise ValueError("the spec file has %d character items, expected %d" % (len(starts), len(CHARACTERS)))  # noqa: UP031
     specs = {}
     for n, i in enumerate(starts[:len(CHARACTERS)]):
         end = starts[n + 1] if n + 1 < len(starts) else len(lines)
@@ -137,9 +137,9 @@ def extract_specs(brief_text):
                 break
         text = "\n".join(lines[i:end]).strip()
         for c in CHARACTERS:
-            if ("«%s»" % c["spec_marker"]) in lines[i]:
+            if ("«{}»".format(c["spec_marker"])) in lines[i]:
                 specs[c["id"]] = text
     missing = [c for c in IDS if c not in specs]
     if missing:
-        raise ValueError("no spec found for %s" % missing)
+        raise ValueError(f"no spec found for {missing}")
     return specs

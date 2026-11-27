@@ -79,7 +79,7 @@ def _readme_lines():
                         segs.append(seg)
             lines += [(ln.strip(), s) for s in segs]
     for span in re.findall(r"`(?:python3 -m )?depot2 ([^`]+)`", text):
-        lines.append(("`depot2 %s`" % span, span))
+        lines.append((f"`depot2 {span}`", span))
     return lines
 
 
@@ -94,7 +94,7 @@ class CliDocsTest(unittest.TestCase):
         for where, rest in lines:
             words = [w for w in rest.split() if not w.startswith("--state")][:6]
             paths, b = _resolve(self.ap, words)
-            bad += ["%s  (%s)" % (x, where[:90]) for x in b]
+            bad += [f"{x}  ({where[:90]})" for x in b]
             for p in paths:
                 for i in range(1, len(p) + 1):
                     named.add(p[:i])
@@ -133,7 +133,7 @@ class CliDocsTest(unittest.TestCase):
                             no.append(" ".join(path + [name]) + ": no help line")
                         walk(sp, path + [name])
                 elif not isinstance(a, argparse._HelpAction) and not a.help:
-                    no.append("%s %s" % (" ".join(path), "/".join(a.option_strings) or a.dest))
+                    no.append("{} {}".format(" ".join(path), "/".join(a.option_strings) or a.dest))
         walk(self.ap, [])
         self.assertEqual(no, [])
 

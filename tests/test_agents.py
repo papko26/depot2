@@ -59,7 +59,7 @@ class AgentsBase(Base):
                                             *argv)
 
     def path(self, aid):
-        return os.path.join(self.projects, SUB, "agent-%s.jsonl" % aid)
+        return os.path.join(self.projects, SUB, f"agent-{aid}.jsonl")
 
     def car(self, ref):
         return Tracks(self.t.state, self.t.cfg).car(ref)[1]
@@ -298,14 +298,14 @@ class TranscriptTest(AgentsBase):
         self.assertIn("no transcript agent-a0000000000000000.jsonl under", err)
         rc, out, err = self.team("agents", "attach", "ag-0001", LIVE)
         self.assertEqual(rc, 0, err)
-        self.assertIn("ag-0001 → %s (%s): молчит" % (LIVE, self.path(LIVE)), out)
+        self.assertIn(f"ag-0001 → {LIVE} ({self.path(LIVE)}): молчит", out)
         self.assertIn("ходов 2, потрачено", out)
         ag = self.agents().get("ag-0001")
         self.assertEqual((ag["agent_id"], ag["transcript"]), (LIVE, self.path(LIVE)))
         rc, _, err = self.team("agents", "attach", "ag-0002", LIVE)
-        self.assertIn("%s is ag-0001's already" % LIVE, err)
+        self.assertIn(f"{LIVE} is ag-0001's already", err)
         rc, _, err = self.team("agents", "attach", "ag-0001", DONE)
-        self.assertIn("ag-0001 is attached to %s already" % LIVE, err)
+        self.assertIn(f"ag-0001 is attached to {LIVE} already", err)
         rc, _, err = self.team("agents", "attach", "ag-0001", LIVE)  # the same link again: nothing changes
         self.assertEqual(rc, 0, err)
         # a transcript given by its path
@@ -350,7 +350,7 @@ class SpendTest(AgentsBase):
         self.t.state.init_git()
         self.start("tr-0001:2", "sketch")
         self.team("agents", "attach", "ag-0001", LIVE)
-        with open(os.path.join(self.projects, SUB, "agent-%s.meta.json" % LIVE), "w") as f:
+        with open(os.path.join(self.projects, SUB, f"agent-{LIVE}.meta.json"), "w") as f:
             json.dump({"finished": True}, f)
         rc, out, err = self.team("agents", "start", "tr-0001:2", "--role", "plan")  # no --usage: refused
         self.assertEqual(rc, 1)
@@ -365,7 +365,7 @@ class SpendTest(AgentsBase):
         self.start("tr-0001:2", "sketch")
         self.team("agents", "attach", "ag-0001", LIVE)
         self.assertIsNone(self.car("tr-0001:2").get("spent_mtok"))
-        meta = os.path.join(self.projects, SUB, "agent-%s.meta.json" % LIVE)
+        meta = os.path.join(self.projects, SUB, f"agent-{LIVE}.meta.json")
         with open(meta, "w") as f:
             json.dump({"finished": True}, f)
         rc, out, err = self.team("agents")

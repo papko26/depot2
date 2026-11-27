@@ -30,7 +30,7 @@ _lang = [None]  # the run's language once configure() ran; None: $DEPOT2_LANG or
 
 def check_language(lang, where="language"):
     if lang not in LANGS:
-        raise ValueError("%s must be one of %s, got %r" % (where, ", ".join(LANGS), lang))
+        raise ValueError("{} must be one of {}, got {!r}".format(where, ", ".join(LANGS), lang))
     return lang
 
 
@@ -50,7 +50,7 @@ def language():
 
 def catalog(lang):
     if lang not in _catalogs:
-        _catalogs[lang] = importlib.import_module("%s.catalogs.%s" % (__package__, check_language(lang))).MESSAGES
+        _catalogs[lang] = importlib.import_module(f"{__package__}.catalogs.{check_language(lang)}").MESSAGES
     return _catalogs[lang]
 
 
@@ -61,14 +61,14 @@ def message(key, lang=None):
     if m is None and lang != DEFAULT:
         m = catalog(DEFAULT).get(key)
     if m is None:
-        raise KeyError("no message %r in the catalogs" % (key,))
+        raise KeyError(f"no message {key!r} in the catalogs")
     return m
 
 
 def pick(m, gender):
     if isinstance(m, dict):
         if gender not in GENDERS:
-            raise ValueError("gender must be f or m, got %r" % (gender,))
+            raise ValueError(f"gender must be f or m, got {gender!r}")
         return m[gender]
     return m
 
@@ -115,7 +115,7 @@ def retell(text, *keys):
 
 def rx(key):
     """A regex group that accepts the words `key` (an `in.` key) of every language."""
-    return "(?:%s)" % "|".join(forms(key))
+    return "(?:{})".format("|".join(forms(key)))
 
 
 def is_word(text, key):
@@ -139,7 +139,7 @@ class Labels:
     def __getitem__(self, k):
         if k not in self._keys:
             raise KeyError(k)
-        return t("%s.%s" % (self.prefix, k))
+        return t(f"{self.prefix}.{k}")
 
     def get(self, k, default=None):
         return self[k] if k in self._keys else default

@@ -41,7 +41,7 @@ def voice_line(cid, a, gender):
         if a["stake"]:
             s = t("report.with_stake", text=s, n=int(a["stake"]))
         return s + ": " + (_indent(a["comment"]) if a.get("comment") else "—")
-    s = "%s: %s" % (characters.name(cid), characters.agree_word(gender, a["position"]) if a else "—")
+    s = "{}: {}".format(characters.name(cid), characters.agree_word(gender, a["position"]) if a else "—")
     if a and a["stake"]:
         s = t("report.with_stake", text=s, n=int(a["stake"]))
     if a and a.get("comment"):
@@ -54,11 +54,11 @@ def voice_line(cid, a, gender):
 def turns_cell(rec, costs, cid):
     allowed = ((rec.get("settings") or {}).get("free") or {}).get("max_tool_turns_r1")
     calls = {c.get("call"): c for c in (costs or {}).get("items") or []}
-    r1 = calls.get("%s/%s-r1" % (rec["id"], cid))
+    r1 = calls.get("{}/{}-r1".format(rec["id"], cid))
     if not r1:
         return t("report.skipped")
     used = r1.get("tool_turns")
-    s = "%s/%s" % ("?" if used is None else used, "?" if allowed is None else allowed)
+    s = "{}/{}".format("?" if used is None else used, "?" if allowed is None else allowed)
     return s if r1.get("status") == "ok" else t("report.call_failed", turns=s)
 
 
@@ -124,11 +124,11 @@ def load_round(state, rid):
     rdir = os.path.join(state.rounds_dir(), rid)
     rec = read_json(os.path.join(rdir, "round.json"))
     if rec is None:
-        raise ValueError("no round %s (%s)" % (rid, rdir))
+        raise ValueError(f"no round {rid} ({rdir})")
     if rec.get("status") != "done":
-        raise ValueError("round %s is %s: only a finished round has a report" % (rid, rec.get("status")))
+        raise ValueError("round {} is {}: only a finished round has a report".format(rid, rec.get("status")))
     costs = read_json(os.path.join(rdir, "costs.json")) or dict(NO_COSTS)
-    answers = {cid: {st: read_json(os.path.join(rdir, "answers", "%s-%s.json" % (cid, st))) for st in STAGES}
+    answers = {cid: {st: read_json(os.path.join(rdir, "answers", f"{cid}-{st}.json")) for st in STAGES}
                for cid in characters.IDS}
     genders = dict(personas_genders(state))
     genders.update(rec.get("genders") or {})  # the genders the round was played with
@@ -209,16 +209,16 @@ def build_report(rec, costs, answers, ledger_entries, genders, cfg=None):
     u = costs.get("utilization") or {}
     L.append(t("report.calls_approx" if approx else "report.calls", calls=int(costs["calls"]),
                turns=int(costs.get("turns", 0)), tool_turns=int(costs.get("tool_turns", 0)),
-               secs="%.0f" % costs["duration_s"], total=int(tok.get("total", 0)), input=int(tok.get("input", 0)),
+               secs="{:.0f}".format(costs["duration_s"]), total=int(tok.get("total", 0)), input=int(tok.get("input", 0)),
                cache_read=int(tok.get("cache_read", 0)), cache_write=int(tok.get("cache_write", 0)),
                output=int(tok.get("output", 0))))
     by_cost = costs.get("mtok_from_cost_calls")
     if by_cost is None:
         by_cost = sum(1 for c in costs.get("items") or [] if effort.by_cost_only(c))
     spent = effort.fmt(effort.costs_mtok(costs, ucfg), ucfg)
-    window = ("%.0f%% → %.0f%%" % (u["before"] * 100, u["after"] * 100)) if u.get("before") is not None \
+    window = ("{:.0f}% → {:.0f}%".format(u["before"] * 100, u["after"] * 100)) if u.get("before") is not None \
         else t("report.na")
-    L.append(t("report.spend_by_cost" if by_cost else "report.spend", spent=spent, per="%g" % effort.per_pct(ucfg),
+    L.append(t("report.spend_by_cost" if by_cost else "report.spend", spent=spent, per=f"{effort.per_pct(ucfg):g}",
                by_cost=int(by_cost or 0), window=window,
                models=", ".join(sorted(m for m in costs["by_model"] if m)) or "—",
                effort=(rec.get("settings") or {}).get("effort") or t("report.effort_default")))
@@ -234,14 +234,13 @@ def build_report(rec, costs, answers, ledger_entries, genders, cfg=None):
         L.append(t("report.team_cols_review"))
         L.append("|---|---|---|---|")
         for cid in cast:
-            L.append("| %s | %s | %s | %s |" % (characters.name(cid), VERDICT_RU.get(verdicts.get(cid), "—"),
+            L.append("| {} | {} | {} | {} |".format(characters.name(cid), VERDICT_RU.get(verdicts.get(cid), "—"),
                                               _cell(turns_cell(rec, costs, cid)), _cell(mains.get(cid))))
     else:
         L.append(t("report.team_cols"))
         L.append("|---|---|---|")
         for cid in cast:
-            L.append("| %s | %s | %s |" % (characters.name(cid), _cell(turns_cell(rec, costs, cid)),
-                                         _cell(mains.get(cid))))
+            L.append(f"| {characters.name(cid)} | {_cell(turns_cell(rec, costs, cid))} | {_cell(mains.get(cid))} |")
     L.append("")
     L.append(t("report.turns_legend"))
     L.append("")
@@ -276,14 +275,14 @@ def build_report(rec, costs, answers, ledger_entries, genders, cfg=None):
             if a:
                 L.append("- " + voice_line(cid, a, genders[cid]))
         if silent:
-            L.append("- %s: —" % ", ".join(characters.name(c) for c in silent))
+            L.append("- {}: —".format(", ".join(characters.name(c) for c in silent)))
         L.append("")
 
     if rebuttals:
         L.append(t("report.debate"))
         L.append("")
         for r in rebuttals:
-            L.append("- %s → %s (%s): %s" % (characters.name(r["from"]), characters.name(r["to"]),
+            L.append("- {} → {} ({}): {}".format(characters.name(r["from"]), characters.name(r["to"]),
                                              r["point"], r["text"]))
         L.append("")
 
@@ -297,7 +296,7 @@ def build_report(rec, costs, answers, ledger_entries, genders, cfg=None):
         for cid, tr in sorted(trims.items()):
             L.append(t("report.trimmed", name=characters.name(cid), list=", ".join(tr)))
         for n in notes:
-            L.append("- %s" % n)
+            L.append(f"- {n}")
         L.append("")
 
     # The stake ledger: debited when the round ends, and at once returned.
@@ -327,12 +326,12 @@ def build_report(rec, costs, answers, ledger_entries, genders, cfg=None):
             mismatch.append(characters.name(cid))
         if cid not in cast:
             continue
-        L.append("| %s | %d | %s | %d | %d | %s | %s | %s | %d |" % (
+        L.append("| %s | %d | %s | %d | %d | %s | %s | %s | %d |" % (  # noqa: UP031
             characters.name(cid), r["before"],
-            ", ".join("%s: %d" % (e["point"], -e["amount"]) for e in r["stakes"]) or "—",
+            ", ".join("%s: %d" % (e["point"], -e["amount"]) for e in r["stakes"]) or "—",  # noqa: UP031
             r["staked"], r["back"], _signed(-r["fee"]), _signed(-r["ordered"]), _signed(-r["locked"]), r["left"]))
     L.append("")
-    legacy = ["%s %d" % (characters.name(cid), rows[cid]["legacy"]) for cid in characters.IDS if rows[cid]["legacy"]]
+    legacy = ["%s %d" % (characters.name(cid), rows[cid]["legacy"]) for cid in characters.IDS if rows[cid]["legacy"]]  # noqa: UP031
     if legacy:
         L.append(t("report.legacy", list=", ".join(legacy)))
         L.append("")
@@ -371,7 +370,7 @@ def _after_round(rec, entries, rows):
         other = sum(e["amount"] for e in entries if e["character"] == cid and e["seq"] > end
                     and e["id"] not in about)
         now = balances_after[cid] + back + paid - fined + other
-        L.append("| %s | %d | %s | %s | %s | %s | %d |" % (
+        L.append("| %s | %d | %s | %s | %s | %s | %d |" % (  # noqa: UP031
             characters.name(cid), balances_after[cid], _signed(back), _signed(paid), _signed(-fined),
             _signed(other), now))
         if now != sum(e["amount"] for e in entries if e["character"] == cid):
@@ -380,13 +379,13 @@ def _after_round(rec, entries, rows):
     L.append(t("report.after_legend"))
     L.append("")
     for e in owner:
-        L.append("- %s %s: %s%s%s" % (e["id"], characters.name(e["character"]), _owner_what(e),
-                                     " (%s)" % e["point"] if e.get("point") else "",
+        L.append("- {} {}: {}{}{}".format(e["id"], characters.name(e["character"]), _owner_what(e),
+                                     " ({})".format(e["point"]) if e.get("point") else "",
                                      ": " + _indent(e["reason"]) if e.get("reason") else ""))
     L.append("")
     last = max(e["seq"] for e in entries)
     L.append(t("report.now_mismatch", names=", ".join(mismatch)) if mismatch else
-             t("report.now_ok", tx="tx-%06d" % last))
+             t("report.now_ok", tx="tx-%06d" % last))  # noqa: UP031
     return L
 
 
@@ -437,9 +436,9 @@ def _brainstorm_section(rec, genders):
                 what = t("report.vote_none", gender=characters.check_gender(genders.get(c)))
             else:
                 what = t("report.vote_yes" if v[0] == "yes" else "report.vote_no") + (": " + v[1] if v[1] else "")
-            L.append("- %s: %s" % (characters.name(c), what))
+            L.append(f"- {characters.name(c)}: {what}")
         if p.get("fees"):
-            fees = ", ".join("%s %d" % (characters.name(c), p["fees"][c]) for c in characters.IDS)
+            fees = ", ".join("%s %d" % (characters.name(c), p["fees"][c]) for c in characters.IDS)  # noqa: UP031
             L.append(t("report.bs_fee_paid", fees=fees, first=p["fee_txs"][0], last=p["fee_txs"][-1])
                      if p.get("fee_txs") else t("report.bs_fee", fees=fees))
         for r in p.get("reasons") or []:
@@ -497,7 +496,7 @@ def _locks_section(rec):
 
 
 def _signed(n):
-    return "0" if not n else "%s%d" % ("+" if n > 0 else "−", abs(n))
+    return "0" if not n else "%s%d" % ("+" if n > 0 else "−", abs(n))  # noqa: UP031
 
 
 def _owner_what(e):

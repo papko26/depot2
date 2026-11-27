@@ -93,7 +93,7 @@ def host_name(b):
 
 
 def archive_name(host, t=None):
-    return "team-%s-%s.tar.gz" % (host, time.strftime("%Y%m%dT%H%M%SZ", time.gmtime(time.time() if t is None else t)))
+    return "team-{}-{}.tar.gz".format(host, time.strftime("%Y%m%dT%H%M%SZ", time.gmtime(time.time() if t is None else t)))
 
 
 def bdir(state):
@@ -136,7 +136,7 @@ def backup_lock(state, name=LOCK):
         except OSError:
             raise Busy()
         os.ftruncate(fd, 0)
-        os.write(fd, ("%d\n" % os.getpid()).encode())
+        os.write(fd, ("%d\n" % os.getpid()).encode())  # noqa: UP031
         yield
     finally:
         os.close(fd)
@@ -222,7 +222,7 @@ class Runner:
     # output: in --auto stdout IS the log; in the foreground print and append to the log
     def say(self, msg):
         msg = self.secrets.redact(msg)
-        stamp = "%s [%d] " % (utc_iso(), os.getpid())
+        stamp = "%s [%d] " % (utc_iso(), os.getpid())  # noqa: UP031
         if self.auto:
             print(stamp + msg, flush=True)
             return
@@ -274,7 +274,7 @@ class Runner:
         k2 = self.read_key(self.b["pass_salt"])
         if k1 == k2:
             raise BackupError(t("backup.same_secrets"), "pass")
-        n = "RCLONE_CONFIG_%s_" % self.crypt.upper()
+        n = f"RCLONE_CONFIG_{self.crypt.upper()}_"
         env = dict((k, v) for k, v in os.environ.items() if not k.startswith(n))
         env.update({n + "TYPE": "crypt", n + "REMOTE": self.dest, n + "PASSWORD": self.obscure(k1),
                     n + "PASSWORD2": self.obscure(k2), n + "FILENAME_ENCRYPTION": "standard",
@@ -285,7 +285,7 @@ class Runner:
     def obj(self, name):
         if not NAME_RE.match(name):
             raise BackupError(t("backup.bad_name", name=repr(name)), "internal")
-        return "%s:%s" % (self.crypt, name)
+        return f"{self.crypt}:{name}"
 
     def rclone(self, step, *args):
         argv = [self.b["rclone_bin"]] + list(args)
@@ -335,8 +335,8 @@ class Runner:
             with self.state.lock(wait_s=float(self.b["lock_wait_s"])):
                 held = time.time()
                 # Not niced: it is short (~0.4 s for 100 MB) and holds the lock.
-                p = subprocess.run(["tar", "-C", parent, "-cf", tar_path, "--exclude=%s/.lock" % base,
-                                    "--exclude=%s/%s" % (base, DIR), "--exclude=*.tmp-*", base],
+                p = subprocess.run(["tar", "-C", parent, "-cf", tar_path, f"--exclude={base}/.lock",
+                                    f"--exclude={base}/{DIR}", "--exclude=*.tmp-*", base],
                                    stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
                                    text=True)
                 held = time.time() - held
@@ -346,8 +346,7 @@ class Runner:
             raise BackupError(t("backup.busy", wait=wait), "snapshot")
         if p.returncode != 0:
             raise BackupError(t("backup.tar", code=p.returncode), "snapshot", p.stderr.strip()[-500:])
-        self.say("snapshot: %s, %.1f MB, the state lock held %.1f s (waited %.1f s)"
-                 % (os.path.basename(tar_path), os.path.getsize(tar_path) / 1e6, held, time.time() - t0 - held))
+        self.say(f"snapshot: {os.path.basename(tar_path)}, {os.path.getsize(tar_path) / 1e6:.1f} MB, the state lock held {held:.1f} s (waited {time.time() - t0 - held:.1f} s)")
         p = subprocess.run(_nice(["gzip", "-6", "-n", tar_path]), stdin=subprocess.DEVNULL,
                            stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         local = os.path.join(tmp, name)
@@ -388,7 +387,7 @@ class Runner:
             if p.returncode != 0:
                 raise self.rclone_error("deletefile", p)
             deleted.append(n)
-            self.say("retention: deleted %s" % n)
+            self.say(f"retention: deleted {n}")
         return keep, deleted
 
     # --- the runs --------------------------------------------------------------------------
@@ -398,7 +397,7 @@ class Runner:
         if not dry_run:
             st["last_attempt"] = utc_iso(t0)
             save_stamp(self.state, st)
-        self.say("backup %s%s → %s (crypt %s:)" % ("(dry run) " if dry_run else "", self.state.root, self.dest,
+        self.say("backup {}{} → {} (crypt {}:)".format("(dry run) " if dry_run else "", self.state.root, self.dest,
                                                   self.crypt))
         tmp = None
         try:
@@ -407,16 +406,16 @@ class Runner:
             self.say("keys: 2 pass entries read (never shown)")
             files = self.listing()
             mine = [n for n in files if NAME_RE.match(n)]
-            self.say("folder: %d files, %d archives" % (len(files), len(mine)))
+            self.say("folder: %d files, %d archives" % (len(files), len(mine)))  # noqa: UP031
             name = archive_name(self.host, t0)
             if dry_run:
                 return self._dry(name, files)
             tmp = tempfile.mkdtemp(prefix="team-backup-")
             local, size, sha = self.snapshot(tmp, name)
-            self.say("archive: %s, %d bytes, sha256 %s" % (name, size, sha))
+            self.say("archive: %s, %d bytes, sha256 %s" % (name, size, sha))  # noqa: UP031
             self.upload(local, name)
             files = self.verify_upload(tmp, name, size)
-            self.say("uploaded and verified: lsjson size %d, cryptcheck ok" % size)
+            self.say("uploaded and verified: lsjson size %d, cryptcheck ok" % size)  # noqa: UP031
             st.update(last_success=utc_iso(), archive=name, size=size, sha256=sha, remote=self.dest,
                       source=self.state.root, duration_s=round(time.time() - t0, 1), last_error=None)
             save_stamp(self.state, st)
@@ -425,7 +424,7 @@ class Runner:
                 st["retention"] = {"ts": utc_iso(), "kept": len(keep), "deleted": deleted, "error": None}
             except BackupError as e:
                 st["retention"] = {"ts": utc_iso(), "error": e.reason}
-                self.say("retention FAILED: %s %s" % (e.reason, e.detail))
+                self.say(f"retention FAILED: {e.reason} {e.detail}")
             save_stamp(self.state, st)
             self.say("ok in %.1f s" % (time.time() - t0))
             return 0
@@ -433,7 +432,7 @@ class Runner:
             if not dry_run:
                 st["last_error"] = {"ts": utc_iso(), "reason": e.reason, "step": e.step}
                 save_stamp(self.state, st)
-            self.say("FAILED (%s): %s%s" % (e.step, e.reason, ("\n" + e.detail) if e.detail else ""))
+            self.say("FAILED ({}): {}{}".format(e.step, e.reason, ("\n" + e.detail) if e.detail else ""))
             return 1
         except Exception as e:
             if not dry_run:
@@ -452,10 +451,9 @@ class Runner:
                 dirs[:] = [d for d in dirs if d != DIR]
             size += sum(os.path.getsize(os.path.join(root, f)) for f in fs if f != ".lock")
         keep, drop = plan_retention(list(files) + [name], self.host, self.b["keep_daily"])
-        self.say("would write: %s (the state is %.1f MB before gzip)" % (name, size / 1e6))
-        self.say("would upload: rclone copyto --immutable <tmp>/%s %s:%s, then lsjson + cryptcheck"
-                 % (name, self.crypt, name))
-        self.say("retention would keep %d and delete %d%s" % (len(keep), len(drop),
+        self.say(f"would write: {name} (the state is {size / 1e6:.1f} MB before gzip)")
+        self.say(f"would upload: rclone copyto --immutable <tmp>/{name} {self.crypt}:{name}, then lsjson + cryptcheck")
+        self.say("retention would keep %d and delete %d%s" % (len(keep), len(drop),  # noqa: UP031
                                                              "".join("\n  delete " + n for n in drop)))
         self.say("dry run: nothing written, uploaded or deleted")
         return 0
@@ -478,7 +476,7 @@ class Runner:
                 name = max(ours, key=lambda n: NAME_RE.match(n).group("ts"))
             tmp = tempfile.mkdtemp(prefix="team-verify-")
             local = os.path.join(tmp, name)
-            self.say("download: %s (%d bytes) → %s" % (name, files[name], tmp))
+            self.say("download: %s (%d bytes) → %s" % (name, files[name], tmp))  # noqa: UP031
             p = self.rclone("copyto", "copyto", self.obj(name), local, *NET)
             if p.returncode != 0:
                 raise self.rclone_error("copyto", p)
@@ -517,8 +515,8 @@ class Runner:
                                      stderr=subprocess.PIPE, text=True).stdout.strip()
             head = subprocess.run(["git", "-C", repo, "log", "-1", "--format=%cI %s"], stdout=subprocess.PIPE,
                                   stderr=subprocess.PIPE, text=True).stdout.strip()
-            self.say("verified: %s, sha256 %s%s" % (name, sha, " (= the upload's)" if st.get("archive") == name else ""))
-            self.say("  %d entries under %s/; git fsck --full ok; %s commits; HEAD %s" % (len(entries), top, commits,
+            self.say("verified: {}, sha256 {}{}".format(name, sha, " (= the upload's)" if st.get("archive") == name else ""))
+            self.say("  %d entries under %s/; git fsck --full ok; %s commits; HEAD %s" % (len(entries), top, commits,  # noqa: UP031
                                                                                          head))
             st = load_stamp(self.state)
             st["last_verify"] = {"ts": utc_iso(), "archive": name, "ok": True, "entries": len(entries),
@@ -529,12 +527,12 @@ class Runner:
             st = load_stamp(self.state)
             st["last_verify"] = {"ts": utc_iso(), "ok": False, "reason": e.reason}
             save_stamp(self.state, st)
-            self.say("VERIFY FAILED (%s): %s%s" % (e.step, e.reason, ("\n" + e.detail) if e.detail else ""))
+            self.say("VERIFY FAILED ({}): {}{}".format(e.step, e.reason, ("\n" + e.detail) if e.detail else ""))
             return 1
         finally:
             if tmp:
                 shutil.rmtree(tmp, ignore_errors=True)
-                self.say("temp copy removed: %s" % tmp)
+                self.say(f"temp copy removed: {tmp}")
 
 
 # --- the check after every command -----------------------------------------------------------
@@ -652,17 +650,17 @@ def drive_status(state, cfg):
     on = b.get("drive") is True
     print("drive: %s" % ("on (backup.drive true): daily, started by any depot2 command" if on else
                          "off (backup.drive false): only by hand, depot2 backup --drive [--now|--dry-run|--verify]"))
-    print("backup of %s → %s%s/ (crypt %s:, names and contents encrypted)" % (state.root, b["remote"], b["folder"],
+    print("backup of {} → {}{}/ (crypt {}:, names and contents encrypted)".format(state.root, b["remote"], b["folder"],
                                                                             b["crypt_name"]))
-    print("keys: pass %s, %s (never shown)" % (b["pass_password"], b["pass_salt"]))
+    print("keys: pass {}, {} (never shown)".format(b["pass_password"], b["pass_salt"]))
     ls = st.get("last_success")
     if ls:
-        print("last success: %s (%.1f h ago): %s, %d bytes, sha256 %s, %s s"
+        print("last success: %s (%.1f h ago): %s, %d bytes, sha256 %s, %s s"  # noqa: UP031
               % (ls, _age_h(now, ls), st.get("archive"), st.get("size") or 0, st.get("sha256"), st.get("duration_s")))
         left = float(b["every_h"]) - _age_h(now, ls)
         if on:
             print("next: %s" % ("due: the next depot2 command starts it in the background" if left <= 0 else
-                                "in %.1f h, started by any depot2 command" % left))
+                                f"in {left:.1f} h, started by any depot2 command"))
     elif on:
         print("last success: never. The first run is a person's: depot2 backup --drive --now "
               "(no background run starts before it)")
@@ -670,19 +668,19 @@ def drive_status(state, cfg):
         print("last success: never")
     err = st.get("last_error")
     if err and (not ls or err.get("ts", "") >= ls):
-        print("last error: %s, step %s: %s" % (err.get("ts"), err.get("step"), err.get("reason")))
+        print("last error: {}, step {}: {}".format(err.get("ts"), err.get("step"), err.get("reason")))
     if st.get("last_attempt"):
-        print("last attempt: %s" % st["last_attempt"])
+        print("last attempt: {}".format(st["last_attempt"]))
     r = st.get("retention")
     if r:
-        print("retention: %s" % (("kept %d, deleted %d" % (r.get("kept", 0), len(r.get("deleted") or [])))
+        print("retention: %s" % (("kept %d, deleted %d" % (r.get("kept", 0), len(r.get("deleted") or [])))  # noqa: UP031
                                  if not r.get("error") else "FAILED: " + r["error"]))
     v = st.get("last_verify")
     if v:
-        print("last verify: %s, %s" % (v.get("ts"), ("ok: %s, %s entries, %s commits" % (
+        print("last verify: {}, {}".format(v.get("ts"), ("ok: {}, {} entries, {} commits".format(
             v.get("archive"), v.get("entries"), v.get("commits"))) if v.get("ok") else "FAILED: " + v.get("reason", "")))
     print("running now: %s" % ("yes" if is_running(state) else "no"))
-    print("log: %s" % log_path(state))
+    print(f"log: {log_path(state)}")
     line = warning(state, st, b, now) if on else None
     if line:
         print(line)
@@ -692,8 +690,7 @@ def command(state, cfg, a):
     drive_only = [f for f, on in (("--now", a.now), ("--dry-run", a.dry_run), ("--verify", a.verify),
                                   ("--archive", a.archive)) if on]
     if drive_only and not a.drive:
-        print("error: %s is for Drive: depot2 backup --drive %s (the git push: depot2 backup --push)"
-              % (drive_only[0], " ".join(drive_only)), file=sys.stderr)
+        print("error: {} is for Drive: depot2 backup --drive {} (the git push: depot2 backup --push)".format(drive_only[0], " ".join(drive_only)), file=sys.stderr)
         return 1
     if a.auto and not (a.push or a.drive):
         print("error: --auto goes with --push or --drive", file=sys.stderr)
@@ -711,8 +708,8 @@ def command(state, cfg, a):
             return r.backup(dry_run=a.dry_run)
     except Busy:
         if a.auto:
-            r.say("another backup run holds %s: nothing to do" % state.path(DIR, LOCK))
+            r.say(f"another backup run holds {state.path(DIR, LOCK)}: nothing to do")
             return 0
-        print("error: a backup is running already (%s); see depot2 backup --status" % state.path(DIR, LOCK),
+        print(f"error: a backup is running already ({state.path(DIR, LOCK)}); see depot2 backup --status",
               file=sys.stderr)
         return 1

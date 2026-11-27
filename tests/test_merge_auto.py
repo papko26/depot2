@@ -34,7 +34,7 @@ class AutoBase(MergeBase):
         return "\n".join(self.entry(ref)["log"])
 
     def show(self, ref, path):
-        return self.g(self.tmp, "--git-dir", self.bare, "show", "%s:%s" % (ref, path))
+        return self.g(self.tmp, "--git-dir", self.bare, "show", f"{ref}:{path}")
 
     def trial_refs(self):
         return self.g(self.tmp, "--git-dir", self.bare, "for-each-ref", "--format=%(refname)", "refs/heads/mq/").split()
@@ -152,8 +152,8 @@ class GeneratedTest(AutoBase):
         self.assertEqual(len(self.pushed_to("feat-a")), 2)
         head = self.g(self.clone, "rev-parse", "refs/heads/feat-a")
         self.assertEqual(self.g(self.tmp, "--git-dir", self.bare, "log", "-1", "--format=%s", head),
-                         "Re-record %s on the merge" % g)
-        self.assertIn("main's %s is in " % g, self.log(301))
+                         f"Re-record {g} on the merge")
+        self.assertIn(f"main's {g} is in ", self.log(301))
         self.assertEqual(self.gens("golden")[0]["argv"][1], "origin/feat-a")
         self.assertIsNone(self.entry(301).get("golden_pending"))
 
@@ -162,7 +162,7 @@ class GeneratedTest(AutoBase):
         os.environ["FAKE_GEN_GOLDEN_FAIL"] = "1"
         rc, out, _ = self.team("merge", "run")
         self.assertEqual(rc, 1)
-        self.assertIn("STOP: the re-record of %s on feat-a @ " % g, out)
+        self.assertIn(f"STOP: the re-record of {g} on feat-a @ ", out)
         self.assertTrue(self.entry(301).get("golden_pending"))
         os.environ.pop("FAKE_GEN_GOLDEN_FAIL")
         self.team("merge", "resume", "--reason", "primary вернулся")
@@ -179,7 +179,7 @@ class TrialTest(AutoBase):
         self.main_commit({"docs/GENERATED.md": MAP0})
         for n, br, f in ((301, "feat-a", "d.txt"), (302, "feat-b", "e.txt"), (303, "feat-c", "f.txt")):
             self.pr(n, br, {f: f + "\n", "docs/GENERATED.md": MAP0.replace("files: 3", "files: 4") + f + "\n"})
-            self.team("merge", "add", str(n), "--word", "мердж %d" % n)
+            self.team("merge", "add", str(n), "--word", "мердж %d" % n)  # noqa: UP031
 
     def test_trials_on_top_of_the_one_riding_and_its_tree_tested_already(self):
         self.three()
@@ -205,15 +205,14 @@ class TrialTest(AutoBase):
         hist = [(h["event"], h["entry"]) for h in self.q().history()]
         self.assertLess(hist.index(("trial", "mq-0002")), hist.index(("merged_pr", "mq-0001")))
         md = self.team("merge")[1]
-        self.assertIn("Пробы (ветки mq/<PR>, глубина 2): #302 — mq/302 %s поверх origin/main + #301 (CI на mq/302)"
-                      % t2["sha"][:7], md)
-        self.assertIn("ждёт · проба mq/303 %s" % t3["sha"][:7], md)
+        self.assertIn("Пробы (ветки mq/<PR>, глубина 2): #302 — mq/302 {} поверх origin/main + #301 (CI на mq/302)".format(t2["sha"][:7]), md)
+        self.assertIn("ждёт · проба mq/303 {}".format(t3["sha"][:7]), md)
         rc, out, err = self.team("merge", "run")
         self.assertEqual(rc, 0, out + err)
         # each PR's own sync after the one before merged: the same tree its trial had
         for n, br, t in ((302, "feat-b", t2), (303, "feat-c", t3)):
-            self.assertEqual(self.bare_head("refs/heads/%s^{tree}" % br), t["tree"])
-            self.assertIn("is the trial mq/%d's" % n, self.log(n))
+            self.assertEqual(self.bare_head(f"refs/heads/{br}^{{tree}}"), t["tree"])
+            self.assertIn("is the trial mq/%d's" % n, self.log(n))  # noqa: UP031
         self.assertEqual(self.g(self.tmp, "--git-dir", self.bare, "rev-parse", "refs/heads/feat-b^2"), m301)
         self.assertEqual(self.trial_refs(), [])  # the trials' branches go with the merges
         self.assertEqual(self.show("main", "docs/GENERATED.md"), "files: 6\n\na.txt\nb.txt\nc.txt\nd.txt\ne.txt\nf.txt")
@@ -268,7 +267,7 @@ class TrialTest(AutoBase):
         t = self.entry(302)["trial"]
         self.assertEqual(t["status"], "golden")
         self.assertEqual(self.pushed_to("mq/302"), [])
-        self.assertIn("not pushed: %s takes main's side and is re-recorded at its turn" % g, self.log(302))
+        self.assertIn(f"not pushed: {g} takes main's side and is re-recorded at its turn", self.log(302))
         self.assertEqual(self.show("main", g), "golden of s-a s0 s1")
         self.assertEqual(len(self.gens("golden")), 1)
 
@@ -279,7 +278,7 @@ class TrialTest(AutoBase):
         self.pr(302, "feat-b", {"e.txt": "e\n", "docs/GENERATED.md": MAP0.replace("files: 3", "files: 4") + "e.txt\n"})
         self.pr(303, "feat-c", {"a.txt": "from c\n"})
         for n in (301, 302, 303):
-            self.team("merge", "add", str(n), "--word", "мердж %d" % n)
+            self.team("merge", "add", str(n), "--word", "мердж %d" % n)  # noqa: UP031
         files = (merge.FILE, merge.HISTORY, "stack.json")
         before = {p: self.bytes(p) for p in files}
         rc, out, err = self.team("merge", "run", "--dry-run")

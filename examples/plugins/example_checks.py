@@ -32,12 +32,12 @@ def smoke_verdict(code, out):
         return None  # not this plugin's format: the next plugin, or the exit code, decides
     bad = [c for c in checks if not c.get("ok")]
     ok = code == 0 and not bad
-    parts = ["checks %d/%d ok" % (len(checks) - len(bad), len(checks))]
-    parts += ["%s: %s" % (c.get("check"), str(c.get("error") or "failed")[:80]) for c in bad[:3]]
+    parts = ["checks %d/%d ok" % (len(checks) - len(bad), len(checks))]  # noqa: UP031
+    parts += ["{}: {}".format(c.get("check"), str(c.get("error") or "failed")[:80]) for c in bad[:3]]
     if code is None:
         parts.append("timed out")
     elif code:
-        parts.append("exit %d" % code)
+        parts.append("exit %d" % code)  # noqa: UP031
     return ok, ", ".join(parts)
 
 
@@ -51,7 +51,7 @@ def snapshot_test(path):
 
 def after_merge(cfg, entry):
     """One line for the merge report: when the merge queue finished this entry."""
-    return {"line": "finished at %s" % time.strftime("%H:%M"), "pr": entry.get("pr")}
+    return {"line": "finished at {}".format(time.strftime("%H:%M")), "pr": entry.get("pr")}
 
 
 def round_context(cfg, kind):

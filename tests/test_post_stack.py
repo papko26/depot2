@@ -18,9 +18,9 @@ class PostStackBase(TracksBase):
     def in_slots(self, *titles, **kw):
         s = self.stk()
         for i, title in enumerate(titles):
-            o = s.add(title, branch="b%d" % (i + 1), pr=301 + i, brief="/tmp/brief-%d.md" % (i + 1), **kw)
+            o = s.add(title, branch="b%d" % (i + 1), pr=301 + i, brief="/tmp/brief-%d.md" % (i + 1), **kw)  # noqa: UP031
             s.start(o["id"])
-            s.set(o["id"], status="PR #%d, CI зелёный" % (301 + i))
+            s.set(o["id"], status="PR #%d, CI зелёный" % (301 + i))  # noqa: UP031
         return s
 
 
@@ -153,7 +153,7 @@ class PostStackTest(PostStackBase):
         self.team("stack", "post", "st-0001")
         s = self.stk()
         for i in range(4):
-            s.add("занят %d" % i)
+            s.add("занят %d" % i)  # noqa: UP031
         s.add("ждёт")
         for oid in ("st-0002", "st-0003", "st-0004", "st-0005"):
             s.start(oid)
@@ -259,8 +259,8 @@ class CarBackTest(PostStackBase):
         for oid, ref, ru in (("st-0001", "tr-0001:3", "готов"), ("st-0002", "tr-0001:7", "в работе")):
             rc, _, err = self.team("stack", "done", oid, "--reason", "вернулся в поезд")
             self.assertEqual(rc, 1)
-            self.assertIn("%s is the object of %s (%s): say what the car becomes: --car merged (its PR landed), "
-                          "--car dropped (the car is off), or --car back" % (oid, ref, ru), err)
+            self.assertIn(f"{oid} is the object of {ref} ({ru}): say what the car becomes: --car merged (its PR landed), "
+                          "--car dropped (the car is off), or --car back", err)
         self.assertEqual([c["status"] for c in self.tracks().get("tr-0001")["cars"]], ["ready", "running"])
         self.assertEqual([o["id"] for o in self.stk().objects()], ["st-0002", "st-0001", "st-0003"])
 

@@ -28,8 +28,7 @@ def cmd_round(state, cfg, a):
         given = [f for f, v in (("--kind", a.kind), ("--input", a.input), ("--context", a.context), ("--since", a.since),
                                 ("--pr", a.pr), ("--only", a.only), ("--brainstorm", a.brainstorm)) if v]
         if given:
-            raise ValueError("round --resume %s goes on with the round's own kind, input and cast: no %s"
-                             % (a.resume, ", ".join(given)))
+            raise ValueError("round --resume {} goes on with the round's own kind, input and cast: no {}".format(a.resume, ", ".join(given)))
     elif not a.kind:
         raise ValueError("round needs --kind (or --resume ROUND_ID: an aborted round goes on)")
     only = characters.resolve(a.only) if a.only else None
@@ -38,27 +37,27 @@ def cmd_round(state, cfg, a):
         who = TeamStack(state, cfg).get(a.item).get("who")
         if who not in (None, "all"):
             if only and only != who:
-                raise ValueError("%s is for %s alone, not %s" % (a.item, characters.name(who), characters.name(only)))
+                raise ValueError(f"{a.item} is for {characters.name(who)} alone, not {characters.name(only)}")
             if not only:
                 only = who
-                print("solo round: %s (from %s)" % (characters.name(who), a.item))
+                print(f"solo round: {characters.name(who)} (from {a.item})")
     try:
         r = run_round(state, cfg, a.kind, a.input, a.context or (), since=a.since, dry_run=a.dry_run,
                       pr=a.pr, brainstorm=a.brainstorm, only=only, resume=a.resume)
     except RoundAborted as e:
-        print("FATAL: %s" % e, file=sys.stderr)
+        print(f"FATAL: {e}", file=sys.stderr)
         return 2
     if r and a.item:
         from . import effort
         from .tstack import TeamStack
         o = TeamStack(state, cfg).record_round(a.item, r["id"], r["costs"])
-        print("%s: round %s, %s" % (a.item, r["id"], effort.fmt(o["spent_mtok"], cfg)))
-        state.commit("team: tstack %s ← round %s" % (a.item, r["id"]))
+        print("{}: round {}, {}".format(a.item, r["id"], effort.fmt(o["spent_mtok"], cfg)))
+        state.commit("team: tstack {} ← round {}".format(a.item, r["id"]))
     if r:
         print("")
         print(r["report"])
         if r.get("fatal"):  # the round is done and saved; its lock pass hit a fatal error
-            print("FATAL: %s" % r["fatal"], file=sys.stderr)
+            print("FATAL: {}".format(r["fatal"]), file=sys.stderr)
             return 2
     return 0
 
@@ -72,7 +71,7 @@ def cmd_report(state, cfg, a):
     atomic_write(path, text)
     state.touch(path)
     print(text, end="")
-    state.commit("team: report %s rebuilt" % a.round)
+    state.commit(f"team: report {a.round} rebuilt")
     return 0
 
 
@@ -82,8 +81,8 @@ def cmd_payout(state, cfg, a):
     tx = led.payout(cid, a.n, a.reason, round_id=a.round, point=a.point, settles=a.settles)
     if a.settles:
         Pending(state).close(a.settles, a.reason, tx_id=tx["id"])
-    print("%s %s +%d → %d" % (tx["id"], characters.name(cid), a.n, tx["balance_after"]))
-    state.commit("team: payout %s +%d (%s)" % (cid, a.n, a.reason[:80]))
+    print("%s %s +%d → %d" % (tx["id"], characters.name(cid), a.n, tx["balance_after"]))  # noqa: UP031
+    state.commit("team: payout %s +%d (%s)" % (cid, a.n, a.reason[:80]))  # noqa: UP031
     return 0
 
 
@@ -94,10 +93,10 @@ def cmd_fine(state, cfg, a):
     for cid in cids:
         tx = led.fine(cid, a.n, a.reason, round_id=a.round, point=a.point)
         taken = -tx["amount"]
-        print("%s %s -%d%s → %d" % (tx["id"], characters.name(cid), taken,
-                                    "" if taken == a.n else " (fine %d; the balance had only %d)" % (a.n, taken),
+        print("%s %s -%d%s → %d" % (tx["id"], characters.name(cid), taken,  # noqa: UP031
+                                    "" if taken == a.n else " (fine %d; the balance had only %d)" % (a.n, taken),  # noqa: UP031
                                     tx["balance_after"]))
-    state.commit("team: fine %s %d%s (%s)" % ("all" if a.character == "all" else cids[0], a.n,
+    state.commit("team: fine %s %d%s (%s)" % ("all" if a.character == "all" else cids[0], a.n,  # noqa: UP031
                                              "".join(" " + x for x in (a.round, a.point) if x), a.reason[:80]))
     return 0
 
@@ -110,9 +109,9 @@ def cmd_refund(state, cfg, a):
     cid = None if a.character == "all" else characters.resolve(a.character)
     txs = Ledger(state).refund_stakes(cid, a.round, point=a.point, reason=a.reason)
     for tx in txs:
-        print("%s %s +%d (%s %s, ref %s) → %d" % (tx["id"], characters.name(tx["character"]), tx["amount"],
+        print("%s %s +%d (%s %s, ref %s) → %d" % (tx["id"], characters.name(tx["character"]), tx["amount"],  # noqa: UP031
                                                   tx["round"], tx.get("point"), tx["ref"], tx["balance_after"]))
-    state.commit("team: refund %s %s%s (%s)" % (a.character, a.round, " " + a.point if a.point else "",
+    state.commit("team: refund {} {}{} ({})".format(a.character, a.round, " " + a.point if a.point else "",
                                                (a.reason or "")[:80]))
     return 0
 
@@ -128,15 +127,15 @@ def cmd_auto_refund(state, cfg, a):
     txs = led.auto_refund_round(a.round, a.reason or AUTO_REASON)
     if not txs:
         back = led.auto_refunds(a.round)
-        raise LedgerError("nothing open in %s%s" % (a.round, (": its %d stakes came back already (%s … %s)"
+        raise LedgerError("nothing open in {}{}".format(a.round, (": its %d stakes came back already (%s … %s)"  # noqa: UP031
                                                              % (len(back), back[0]["id"], back[-1]["id"]))
                                                    if back else ""))
     for tx in txs:
-        print("%s %s +%d auto (%s %s, ref %s) → %d" % (tx["id"], characters.name(tx["character"]), tx["amount"],
+        print("%s %s +%d auto (%s %s, ref %s) → %d" % (tx["id"], characters.name(tx["character"]), tx["amount"],  # noqa: UP031
                                                        tx["round"], tx.get("point"), tx["ref"], tx["balance_after"]))
-    print("%d stakes, %d tokens back in %s (auto_refund: not an owner action, no reflection). "
+    print("%d stakes, %d tokens back in %s (auto_refund: not an owner action, no reflection). "  # noqa: UP031
           "Rebuild its report: depot2 report --round %s" % (len(txs), sum(t["amount"] for t in txs), a.round, a.round))
-    state.commit("team: auto refund %s (%d stakes, %d tokens)" % (a.round, len(txs), sum(t["amount"] for t in txs)))
+    state.commit("team: auto refund %s (%d stakes, %d tokens)" % (a.round, len(txs), sum(t["amount"] for t in txs)))  # noqa: UP031
     return 0
 
 
@@ -144,10 +143,10 @@ def cmd_forfeit(state, cfg, a):
     cid = None if a.character == "all" else characters.resolve(a.character)
     txs = Ledger(state).forfeit_stakes(cid, a.round, point=a.point, reason=a.reason)
     for tx in txs:
-        print("%s %s: stake %d forfeited (%s %s, ref %s) → %d" % (
+        print("%s %s: stake %d forfeited (%s %s, ref %s) → %d" % (  # noqa: UP031
             tx["id"], characters.name(tx["character"]), tx["stake"], tx["round"], tx.get("point"),
             tx["ref"], tx["balance_after"]))
-    state.commit("team: forfeit %s %s%s (%s)" % (a.character, a.round, " " + a.point if a.point else "",
+    state.commit("team: forfeit {} {}{} ({})".format(a.character, a.round, " " + a.point if a.point else "",
                                                 (a.reason or "")[:80]))
     return 0
 
@@ -163,19 +162,19 @@ def cmd_brainstorm(state, cfg, a):
             print(json.dumps(items, ensure_ascii=False, indent=1))
             return 0
         for b in items:
-            print("%s %-9s %s (%s, %s): %s" % (b["id"], b["status"], characters.name(b["initiator"]), b["round"],
+            print("%s %-9s %s (%s, %s): %s" % (b["id"], b["status"], characters.name(b["initiator"]), b["round"],  # noqa: UP031
                                             b.get("ran_in") or "not run", b["topic"]))
             if b["status"] == "approved":
-                print("    run: depot2 round --kind brainstorm --brainstorm %s   (topic %s)" % (b["id"], b["topic_file"]))
+                print("    run: depot2 round --kind brainstorm --brainstorm {}   (topic {})".format(b["id"], b["topic_file"]))
         if not items:
             print("no %sbrainstorms" % ("" if a.all else "approved "))
         return 0
     b = log.get(a.id)
     if b["status"] != "approved":
-        raise ValueError("%s is %s: only an approved brainstorm that never ran is cancelled" % (a.id, b["status"]))
+        raise ValueError("{} is {}: only an approved brainstorm that never ran is cancelled".format(a.id, b["status"]))
     refunds = _brainstorm_failed(state, Ledger(state), b, None, "never ran: " + a.reason)
-    print("%s cancelled; the fee came back (%s)" % (a.id, ", ".join(refunds)))
-    state.commit("team: brainstorm %s cancelled (%s)" % (a.id, a.reason[:80]))
+    print("{} cancelled; the fee came back ({})".format(a.id, ", ".join(refunds)))
+    state.commit(f"team: brainstorm {a.id} cancelled ({a.reason[:80]})")
     return 0
 
 
@@ -186,13 +185,13 @@ def cmd_orders(state, cfg, a):
         print(json.dumps(items, ensure_ascii=False, indent=1))
         return 0
     for o in items:
-        print("%s %-8s %s (%s): %s" % (o["id"], o["status"], characters.name(o["character"]), o["round"], o["command"]))
-        print("    seeds %s; %s; threshold: %s; forecast: %s; why: %s" % (o["seeds"], o["hardware"], o["threshold"],
+        print("%s %-8s %s (%s): %s" % (o["id"], o["status"], characters.name(o["character"]), o["round"], o["command"]))  # noqa: UP031
+        print("    seeds {}; {}; threshold: {}; forecast: {}; why: {}".format(o["seeds"], o["hardware"], o["threshold"],
                                                                        o["forecast"], o["why"]))
         for r in o.get("results") or []:
-            print("    result: %s" % r)
+            print(f"    result: {r}")
         if o.get("outcome"):
-            print("    settled: %s (%s): %s" % (o["outcome"], o.get("settle_tx"), o.get("settle_reason") or ""))
+            print("    settled: {} ({}): {}".format(o["outcome"], o.get("settle_tx"), o.get("settle_reason") or ""))
     if not items:
         print("no %sorders" % ("" if a.all else "open "))
     return 0
@@ -207,31 +206,31 @@ def cmd_order(state, cfg, a):
     o = log.get(a.id)
     if a.action == "done":
         if o["status"] != "queued":
-            raise ValueError("%s is %s: only a queued order is marked done" % (a.id, o["status"]))
+            raise ValueError("{} is {}: only a queued order is marked done".format(a.id, o["status"]))
         missing = [f for f in a.result if not os.path.isfile(f)]
         if missing:
-            raise ValueError("no such result file: %s" % ", ".join(missing))
+            raise ValueError("no such result file: {}".format(", ".join(missing)))
         d = os.path.join(os.path.expanduser(cfg["orders"]["results_dir"]), a.id)
         os.makedirs(d, exist_ok=True)
         dest = []
         for f in a.result:
             to = os.path.join(d, os.path.basename(f))
             if os.path.exists(to):
-                raise ValueError("%s exists already; results are never overwritten" % to)
+                raise ValueError(f"{to} exists already; results are never overwritten")
             shutil.copy2(f, to)
             dest.append(to)
         log.add(a.id, "done", results=dest, note=a.note)
-        print("%s done: %s" % (a.id, ", ".join(dest)))
-        state.commit("team: order %s done" % a.id)
+        print("{} done: {}".format(a.id, ", ".join(dest)))
+        state.commit(f"team: order {a.id} done")
         return 0
     if o["status"] != "done":
-        raise ValueError("%s is %s: only a done order is settled" % (a.id, o["status"]))
+        raise ValueError("{} is {}: only a done order is settled".format(a.id, o["status"]))
     led = Ledger(state)
     tx = led.order_settle(led.get(o["tx"]), a.outcome, cfg["orders"]["moved_bonus"], a.reason)
     log.add(a.id, "settled", outcome=a.outcome, settle_tx=tx["id"], settle_reason=a.reason)
-    print("%s settled %s: %s %+d → %d" % (a.id, a.outcome, characters.name(tx["character"]), tx["amount"],
+    print("%s settled %s: %s %+d → %d" % (a.id, a.outcome, characters.name(tx["character"]), tx["amount"],  # noqa: UP031
                                           tx["balance_after"]))
-    state.commit("team: order %s settled %s (%s)" % (a.id, a.outcome, a.reason[:80]))
+    state.commit(f"team: order {a.id} settled {a.outcome} ({a.reason[:80]})")
     return 0
 
 
@@ -257,7 +256,7 @@ def _spent(a):
         raise ValueError("give --spent-mtok or --transcript, not both")
     if path:
         v = effort.from_transcript(os.path.expanduser(path))
-        print("%s: %.4f MTok from the transcript" % (path, v))
+        print(f"{path}: {v:.4f} MTok from the transcript")
         return v
     return spent
 
@@ -271,9 +270,8 @@ def _closed_car_object(state, cfg, oid, act):
     from .tracks import CAR_DONE, CAR_RU, Tracks
     t, c = Tracks(state, cfg).car_by_stack(oid)
     if c is not None and c["status"] in CAR_DONE:
-        raise ValueError("%s is the object of %s:%s, which is %s: no stack %s — the object is left over, close it: "
-                         "depot2 stack done %s --car %s --reason «…»; new work is a new car (depot2 tracks car add)"
-                         % (oid, t["id"], c["n"], CAR_RU[c["status"]], act, oid, c["status"]))
+        raise ValueError("{} is the object of {}:{}, which is {}: no stack {} — the object is left over, close it: "
+                         "depot2 stack done {} --car {} --reason «…»; new work is a new car (depot2 tracks car add)".format(oid, t["id"], c["n"], CAR_RU[c["status"]], act, oid, c["status"]))
 
 
 def cmd_stack(state, cfg, a):
@@ -294,7 +292,7 @@ def cmd_stack(state, cfg, a):
     if act == "add":
         o = stk.add(a.title, brief=a.brief, branch=a.branch, depends=a.depends or (), at=a.at, pr=a.pr, status=a.status,
                     size=a.size, est_mtok=_est(cfg, a), autostart=bool(auto), stage=_planning(a), priority=a.priority)
-        print("%s added to the queue (%d/%d), autostart %s, %s" % (o["id"], len(stk.queue()), stk.queue_max,
+        print("%s added to the queue (%d/%d), autostart %s, %s" % (o["id"], len(stk.queue()), stk.queue_max,  # noqa: UP031
                                                                      "yes" if o["autostart"] else "no", pri.cell(o)))
     elif act == "start":
         _closed_car_object(state, cfg, a.id, "start")
@@ -302,10 +300,10 @@ def cmd_stack(state, cfg, a):
         o = stk.start(a.id, branch=a.branch, reason=a.reason, force=a.force, why=a.why)
         _forced_line(a.id, stk.last_forced, a.why)
         if was == "post" and o["where"] == "queue":
-            print("%s ← the post-stack, back for work: no free slot (%d/%d), the head of the queue"
+            print("%s ← the post-stack, back for work: no free slot (%d/%d), the head of the queue"  # noqa: UP031
                   % (o["id"], len(stk.in_slots()), stk.slots_n))
         else:
-            print("%s → slot (%d/%d)%s" % (o["id"], len(stk.in_slots()), stk.slots_n,
+            print("%s → slot (%d/%d)%s" % (o["id"], len(stk.in_slots()), stk.slots_n,  # noqa: UP031
                                            ", back from the post-stack for work" if was == "post" else ""))
         link = Tracks(state, cfg).on_stack("start" if o["where"] == "slot" else "requeue", a.id, reason=a.reason,
                                            forced=stk.last_forced, why=a.why)
@@ -318,16 +316,15 @@ def cmd_stack(state, cfg, a):
         if c is not None:
             gate = tr.car_blockers(trk, c, lock=False)
             if gate:
-                raise ValueError("%s is the object of %s:%s, which waits for %s: its PR is blocked, not ready to merge; "
-                                 "stack park %s frees the slot and keeps the PR on its track"
-                                 % (a.id, trk["id"], c["n"], ", ".join(gate), a.id))
+                raise ValueError("{} is the object of {}:{}, which waits for {}: its PR is blocked, not ready to merge; "
+                                 "stack park {} frees the slot and keeps the PR on its track".format(a.id, trk["id"], c["n"], ", ".join(gate), a.id))
         reading = _post_reading(state, cfg, stk, a.id, pr)
         o = stk.post(a.id, reason=a.reason, ci=a.ci, pr=pr, force=a.force, why=a.why, dod=_dod(a),
                      principles=reading.verdict if reading else None)
         _forced_line(a.id, stk.last_forced, a.why)
-        print("%s → the post-stack (%d/%d): PR #%s waits for the owner's merge; %s" % (
+        print("%s → the post-stack (%d/%d): PR #%s waits for the owner's merge; %s" % (  # noqa: UP031
             a.id, len(stk.posted()), stk.post_max, o["pr"],
-            "the slot is free (%d/%d)" % (len(stk.in_slots()), stk.slots_n) if was == "slot" else "it left the queue"))
+            "the slot is free (%d/%d)" % (len(stk.in_slots()), stk.slots_n) if was == "slot" else "it left the queue"))  # noqa: UP031
         link = tr.on_stack("post", a.id, pr=o["pr"], forced=stk.last_forced, why=a.why)
         if reading:
             reading.save("stack post")  # read fresh from the disk: after the post and its car's link wrote
@@ -338,14 +335,14 @@ def cmd_stack(state, cfg, a):
         o = stk.set(a.id, status=a.status, pr=a.pr, branch=a.branch, title=a.title, brief=a.brief, size=a.size,
                     est_mtok=_est(cfg, a), spent_mtok=spent, autostart=auto, clear_est=_clears(a), ci=a.ci, dod=_dod(a),
                     note=a.note, priority=a.priority)
-        print("%s updated" % a.id)
+        print(f"{a.id} updated")
         if a.note is not None:
             print(t("cli.note_added", id=a.id, n=len(o["notes"]), note=o["notes"][-1]))
         if a.pr or spent is not None or a.priority is not None:
             link = Tracks(state, cfg).on_stack("set", a.id, pr=a.pr, spent_mtok=spent, priority=a.priority)
     elif act == "move":
         stk.move(a.id, a.at)
-        print("%s → queue position %d" % (a.id, [o["id"] for o in stk.queue()].index(a.id) + 1))
+        print("%s → queue position %d" % (a.id, [o["id"] for o in stk.queue()].index(a.id) + 1))  # noqa: UP031
     elif act == "take":
         tr = Tracks(state, cfg)
         tr._stack = stk
@@ -362,13 +359,13 @@ def cmd_stack(state, cfg, a):
             raise ValueError(done_needs_car(a.id, trk, c))
         if a.car == "back":
             if c is None:
-                raise ValueError("%s is no track's car's object: --car back sends a car back to its track" % a.id)
+                raise ValueError(f"{a.id} is no track's car's object: --car back sends a car back to its track")
             pr = o.get("pr") or c.get("pr")
             if pr:
-                raise ValueError("%s has PR #%s: a car with a PR goes back to its track with `stack park %s` (the PR "
-                                 "waits there), or waits for the merge with `stack post %s`" % (a.id, pr, a.id, a.id))
+                raise ValueError(f"{a.id} has PR #{pr}: a car with a PR goes back to its track with `stack park {a.id}` (the PR "
+                                 f"waits there), or waits for the merge with `stack post {a.id}`")
         stk.done(a.id, a.reason, outcome=a.car)
-        print("%s left the stack (%s)" % (a.id, a.reason))
+        print(f"{a.id} left the stack ({a.reason})")
         link = tr.on_stack("done", a.id, reason=a.reason, car_status=a.car)
         if o["where"] == "slot":
             link += _freed_slot(state, cfg)
@@ -378,37 +375,37 @@ def cmd_stack(state, cfg, a):
         if c is not None:
             pr = stk.get(a.id).get("pr") or c.get("pr")
             if not pr:
-                raise ValueError("%s is the object of %s:%s and has no PR: a car is parked with its PR "
-                                 "(stack set %s --pr N first); a car with no PR goes back to its track with "
-                                 "stack done %s --car back" % (a.id, trk["id"], c["n"], a.id, a.id))
+                raise ValueError("{} is the object of {}:{} and has no PR: a car is parked with its PR "
+                                 "(stack set {} --pr N first); a car with no PR goes back to its track with "
+                                 "stack done {} --car back".format(a.id, trk["id"], c["n"], a.id, a.id))
             stk.park(a.id, a.reason, leave=True)
-            print("%s parked: it left the stack, the slot is free (%d/%d)" % (a.id, len(stk.in_slots()), stk.slots_n))
+            print("%s parked: it left the stack, the slot is free (%d/%d)" % (a.id, len(stk.in_slots()), stk.slots_n))  # noqa: UP031
             link = tr.on_stack("park", a.id, reason=a.reason, pr=pr)
         else:
             stk.park(a.id, a.reason)
-            print("%s parked: slot → the head of the queue, its branch, PR and status kept (%d/%d); "
+            print("%s parked: slot → the head of the queue, its branch, PR and status kept (%d/%d); "  # noqa: UP031
                   "a freed slot never takes it by itself: depot2 stack start %s" % (
                       a.id, len(stk.in_slots()), stk.slots_n, a.id))
         link += _freed_slot(state, cfg)
     elif act == "unlock":
         how = "met" if a.met else "owner"
         lock = stk.unlock(a.id, how, a.reason)
-        print("%s: %s lifted (%s)" % (a.id, lock["id"], "the condition landed" if how == "met" else "the owner"))
+        print("{}: {} lifted ({})".format(a.id, lock["id"], "the condition landed" if how == "met" else "the owner"))
         if how == "owner":  # the owner's act on the locker: it opens its reflection gate
             d = Decisions(state).add(lock["by"], t("cli.unlock_decision", lock=lock["id"], id=a.id,
                                                    condition=lock["condition"], reason=a.reason),
                                      round_id=lock.get("round"))
-            print("%s recorded for %s" % (d["id"], lock["by"]))
+            print("{} recorded for {}".format(d["id"], lock["by"]))
         if cfg["lock"]["returned"] and lock.get("tx"):
             led = Ledger(state)
-            tx = led.lock_refund(led.get(lock["tx"]), "unlock %s: %s" % (lock["id"], a.reason))
-            print("%s %s +%d (the lock's price back)" % (tx["id"], characters.name(tx["character"]), tx["amount"]))
+            tx = led.lock_refund(led.get(lock["tx"]), "unlock {}: {}".format(lock["id"], a.reason))
+            print("%s %s +%d (the lock's price back)" % (tx["id"], characters.name(tx["character"]), tx["amount"]))  # noqa: UP031
     for line in stk.notes + link:
         print(line)
     print("")
     print(stk.md(), end="")
-    state.commit("team: stack %s %s%s" % (act, getattr(a, "id", None) or getattr(a, "title", "")[:60],
-                                           " → %s:%s" % (trk["id"], c["n"]) if act == "take" else ""))
+    state.commit("team: stack {} {}{}".format(act, getattr(a, "id", None) or getattr(a, "title", "")[:60],
+                                           " → {}:{}".format(trk["id"], c["n"]) if act == "take" else ""))
     return 0
 
 
@@ -474,7 +471,7 @@ def cmd_car(state, cfg, a):
                   t("cli.project_required_off", car=car.label))
         print("")
         print(stages.Car(state, cfg, a.id).show(), end="")
-        state.commit("team: car %s %s" % (a.action, a.id))
+        state.commit(f"team: car {a.action} {a.id}")
         return 0
     stage = stages.parse(a.stage)
     warn = [car.tracks.moved_note(a.id), car.tracks.closed_note(car.track, car.car) if car.car is not None else None]
@@ -482,11 +479,11 @@ def cmd_car(state, cfg, a):
     for line in warn:
         if line:
             print(line)
-    print("%s: %s → %s%s%s" % (car.label, stages.ru(was), stages.ru(stage), (" (%s)" % a.why) if a.why else "",
+    print("{}: {} → {}{}{}".format(car.label, stages.ru(was), stages.ru(stage), (f" ({a.why})") if a.why else "",
                               " [--force]" if a.force else ""))
     print("")
     print(stages.Car(state, cfg, a.id).show(), end="")
-    state.commit("team: car stage %s %s" % (a.id, stage))
+    state.commit(f"team: car stage {a.id} {stage}")
     return 0
 
 
@@ -497,7 +494,7 @@ def cmd_priority(state, cfg, a):
         return 0
     for line in pri.set_any(state, cfg, a.id, a.n):
         print(line)
-    state.commit("team: priority %s %s" % (a.id, pri.parse(a.n)))
+    state.commit(f"team: priority {a.id} {pri.parse(a.n)}")
     return 0
 
 
@@ -511,12 +508,12 @@ def cmd_repair(state, cfg, a):
             print(line)
         for line in _freed_slot(state, cfg):
             print(line)
-        state.commit("team: repair add %s (%s)" % (obj["id"], ref or obj.get("bug")))
+        state.commit("team: repair add {} ({})".format(obj["id"], ref or obj.get("bug")))
     else:
         claim, lines = claims.link(state, cfg, a.repair, a.of, why=a.why, by=by, force=a.force)
         for line in lines:
             print(line)
-        state.commit("team: repair link %s --of %s" % (a.repair, a.of))
+        state.commit(f"team: repair link {a.repair} --of {a.of}")
     return 0
 
 
@@ -551,7 +548,7 @@ def cmd_agents(state, cfg, a):
         except ValueError:  # refused: an agent that finished meanwhile is booked all the same
             for line in ags.lines:
                 print(line)
-            state.commit("team: agents: %s" % "; ".join(ags.lines)[:200])
+            state.commit("team: agents: {}".format("; ".join(ags.lines)[:200]))
             raise
         print(ag["id"])  # the first line: the id alone
         for line in ags.lines:
@@ -560,7 +557,7 @@ def cmd_agents(state, cfg, a):
             from .gates import gates_text
             print(t("cli.forced", id=ag["id"], why=ag["why"], gates=gates_text(ag["gates"])))
         print(t("cli.agent_started", id=ag["id"], role=ags.view(ag)["role_ru"], car=ag["car"], by=ag["by"]))
-        state.commit("team: agents start %s %s %s" % (ag["id"], ag["car"], ag["role"]))
+        state.commit("team: agents start {} {} {}".format(ag["id"], ag["car"], ag["role"]))
         return 0
     if act == "attach":
         ag = ags.attach(a.id, a.agent_id, transcript=a.transcript)
@@ -569,14 +566,14 @@ def cmd_agents(state, cfg, a):
                 turns=v["turns"] if v["turns"] is not None else "—", spent=v["spent_text"]))
         for line in ags.lines:
             print(line)
-        state.commit("team: agents attach %s %s" % (ag["id"], ag["agent_id"]))
+        state.commit("team: agents attach {} {}".format(ag["id"], ag["agent_id"]))
         return 0
     if act == "stop":
         ag = ags.stop(a.id, a.why, by=a.by)
         print(t("cli.agent_stopped", id=ag["id"], why=ag["stopped"]["why"]))
         for line in ags.lines:
             print(line)
-        state.commit("team: agents stop %s" % ag["id"])
+        state.commit("team: agents stop {}".format(ag["id"]))
         return 0
     # reading: an agent that finished is booked on its car first (once), then the table
     ags.settle()
@@ -592,7 +589,7 @@ def cmd_agents(state, cfg, a):
         print(ags.md(include_all=a.all), end="")
     for line in ags.lines:
         print(line, file=sys.stderr if a.json else sys.stdout)
-    state.commit("team: agents: %s" % "; ".join(ags.lines)[:200])
+    state.commit("team: agents: {}".format("; ".join(ags.lines)[:200]))
     return 0
 
 
@@ -612,7 +609,7 @@ def cmd_ballots(state, cfg, a):
         from .store import read_json
         rec = read_json(os.path.join(state.rounds_dir(), a.round, "round.json"))
         if not rec or rec.get("status") != "done":
-            raise ValueError("no finished round %s" % a.round)
+            raise ValueError(f"no finished round {a.round}")
         add_to_ballots(state, rec)
     elif act == "point":
         bq.point(a.round, a.point)
@@ -625,17 +622,17 @@ def cmd_ballots(state, cfg, a):
     elif act == "drop":
         bq.close(a.round, "dropped", a.reason)
     print(Ballots(state).md(open_only=False), end="")
-    state.commit("team: ballots %s %s" % (act, a.round))
+    state.commit(f"team: ballots {act} {a.round}")
     return 0
 
 
 def cmd_gender(state, cfg, a):
     cid = characters.resolve(a.character)
     p = Persona(state, cid)
-    old = p.meta().get("gender") or "unset (default %s)" % p.gender()
+    old = p.meta().get("gender") or f"unset (default {p.gender()})"
     p.set_gender(a.gender)
-    print("%s: gender %s → %s (meta.json and spec.md)" % (characters.name(cid), old, a.gender))
-    state.commit("team: gender %s = %s" % (cid, a.gender))
+    print(f"{characters.name(cid)}: gender {old} → {a.gender} (meta.json and spec.md)")
+    state.commit(f"team: gender {cid} = {a.gender}")
     return 0
 
 
@@ -649,16 +646,16 @@ def cmd_decide(state, cfg, a):
     if a.round and a.point and bq.has(a.round):  # the ballot's own spelling of the point (q3 → Q3)
         point = next((p for p in bq.get(a.round)["points_left"] if p.lower() == a.point.lower()), a.point)
     d = Decisions(state).add(who, a.text, round_id=a.round, point=point)
-    print("%s recorded for %s" % (d["id"], who))
+    print("{} recorded for {}".format(d["id"], who))
     if a.round and a.point and bq.has(a.round):
         if bq.point(a.round, point, quiet=True):
             e = bq.get(a.round)
-            print("ballot %s: %s answered; %d points left (%s)" % (a.round, point, len(e["points_left"]), e["status"]))
+            print("ballot %s: %s answered; %d points left (%s)" % (a.round, point, len(e["points_left"]), e["status"]))  # noqa: UP031
         else:
             left = bq.get(a.round)["points_left"]
-            print("ballot %s: no open point %s (open: %s): the ballot is as it was" % (
+            print("ballot {}: no open point {} (open: {}): the ballot is as it was".format(
                 a.round, a.point, ", ".join(left) or "none"))
-    state.commit("team: decision %s for %s" % (d["id"], who))
+    state.commit("team: decision {} for {}".format(d["id"], who))
     return 0
 
 
@@ -677,8 +674,8 @@ def cmd_reflect(state, cfg, a):
     try:
         status, _ = reflect(state, cfg, only=only, dry_run=a.dry_run)
     except FatalError as e:
-        state.commit("team: reflect stopped: %s" % str(e)[:100])
-        print("FATAL: %s" % e, file=sys.stderr)
+        state.commit(f"team: reflect stopped: {str(e)[:100]}")
+        print(f"FATAL: {e}", file=sys.stderr)
         return 2
     if not a.dry_run:
         state.commit("team: reflect")
@@ -707,22 +704,22 @@ def cmd_ledger(state, cfg, a):
         return 0
     if a.all:
         for e in entries:
-            print("%s %s %-12s %-10s %+4d → %3d  %s %s %s" % (
+            print("%s %s %-12s %-10s %+4d → %3d  %s %s %s" % (  # noqa: UP031
                 e["id"], e["ts"][:16], e["type"], characters.name(e["character"]), e["amount"],
                 e["balance_after"], e.get("round") or "", e.get("point") or "", e.get("reason") or ""))
         print("")
     bal = led.balances(entries)
-    print("%-17s %7s  %s" % ("", "balance", "open stakes"))
+    print("%-17s %7s  %s" % ("", "balance", "open stakes"))  # noqa: UP031
     for cid in characters.IDS:
         st = led.open_stakes(cid=cid, entries=entries)
-        print("%-17s %7d  %s" % (characters.name(cid), bal[cid],
-                                 ", ".join("%s %s: %d" % (e["round"], e["point"], -e["amount"]) for e in st) or "—"))
-    print("%-17s %7d" % ("total", sum(bal.values())))
+        print("%-17s %7d  %s" % (characters.name(cid), bal[cid],  # noqa: UP031
+                                 ", ".join("%s %s: %d" % (e["round"], e["point"], -e["amount"]) for e in st) or "—"))  # noqa: UP031
+    print("%-17s %7d" % ("total", sum(bal.values())))  # noqa: UP031
     pend = Pending(state).open_items()
     if pend:
         print("\npending (not in the balances):")
         for p in pend:
-            print("  %s %s amount=%s: %s" % (p["id"], characters.name(p["character"]),
+            print("  {} {} amount={}: {}".format(p["id"], characters.name(p["character"]),
                                              "null" if p["amount"] is None else p["amount"], p["condition"]))
     return 0
 
@@ -731,17 +728,17 @@ def cmd_show(state, cfg, a):
     cid = characters.resolve(a.character)
     p = Persona(state, cid)
     led = Ledger(state)
-    print("# %s (%s)  balance %d  gender %s" % (characters.name(cid), cid, led.balance(cid), p.gender()))
-    print("portrait v%04d, %d versions in history (verified)\n" % (p.version(), p.verify()))
+    print("# %s (%s)  balance %d  gender %s" % (characters.name(cid), cid, led.balance(cid), p.gender()))  # noqa: UP031
+    print("portrait v%04d, %d versions in history (verified)\n" % (p.version(), p.verify()))  # noqa: UP031
     print(p.portrait().strip() or "(no portrait)")
     print("\n## last thoughts")
     for thought in p.thoughts(cfg["thoughts_in_prompt"]):
-        print("- [%s] %s" % (thought.get("round", ""), thought["thought"]))
+        print("- [{}] {}".format(thought.get("round", ""), thought["thought"]))
     st = led.open_stakes(cid=cid)
     if st:
         print("\n## open stakes")
         for e in st:
-            print("- %s %s %s: %d (%s)" % (e["id"], e["round"], e["point"], -e["amount"], e.get("reason") or ""))
+            print("- %s %s %s: %d (%s)" % (e["id"], e["round"], e["point"], -e["amount"], e.get("reason") or ""))  # noqa: UP031
     if a.spec:
         print("\n## spec\n" + p.spec())
     return 0
@@ -761,14 +758,14 @@ def cmd_seed(state, cfg, a):
     did = False
     if a.specs:
         seed_mod.init_state(state, a.specs)
-        print("state initialised at %s; specs written" % state.root)
+        print(f"state initialised at {state.root}; specs written")
         did = True
     if a.ledger:
         got = seed_mod.seed_ledger(state, seed_mod.load_seed(a.ledger))
-        print("ledger seeded: %s" % ", ".join("%s %d" % (characters.name(c), got[c]) for c in characters.IDS))
+        print("ledger seeded: {}".format(", ".join("%s %d" % (characters.name(c), got[c]) for c in characters.IDS)))  # noqa: UP031
         did = True
     if did:
-        state.commit("team: seed (%s)" % ", ".join(x for x, y in (("specs", a.specs), ("ledger", a.ledger)) if y))
+        state.commit("team: seed ({})".format(", ".join(x for x, y in (("specs", a.specs), ("ledger", a.ledger)) if y)))
     if a.portraits:
         cfg = config.load(state.root, a.set)
         only = characters.resolve(a.only) if a.only else None
@@ -776,8 +773,8 @@ def cmd_seed(state, cfg, a):
             seed_mod.seed_portraits(state, cfg, os.path.expanduser(a.ballot_dir or "") or None,
                                     os.path.expanduser(a.review_dir or "") or None, only=only, dry_run=a.dry_run)
         except FatalError as e:
-            state.commit("team: seed portraits stopped: %s" % str(e)[:100])
-            print("FATAL: %s" % e, file=sys.stderr)
+            state.commit(f"team: seed portraits stopped: {str(e)[:100]}")
+            print(f"FATAL: {e}", file=sys.stderr)
             return 2
         if not a.dry_run:
             state.commit("team: seed portraits")
@@ -798,13 +795,13 @@ def cmd_tstack(state, cfg, a):
     if act == "add":
         o = ts.add(a.kind, title=a.title, input_path=a.input, who=a.who, depends=a.depends or (), at=a.at,
                    status=a.status, size=a.size, est_mtok=_est(cfg, a), priority=a.priority)
-        print("%s added to the team queue (%d/%d), %s" % (o["id"], len(ts.queue()), ts.queue_max, pri.cell(o)))
+        print("%s added to the team queue (%d/%d), %s" % (o["id"], len(ts.queue()), ts.queue_max, pri.cell(o)))  # noqa: UP031
     elif act == "start":
         o = ts.start(a.id)
-        print("%s → team slot (%d/%d)" % (o["id"], len(ts.in_slots()), ts.slots_n))
+        print("%s → team slot (%d/%d)" % (o["id"], len(ts.in_slots()), ts.slots_n))  # noqa: UP031
         cmd = ts.command(o)
         if cmd:
-            print("run: %s   (then without --dry-run)" % cmd)
+            print(f"run: {cmd}   (then without --dry-run)")
     elif act == "set":
         spent = _spent(a)
         if a.cost is not None:  # deprecated: the spend is MTok now; converted once
@@ -812,19 +809,19 @@ def cmd_tstack(state, cfg, a):
             if spent is not None:
                 raise ValueError("give --spent-mtok (or --transcript), not --cost too")
             spent = round(effort.from_usd(a.cost, cfg), 4)
-            print("warning: --cost is deprecated (the spend is in MTok now): read as --spent-mtok %g, %s "
-                  "(%g / usage.usd_per_mtok %g)" % (spent, effort.fmt(spent, cfg), a.cost, effort.usd_per_mtok(cfg)),
+            print(f"warning: --cost is deprecated (the spend is in MTok now): read as --spent-mtok {spent:g}, {effort.fmt(spent, cfg)} "
+                  f"({a.cost:g} / usage.usd_per_mtok {effort.usd_per_mtok(cfg):g})",
                   file=sys.stderr)
         ts.set(a.id, status=a.status, title=a.title, input=a.input, who=a.who, kind=a.kind, round=a.round,
                cost_usd=a.cost, size=a.size, est_mtok=_est(cfg, a), spent_mtok=spent, clear_est=_clears(a),
                priority=a.priority)
-        print("%s updated" % a.id)
+        print(f"{a.id} updated")
     elif act == "move":
         ts.move(a.id, a.at)
-        print("%s → team queue position %d" % (a.id, [o["id"] for o in ts.queue()].index(a.id) + 1))
+        print("%s → team queue position %d" % (a.id, [o["id"] for o in ts.queue()].index(a.id) + 1))  # noqa: UP031
     elif act == "done":
         ts.done(a.id, a.reason)
-        print("%s left the team stack (%s)" % (a.id, a.reason))
+        print(f"{a.id} left the team stack ({a.reason})")
     elif act == "take":
         from .tracks import Tracks
         tr = Tracks(state, cfg)
@@ -836,8 +833,8 @@ def cmd_tstack(state, cfg, a):
         print(tr.car_md(t["id"]), end="")
     print("")
     print(ts.md(), end="")
-    state.commit("team: tstack %s %s%s" % (act, getattr(a, "id", None) or (a.title or a.kind or "")[:60],
-                                            " → %s:%s" % (t["id"], c["n"]) if act == "take" else ""))
+    state.commit("team: tstack {} {}{}".format(act, getattr(a, "id", None) or (a.title or a.kind or "")[:60],
+                                            " → {}:{}".format(t["id"], c["n"]) if act == "take" else ""))
     return 0
 
 
@@ -854,7 +851,7 @@ def cmd_tracks(state, cfg, a):
         return 0
     if act == "import":
         made = tr.import_json(a.file, dry_run=a.dry_run)
-        print("%s %d tracks, %d cars from %s" % ("DRY RUN: would import" if a.dry_run else "imported", len(made),
+        print("%s %d tracks, %d cars from %s" % ("DRY RUN: would import" if a.dry_run else "imported", len(made),  # noqa: UP031
                                                   sum(len(t["cars"]) for t in made), a.file))
         print("")
         print(tr.md(include_done=True), end="")
@@ -862,22 +859,22 @@ def cmd_tracks(state, cfg, a):
             print("")
             print(tr.car_md(t["id"]), end="")
         if not a.dry_run:
-            state.commit("team: tracks import (%d tracks)" % len(made))
+            state.commit("team: tracks import (%d tracks)" % len(made))  # noqa: UP031
         return 0
     if act == "car":
         return _cmd_car(state, cfg, tr, a)
     if act == "add":
         t = tr.add(a.title, at=a.at, est_mtok=_est(cfg, a, allow_range=True), note=a.note)
-        print("%s added (position %d)" % (t["id"], tr.data["tracks"].index(t) + 1))
+        print("%s added (position %d)" % (t["id"], tr.data["tracks"].index(t) + 1))  # noqa: UP031
         tid = t["id"]
     elif act == "set":
         tr.set(a.id, title=a.title, est_mtok=_est(cfg, a, allow_range=True), clear_est=_clears(a), at=a.at,
                add_note=a.note)
-        print("%s updated" % a.id)
+        print(f"{a.id} updated")
         tid = a.id
     print("")
     print(tr.md(include_done=True), end="")
-    state.commit("team: tracks %s %s" % (act, tid))
+    state.commit(f"team: tracks {act} {tid}")
     return 0
 
 
@@ -891,7 +888,7 @@ def _cmd_check(state, cfg, a):
     if a.from_pr:
         pr = a.pr or next((r.get("pr") for r in car.recs() if r.get("pr")), None)
         if not pr:
-            raise ValueError("%s has no PR: --pr N, or set it first (stack set … --pr N / tracks car set … --pr N)" % ref)
+            raise ValueError(f"{ref} has no PR: --pr N, or set it first (stack set … --pr N / tracks car set … --pr N)")
         reading = marks.Reading(state, cfg, ref, pr=pr)
         if not reading.plist:
             raise ValueError(t("cli.checks_empty"))
@@ -900,12 +897,12 @@ def _cmd_check(state, cfg, a):
         if reading.error:
             raise ValueError(reading.error)
         wrote = reading.save("tracks car check")
-        what = "PR #%s" % pr
+        what = f"PR #{pr}"
     elif a.rest:
         pl = marks.plist(state, cfg)
         n, word = a.rest[0], " ".join(a.rest[1:])
         labels = [p["label"] for p in pl]
-        m = re.match(r"^(\d+)(%s?)$" % i18n.rx("in.cli.principle_letter"), n, re.I)
+        m = re.match(r"^(\d+)({}?)$".format(i18n.rx("in.cli.principle_letter")), n, re.I)
         label = marks.norm_label(m.group(1), m.group(2)) if m else None
         if label not in labels:
             raise ValueError(t("cli.no_principle", n=n, labels=", ".join(labels) or t("cli.none_word")))
@@ -915,7 +912,7 @@ def _cmd_check(state, cfg, a):
         new = marks.by_hand(rec.get("marks"), label, mark, a.line)
         marks.save(state, cfg, a.ref, new, by="tracks car check", hand=label, mark=mark, line=a.line)
         wrote = True
-        what = "%s %s" % (label, marks.MARK_RU[mark])
+        what = f"{label} {marks.MARK_RU[mark]}"
         print(t("cli.mark_by_hand_line", ref=ref, label=label, mark=marks.MARK_RU[mark], line=a.line) if a.line else
               t("cli.mark_by_hand", ref=ref, label=label, mark=marks.MARK_RU[mark]))
     else:
@@ -926,7 +923,7 @@ def _cmd_check(state, cfg, a):
     print("")
     print(marks.md(ref, marks.of(rec, marks.plist(state, cfg))), end="")
     if wrote:
-        state.commit("team: tracks car check %s (%s)" % (ref, what))
+        state.commit(f"team: tracks car check {ref} ({what})")
     return 0
 
 
@@ -938,7 +935,7 @@ def _cmd_car(state, cfg, tr, a):
         t, c = tr.car_add(a.track, a.title, n=a.n, after=a.after or (), size=a.size, est_mtok=_est(cfg, a),
                           brief=a.brief, branch=a.branch, pr=a.pr, status=a.status or "waiting",
                           spent_mtok=a.spent_mtok, at=a.at, stage=_planning(a), priority=a.priority)
-        print("%s:%s added, %s" % (t["id"], c["n"], pri.cell(c)))
+        print("{}:{} added, {}".format(t["id"], c["n"], pri.cell(c)))
     elif act == "set":
         before = [tr.moved_note(a.ref), tr.closed_note(*tr.car(a.ref))]  # the car as it was, before the write
         t, c = tr.car_set(a.ref, title=a.title, after=a.after, no_after=a.no_after, size=a.size,
@@ -949,7 +946,7 @@ def _cmd_car(state, cfg, tr, a):
         for line in before:
             if line:
                 print(line)
-        print("%s:%s updated" % (t["id"], c["n"]))
+        print("{}:{} updated".format(t["id"], c["n"]))
         for line in tr.stage_lines:
             print(line)
     elif act == "move" and (a.to or a.n is not None):
@@ -960,7 +957,7 @@ def _cmd_car(state, cfg, tr, a):
         for x in [t] + ([src] if src is not t else []):  # the new track's table, then the old one's with its pointer
             print("")
             print(tr.car_md(x["id"]), end="")
-        state.commit("team: tracks car move %s → %s:%s" % (a.ref, t["id"], c["n"]))
+        state.commit("team: tracks car move {} → {}:{}".format(a.ref, t["id"], c["n"]))
         return 0
     elif act == "move":
         if a.at is None:
@@ -968,7 +965,7 @@ def _cmd_car(state, cfg, tr, a):
         if a.why:
             raise ValueError("--why goes with --to or --n")
         t, c = tr.car_move(a.ref, a.at)
-        print("%s:%s → position %d" % (t["id"], c["n"], t["cars"].index(c) + 1))
+        print("%s:%s → position %d" % (t["id"], c["n"], t["cars"].index(c) + 1))  # noqa: UP031
     elif act == "stack":
         t, c = tr.car(a.ref)
         obj, msgs = tr.car_stack(a.ref, start=a.start, force=a.force, why=a.why)
@@ -976,7 +973,7 @@ def _cmd_car(state, cfg, tr, a):
             print(m)
     print("")
     print(tr.car_md(t["id"]), end="")
-    state.commit("team: tracks car %s %s:%s" % (act, t["id"], c["n"]))
+    state.commit("team: tracks car {} {}:{}".format(act, t["id"], c["n"]))
     return 0
 
 
@@ -1023,7 +1020,7 @@ def cmd_trains(state, cfg, a):
                     not_before=a.not_before, owner=owner, note=a.when, slots=a.slots,
                     est_mtok=_est(cfg, a, allow_range=True), clear_est=_clears(a), at=a.at, add_note=a.note,
                     priority=a.priority)
-        print("%s updated" % tn["name"])
+        print("{} updated".format(tn["name"]))
         name = tn["name"]
     elif act == "state":
         lines = tr.set_state(a.name, a.to, why=a.why, force=a.force, word=a.word)
@@ -1041,14 +1038,14 @@ def cmd_trains(state, cfg, a):
             tr.car_move(a.name, a.ref, a.at)
         else:
             tr.car_drop(a.name, a.ref, why=a.why)
-        print("%s: %s %s" % (a.name, a.car_action, a.ref))
+        print(f"{a.name}: {a.car_action} {a.ref}")
         name = a.name
-        act = "car %s %s" % (a.car_action, a.ref)
+        act = f"car {a.car_action} {a.ref}"
     for line in lines:
         print(line)
     print("")
     print(tr.car_md(name), end="")
-    state.commit("team: trains %s %s" % (act, name))
+    state.commit(f"team: trains {act} {name}")
     return 0
 
 
@@ -1069,7 +1066,7 @@ def cmd_migrate(state, cfg, a):
     lines, n = migrate.run(state, cfg, dry_run=a.dry_run)
     print("\n".join(lines))
     if n and not a.dry_run:
-        state.commit("team: migrate the depot to schema %d" % migrate.SCHEMA)
+        state.commit("team: migrate the depot to schema %d" % migrate.SCHEMA)  # noqa: UP031
     return 0
 
 
@@ -1131,7 +1128,7 @@ def cmd_queue(state, cfg, a):
             version = a.version or queues.repo_version(cfg)
             e = q.add(a.text, title=a.title, where=a.where or (), version=version, date=a.date, source=a.source,
                       kind=a.kind, trigger=a.trigger, links=a.link or (), priority=a.priority)
-        print("%s added" % e["id"])
+        print("{} added".format(e["id"]))
         ids = [e["id"]]
     elif act == "set":
         fields = {k: getattr(a, k, None) for k in q.FIELDS}
@@ -1140,7 +1137,7 @@ def cmd_queue(state, cfg, a):
             if getattr(a, k, None):
                 fields["questions" if k == "question" else k] = getattr(a, k)
         q.set(a.id, **{k: v for k, v in fields.items() if v is not None})
-        print("%s updated" % a.id)
+        print(f"{a.id} updated")
         ids = [a.id]
     elif act == "take":
         from .stack import Stack
@@ -1157,23 +1154,23 @@ def cmd_queue(state, cfg, a):
         ids = [a.id, "→", ref]
     elif act == "round":
         q.to_round(a.id, a.round, cfg)
-        print("%s → round %s" % (a.id, a.round))
+        print(f"{a.id} → round {a.round}")
         ids = [a.id]
     elif act == "decide":
         decs = {d["id"] for d in Decisions(state).records()} if a.dec else None
         q.decide(a.id, dec=a.dec, reason=a.reason, decisions=decs)
-        print("%s decided%s" % (a.id, " (%s)" % a.dec if a.dec else ""))
+        print("{} decided{}".format(a.id, f" ({a.dec})" if a.dec else ""))
         ids = [a.id]
     elif act == "pr":
         q.in_pr(a.id, a.pr)
-        print("%s → PR #%d" % (a.id, a.pr))
+        print("%s → PR #%d" % (a.id, a.pr))  # noqa: UP031
         ids = [a.id]
     elif act == "done" and name == "wishes":
         for eid in a.ids:
             q.closable(eid, "done")
         for eid in a.ids:
             q.done(eid, a.reason)
-            print("%s → %s" % (eid, q.STATUS_RU["done"]))
+            print("{} → {}".format(eid, q.STATUS_RU["done"]))
         ids = list(a.ids)
     elif act in ("drop", "done", "wont"):
         status = {"wishes": {"drop": "declined"}, "think": {"drop": "dropped"},
@@ -1182,13 +1179,13 @@ def cmd_queue(state, cfg, a):
             q.closable(eid, status)
         for eid in a.ids:
             q.to_status(eid, status, reason=a.reason)
-            print("%s → %s" % (eid, q.STATUS_RU[status]))
+            print(f"{eid} → {q.STATUS_RU[status]}")
         ids = list(a.ids)
     for line in q.notes:
         print(line)
     print("")
     print(q.md(), end="")
-    state.commit("team: %s %s %s" % (name, act, " ".join(ids)[:80]))
+    state.commit("team: {} {} {}".format(name, act, " ".join(ids)[:80]))
     return 0
 
 
@@ -1220,23 +1217,23 @@ def cmd_principles(state, cfg, a):
             for key, title in SECTION_TITLE.items():
                 rows = [it for it in items if it["section"] == key]
                 if rows:
-                    print("- %s: %s" % (title, ", ".join("%d%s%s" % (it["n"], it["suffix"], " ③" if it["check"] else "")
+                    print("- {}: {}".format(title, ", ".join("%d%s%s" % (it["n"], it["suffix"], " ③" if it["check"] else "")  # noqa: UP031
                                                          for it in rows)))
-            print("words: %d, subs: %d, check: %s" % (sum(len(it["words"]) for it in items),
+            print("words: %d, subs: %d, check: %s" % (sum(len(it["words"]) for it in items),  # noqa: UP031
                                                       sum(len(it["subs"]) for it in items),
-                                                      ", ".join("pc-%04d%s" % (it["n"], it["suffix"])
+                                                      ", ".join("pc-%04d%s" % (it["n"], it["suffix"])  # noqa: UP031
                                                                 for it in items if it["check"]) or "none"))
             return 0
         path, changed = p.write()
         if changed is None:
-            print("%s: %s" % (path, _rendered(state, changed)))
-        print("imported %d principles from %s; the render equals it line for line, but the banner and the sections' "
+            print(f"{path}: {_rendered(state, changed)}")
+        print("imported %d principles from %s; the render equals it line for line, but the banner and the sections' "  # noqa: UP031
               "headings" % (n, a.file))
         if changed is not None:
-            print("%s is rendered from the depot now and read-only (chmod a-w): change it with depot2 principles" % path)
+            print(f"{path} is rendered from the depot now and read-only (chmod a-w): change it with depot2 principles")
         print("")
         print(p.md(), end="")
-        state.commit("team: principles import (%d principles)" % n)
+        state.commit("team: principles import (%d principles)" % n)  # noqa: UP031
         return 0
     if act == "render":
         if a.out == "-":
@@ -1245,24 +1242,24 @@ def cmd_principles(state, cfg, a):
         to_target = not a.out or os.path.abspath(os.path.expanduser(a.out)) == p.target()
         drift = p.drift() if to_target and not p.live_target() else None  # a copy writes no live file: no drift
         if drift and not a.overwrite:
-            raise QueueError("%s was edited by hand (%s): carry the change over with depot2 principles set|add, or "
-                             "write the depot's render over it: principles render --overwrite" % (p.target(), drift))
+            raise QueueError(f"{p.target()} was edited by hand ({drift}): carry the change over with depot2 principles set|add, or "
+                             "write the depot's render over it: principles render --overwrite")
         path, changed = p.write(a.out)
-        print("%s: %s" % (path, _rendered(state, changed, "rendered from the depot", "already as the depot has it")))
+        print("{}: {}".format(path, _rendered(state, changed, "rendered from the depot", "already as the depot has it")))
         return 0
     if act == "head" and a.text is None:
         print("\n".join(p.head()).rstrip("\n") + "\n", end="")
         return 0
     drift = None if p.live_target() else p.drift()
     if drift and not a.overwrite:
-        raise QueueError("%s was edited by hand (%s): nothing changed. Carry the edit over with this command, then "
-                         "--overwrite (the render writes over the hand edit)" % (p.target(), drift))
+        raise QueueError(f"{p.target()} was edited by hand ({drift}): nothing changed. Carry the edit over with this command, then "
+                         "--overwrite (the render writes over the hand edit)")
     if act == "head":
         p.set_head(a.text)
         print("the head of PRINCIPLES.md replaced (the history keeps the old one)")
         if p.target():
             path, changed = p.write()
-            print("%s: %s" % (path, _rendered(state, changed)))
+            print(f"{path}: {_rendered(state, changed)}")
         print("")
         print("\n".join(p.head()).rstrip("\n") + "\n", end="")
         state.commit("team: principles head")
@@ -1271,12 +1268,12 @@ def cmd_principles(state, cfg, a):
     if act == "add":
         e = p.add(a.section, title=a.title, text=a.text, words=a.words or (), subs=a.sub or (), date=a.date,
                   links=a.link or (), check=bool(check), order=a.order)
-        print("%s added (principle %s)" % (e["id"], e["n"]))
+        print("{} added (principle {})".format(e["id"], e["n"]))
     elif act == "set":
         e = p.set(a.id, words=a.words or (), subs=a.sub or (), sub_set=a.sub_set, sub_drop=a.sub_drop,
                   section=a.section, title=a.title, text=a.text, date=a.date, order=a.order, gap=a.gap, check=check,
                   links=a.link, notes=a.note)
-        print("%s updated" % e["id"])
+        print("{} updated".format(e["id"]))
     elif act == "replace":
         e = p.replace(a.id, a.by, reason=a.reason)
         print(t("cli.principle_replaced", id=e["id"], by=a.by))
@@ -1285,17 +1282,17 @@ def cmd_principles(state, cfg, a):
         print(t("cli.principle_dropped", id=e["id"]))
     if p.target():
         path, changed = p.write()
-        print("%s: %s" % (path, _rendered(state, changed)))
+        print(f"{path}: {_rendered(state, changed)}")
     print("")
     print(p.show(e["id"]), end="")
-    state.commit("team: principles %s %s" % (act, e["id"]))
+    state.commit("team: principles {} {}".format(act, e["id"]))
     return 0
 
 
 def _rendered(state, changed, yes="rendered again", no="unchanged"):
     if changed is None:
-        return ("not rendered: it is the live depot's and this depot (%s) another — a copy writes no live file; "
-                "principles render --out PATH renders it elsewhere" % state.root)
+        return (f"not rendered: it is the live depot's and this depot ({state.root}) another — a copy writes no live file; "
+                "principles render --out PATH renders it elsewhere")
     return yes if changed else no
 
 
@@ -1337,22 +1334,22 @@ def cmd_merge(state, cfg, a):
         if a.res_action in (None, "list"):
             items = res.items()
             for it in items:
-                print("%s  %s  ours %s  theirs %s  %d bytes  %s%s" % (it["added"][:16], it["file"], it["ours"][:12],
+                print("%s  %s  ours %s  theirs %s  %d bytes  %s%s" % (it["added"][:16], it["file"], it["ours"][:12],  # noqa: UP031
                                                                      it["theirs"][:12], it["bytes"], it["key"][:25] + "…",
-                                                                     "  (%s)" % it["note"] if it.get("note") else ""))
+                                                                     "  ({})".format(it["note"]) if it.get("note") else ""))
             if not items:
                 print("no prepared resolutions")
             return 0
         if a.res_action == "add":
             it, replaced = res.add(a.file, a.ours, a.theirs, a.src, note=a.note, replace=a.replace)
-            print("%s a prepared resolution for %s: ours %s, theirs %s (%d bytes, sha256 %s)" % (
+            print("%s a prepared resolution for %s: ours %s, theirs %s (%d bytes, sha256 %s)" % (  # noqa: UP031
                 "replaced" if replaced else "added", it["file"], it["ours"][:12], it["theirs"][:12], it["bytes"],
                 it["sha256"][:12]))
-            state.commit("team: merge resolve add %s (%s)" % (it["file"], it["key"][:25]))
+            state.commit("team: merge resolve add {} ({})".format(it["file"], it["key"][:25]))
             return 0
         it = res.drop(a.key)
-        print("dropped the prepared resolution for %s (%s): %s" % (it["file"], it["key"][:25], a.reason))
-        state.commit("team: merge resolve drop %s (%s)" % (it["file"], a.reason[:60]))
+        print("dropped the prepared resolution for {} ({}): {}".format(it["file"], it["key"][:25], a.reason))
+        state.commit("team: merge resolve drop {} ({})".format(it["file"], a.reason[:60]))
         return 0
     if act == "add":
         e, lines = merge.add(state, cfg, a.pr, a.word, at=a.at, force=a.force, why=a.why)
@@ -1370,7 +1367,7 @@ def cmd_merge(state, cfg, a):
         print(line)
     print("")
     print(merge.md(state, cfg), end="")
-    state.commit("team: merge %s %s #%d" % (act, e["id"], e["pr"]))
+    state.commit("team: merge %s %s #%d" % (act, e["id"], e["pr"]))  # noqa: UP031
     return 0
 
 
@@ -1382,7 +1379,7 @@ def cmd_queues(state, cfg, a):
         for line in lines:
             print("- " + line)
         if not a.dry_run and changed:
-            state.commit("team: queues migrate (stack autostart, stages, from; %d)" % changed)
+            state.commit("team: queues migrate (stack autostart, stages, from; %d)" % changed)  # noqa: UP031
         return 0
     text, rows = overview(state, cfg)
     if a.json:
@@ -1396,7 +1393,7 @@ def cmd_queues(state, cfg, a):
 def _label_words(labels):
     """{a typed word: its key} over a label family's words in every language (a plain dict: its own words)."""
     if isinstance(labels, i18n.Labels):
-        return {i18n.fold(w): k for k in labels for w in i18n.forms("%s.%s" % (labels.prefix, k))}
+        return {i18n.fold(w): k for k in labels for w in i18n.forms(f"{labels.prefix}.{k}")}
     return {i18n.fold(v): k for k, v in labels.items()}
 
 
@@ -1414,7 +1411,7 @@ def _train_state(text):
 
 
 def _unrecognized(argv, extra):
-    msg = "unrecognized arguments: %s" % " ".join(extra)
+    msg = "unrecognized arguments: {}".format(" ".join(extra))
     try:
         i = argv.index(extra[0])
     except ValueError:
@@ -1431,12 +1428,12 @@ def _unrecognized(argv, extra):
     while k < len(argv) and not argv[k].startswith("-"):
         k += 1
     words += argv[i:k]
-    return msg + " — if «%s» belongs to %s, the value goes in quotes: %s \"%s\"" % (
+    return msg + " — if «{}» belongs to {}, the value goes in quotes: {} \"{}\"".format(
         " ".join(argv[i:k]), opt, opt, " ".join(words))
 
 
 def _force_args(q, what):
-    q.add_argument("--force", action="store_true", help="past %s (soft): only with --why, recorded as forced" % what)
+    q.add_argument("--force", action="store_true", help=f"past {what} (soft): only with --why, recorded as forced")
     q.add_argument("--why", help="why it goes past the gate (with --force)")
 
 
@@ -1472,7 +1469,7 @@ def _migrate_first(state, cfg, a):
     with state.lock():
         lines, n = migrate.run(state, cfg)
         if n:
-            state.commit("team: migrate the depot to schema %d" % migrate.SCHEMA)
+            state.commit("team: migrate the depot to schema %d" % migrate.SCHEMA)  # noqa: UP031
     print("\n".join(lines), file=sys.stderr)
 
 
@@ -2141,7 +2138,7 @@ def build_parser():
     p.add_argument("--all", action="store_true", help="the replaced and dropped ones too")
     p.add_argument("--limit", type=int, help="the first N rows")
     psub = p.add_subparsers(dest="action")
-    sections = "one of %s" % ", ".join(k for k, _ in PC_SECTIONS)
+    sections = "one of {}".format(", ".join(k for k, _ in PC_SECTIONS))
     for act in ("add", "set"):
         q = psub.add_parser(act, help="a new principle: the next number (never reused)" if act == "add" else
                             "change one: fields replaced (the history keeps them), --words and --sub appended")
@@ -2346,7 +2343,7 @@ def main(argv=None):
         a.mutates = True  # `merge run` takes the state's lock for each write itself: it runs for hours
     state = State(a.state)
     if a.cmd not in ("seed", "init") and not os.path.isdir(state.root):
-        print("no state at %s (run: depot2 init)" % state.root, file=sys.stderr)
+        print(f"no state at {state.root} (run: depot2 init)", file=sys.stderr)
         return 1
     try:
         cfg = config.load(state.root, a.set) if os.path.isdir(state.root) else config.load("/nonexistent", a.set)
@@ -2358,10 +2355,10 @@ def main(argv=None):
                 return a.fn(state, cfg, a)
         return a.fn(state, cfg, a)
     except (LedgerError, ValueError, LockBusy) as e:  # StackError, TrainError and QueueError are ValueErrors
-        print("error: %s" % e, file=sys.stderr)
+        print(f"error: {e}", file=sys.stderr)
         return 1
     except FatalError as e:
-        print("FATAL: %s" % e, file=sys.stderr)
+        print(f"FATAL: {e}", file=sys.stderr)
         return 2
     finally:  # the state's backup: a local count or a stamp check, a detached run when due, one ⚠ line
         from .backup import after_command

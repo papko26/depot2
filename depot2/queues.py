@@ -66,7 +66,7 @@ class Queue:
         for e in self.data["entries"]:
             if e["id"] == eid:
                 return e
-        raise QueueError("no %s in %s" % (eid, self.NAME))
+        raise QueueError(f"no {eid} in {self.NAME}")
 
     def history(self):
         return read_jsonl(self.history_path)
@@ -110,7 +110,7 @@ class Queue:
         if e["status"] == "taken" and e.get("taken_to"):
             there = stages.stage_of_ref(self.state, self.cfg or {}, e["taken_to"], self._ctx)
             if there:
-                return "%s → %s" % (own, stages.ru(there))
+                return f"{own} → {stages.ru(there)}"
         return own
 
     def prio_counts(self):
@@ -129,7 +129,7 @@ class Queue:
         return rec
 
     def _new(self, fields, by=None):
-        e = {"id": "%s-%04d" % (self.PREFIX, self.data["next"]), "added": now_iso(), "links": [], "notes": []}
+        e = {"id": "%s-%04d" % (self.PREFIX, self.data["next"]), "added": now_iso(), "links": [], "notes": []}  # noqa: UP031
         self.data["next"] += 1
         e.update({k: v for k, v in fields.items() if v is not None or k not in e})
         e["links"] = list(e.get("links") or [])
@@ -138,13 +138,13 @@ class Queue:
             e["priority"] = pri.DEFAULT
         self.check(e)
         if self.STAGES:
-            stages.start(e, self.stage_default_why(e)[0], by or "%s add" % self.NAME)
+            stages.start(e, self.stage_default_why(e)[0], by or f"{self.NAME} add")
         self.data["entries"].append(e)
         return e
 
     def check(self, e):
         if e["status"] not in self.STATUS_RU:
-            raise QueueError("%s: status must be one of %s" % (e["id"], ", ".join(self.STATUS_RU)))
+            raise QueueError("{}: status must be one of {}".format(e["id"], ", ".join(self.STATUS_RU)))
 
     def add(self, **fields):
         e = self._new(self.normalize(fields))
@@ -162,13 +162,13 @@ class Queue:
                 e[k] = e.get(k) or []
                 add = [x for x in (v if isinstance(v, (list, tuple)) else [v]) if x not in e[k]]
                 if k == "notes":
-                    add = ["%s: %s" % (today(), x) for x in add]
+                    add = [f"{today()}: {x}" for x in add]
                 e[k] += add
                 changed[k] = add
             elif k in self.FIELDS:
                 e[k] = changed[k] = v
             else:
-                raise QueueError("%s has no field %s" % (self.NAME, k))
+                raise QueueError(f"{self.NAME} has no field {k}")
         if not changed:
             raise QueueError("nothing to set")
         self.check(e)
@@ -178,8 +178,8 @@ class Queue:
     def closable(self, eid, status):
         e = self.get(eid)
         if self.OPEN and e["status"] not in self.OPEN and e["status"] not in self.ALSO_FROM.get(status, ()):
-            raise QueueError("%s is «%s»: it is closed and stays so (only an open one — %s — changes); the history keeps "
-                             "it, new work is a new entry: depot2 %s add …" % (
+            raise QueueError("{} is «{}»: it is closed and stays so (only an open one — {} — changes); the history keeps "
+                             "it, new work is a new entry: depot2 {} add …".format(
                                  eid, self.STATUS_RU.get(e["status"], e["status"]),
                                  ", ".join(self.STATUS_RU.get(s, s) for s in self.OPEN), self.NAME))
         return e
@@ -188,11 +188,11 @@ class Queue:
         e = self.closable(eid, status)
         row = None
         if status in self.STATUS_STAGE:
-            row = self._stage(e, self.STATUS_STAGE[status], "%s %s" % (self.NAME, status), reason)
+            row = self._stage(e, self.STATUS_STAGE[status], f"{self.NAME} {status}", reason)
         e["status"] = status
         e.update({k: v for k, v in fields.items() if v is not None})
         if reason:
-            e["notes"].append("%s: %s" % (today(), reason))
+            e["notes"].append(f"{today()}: {reason}")
         self.check(e)
         self._save(status, eid, reason=reason, stage=stages.hist(row), **fields)
         return e
@@ -213,24 +213,24 @@ class Queue:
         from .tracks import RE_CAR, RE_STACK, RE_TRACK
         e = self.get(eid)
         if e["status"] not in self.OPEN:
-            raise QueueError("%s is %s%s: only an open entry is taken" % (
-                eid, self.STATUS_RU[e["status"]], " → %s" % e["taken_to"] if e.get("taken_to") else ""))
+            raise QueueError("{} is {}{}: only an open entry is taken".format(
+                eid, self.STATUS_RU[e["status"]], " → {}".format(e["taken_to"]) if e.get("taken_to") else ""))
         to = (to or "").strip()
         new = bool(RE_TRACK.match(to))
         if not new and (n is not None or size is not None or title is not None):
             raise QueueError(t("queues.take_new_only_car" if RE_CAR.match(to) else "queues.take_new_only_other", to=to))
-        by = by or "%s take" % self.NAME
+        by = by or f"{self.NAME} take"
         lines = []
         if new:
             trk, c = tracks.car_add(to, title or self.car_title(e), n=n, size=size, src=eid, by=by,
-                                    note="%s: %s" % (today(), self.take_note(e)), priority=pri.of(e))
-            ref = "%s:%s" % (trk["id"], c["n"])
+                                    note=f"{today()}: {self.take_note(e)}", priority=pri.of(e))
+            ref = "{}:{}".format(trk["id"], c["n"])
             lines.append(t("queues.took_new", id=eid, ref=ref, title=_clip(c["title"], 60),
                            stage=stages.ru(c["stage"])))
         elif RE_CAR.match(to):
             trk, c = tracks.car(to)
             lines += [x for x in (tracks.moved_note(to), tracks.closed_note(trk, c)) if x]
-            ref = "%s:%s" % (trk["id"], c["n"])
+            ref = "{}:{}".format(trk["id"], c["n"])
             tracks.car_took(ref, eid, self.take_note(e), by=by)
             if pri.of(c) != pri.of(e):
                 lines.append(t("queues.took_car_prio", id=eid, ref=ref, title=_clip(c["title"], 60), cprio=pri.cell(c),
@@ -239,11 +239,11 @@ class Queue:
                 lines.append(t("queues.took_car", id=eid, ref=ref, title=_clip(c["title"], 60)))
         elif RE_STACK.match(to):
             if stack is None or not stack(to):
-                raise QueueError("unknown stack object %s" % to)
+                raise QueueError(f"unknown stack object {to}")
             ref = to
-            lines.append("%s → %s" % (eid, ref))
+            lines.append(f"{eid} → {ref}")
         else:
-            raise QueueError("--to is tr-NNNN (a new car on it), tr-NNNN:<car>, st-NNNN or tm-NNNN; got %r" % to)
+            raise QueueError(f"--to is tr-NNNN (a new car on it), tr-NNNN:<car>, st-NNNN or tm-NNNN; got {to!r}")
         self.to_status(eid, "taken", taken_to=ref)
         return e, ref, lines
 
@@ -257,14 +257,14 @@ class Queue:
     def md(self, open_only=True, heading=True, limit=None):
         cols = self.COLUMNS + ((t("queues.col.stage"),) if self.STAGES else ())
         L = ["## " + self.TITLE, ""] if heading else []
-        L.append("| %s | " % t("queues.col.n") + " | ".join(cols) + " |")
+        L.append("| {} | ".format(t("queues.col.n")) + " | ".join(cols) + " |")
         L.append("|---|" + "---|" * len(cols))
         rows = self.ordered(open_only)
         for i, e in enumerate(rows[:limit] if limit else rows, 1):
             cells = tuple(self.row(e)) + ((self.stage_cell(e),) if self.STAGES else ())
-            L.append("| %d | %s |" % (i, " | ".join(_cell(x) for x in cells)))
+            L.append("| %d | %s |" % (i, " | ".join(_cell(x) for x in cells)))  # noqa: UP031
         if not rows:
-            L.append("| — | %s |" % t("stack.empty") + " |" * (len(cols) - 1))
+            L.append("| — | {} |".format(t("stack.empty")) + " |" * (len(cols) - 1))
         L.append("")
         n_open = len(self.entries(True))
         if limit and len(rows) > limit:
@@ -283,14 +283,14 @@ class Queue:
         return [dict(e, stage=self.stage_of(e), stages=e.get("stages") or []) for e in rows]
 
     def head(self, n=3):
-        return ["%s %s" % (e["id"], _clip(self.headline(e), 70)) for e in self.ordered(True)[:n]]
+        return ["{} {}".format(e["id"], _clip(self.headline(e), 70)) for e in self.ordered(True)[:n]]
 
     def headline(self, e):
         return e.get("title") or e.get("text") or ""
 
     def show(self, eid):
         e = self.get(eid)
-        L = ["# %s (%s)" % (e["id"], self.STATUS_RU.get(e["status"], e["status"]))]
+        L = ["# {} ({})".format(e["id"], self.STATUS_RU.get(e["status"], e["status"]))]
         for k in sorted(e):
             if k in ("id", "status"):
                 continue
@@ -302,13 +302,13 @@ class Queue:
                 L += ["  " + x for x in stages.rows_md(e)]
                 continue
             if isinstance(v, list):
-                L.append("%s:" % k)
-                L += ["  - %s" % x for x in v]
+                L.append(f"{k}:")
+                L += [f"  - {x}" for x in v]
             elif isinstance(v, str) and "\n" in v:
-                L.append("%s:" % k)
+                L.append(f"{k}:")
                 L += ["  " + x for x in v.splitlines()]
             else:
-                L.append("%s: %s" % (k, v))
+                L.append(f"{k}: {v}")
         return "\n".join(L) + "\n"
 
 
@@ -333,7 +333,7 @@ def check_priority(e):
     """Every entry has its priority, a whole number 1–10 (priority.py)."""
     p = e.get("priority")
     if isinstance(p, bool) or not isinstance(p, int) or not pri.MIN <= p <= pri.MAX:
-        raise QueueError("%s: priority is a whole number %d–%d, got %r" % (e.get("id"), pri.MIN, pri.MAX, p))
+        raise QueueError("%s: priority is a whole number %d–%d, got %r" % (e.get("id"), pri.MIN, pri.MAX, p))  # noqa: UP031
 
 
 def by_prio(q, rows):
@@ -374,7 +374,7 @@ class Wishes(Queue):
         if not (e.get("title") or "").strip():
             raise QueueError("a wish needs a title")
         if e.get("area") not in AREAS:
-            raise QueueError("area must be one of %s" % ", ".join(AREAS))
+            raise QueueError("area must be one of {}".format(", ".join(AREAS)))
         check_priority(e)
 
     def add(self, title, words=None, date=None, area="product", priority=None, links=(), text=None):
@@ -386,13 +386,13 @@ class Wishes(Queue):
         words = " ".join((e.get("words") or "").split())
         text = " ".join((e.get("text") or "").split())
         return e["title"] + (t("queues.wishes.take_words", words=words) if words else "") + (
-            "; %s" % text if text else "")
+            f"; {text}" if text else "")
 
     def done(self, eid, reason):
         """Not `drop`."""
         e = self.get(eid)
         if e["status"] == "done":
-            raise QueueError("%s is done already" % eid)
+            raise QueueError(f"{eid} is done already")
         if not (reason or "").strip():
             raise QueueError("done needs --reason")
         return self.to_status(eid, "done", reason=reason)
@@ -403,8 +403,8 @@ class Wishes(Queue):
                                            e["id"]))
 
     def row(self, e):
-        st = self.STATUS_RU[e["status"]] + (" → %s" % e["taken_to"] if e.get("taken_to") else "")
-        return ("%s %s" % (e["id"], e["title"]), e.get("date") or "—", _clip(e.get("words"), 160) or "—",
+        st = self.STATUS_RU[e["status"]] + (" → {}".format(e["taken_to"]) if e.get("taken_to") else "")
+        return ("{} {}".format(e["id"], e["title"]), e.get("date") or "—", _clip(e.get("words"), 160) or "—",
                 AREA_RU.get(e["area"], e["area"]), pri.cell(e), st)
 
 
@@ -446,9 +446,9 @@ class Think(Queue):
     def take_text(self, e):
         qs = [" ".join(q.split()) for q in e.get("questions") or [] if (q or "").strip()]
         text = " ".join((e.get("text") or "").split())
-        listed = "; ".join("%d) %s" % (i, q) for i, q in enumerate(qs, 1))
+        listed = "; ".join("%d) %s" % (i, q) for i, q in enumerate(qs, 1))  # noqa: UP031
         return e["topic"] + (t("queues.think.take_questions", list=listed) if qs else "") + (
-            "; %s" % text if text else "")
+            f"; {text}" if text else "")
 
     def normalize(self, fields):
         if "question" not in fields and fields.get("topic") is not None and fields.get("status"):
@@ -477,14 +477,14 @@ class Think(Queue):
         if re.match(r"^tm-\d{4}$", rid):
             from .tstack import TeamStack
             if rid not in TeamStack(state, cfg).known_ids():
-                raise QueueError("no %s in the team stack" % rid)
+                raise QueueError(f"no {rid} in the team stack")
         elif not os.path.isfile(os.path.join(state.rounds_dir(), rid, "round.json")):
-            raise QueueError("no round %s" % rid)
+            raise QueueError(f"no round {rid}")
         return self.to_status(eid, "in_round", round=rid)
 
     def decide(self, eid, dec=None, reason=None, decisions=None):
         if dec and decisions is not None and dec not in decisions:
-            raise QueueError("no decision %s in decisions.jsonl" % dec)
+            raise QueueError(f"no decision {dec} in decisions.jsonl")
         if not dec and not reason:
             raise QueueError("decide needs --dec dec-NNNNNN or --reason")
         return self.to_status(eid, "decided", reason=reason, decision=dec)
@@ -501,8 +501,8 @@ class Think(Queue):
         elif e["status"] == "taken" and e.get("taken_to"):
             st += " → " + e["taken_to"]
         qs = e.get("questions") or []
-        q = ("%d: %s" % (len(qs), _clip(qs[0], 120))) if qs else "—"
-        return ("%s %s" % (e["id"], _clip(e["topic"], 120)), e.get("date") or "—", q, e.get("by") or "—",
+        q = ("%d: %s" % (len(qs), _clip(qs[0], 120))) if qs else "—"  # noqa: UP031
+        return ("{} {}".format(e["id"], _clip(e["topic"], 120)), e.get("date") or "—", q, e.get("by") or "—",
                 ", ".join(e.get("related") or []) or "—", pri.cell(e), st)
 
 
@@ -527,20 +527,20 @@ class Todo(Queue):
     def take_text(self, e):
         title = " ".join((e.get("title") or "").split())
         text = " ".join((e.get("text") or "").split())
-        what = "%s: %s" % (title, text) if title and text and not text.startswith(title) else (text or title)
+        what = f"{title}: {text}" if title and text and not text.startswith(title) else (text or title)
         bits = [x for x in (t("queues.todo.bit_kind", v=KIND_RU.get(e.get("kind"), e.get("kind"))),
                             t("queues.todo.bit_version", v=e["version"]) if e.get("version") else None,
                             t("queues.todo.bit_where", v=", ".join(e["where"])) if e.get("where") else None,
                             t("queues.todo.bit_source", v=e["source"]) if e.get("source") else None,
                             t("queues.todo.bit_when", v=e["trigger"]) if e.get("trigger") else None) if x]
-        return what + " (%s)" % "; ".join(bits)
+        return what + " ({})".format("; ".join(bits))
 
     def check(self, e):
         super().check(e)
         if not (e.get("text") or e.get("title") or "").strip():
             raise QueueError("a todo needs a text")
         if e.get("kind") not in KINDS:
-            raise QueueError("kind must be one of %s" % ", ".join(KINDS))
+            raise QueueError("kind must be one of {}".format(", ".join(KINDS)))
         check_priority(e)
 
     def add(self, text, title=None, where=(), version=None, date=None, source=None, kind="bug", trigger=None,
@@ -560,16 +560,16 @@ class Todo(Queue):
         return e.get("title") or e.get("text") or ""
 
     def row(self, e):
-        st = self.STATUS_RU[e["status"]] + (" #%s" % e["pr"] if e["status"] == "in_pr" else "") + (
-            " → %s" % e["taken_to"] if e["status"] == "taken" and e.get("taken_to") else "")
+        st = self.STATUS_RU[e["status"]] + (" #{}".format(e["pr"]) if e["status"] == "in_pr" else "") + (
+            " → {}".format(e["taken_to"]) if e["status"] == "taken" and e.get("taken_to") else "")
         what = e.get("title") or ""
         text = e.get("text") or ""
         if what and text and not text.startswith(what):
-            what = "%s: %s" % (what, text)
+            what = f"{what}: {text}"
         what = _clip(what or text, 180)
         if e.get("trigger"):
-            what += " (%s)" % t("queues.todo.bit_when", v=e["trigger"])
-        return ("%s %s" % (e["id"], what), e.get("date") or "—", e.get("version") or "—",
+            what += " ({})".format(t("queues.todo.bit_when", v=e["trigger"]))
+        return ("{} {}".format(e["id"], what), e.get("date") or "—", e.get("version") or "—",
                 ", ".join(e.get("where") or []) or "—", e.get("source") or "—", KIND_RU.get(e["kind"], e["kind"]),
                 pri.cell(e), st)
 
@@ -604,8 +604,8 @@ def source(state, cfg, ref):
 
 
 def source_line(s):
-    return "%s — %s%s%s" % (s["ref"], s["kind_ru"] or "?", " «%s»" % _clip(s["title"], 80) if s.get("title") else "",
-                           " (%s)" % s["status_ru"] if s.get("status_ru") else "")
+    return "{} — {}{}{}".format(s["ref"], s["kind_ru"] or "?", " «{}»".format(_clip(s["title"], 80)) if s.get("title") else "",
+                           " ({})".format(s["status_ru"]) if s.get("status_ru") else "")
 
 
 def repo_version(cfg):
@@ -682,14 +682,14 @@ def migrate_from(state, cfg, dry_run=False):
                     trk = tr.get(to)
                 except TrackError:
                     continue
-                name = re.compile(r"(?<![\w-])%s(?![\w-])" % re.escape(e["id"]))
+                name = re.compile(r"(?<![\w-]){}(?![\w-])".format(re.escape(e["id"])))
                 hits = [c for c in trk["cars"] if name.search(" ".join([c.get("title") or ""] + car_notes(c)))]
                 if len(hits) != 1:
                     left.append(t("queues.migrate_many_cars", id=e["id"], to=to, n=len(hits)) if hits
                                 else t("queues.migrate_no_car", id=e["id"], to=to))
                     continue
                 c = hits[0]
-                retarget[e["id"]] = {"was": to, "now": "%s:%s" % (trk["id"], c["n"])}
+                retarget[e["id"]] = {"was": to, "now": "{}:{}".format(trk["id"], c["n"])}
                 moved[e["id"]] = retarget[e["id"]]["now"]
                 e["taken_to"] = retarget[e["id"]]["now"]
             elif RE_CAR.match(to):
@@ -702,7 +702,7 @@ def migrate_from(state, cfg, dry_run=False):
             if e["id"] in (c.get("from") or []):
                 continue
             c["from"] = list(c.get("from") or []) + [e["id"]]
-            added.setdefault("%s:%s" % (trk["id"], c["n"]), []).append(e["id"])
+            added.setdefault("{}:{}".format(trk["id"], c["n"]), []).append(e["id"])
         if retarget:
             queues.append((q, retarget))
     if not dry_run:
@@ -711,10 +711,10 @@ def migrate_from(state, cfg, dry_run=False):
         for q, retarget in queues:
             q._save("migrate_from", None, taken_to=retarget)
     L = [t("queues.migrate_from", n=len(added),
-           list=(": " + ", ".join("%s ← %s" % (k, ", ".join(v)) for k, v in added.items())) if added else "")]
+           list=(": " + ", ".join("{} ← {}".format(k, ", ".join(v)) for k, v in added.items())) if added else "")]
     if moved or left:
         L.append(t("queues.migrate_moved", n=len(moved),
-                   moved=(": " + ", ".join("%s → %s" % kv for kv in moved.items())) if moved else "",
+                   moved=(": " + ", ".join("{} → {}".format(*kv) for kv in moved.items())) if moved else "",
                    left=t("queues.migrate_left", list="; ".join(left)) if left else ""))
     return L, sum(len(v) for v in added.values()) + len(moved)
 
@@ -734,7 +734,7 @@ def overview(state, cfg, now=None):
     def stack_head(s):
         objs = s.in_slots() + s.posted() + s.queue()
         tag = {"slot": t("queues.ov.tag_slot"), "post": t("queues.ov.tag_post")}
-        return ["%s %s%s" % (o["id"], _clip(o["title"], 50), tag.get(o["where"], "")) for o in objs[:3]]
+        return ["{} {}{}".format(o["id"], _clip(o["title"], 50), tag.get(o["where"], "")) for o in objs[:3]]
 
     rows.append((t("queues.ov.stack"), t("queues.ov.stack_count", s=len(stk.in_slots()), sn=stk.slots_n,
                                          p=len(stk.posted()), pn=stk.post_max, q=len(stk.queue()), qn=stk.queue_max),
@@ -748,42 +748,42 @@ def overview(state, cfg, now=None):
     by = {}
     for tn in live:
         by[tn["state"]] = by.get(tn["state"], 0) + 1
-    head = [t("queues.ov.can_now", list=", ".join("%s:%s" % (p["track"]["id"], p["car"]["n"]) for p in nx["picks"]))] \
+    head = [t("queues.ov.can_now", list=", ".join("{}:{}".format(p["track"]["id"], p["car"]["n"]) for p in nx["picks"]))] \
         if nx["picks"] else []
-    ready = ["%s:%s" % (tn["id"], c["n"]) for tn, c, b in nx["parked"] if not b]
+    ready = ["{}:{}".format(tn["id"], c["n"]) for tn, c, b in nx["parked"] if not b]
     head += [t("queues.ov.to_merge", list=", ".join(ready))] if ready else []
-    head += ["%s (%s)" % (tn["name"], STATE_RU[tn["state"]]) for tn in live[:3]]
-    states = ", ".join("%s %d" % (STATE_RU[k], by[k]) for k in ("design", "impl", "merge") if k in by)
-    rows.append((t("queues.ov.trains"), "%d (%s)" % (len(live), states) if live else "0", head, "trains", None))
+    head += ["{} ({})".format(tn["name"], STATE_RU[tn["state"]]) for tn in live[:3]]
+    states = ", ".join("%s %d" % (STATE_RU[k], by[k]) for k in ("design", "impl", "merge") if k in by)  # noqa: UP031
+    rows.append((t("queues.ov.trains"), "%d (%s)" % (len(live), states) if live else "0", head, "trains", None))  # noqa: UP031
     open_tracks = [tk_ for tk_ in tk.tracks() if not tk.done(tk_)]
     rows.append((t("queues.ov.tracks"), t("queues.ov.tracks_count", n=len(open_tracks), total=len(tk.tracks())),
-                 ["%s %s" % (tk_["id"], _clip(tk_["title"], 40)) for tk_ in open_tracks[:3]], "tracks", None))
+                 ["{} {}".format(tk_["id"], _clip(tk_["title"], 40)) for tk_ in open_tracks[:3]], "tracks", None))
     open_b = bq.entries(open_only=True)
     rows.append((t("queues.ov.ballots"), str(len(open_b)),
-                 ["%s%s" % (e["round"], t("queues.ov.at_point", point=e["at_point"]) if e.get("at_point") else "")
+                 ["{}{}".format(e["round"], t("queues.ov.at_point", point=e["at_point"]) if e.get("at_point") else "")
                   for e in open_b[:3]], "ballots", None))
     rows.append((t("queues.ov.wishes"), str(len(wl.entries(True))), wl.head(), "wishes", wl.prio_counts()))
     rows.append((t("queues.ov.think"), str(len(th.entries(True))), th.head(), "think", th.prio_counts()))
     kinds = {}
     for e in td.entries(True):
         kinds[e["kind"]] = kinds.get(e["kind"], 0) + 1
-    rows.append(("Todo", "%d%s" % (len(td.entries(True)), (" (%s)" % ", ".join(
-        "%s %d" % (KIND_RU[k], kinds[k]) for k in KINDS if k in kinds)) if kinds else ""), td.head(), "todo",
+    rows.append(("Todo", "%d%s" % (len(td.entries(True)), (" ({})".format(", ".join(  # noqa: UP031
+        "%s %d" % (KIND_RU[k], kinds[k]) for k in KINDS if k in kinds))) if kinds else ""), td.head(), "todo",  # noqa: UP031
                  td.prio_counts()))
     from .principles import Principles
     pc = Principles(state, cfg)
     rows.append((t("queues.ov.principles"), t("queues.ov.principles_count", n=len(pc.entries(True))),
-                 ["③ %s %s" % (e["id"], _clip(pc.headline(e), 60)) for e in pc.checked()[:3]], "principles", None))
+                 ["③ {} {}".format(e["id"], _clip(pc.headline(e), 60)) for e in pc.checked()[:3]], "principles", None))
 
     L = [t("queues.ov.heading", ts=now_iso()[:16].replace("T", " ")), ""]
     L.append(t("queues.ov.header"))
     L.append("|---|---|---|---|---|")
     for name, count, head, cmd, prio in rows:
-        L.append("| %s | %s | %s | %s | `depot2 %s --md` |" % (name, count, prio_cell(prio) if prio is not None else "—",
+        L.append("| {} | {} | {} | {} | `depot2 {} --md` |".format(name, count, prio_cell(prio) if prio is not None else "—",
                                                                _cell("; ".join(head) or "—"), cmd))
     L.append("")
     L.append(t("queues.ov.priority_legend"))
     by_stage = stages.summary(state, cfg)
-    L.append(t("queues.ov.stages", counts="%d — %s" % (sum(by_stage.values()), stages.counts_cell(by_stage))
+    L.append(t("queues.ov.stages", counts="%d — %s" % (sum(by_stage.values()), stages.counts_cell(by_stage))  # noqa: UP031
                if by_stage else "0"))
     return "\n".join(L) + "\n", rows

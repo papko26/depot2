@@ -50,7 +50,7 @@ class SoloRoundTest(Base):
         # thoughts: hers only
         self.assertEqual([cid for cid in characters.IDS if Persona(self.t.state, cid).thoughts(10)], ["keeper"])
         rep = r["report"]
-        self.assertIn("# Команда: бюллетень, сольный раунд (Копилка), %s" % r["id"], rep)
+        self.assertIn("# Команда: бюллетень, сольный раунд (Копилка), {}".format(r["id"]), rep)
         self.assertIn("Сольный раунд: отвечает только Копилка; дебатов нет, мозговой штурм не созывается; ставки, "
                       "журнал, выплаты, решения и рефлексия — как в полном раунде, только для неё. Капы — на одного: "
                       "0.076%UW (0.76 MTok), 2 вызова.", rep)
@@ -143,7 +143,7 @@ class SoloCliTest(unittest.TestCase):
         out = self.team("tstack", "add", "--kind", "ballot", "--input", q, "--who", "Копилка").stdout
         self.assertIn("tm-0001 added to the team queue (1/4)", out)
         out = self.team("tstack", "start", "tm-0001").stdout
-        self.assertIn("run: depot2 round --kind ballot --input %s --only keeper --item tm-0001 --dry-run" % q, out)
+        self.assertIn(f"run: depot2 round --kind ballot --input {q} --only keeper --item tm-0001 --dry-run", out)
         p = self.team("round", "--kind", "ballot", "--input", q, "--item", "tm-0001", "--only", "builder", ok=False)
         self.assertEqual(p.returncode, 1)
         self.assertIn("tm-0001 is for Копилка alone, not Строитель", p.stderr)
@@ -158,8 +158,8 @@ class SoloCliTest(unittest.TestCase):
         self.assertGreater(item["cost_usd"], 0)  # the CLI's ≈$, kept as data
         # from the round's own tokens (costs.json): 3 + 100 × 1.25 + 900 × 0.1 + 50 × 5 = 468 tokens
         self.assertEqual(item["spent_mtok"], 0.000468)
-        self.assertIn("tm-0001: round %s, 0.000047%%UW (0.00047 MTok)" % rid, out)
+        self.assertIn(f"tm-0001: round {rid}, 0.000047%UW (0.00047 MTok)", out)
         self.assertNotIn("≈$", out)
-        self.assertIn("tm-0001: round %s" % rid, out)
+        self.assertIn(f"tm-0001: round {rid}", out)
         costs = json.loads(slurp(os.path.join(self.state, "rounds", rid, "costs.json")))
         self.assertEqual(costs["calls"], 1)  # round 1 only: the stack of agents is empty, no lock pass

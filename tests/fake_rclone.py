@@ -33,7 +33,7 @@ def crypt_remote():
     for k, v in os.environ.items():
         if k.startswith("RCLONE_CONFIG_") and k.endswith("_TYPE") and v == "crypt":
             name = k[len("RCLONE_CONFIG_"):-len("_TYPE")]
-            return name.lower(), os.environ.get("RCLONE_CONFIG_%s_REMOTE" % name, ""), name
+            return name.lower(), os.environ.get(f"RCLONE_CONFIG_{name}_REMOTE", ""), name
     return None, None, None
 
 
@@ -44,7 +44,7 @@ def main():
     ok = None
     if up:
         want = set(obscure(v) for v in secrets.values())
-        got = set(os.environ.get("RCLONE_CONFIG_%s_%s" % (up, k), "") for k in ("PASSWORD", "PASSWORD2"))
+        got = set(os.environ.get(f"RCLONE_CONFIG_{up}_{k}", "") for k in ("PASSWORD", "PASSWORD2"))
         ok = got == want and len(got) == 2
     if os.environ.get("FAKE_RCLONE_LOG"):
         with open(os.environ["FAKE_RCLONE_LOG"], "a") as f:
@@ -70,7 +70,7 @@ def main():
             pos.append(a)
     include = rest[rest.index("--include") + 1] if "--include" in rest else None
     if cmd not in ("lsjson", "copyto", "cryptcheck", "deletefile"):
-        sys.stderr.write("fake rclone: %s is forbidden in the backup\n" % cmd)
+        sys.stderr.write(f"fake rclone: {cmd} is forbidden in the backup\n")
         return 99
     if os.environ.get("FAKE_RCLONE_FAIL") == "network":
         sys.stderr.write("ERROR : Failed to create file system: Get \"https://www.googleapis.com/drive/v3/files\": "
@@ -82,7 +82,7 @@ def main():
         if name and path.startswith(name + ":"):
             return os.path.join(folder, path[len(name) + 1:]), True
         if ":" in path and not path.startswith("/"):
-            sys.stderr.write("fake rclone: unknown remote in %s\n" % path)
+            sys.stderr.write(f"fake rclone: unknown remote in {path}\n")
             sys.exit(98)
         return path, False
 
