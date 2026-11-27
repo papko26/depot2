@@ -397,8 +397,8 @@ def url_doc(rel, dirs, base=DOC_BASE):
     parts = rel.split("/")
     if any(x in ("", ".", "..") for x in parts) or not rel.endswith(".md"):
         return None
-    joined = os.path.join(os.path.expanduser(base), *parts)
-    if not inside(os.path.abspath(joined), dirs):
+    joined = os.path.join(os.path.realpath(os.path.expanduser(base)), *parts)
+    if not inside(joined, dirs):
         return None
     return safe_md(joined, dirs, base)
 

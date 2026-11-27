@@ -510,7 +510,8 @@ class OrderTest(MergeBase):
         m301 = gh["prs"]["301"]["mergeCommit"]["oid"]
         # 302 rode first: main was in it already, so no push; 301 got main + 302 (pushed), 303 main + 302 + 301
         self.assertEqual(
-            [p["cwd"] for p in self.pushes()], [str(Path(self.wt, "feat-a")), str(Path(self.wt, "feat-c"))]
+            [Path(p["cwd"]) for p in self.pushes()],
+            [Path(self.wt, branch).resolve() for branch in ("feat-a", "feat-c")],
         )
         self.g(self.tmp, "--git-dir", self.bare, "merge-base", "--is-ancestor", m302, "refs/heads/feat-a")
         self.g(self.tmp, "--git-dir", self.bare, "merge-base", "--is-ancestor", m301, "refs/heads/feat-c")
