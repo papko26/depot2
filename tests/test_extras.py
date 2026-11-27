@@ -38,7 +38,7 @@ def order(command="node tools/bench/run.mjs --seeds 1-20", hardware="cpu", **kw)
 
 
 def r2(votes=(), order_=None, points=()):
-    a = {"points": [dict(id=p[0], position=p[1], stake=p[2], comment=p[3]) for p in points],
+    a = {"points": [{"id": p[0], "position": p[1], "stake": p[2], "comment": p[3]} for p in points],
          "rebuttals": [], "inner_thought": "ок"}
     if votes is not None:
         a["brainstorm_votes"] = [{"proposal": pid, "vote": v, "line": f"потому что {v}"} for pid, v in votes]

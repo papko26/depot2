@@ -161,7 +161,7 @@ class BackupNowTest(BackupBase):
         self.assertIn(base + "/ledger.jsonl", names)
         self.assertFalse([n for n in names if n.startswith(base + "/.backup") or n == base + "/.lock"])
         # Only copyto writes: once, with --immutable, into the env-defined crypt remote.
-        self.assertTrue(set(c[0] for c in self.cmds()) <= ALLOWED, self.cmds())
+        self.assertTrue({c[0] for c in self.cmds()} <= ALLOWED, self.cmds())
         ups = self.cmds("copyto")
         self.assertEqual(len(ups), 1)
         self.assertIn("--immutable", ups[0])
@@ -396,7 +396,7 @@ class RetentionTest(BackupBase):
         self.assertEqual(sorted(a[1] for a in self.cmds("deletefile")), sorted("depot2backupcrypt:" + n for n in drop))
         self.assertEqual(self.folder(), sorted(keep + foreign))
         self.assertEqual(os.listdir(outside), ["team-testhost-20150801T030000Z.tar.gz"])
-        self.assertTrue(set(c[0] for c in self.cmds()) <= ALLOWED, self.cmds())
+        self.assertTrue({c[0] for c in self.cmds()} <= ALLOWED, self.cmds())
         self.assertEqual(len(self.cmds("copyto")), 1)
         st = self.stamp()
         self.assertEqual(st["retention"]["kept"], len(keep))

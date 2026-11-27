@@ -17,7 +17,7 @@ from depot2.store import append_jsonl, write_json
 
 
 def ans(points=(), main="главное", thought="мысль"):
-    return {"points": [dict(id=p[0], position=p[1], stake=p[2], comment=p[3]) for p in points],
+    return {"points": [{"id": p[0], "position": p[1], "stake": p[2], "comment": p[3]} for p in points],
             "main_point": main, "inner_thought": thought}
 
 
@@ -706,7 +706,7 @@ class DiscussRoundTest(unittest.TestCase):
 
     def test_discuss_round_answers_open_questions(self):
         def r1(points, props=()):
-            return {"points": [dict(id=i, position=p, stake=s, comment=c) for i, p, s, c in points],
+            return {"points": [{"id": i, "position": p, "stake": s, "comment": c} for i, p, s, c in points],
                     "main_point": "главное", "inner_thought": "мысль",
                     "proposals": [{"title": t, "question": q, "stake": s} for t, q, s in props]}
         script = {

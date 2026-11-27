@@ -579,7 +579,7 @@ class Server(http.server.ThreadingHTTPServer):
         c = self.commit
         if not c:
             return i18n.t("webui.code_outside_git", stamp=self.stamp)
-        f = dict(commit=c["commit"], date=c["date"][:16].replace("T", " "))
+        f = {"commit": c["commit"], "date": c["date"][:16].replace("T", " ")}
         return i18n.t("webui.code_dirty", **f) if c["dirty"] else i18n.t("webui.code", **f)
 
     def route(self, name, q):

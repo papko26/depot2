@@ -26,9 +26,9 @@ class RunnerTest(unittest.TestCase):
             os.environ.pop(k, None)
 
     def spec(self, **kw):
-        base = dict(call_id="t/builder-r1", model="fake-model-1", effort="low",
-                    system_path=self.sys_path, user="hello", schema=self.schema,
-                    timeout_s=20, cwd=self.dir, raw_path=os.path.join(self.dir, "raw.jsonl"))
+        base = {"call_id": "t/builder-r1", "model": "fake-model-1", "effort": "low",
+                    "system_path": self.sys_path, "user": "hello", "schema": self.schema,
+                    "timeout_s": 20, "cwd": self.dir, "raw_path": os.path.join(self.dir, "raw.jsonl")}
         base.update(kw)
         return CallSpec(**base)
 

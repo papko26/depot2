@@ -284,7 +284,7 @@ def check(unmet, force, why, ref, target, cmd, error=GateError):
     """The soft gate: nothing missing -> None; missing and no --force -> error (what is missing, how to pass
     anyway; the stack's and the trains' own error classes); --force with a reason -> {gate: [what was missing]}
     for the history row (`gates`)."""
-    unmet = dict((k, list(v)) for k, v in unmet.items() if v)
+    unmet = {k: list(v) for k, v in unmet.items() if v}
     if not unmet:
         return None
     text = "; ".join("{} — {}".format(GATE_RU.get(k, k), ", ".join(v)) for k, v in unmet.items())

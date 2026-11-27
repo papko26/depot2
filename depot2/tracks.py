@@ -590,8 +590,8 @@ class Tracks:
             raise TrackError(i18n.t("tracks.object_left_team" if team else "tracks.object_left", oid=oid))
         o = stk.get(oid)
         est = o.get("est_mtok") if not isinstance(o.get("est_mtok"), list) else None
-        kw = dict(n=n, size=size or o.get("size"), est_mtok=est, after=list(o.get("depends_on") or ()), src=oid,
-                  by=by, note=f"{now_iso()[:10]}: {object_note(o, team)}", priority=pri.of(o))
+        kw = {"n": n, "size": size or o.get("size"), "est_mtok": est, "after": list(o.get("depends_on") or ()), "src": oid,
+                  "by": by, "note": f"{now_iso()[:10]}: {object_note(o, team)}", "priority": pri.of(o)}
         if team:
             if o["where"] == "slot":
                 raise TrackError(i18n.t("tracks.team_in_slot", oid=oid))

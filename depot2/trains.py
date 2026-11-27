@@ -766,7 +766,7 @@ class Trains:
             L.append(i18n.t("trains.ready_impl", list="; ".join(
                 i18n.t("trains.ready_item_owner", name=r["train"]["name"], cmd=r["command"]) if r["owner"]
                 else "{} — `{}`".format(r["train"]["name"], r["command"]) for r in ready)))
-        mine = {r for r in (train["cars"] if train is not None else ())}
+        mine = set(train["cars"] if train is not None else ())
         parked = [p for p in nx["parked"] if train is None or "{}:{}".format(p[0]["id"], p[1]["n"]) in mine]
         ok = [tracks.parked_line(*p) for p in parked if not p[2]]
         if ok:

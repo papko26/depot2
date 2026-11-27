@@ -52,7 +52,7 @@ def owner_facts(owner, dec):
     lines = []
     for e in owner:
         where = " ".join(x for x in (e.get("round"), e.get("point")) if x)
-        common = dict(date=e["ts"][:10], where=(f" ({where})") if where else "", reason=e.get("reason") or "")
+        common = {"date": e["ts"][:10], "where": (f" ({where})") if where else "", "reason": e.get("reason") or ""}
         if e["type"] == "forfeit":
             lines.append(t("reflect.forfeit", stake=int(e.get("stake", 0)), **common))
             continue

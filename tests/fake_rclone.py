@@ -43,8 +43,8 @@ def main():
     secrets = json.loads(os.environ.get("FAKE_PASS_SECRETS", "{}"))
     ok = None
     if up:
-        want = set(obscure(v) for v in secrets.values())
-        got = set(os.environ.get(f"RCLONE_CONFIG_{up}_{k}", "") for k in ("PASSWORD", "PASSWORD2"))
+        want = {obscure(v) for v in secrets.values()}
+        got = {os.environ.get(f"RCLONE_CONFIG_{up}_{k}", "") for k in ("PASSWORD", "PASSWORD2")}
         ok = got == want and len(got) == 2
     if os.environ.get("FAKE_RCLONE_LOG"):
         with open(os.environ["FAKE_RCLONE_LOG"], "a") as f:

@@ -200,7 +200,7 @@ def plan_retention(names, host, keep_daily=14):
         newest_of_day[ts[:8]] = n
         first_of_month.setdefault(ts[:6], n)
     days = sorted(newest_of_day)[-int(keep_daily):]
-    keep = set(newest_of_day[d] for d in days) | set(first_of_month.values())
+    keep = {newest_of_day[d] for d in days} | set(first_of_month.values())
     return [n for n in by_ts if n in keep], [n for n in by_ts if n not in keep]
 
 
@@ -275,7 +275,7 @@ class Runner:
         if k1 == k2:
             raise BackupError(t("backup.same_secrets"), "pass")
         n = f"RCLONE_CONFIG_{self.crypt.upper()}_"
-        env = dict((k, v) for k, v in os.environ.items() if not k.startswith(n))
+        env = {k: v for k, v in os.environ.items() if not k.startswith(n)}
         env.update({n + "TYPE": "crypt", n + "REMOTE": self.dest, n + "PASSWORD": self.obscure(k1),
                     n + "PASSWORD2": self.obscure(k2), n + "FILENAME_ENCRYPTION": "standard",
                     n + "DIRECTORY_NAME_ENCRYPTION": "true", "TZ": "UTC"})
@@ -324,7 +324,7 @@ class Runner:
             items = json.loads(p.stdout or "[]")
         except ValueError:
             raise BackupError(t("backup.not_json"), "lsjson")
-        return dict((it["Path"], int(it["Size"])) for it in items if not it.get("IsDir"))
+        return {it["Path"]: int(it["Size"]) for it in items if not it.get("IsDir")}
 
     # --- the steps -------------------------------------------------------------------------
     def snapshot(self, tmp, name):
@@ -494,7 +494,7 @@ class Runner:
             if p.returncode != 0:
                 raise BackupError(t("backup.v_tar_t", code=p.returncode), "verify", p.stderr.strip()[-500:])
             entries = [ln for ln in p.stdout.split("\n") if ln]
-            tops = set(e.split("/")[0] for e in entries)
+            tops = {e.split("/")[0] for e in entries}
             if len(tops) != 1 or any(e.startswith("/") or "/../" in "/" + e + "/" for e in entries):
                 raise BackupError(t("backup.v_tops", tops=sorted(tops)[:3]), "verify")
             top = tops.pop()

@@ -1286,7 +1286,7 @@ class PartsTest(unittest.TestCase):
         self.assertTrue(merge.classify([self.run_("completed", "failure")], lambda r: [job(
             conclusion="cancelled", runner_name=None, steps=[])], self.NOW, 15)[3])
         # queued with no runner: 10 min is a wait, 20 min is GitHub's
-        q = dict(status="queued", conclusion=None, runner_name=None, steps=[])
+        q = {"status": "queued", "conclusion": None, "runner_name": None, "steps": []}
         self.assertEqual(c([self.run_("in_progress")], [job(created_at="2025-11-11T23:50:00Z", **q)])[0], "pending")
         k, t = c([self.run_("in_progress")], [job(created_at="2025-11-11T23:40:00Z", **q)])
         self.assertEqual((k, t), ("github", "задание «j» в очереди 20+ мин, раннера нет"))

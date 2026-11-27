@@ -168,11 +168,11 @@ class Principles(Queue):
         section = section_key(section)
         last = self.last_in(section)
         date = date or today()
-        e = self._make(self.data.get("next") or 1, "", dict(
-            section=section, title=title, text=text or "", date=date, words=[word(w, date) for w in words or ()],
-            subs=list(subs or ()), links=list(links or ()), check=bool(check),
-            order=float(order) if order is not None else ((last["order"] if last else 0) + 1),
-            gap=last["gap"] if last else 1), "principles add")
+        e = self._make(self.data.get("next") or 1, "", {
+            "section": section, "title": title, "text": text or "", "date": date, "words": [word(w, date) for w in words or ()],
+            "subs": list(subs or ()), "links": list(links or ()), "check": bool(check),
+            "order": float(order) if order is not None else ((last["order"] if last else 0) + 1),
+            "gap": last["gap"] if last else 1}, "principles add")
         e["order"] = _num(e["order"])
         self._save("add", e["id"], entry_data=e)
         return e
