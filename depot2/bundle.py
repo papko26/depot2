@@ -163,7 +163,7 @@ def latest_decisions(cfg):
 
 def gh_json(args):
     """A read-only gh call. The tool never writes to GitHub."""
-    if args[0] not in ("pr",) or args[1] not in ("list", "view", "diff"):
+    if args[0] != "pr" or args[1] not in ("list", "view", "diff"):
         raise ValueError("gh: read-only pr list/view only")
     p = subprocess.run(["gh", *args], capture_output=True, text=True, timeout=120)
     if p.returncode != 0:
@@ -223,9 +223,8 @@ def build(kind, cfg, input_path=None, contexts=(), since=None, gh=gh_json, pr=No
     bc = cfg["bundle"]
     if pr is not None and kind != "review":
         raise ValueError("--pr goes with --kind review")
-    if kind in ("ballot", "discuss", "brainstorm"):
-        if not input_path:
-            raise ValueError(f"--input is required for a {kind} round")
+    if kind in ("ballot", "discuss", "brainstorm") and not input_path:
+        raise ValueError(f"--input is required for a {kind} round")
     if input_path:
         text = read_text(os.path.expanduser(input_path))
         if text is None:

@@ -33,15 +33,11 @@ dev = [
 ]
 
 [tool.ruff.lint]
-select = ["B", "C4", "E4", "E7", "E9", "F", "FA", "G", "I", "RET", "RUF", "TC", "UP"]
+select = ["B", "C4", "E4", "E7", "E9", "F", "FA", "FURB", "G", "I", "PIE", "RET", "RUF", "TC", "UP"]
 extend-select = [
     "D204", # incorrect-blank-line-after-class
     "D208", # over-indentation
     "D209", # new-line-after-last-paragraph
-    "FURB105", # print-empty-string
-    "FURB110", # if-exp-instead-of-or-operator
-    "FURB167", # regex-flag-alias
-    "FURB188", # slice-to-remove-prefix-or-suffix
     "PTH102", # os-mkdir
     "PTH104", # os-rename
     "PTH121", # os-path-samefile
@@ -52,6 +48,7 @@ extend-select = [
     "PTH210", # invalid-pathlib-with-suffix
     "Q",      # flake8-quotes
     "RSE102", # unnecessary-paren-on-raise-exception
+    "SIM102", # collapsible-if
 ]
 ignore = [
     "E402",   # module-import-not-at-top-of-file

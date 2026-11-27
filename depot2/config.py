@@ -511,8 +511,7 @@ def check_merge(m):
         if value is None:
             return
         if not isinstance(value, list) or not value or not all(isinstance(x, str) for x in value):
-            raise ValueError("merge.{} must be a command: a list of strings{}".format(key, ", or null" if key not in (
-                "scan_args",) else ""))
+            raise ValueError("merge.{} must be a command: a list of strings{}".format(key, ", or null" if key != "scan_args" else ""))
     for key in ("githubstatus", "site_check", "smoke"):
         cmd(key, m.get(key))
     if not isinstance(m.get("scan_args"), list) or not all(isinstance(x, str) for x in m["scan_args"]):

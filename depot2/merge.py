@@ -109,7 +109,7 @@ class Dropped(Exception):
 
 def epoch(iso):
     try:
-        return datetime.datetime.fromisoformat(iso.replace("Z", "+00:00")).timestamp()
+        return datetime.datetime.fromisoformat(iso.replace("Z", "+00:00")).timestamp()  # noqa: FURB162
     except (AttributeError, ValueError):
         return None
 
