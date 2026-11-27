@@ -164,6 +164,7 @@ class PriorityMigrateTest(QBase):
 
     def setUp(self):
         super(PriorityMigrateTest, self).setUp()
+        self.team("stack", "add", "--title", "старый объект")  # a command first: the queue files below make one migrate
         note = "2015-11-05: prio: %s"
         old_queue(self.t.state, "todo", [
             entry("td-0001", "open", text="один", notes=[note % "high — текст на проде"]),
@@ -180,7 +181,6 @@ class PriorityMigrateTest(QBase):
             for e in d["entries"]:
                 e.pop("priority")
             write_json(self.t.state.path(name + ".json"), d)
-        self.team("stack", "add", "--title", "старый объект")
         d = read_json(self.t.state.path("stack.json"))
         for o in d["objects"]:
             o.pop("priority")
@@ -394,6 +394,20 @@ class QueuesToTracksTest(QBase):
         self.assertIn("очередей хотелок, «подумать» и todo нет: нечего переносить", out)
         self.assertEqual(len(Tracks(self.t.state, self.t.cfg).tracks()), 2)
         self.assertEqual(migrate.version(self.t.state), 6)
+
+
+class QueuesOnlyTest(QBase):
+    def test_a_depot_that_kept_only_the_queues_migrates_too(self):
+        """No trains.json (no track, no train ever written): the queue files alone make the step due."""
+        old_queue(self.t.state, "todo", [entry("td-0001", "open", text="хвост", kind="bug")])
+        self.assertFalse(os.path.exists(self.t.state.path("trains.json")))
+        self.assertTrue(migrate.pending(self.t.state))
+        rc, out, err = self.team("tracks")
+        self.assertEqual(rc, 0, err)
+        self.assertIn("todo: записей 1 — открытые 1 → вагоны нового трека «todo»", err)
+        self.assertEqual(Tracks(self.t.state, self.t.cfg).car("tr-0001:1")[1]["from"], ["td-0001"])
+        self.assertFalse(migrate.pending(self.t.state))
+        self.assertTrue(os.path.exists(self.t.state.path("todo-v5.json")))
 
 
 class QueuesToTracksGitTest(QBase):

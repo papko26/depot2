@@ -33,10 +33,12 @@ class MigrateError(ValueError):
 
 
 def version(state):
-    """The depot's data format: 1 for a trains.json from before the tracks, SCHEMA for today's; None: no data yet."""
+    """The depot's data format: 1 for a trains.json from before the tracks, SCHEMA for today's; None: no data yet. A
+    depot with no trains.json that kept the queues of before is schema 5: their step is due."""
     d = read_json(state.path("trains.json"))
     if d is None:
-        return None
+        from .queues import OLD_QUEUES
+        return 5 if any(os.path.exists(state.path(q[0] + ".json")) for q in OLD_QUEUES) else None
     return d.get("schema", 1)
 
 
