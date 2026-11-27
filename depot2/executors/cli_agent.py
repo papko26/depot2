@@ -26,7 +26,7 @@ from pathlib import Path
 from typing import TypedDict
 
 from .. import effort
-from ..store import read_json
+from ..store import absolute_user_path, expand_user_path, read_json
 from . import CallFailed, FatalError
 
 ARG_MAX = 80
@@ -163,7 +163,7 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
         raise FatalError("executor_bin is not set: the runner's command (config executor_bin)")
     argv = build_argv(spec, executor_bin)
     t0 = time.monotonic()
-    raw = open(spec.raw_path, "w", encoding="utf-8") if spec.raw_path else None  # noqa: SIM115
+    raw = Path(spec.raw_path).open("w", encoding="utf-8") if spec.raw_path else None  # noqa: SIM115
     try:
         try:
             proc = subprocess.Popen(
@@ -344,7 +344,7 @@ _CACHE: dict[str, _TranscriptCacheEntry] = {}
 
 def _short(text, n=ARG_MAX):
     t = " ".join(str(text).split())
-    home = os.path.expanduser("~")
+    home = expand_user_path("~")
     if home and home != "~":
         t = t.replace(home + "/", "~/")
     return t if len(t) <= n else t[: n - 1] + "…"
@@ -440,7 +440,7 @@ def read_transcript(path, tail=10):
     times and the tool calls' names and short arguments are read. A file read before and grown since is read on
     from where that read stopped (_CACHE); a last line without its end is read only when it is whole JSON.
     """
-    path = os.path.expanduser(path)
+    path = expand_user_path(path)
     try:
         st = os.stat(path)  # noqa: PTH116 - preserve empty paths and trailing slashes before open()
     except OSError:
@@ -459,7 +459,7 @@ def read_transcript(path, tail=10):
         acc, off = hit["acc"], hit["off"]
     else:
         acc, off = _acc(tail), 0
-    with open(path, "rb") as f:
+    with open(path, "rb") as f:  # noqa: PTH123 - open the same path spelling used for stat and the transcript cache
         f.seek(off)
         chunk = f.read()
     whole = chunk.rfind(b"\n") + 1
@@ -500,12 +500,12 @@ def find_transcript(cfg, agent_id):
         raise _error(f"an agentId is letters and digits (the runner's, e.g. a0f1c2d3e4b5a6978), got {agent_id!r}")
     if not (cfg.get("agents") or {}).get("projects"):
         raise _error("agents.projects is not set: the dir the runner keeps its runs' logs in (or --transcript PATH)")
-    root = os.path.expanduser(cfg["agents"]["projects"])
+    root = expand_user_path(cfg["agents"]["projects"])
     name = f"agent-{m.group(1)}.jsonl"
     found = sorted(
         set(
-            glob.glob(os.path.join(root, "*", "*", "subagents", name))
-            + glob.glob(os.path.join(root, "*", "*", "subagents", "**", name), recursive=True)
+            glob.glob(os.path.join(root, "*", "*", "subagents", name))  # noqa: PTH118, PTH207 - retain glob hidden-file and pattern semantics
+            + glob.glob(os.path.join(root, "*", "*", "subagents", "**", name), recursive=True)  # noqa: PTH118, PTH207 - retain glob hidden-file and pattern semantics
         )
     )
     if not found:
@@ -519,6 +519,6 @@ def find_transcript(cfg, agent_id):
 
 
 def _tilde(path):
-    home = os.path.expanduser("~")
-    path = os.path.abspath(os.path.expanduser(path))
+    home = expand_user_path("~")
+    path = absolute_user_path(path)
     return "~" + path[len(home) :] if home not in ("", "~", "/") and path.startswith(home + "/") else path

@@ -9,12 +9,13 @@ whether stdin is a tty.
 import json
 import os
 import sys
+from pathlib import Path
 
 
 def main():
     argv = sys.argv[1:]
     if os.environ.get("FAKE_PASS_LOG"):
-        with open(os.environ["FAKE_PASS_LOG"], "a") as f:
+        with Path(os.environ["FAKE_PASS_LOG"]).open("a") as f:
             f.write(
                 json.dumps(
                     {

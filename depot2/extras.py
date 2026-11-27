@@ -12,10 +12,11 @@ The checks here are code, never a model's judgement. brainstorms.jsonl and order
 import os
 import re
 import shlex
+from pathlib import Path
 
 from . import characters, i18n
 from .i18n import t
-from .store import append_jsonl, now_iso, read_jsonl, today, write_new
+from .store import append_jsonl, expand_user_path, now_iso, read_jsonl, today, write_new
 
 YES, NO = "yes", "no"
 
@@ -248,10 +249,10 @@ def topic_text(entry, gender):
 
 
 def write_topic(cfg, entry, gender):
-    d = os.path.expanduser(cfg["brainstorm"]["topics_dir"])
-    base = os.path.join(d, "{}-brainstorm-{}".format(today(), slugify(entry["topic"])))
+    d = expand_user_path(cfg["brainstorm"]["topics_dir"])
+    base = str(Path(d, "{}-brainstorm-{}".format(today(), slugify(entry["topic"]))))
     path, n = base + ".md", 2
-    while os.path.exists(path):
+    while Path(path).exists():
         path, n = "%s-%d.md" % (base, n), n + 1  # noqa: UP031
     write_new(path, topic_text(entry, gender))
     return path
@@ -286,11 +287,11 @@ def check_order(o, snap_dir, cfg):
     if not scripts:
         return None, t("extras.order_no_script")
     rel = os.path.normpath(scripts[0].removeprefix("./"))
-    if not rel.startswith("tools" + os.sep) or ".." in rel.split(os.sep):
+    if not rel.startswith("tools" + os.sep) or ".." in Path(rel).parts:
         return None, t("extras.order_outside", script=scripts[0])
     if not snap_dir:
         return None, t("extras.order_no_snapshot")
-    if not os.path.isfile(os.path.join(snap_dir, rel)):
+    if not os.path.isfile(os.path.join(snap_dir, rel)):  # noqa: PTH113, PTH118 - unusable filenames must test false, including on Python 3.11
         return None, t("extras.order_not_in_snapshot", script=rel)
     hw = o["hardware"].lower()
     allowed = [h.lower() for h in cfg["orders"]["hardware"]]

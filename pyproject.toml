@@ -51,6 +51,7 @@ select = [
     "PGH",  # pygrep-hooks
     "PIE",  # flake8-pie
     "PLE",  # Pylint errors
+    "PTH",  # flake8-use-pathlib
     "RET",  # flake8-return
     "RUF",  # Ruff-specific rules
     "SIM",  # flake8-simplify
@@ -64,33 +65,12 @@ extend-select = [
     "D204", # incorrect-blank-line-after-class
     "D208", # over-indentation
     "D209", # new-line-after-last-paragraph
-    "PTH101", # os-chmod
-    "PTH102", # os-mkdir
-    "PTH103", # os-makedirs
-    "PTH104", # os-rename
-    "PTH105", # os-replace
-    "PTH106", # os-rmdir
-    "PTH107", # os-remove
-    "PTH108", # os-unlink
-    "PTH109", # os-getcwd
-    "PTH114", # os-path-islink
-    "PTH116", # os-stat
-    "PTH117", # os-path-isabs
-    "PTH119", # os-path-basename
-    "PTH121", # os-path-samefile
-    "PTH124", # py-path
-    "PTH201", # path-constructor-current-directory
-    "PTH202", # os-path-getsize
-    "PTH203", # os-path-getatime
-    "PTH204", # os-path-getmtime
-    "PTH205", # os-path-getctime
-    "PTH208", # os-listdir
-    "PTH210", # invalid-pathlib-with-suffix
     "Q",      # flake8-quotes
     "RSE102", # unnecessary-paren-on-raise-exception
 ]
 ignore = [
     "E402",   # module-import-not-at-top-of-file
+    "PTH211", # os-symlink
 ]
 # Russian alphabet, uppercase and lowercase
 allowed-confusables = [

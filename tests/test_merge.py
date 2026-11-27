@@ -1008,7 +1008,7 @@ class ConflictTest(MergeBase):
         self.assertEqual(self.g(self.wt_a, "status", "--porcelain"), "")
         self.assertFalse(
             Path(self.wt_a, ".git").exists()
-            and os.path.exists(self.g(self.wt_a, "rev-parse", "--git-path", "MERGE_HEAD"))
+            and os.path.exists(self.g(self.wt_a, "rev-parse", "--git-path", "MERGE_HEAD"))  # noqa: PTH110 - keep os.path error and path-spelling semantics
         )
         self.assertEqual(self.pushes(), [])
         self.assertEqual(self.gh_calls("pr", "merge"), [])

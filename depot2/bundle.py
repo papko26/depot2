@@ -8,14 +8,13 @@ brainstorm: the topic file the team's approved brainstorm wrote
 
 import glob
 import json
-import os
 import re
 import subprocess
 from pathlib import Path
 
 from . import i18n
 from .i18n import t
-from .store import read_text
+from .store import absolute_user_path, expand_user_path, read_text
 
 # A point heading: up to three letters (latin or Cyrillic, U+0410-U+044F) and a number, as in "### B12." or "## Q3)".
 HEADING = re.compile(r"^(#{2,4})\s+([A-Za-z\u0410-\u044f]{0,3}\d+[a-z]?)[.:)]\s*(.*)$")
@@ -171,7 +170,7 @@ def _heading_points(text):
 def latest_decisions(cfg):
     if not cfg["bundle"].get("decisions_glob"):
         return None
-    paths = sorted(glob.glob(os.path.expanduser(cfg["bundle"]["decisions_glob"])))
+    paths = sorted(glob.glob(expand_user_path(cfg["bundle"]["decisions_glob"])))  # noqa: PTH207 - retain glob hidden-file and pattern semantics
     return paths[-1] if paths else None
 
 
@@ -262,10 +261,10 @@ def build(kind, cfg, input_path=None, contexts=(), since=None, gh=gh_json, pr=No
     if kind in ("ballot", "discuss", "brainstorm") and not input_path:
         raise ValueError(f"--input is required for a {kind} round")
     if input_path:
-        text = read_text(os.path.expanduser(input_path))
+        text = read_text(expand_user_path(input_path))
         if text is None:
             raise ValueError(f"no such input: {input_path}")
-        b.sources.append(os.path.abspath(os.path.expanduser(input_path)))
+        b.sources.append(absolute_user_path(input_path))
         b.points = parse_points(text)
         if kind == "ballot" and not b.points:
             raise ValueError("the ballot input has no '### B<n>. title' questions")
@@ -311,10 +310,10 @@ def build(kind, cfg, input_path=None, contexts=(), since=None, gh=gh_json, pr=No
         text = "\n".join(_pr_block(p, bc["open_pr_body_max_chars"]) for p in opened) or t("prompts.none")
         b.add(t("bundle.open", n=len(opened)), text, bc["max_chars"] // 4, t("bundle.open_what"))
     for c in contexts or ():
-        text = read_text(os.path.expanduser(c))
+        text = read_text(expand_user_path(c))
         if text is None:
             raise ValueError(f"no such context file: {c}")
-        b.sources.append(os.path.abspath(os.path.expanduser(c)))
+        b.sources.append(absolute_user_path(c))
         b.add(t("bundle.context", name=Path(c).name), text, bc["context_max_chars"], Path(c).name)
     dec = latest_decisions(cfg)
     if dec:

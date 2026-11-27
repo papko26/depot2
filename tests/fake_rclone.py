@@ -48,7 +48,7 @@ def main():
         got = {os.environ.get(f"RCLONE_CONFIG_{up}_{k}", "") for k in ("PASSWORD", "PASSWORD2")}
         ok = got == want and len(got) == 2
     if os.environ.get("FAKE_RCLONE_LOG"):
-        with open(os.environ["FAKE_RCLONE_LOG"], "a") as f:
+        with Path(os.environ["FAKE_RCLONE_LOG"]).open("a") as f:
             f.write(
                 json.dumps(
                     {
@@ -87,18 +87,18 @@ def main():
             "dial tcp: lookup www.googleapis.com: no such host\n"
         )
         return 1
-    folder = os.path.join(os.environ["FAKE_RCLONE_DIR"], remote.split(":", 1)[1])
+    folder = os.path.join(os.environ["FAKE_RCLONE_DIR"], remote.split(":", 1)[1])  # noqa: PTH118 - preserve lexical path components
 
     def local_of(path):
         if name and path.startswith(name + ":"):
-            return os.path.join(folder, path[len(name) + 1 :]), True
+            return os.path.join(folder, path[len(name) + 1 :]), True  # noqa: PTH118 - preserve lexical path components
         if ":" in path and not path.startswith("/"):
             sys.stderr.write(f"fake rclone: unknown remote in {path}\n")
             sys.exit(98)
         return path, False
 
     if cmd == "lsjson":
-        if not os.path.isdir(folder):
+        if not os.path.isdir(folder):  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
             sys.stderr.write("ERROR : : error listing: directory not found\n")
             return 3
         out = [
@@ -110,11 +110,11 @@ def main():
     if cmd == "copyto":
         src, _ = local_of(pos[0])
         dst, _ = local_of(pos[1])
-        if "--immutable" in flags and os.path.exists(dst):
+        if "--immutable" in flags and os.path.exists(dst):  # noqa: PTH110 - keep os.path error and path-spelling semantics
             sys.stderr.write("ERROR : immutable file modified\n")
             return 1
         time.sleep(float(os.environ.get("FAKE_RCLONE_SLEEP", "0")))
-        os.makedirs(os.path.dirname(dst), exist_ok=True)  # noqa: PTH103 - reject a destination without a directory
+        os.makedirs(os.path.dirname(dst), exist_ok=True)  # noqa: PTH103, PTH120 - reject a destination without a directory
         shutil.copyfile(src, dst)
         return 0
     if cmd == "cryptcheck":
@@ -123,8 +123,8 @@ def main():
         for n in [entry.name for entry in Path(src).iterdir()]:
             if include and n != include:
                 continue
-            r = os.path.join(folder, n)
-            if not os.path.exists(r) or open(r, "rb").read() != open(os.path.join(src, n), "rb").read():  # noqa: SIM115
+            r = str(Path(folder, n))
+            if not os.path.exists(r) or Path(r).read_bytes() != Path(src, n).read_bytes():  # noqa: PTH110 - keep os.path error and path-spelling semantics
                 bad += 1
         return 1 if bad else 0
     if cmd == "deletefile":

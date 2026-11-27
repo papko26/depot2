@@ -40,7 +40,7 @@ from pathlib import Path
 from . import hooks, i18n, mergeauto
 from .mergetrials import TrialsMixin, trial_brief, trial_cell
 from .mergewt import WorktreesMixin, size_text, wt_text
-from .store import append_jsonl, read_json, write_json
+from .store import append_jsonl, expand_user_path, read_json, write_json
 
 FILE = "merge-queue.json"
 HISTORY = "merge-history.jsonl"
@@ -132,7 +132,7 @@ def clip(text, n=160):
 
 
 def expand(p):
-    return os.path.expanduser(p) if isinstance(p, str) else p
+    return expand_user_path(p) if isinstance(p, str) else p
 
 
 def argv_of(cmd, **subs):
@@ -256,7 +256,7 @@ class Resolutions:
         return None
 
     def file_of(self, it):
-        return os.path.join(self.dir, it["key"])
+        return str(Path(self.dir, it["key"]))
 
     def _save(self):
         write_json(self.path, self.data)
@@ -279,9 +279,9 @@ class Resolutions:
                     )
                 )
         src = expand(src)
-        if not os.path.isfile(src):
+        if not os.path.isfile(src):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
             raise MergeError(f"no such file: {src} (--from is the resolved file)")
-        with open(src, "rb") as f:
+        with Path(src).open("rb") as f:
             body = f.read()
         if b"<<<<<<<" in body or b">>>>>>>" in body:
             raise MergeError(f"{src} still has conflict markers: a resolution is the resolved file")
@@ -301,7 +301,7 @@ class Resolutions:
             "theirs": theirs,
             "sha256": hashlib.sha256(body).hexdigest(),
             "bytes": len(body),
-            "from": os.path.abspath(src),
+            "from": os.path.abspath(src),  # noqa: PTH100 - collapse .. without resolving symlinks
             "note": (note or "").strip() or None,
             "added": stamp(),
         }
@@ -329,7 +329,7 @@ class Resolutions:
         self.data["items"] = [x for x in self.data["items"] if x is not it]
         self._save()
         p = self.file_of(it)
-        if os.path.exists(p):
+        if Path(p).exists():
             Path(p).unlink()
             self.state.touch(p)
         return it
@@ -732,7 +732,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         return lock_held(self.state)
 
     def lock_path(self):
-        return os.path.join(run_dir(self.state), RUN_LOCK)
+        return str(Path(run_dir(self.state), RUN_LOCK))
 
     @contextlib.contextmanager
     def run_lock(self):
@@ -1056,7 +1056,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                         (f, "the prepared resolution {}… is for {}, not {}".format(it["key"][:25], it["file"], f))
                     )
                     continue
-                shutil.copyfile(res.file_of(it), os.path.join(wt, f))
+                shutil.copyfile(res.file_of(it), Path(wt, f))
                 if self.git(wt, "add", "--", f)[0] != 0:
                     raise Stop(f"git add {f} failed after the resolution", files=[f])
                 got["prepared"].append(f)
@@ -1069,7 +1069,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                     got["auto"].append(part)
             elif rule in ("generated", "snapshot", "golden"):
                 test = mergeauto.snapshot_test(f, self.cfg) if rule == "snapshot" else None
-                if rule == "snapshot" and not os.path.isfile(os.path.join(wt, test)):
+                if rule == "snapshot" and not os.path.isfile(os.path.join(wt, test)):  # noqa: PTH113, PTH118 - unusable filenames must test false, including on Python 3.11
                     why = f"no {test} beside the snapshot to update it with"
                 elif (
                     self.git(wt, "checkout", "-q", "--theirs", "--", f)[0] != 0 or self.git(wt, "add", "--", f)[0] != 0
@@ -1115,13 +1115,13 @@ class Rider(TrialsMixin, WorktreesMixin):
         """
         code, out, err = self.git(wt, "checkout-index", "--stage=all", "--temp", "--", f)
         names = out.split("\t")[0].split() if code == 0 else []
-        tmps = [os.path.join(wt, x) for x in names if x != "."]
+        tmps = [str(Path(wt, x)) for x in names if x != "."]
         try:
             if code != 0:
                 return f"git checkout-index failed: {clip(err, 120)}", None
             if len(names) != 3 or "." in names:
                 return "a side has no such file (both added it, or one took it away)", None
-            b, o, t = (os.path.join(wt, x) for x in names)
+            b, o, t = (str(Path(wt, x)) for x in names)
             code, out, err = self.git(
                 wt,
                 "merge-file",
@@ -1139,7 +1139,7 @@ class Rider(TrialsMixin, WorktreesMixin):
             )
             if code is None or code >= 128:
                 return f"git merge-file failed: {clip(err or out, 120)}", None
-            with open(o, "rb") as fh:
+            with Path(o).open("rb") as fh:
                 raw = fh.read()
             try:
                 text = raw.decode("utf-8")
@@ -1150,7 +1150,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                 return n, None
             if mergeauto.TAG in joined or (code < 127 and n != code):  # markers it did not read (CRLF, …): never kept
                 return "its conflict markers were not all read (%d of %d)" % (n, code), None  # noqa: UP031
-            with open(os.path.join(wt, f), "wb") as fh:
+            with Path(wt, f).open("wb") as fh:
                 fh.write(joined.encode("utf-8"))
             if self.git(wt, "add", "--", f)[0] != 0:
                 return f"git add {f} failed", None
@@ -1161,7 +1161,7 @@ class Rider(TrialsMixin, WorktreesMixin):
             )
         finally:
             for p in tmps:
-                if os.path.exists(p):
+                if Path(p).exists():
                     Path(p).unlink()
 
     def regenerate(self, wt, got, mode):
@@ -1187,7 +1187,7 @@ class Rider(TrialsMixin, WorktreesMixin):
             self.git(wt, "add", "--", snap)
             parts.append("{}: main's side, then `{}`: green".format(snap, " ".join(argv)))
         c = auto.get("generated") or {}
-        if c.get("file") and os.path.isfile(os.path.join(wt, c["file"])):
+        if c.get("file") and os.path.isfile(os.path.join(wt, c["file"])):  # noqa: PTH113, PTH118 - unusable filenames must test false, including on Python 3.11
             argv = argv_of(c.get("cmd") or [])
             if mode == "plan":
                 if got["generated"]:
@@ -1231,11 +1231,11 @@ class Rider(TrialsMixin, WorktreesMixin):
                 "no throwaway worktree for the {} at {}: {}".format(what, (sha or "?")[:7], clip(err or out, 160))
             )
         nm = next(
-            (p for p in (str(Path(self.clone, "node_modules")), str(Path(repo, "node_modules"))) if os.path.isdir(p)),
+            (p for p in (str(Path(self.clone, "node_modules")), str(Path(repo, "node_modules"))) if Path(p).is_dir()),
             None,
         )
         link = str(Path(tw, "node_modules"))
-        if nm and not os.path.exists(link):
+        if nm and not Path(link).exists():
             os.symlink(os.path.realpath(nm), link)
         try:
             yield tw
@@ -1292,7 +1292,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         if not self.m.get("scan"):
             raise Stop("merge.scan is not set: a scan command (its last line CLEAN), or false to push without one")
         argv = argv_of([self.m["scan"], *list(self.m["scan_args"])], worktree=wt)
-        if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):
+        if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
             raise Stop(f"no private scan {argv[0]} (merge.scan): no push")
         code, out, _ = self.sh.run(_nice(argv), cwd=tempfile.gettempdir(), timeout=int(self.m["scan_timeout_s"]))
         if code is None:
@@ -1316,7 +1316,7 @@ class Rider(TrialsMixin, WorktreesMixin):
             )
             return "merge"
         self.gates(e)
-        if not os.path.isdir(wt):
+        if not Path(wt).is_dir():
             raise Stop(f"no worktree {wt} (git -C {self.clone} worktree add {wt} {br})")
         cur = self.git(wt, "symbolic-ref", "--short", "-q", "HEAD")[1].strip()
         if cur != br:
@@ -1425,7 +1425,7 @@ class Rider(TrialsMixin, WorktreesMixin):
             )
             code, out, err = self.sh.run(argv, cwd=wt, timeout=int(self.m.get("golden_timeout_s") or 5400))
             name = os.path.basename(g.get("file") or "golden.json")  # noqa: PTH119 - a trailing slash has an empty basename
-            got = sorted(os.path.join(d, f) for d, _, fs in os.walk(out_dir) for f in fs if f == name)
+            got = sorted(str(Path(d, f)) for d, _, fs in os.walk(out_dir) for f in fs if f == name)
             if code != 0 or len(got) != 1:
                 raise Stop(
                     "the re-record of %s on %s @ %s failed (%s, %d %s): %s — main's %s is in the branch: re-record "  # noqa: UP031
@@ -1444,7 +1444,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                         name,
                     )
                 )
-            shutil.copyfile(got[0], os.path.join(wt, g["file"]))
+            shutil.copyfile(got[0], os.path.join(wt, g["file"]))  # noqa: PTH118 - preserve lexical path components
             if self.git(wt, "status", "--porcelain", "--", g["file"])[1].strip():
                 if (
                     self.git(wt, "add", "--", g["file"])[0] != 0
@@ -1822,7 +1822,7 @@ class Rider(TrialsMixin, WorktreesMixin):
     def step_ci(self, e):
         head = e["head"]
         wt = e["worktree"]
-        if os.path.isdir(wt):  # CI runs only on a head GitHub has: one it lacks goes back to the sync (and its push)
+        if Path(wt).is_dir():  # CI runs only on a head GitHub has: one it lacks goes back to the sync (and its push)
             remote = self.remote_head(wt, e["branch"])
             if remote and remote != head:
                 self.say(
@@ -1999,7 +1999,9 @@ class Rider(TrialsMixin, WorktreesMixin):
             self.update(eid, "smoke", smoke={"ok": None, "summary": why}, say="#%d smoke skipped: %s" % (n, why))  # noqa: UP031
             return "usage"
         code, out, _ = self.sh.run(
-            argv_of(cmd), cwd=self.clone if os.path.isdir(self.clone) else None, timeout=int(self.m["smoke_timeout_s"])
+            argv_of(cmd),
+            cwd=self.clone if os.path.isdir(self.clone) else None,  # noqa: PTH112 - an empty clone selects the default cwd
+            timeout=int(self.m["smoke_timeout_s"]),
         )
         ok, summary = smoke_verdict(self.cfg, code, out)
         self.update(eid, "smoke", smoke={"ok": ok, "summary": summary}, say="#%d smoke: %s" % (n, summary))  # noqa: UP031
@@ -2009,7 +2011,7 @@ class Rider(TrialsMixin, WorktreesMixin):
 
     def ff_clone(self, eid):
         c = self.clone
-        if not os.path.isdir(c):
+        if not os.path.isdir(c):  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
             return
         self.git(c, "fetch", "-q", self.remote, timeout=300)
         cur = self.git(c, "symbolic-ref", "--short", "-q", "HEAD")[1].strip()
@@ -2067,7 +2069,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                 "below, the plan after that"
                 % (st["id"], st["pr"], (st.get("stop") or {}).get("reason"), st["pr"], st["pr"])
             )
-        if not os.path.isdir(self.clone):
+        if not os.path.isdir(self.clone):  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
             return [*L, f"no main clone {self.clone} (merge.clone)"]
         if self.git(self.clone, "fetch", "-q", self.remote, timeout=300)[0] != 0:
             L.append("warning: git fetch failed: the plan reads the refs as they were")
@@ -2169,7 +2171,7 @@ class Rider(TrialsMixin, WorktreesMixin):
             ]
         head0 = self.rev(self.clone, f"{self.remote}/{br}") or pr.get("headRefOid")
         ahead = False
-        if not os.path.isdir(wt):
+        if not Path(wt).is_dir():
             L.append(f"  worktree: none at {wt} — the real run stops here")
         else:
             cur = self.git(wt, "symbolic-ref", "--short", "-q", "HEAD")[1].strip()
@@ -2488,7 +2490,7 @@ def add(state, cfg, pr_n, word, sh=None, at=None, force=False, why=None):
     k = check(state, cfg, pr_n, word, sh=sh, force=force, why=why)
     n, q, pr, br, o, car, tr, c = k.n, k.q, k.pr, k.br, k.o, k.car, k.tr, k.c
     reading, forced, lines = k.reading, k.forced, k.lines
-    wt = os.path.join(expand(cfg["merge"]["worktrees"]), br)
+    wt = str(Path(expand(cfg["merge"]["worktrees"]), br))
     eid = q.new_id()
     e = {
         "id": eid,
@@ -2571,7 +2573,7 @@ def add(state, cfg, pr_n, word, sh=None, at=None, force=False, why=None):
         lines.append("no stack object with PR #%d: no stack done after the merge" % n)  # noqa: UP031
     if reading is not None:
         reading.save("merge add")  # read fresh from the disk: after the stage rows and the object's status wrote
-    if not os.path.isdir(wt):
+    if not Path(wt).is_dir():
         lines.append(f"warning: no worktree {wt} yet: the ride stops there")
     lines.append("ride: depot2 merge run (one runner; in the background) — dry run first: depot2 merge run --dry-run")
     return e, lines
@@ -2714,7 +2716,7 @@ def run_dir(state):
     d = state.path(RUN_DIR)
     Path(d).mkdir(parents=True, exist_ok=True)
     gi = str(Path(d, ".gitignore"))
-    if not os.path.exists(gi):
+    if not Path(gi).exists():
         with Path(gi).open("w") as f:
             f.write("*\n")
     return d
@@ -2722,7 +2724,7 @@ def run_dir(state):
 
 def lock_held(state):
     p = state.path(RUN_DIR, RUN_LOCK)
-    if not os.path.exists(p):
+    if not Path(p).exists():
         return None
     fd = os.open(p, os.O_RDWR)
     try:
@@ -2781,7 +2783,7 @@ SPAWN = spawn_runner  # the tests swap it for a stand-in that takes the lock lik
 
 def log_tail(path, n=6):
     try:
-        with open(path, errors="replace") as f:
+        with open(path, errors="replace") as f:  # noqa: PTH123 - pass the original path spelling to open
             return [ln.rstrip("\n") for ln in f.readlines()[-n:]]
     except OSError:
         return []
@@ -2803,10 +2805,10 @@ def ensure(state, cfg, sets=None, wait_s=None):
         ]
     was = lock_pid(state)
     lines = [i18n.t("merge.ensure_start", was=i18n.t("merge.ensure_stale_lock", pid=was) if was else "", n=s["open"])]
-    log = os.path.join(run_dir(state), RUN_LOG)
-    if os.path.exists(log) and Path(log).stat().st_size > RUN_LOG_MAX:
+    log = str(Path(run_dir(state), RUN_LOG))
+    if Path(log).exists() and Path(log).stat().st_size > RUN_LOG_MAX:
         Path(log).replace(log + ".1")
-    team = str(Path(os.path.dirname(os.path.abspath(__file__)), "__main__.py"))
+    team = str(Path(__file__).absolute().with_name("__main__.py"))
     argv = [sys.executable, team, "--state", state.root]
     for x in sets or []:
         argv += ["--set", x]
@@ -2814,7 +2816,7 @@ def ensure(state, cfg, sets=None, wait_s=None):
     with Path(log).open("a") as f:
         f.write("== %s merge run --ensure: start, %d in the queue\n" % (stamp(), s["open"]))  # noqa: UP031
     clone = expand((cfg.get("merge") or {}).get("clone") or "")
-    p = SPAWN(argv, log, clone if clone and os.path.isdir(clone) else state.root)
+    p = SPAWN(argv, log, clone if clone and os.path.isdir(clone) else state.root)  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
     end = time.monotonic() + (ENSURE_WAIT_S if wait_s is None else wait_s)
     while True:
         # the runner writes its pid only once it holds the lock; then the probe cannot refuse it

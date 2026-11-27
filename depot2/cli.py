@@ -20,7 +20,7 @@ from .executors import FatalError
 from .i18n import t
 from .ledger import Decisions, Ledger, LedgerError, Pending
 from .persona import Persona
-from .store import LockBusy, State
+from .store import LockBusy, State, absolute_user_path, expand_user_path
 
 
 def cmd_round(state, cfg, a):
@@ -319,15 +319,15 @@ def cmd_order(state, cfg, a):
     if a.action == "done":
         if o["status"] != "queued":
             raise ValueError("{} is {}: only a queued order is marked done".format(a.id, o["status"]))
-        missing = [f for f in a.result if not os.path.isfile(f)]
+        missing = [f for f in a.result if not os.path.isfile(f)]  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
         if missing:
             raise ValueError("no such result file: {}".format(", ".join(missing)))
-        d = os.path.join(os.path.expanduser(cfg["orders"]["results_dir"]), a.id)
+        d = os.path.join(expand_user_path(cfg["orders"]["results_dir"]), a.id)  # noqa: PTH118 - preserve lexical path components
         Path(d).mkdir(parents=True, exist_ok=True)
         dest = []
         for f in a.result:
-            to = os.path.join(d, Path(f).name)
-            if os.path.exists(to):
+            to = str(Path(d, Path(f).name))
+            if Path(to).exists():
                 raise ValueError(f"{to} exists already; results are never overwritten")
             shutil.copy2(f, to)
             dest.append(to)
@@ -377,7 +377,7 @@ def _spent(a):
     if spent is not None and path:
         raise ValueError("give --spent-mtok or --transcript, not both")
     if path:
-        v = effort.from_transcript(os.path.expanduser(path))
+        v = effort.from_transcript(expand_user_path(path))
         print(f"{path}: {v:.4f} MTok from the transcript")
         return v
     return spent
@@ -1061,8 +1061,8 @@ def cmd_seed(state, cfg, a):
             seed_mod.seed_portraits(
                 state,
                 cfg,
-                os.path.expanduser(a.ballot_dir or "") or None,
-                os.path.expanduser(a.review_dir or "") or None,
+                expand_user_path(a.ballot_dir or "") or None,
+                expand_user_path(a.review_dir or "") or None,
                 only=only,
                 dry_run=a.dry_run,
             )
@@ -1674,7 +1674,7 @@ def cmd_principles(state, cfg, a):
         if a.out == "-":
             print(p.render(), end="")
             return 0
-        to_target = not a.out or os.path.abspath(os.path.expanduser(a.out)) == p.target()
+        to_target = not a.out or absolute_user_path(a.out) == p.target()
         drift = p.drift() if to_target and not p.live_target() else None  # a copy writes no live file: no drift
         if drift and not a.overwrite:
             raise QueueError(
@@ -3095,11 +3095,11 @@ def main(argv=None):
     ):
         a.mutates = True  # `merge run` takes the state's lock for each write itself: it runs for hours
     state = State(a.state)
-    if a.cmd not in ("seed", "init") and not os.path.isdir(state.root):
+    if a.cmd not in ("seed", "init") and not Path(state.root).is_dir():
         print(f"no state at {state.root} (run: depot2 init)", file=sys.stderr)
         return 1
     try:
-        cfg = config.load(state.root, a.set) if os.path.isdir(state.root) else config.load("/nonexistent", a.set)
+        cfg = config.load(state.root, a.set) if Path(state.root).is_dir() else config.load("/nonexistent", a.set)
         if a.cmd in TEAM_COMMANDS:
             characters.require()
         _migrate_first(state, cfg, a)

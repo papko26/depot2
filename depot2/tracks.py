@@ -10,14 +10,13 @@ tracks-history.jsonl every change
 
 import hashlib
 import json
-import os
 import re
 
 from . import effort as eff
 from . import gates, i18n, stages
 from . import priority as pri
 from .stack import Stack, _cell
-from .store import append_jsonl, now_iso, read_json, write_json
+from .store import absolute_user_path, append_jsonl, expand_user_path, now_iso, read_json, write_json
 
 SCHEMA = 5
 CAR_STATUSES = ("waiting", "ready", "running", "pr", "merged", "dropped")
@@ -596,7 +595,7 @@ class Tracks:
             "size": size,
             "est_mtok": e,
             "spent_mtok": eff.parse_mtok(spent_mtok),
-            "brief": os.path.abspath(os.path.expanduser(brief)) if brief else None,
+            "brief": absolute_user_path(brief) if brief else None,
             "branch": branch,
             "pr": int(pr) if pr is not None else None,
             "status": status,
@@ -785,7 +784,7 @@ class Tracks:
             if c.get("st") and self.stack._dep_open(c["st"]):  # its stack object shows the same spend
                 self.stack.set(c["st"], spent_mtok=float(spent_mtok))
         if brief is not None:
-            c["brief"] = changed["brief"] = os.path.abspath(os.path.expanduser(brief))
+            c["brief"] = changed["brief"] = absolute_user_path(brief)
         if branch is not None:
             c["branch"] = changed["branch"] = branch
         if pr is not None:
@@ -1252,7 +1251,7 @@ class Tracks:
     def import_json(self, path, dry_run=False):
         if self.data["tracks"]:
             raise TrackError("tracks.json has %d tracks already: the import is one-off" % len(self.data["tracks"]))  # noqa: UP031
-        with open(os.path.expanduser(path), encoding="utf-8") as f:
+        with open(expand_user_path(path), encoding="utf-8") as f:  # noqa: PTH123 - pass the original path spelling to open
             raw = f.read()
         spec = json.loads(raw)
         items = spec["tracks"] if isinstance(spec, dict) else spec
@@ -1298,7 +1297,7 @@ class Tracks:
             self._save(
                 "import",
                 None,
-                file=os.path.abspath(os.path.expanduser(path)),
+                file=absolute_user_path(path),
                 sha256=hashlib.sha256(raw.encode("utf-8")).hexdigest(),
                 tracks=[t["id"] for t in made],
             )

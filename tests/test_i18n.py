@@ -2,7 +2,6 @@
 is in them, no Russian text is left outside the Russian catalog, and the language follows the config and $DEPOT2_LANG.
 """
 
-import glob
 import importlib
 import os
 import pkgutil
@@ -63,10 +62,10 @@ class CatalogTest(unittest.TestCase):
     def test_every_key_the_code_names_is_in_the_catalog(self):
         en = i18n.catalog("en")
         missing = []
-        for path in glob.glob(str(Path(PKG, "**", "*.py")), recursive=True):
-            if os.sep + "catalogs" + os.sep in path:
+        for path in Path(PKG).rglob("*.py"):
+            if "catalogs" in path.parts:
                 continue
-            with Path(path).open(encoding="utf-8") as f:
+            with path.open(encoding="utf-8") as f:
                 text = f.read()
             for m in RE_KEY.finditer(text):
                 key = m.group(1) or m.group(2)
@@ -92,11 +91,11 @@ class CatalogTest(unittest.TestCase):
     def test_no_russian_outside_the_russian_catalog(self):
         """The code, its comments and the web page are English; Russian lives in depot2/catalogs/ru.py alone."""
         bad = []
-        paths = [*glob.glob(str(Path(PKG, "**", "*.py")), recursive=True), str(Path(PKG, "web", "index.html"))]
+        paths = [*Path(PKG).rglob("*.py"), Path(PKG, "web", "index.html")]
         for path in sorted(paths):
-            if os.path.abspath(path) == str(Path(PKG, "catalogs", "ru.py")):
+            if path == Path(PKG, "catalogs", "ru.py"):
                 continue
-            with Path(path).open(encoding="utf-8") as f:
+            with path.open(encoding="utf-8") as f:
                 for n, line in enumerate(f, 1):
                     if CYRILLIC.search(line):
                         bad.append("%s:%d" % (os.path.relpath(path, ROOT), n))  # noqa: UP031

@@ -15,6 +15,7 @@ from typing import TYPE_CHECKING
 
 from . import i18n
 from .i18n import t
+from .store import expand_user_path
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -90,7 +91,7 @@ class TrialsMixin:
         q = MergeQueue(self.state)
         cur = q.get(eid)
         chain = self.trial_chain(q, cur)
-        if not chain or not os.path.isdir(self.clone):
+        if not chain or not os.path.isdir(self.clone):  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
             return False
         if self.git(self.clone, "fetch", "-q", self.remote, timeout=300)[0] != 0:
             return False
@@ -206,8 +207,8 @@ class TrialsMixin:
         d = tempfile.mkdtemp(prefix="merge-trial-scan-")
         try:
             export_range(tw, None, head, d, spec=[head, "--not"] + [p for p in parents if p])
-            argv = [os.path.expanduser(self.m["scan"])] + [x.replace("{dir}", d) for x in self.m["trial_scan_args"]]
-            if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):
+            argv = [expand_user_path(self.m["scan"])] + [x.replace("{dir}", d) for x in self.m["trial_scan_args"]]
+            if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
                 raise Stop(f"no private scan {argv[0]} (merge.scan): no push")
             code, out, _ = self.sh.run(_nice(argv), cwd=tempfile.gettempdir(), timeout=int(self.m["scan_timeout_s"]))
             if code is None:
@@ -280,7 +281,7 @@ class TrialsMixin:
         """Every open entry's trial thrown away (the PR they stood on stopped): the branches deleted."""
         from .merge import MergeQueue, log_line
 
-        if not os.path.isdir(self.clone):
+        if not os.path.isdir(self.clone):  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
             return
         for e2 in MergeQueue(self.state).entries(open_only=True):
             t = e2.get("trial")
@@ -304,7 +305,7 @@ class TrialsMixin:
         """The queue's mq/<PR> branches that no waiting or riding entry's live trial is: deleted (after a merge)."""
         from .merge import MergeQueue
 
-        if self.depth() <= 0 or not os.path.isdir(self.clone):
+        if self.depth() <= 0 or not os.path.isdir(self.clone):  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
             return []
         prefix = self.m.get("trial_prefix") or "mq/"
         code, out, _ = self.git(self.clone, "ls-remote", self.remote, f"refs/heads/{prefix}*", timeout=120)

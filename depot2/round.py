@@ -23,7 +23,9 @@ from .persona import Persona
 from .persona import genders as personas_genders
 from .report import render as render_report
 from .store import (
+    absolute_user_path,
     atomic_write,
+    expand_user_path,
     now_iso,
     read_json,
     sha256_text,
@@ -53,7 +55,7 @@ def to_utc(ts):
 def new_round_id(state, kind, pr=None, only=None):
     base = f"{today()}-{kind}" + ("-pr%d" % int(pr) if pr is not None else "") + (f"-solo-{only}" if only else "")  # noqa: UP031
     rid, n = base, 2
-    while os.path.exists(state.path("rounds", rid)):
+    while Path(state.path("rounds", rid)).exists():
         rid = "%s-%d" % (base, n)  # noqa: UP031
         n += 1
     return rid
@@ -62,7 +64,7 @@ def new_round_id(state, kind, pr=None, only=None):
 def last_review_since(state):
     rd = state.rounds_dir()
     best = None
-    if os.path.isdir(rd):
+    if Path(rd).is_dir():
         for directory in Path(rd).iterdir():
             rj = read_json(directory / "round.json")
             if (
@@ -141,8 +143,8 @@ def repo_snapshot(cfg, out=print, commit_wanted=None):
     (None, None) when there is no clone.
     """
     r = cfg.get("deep_repo") or {}
-    clone = os.path.expanduser(r.get("clone") or "")
-    if not clone or not os.path.isdir(clone):
+    clone = expand_user_path(r.get("clone") or "")
+    if not clone or not os.path.isdir(clone):  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
         return None, None
 
     def git(*args, **kw):
@@ -234,7 +236,7 @@ def solo_caps(cfg, lock_calls):
 
 def read_dirs(cfg):
     """The dirs every pass reads besides the snapshot: config read_dirs that exist."""
-    return [os.path.expanduser(d) for d in cfg["read_dirs"] if os.path.isdir(os.path.expanduser(d))]
+    return [expand_user_path(d) for d in cfg["read_dirs"] if os.path.isdir(expand_user_path(d))]  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
 
 
 def run_round(
@@ -333,7 +335,7 @@ def saved_answers(rdir):
     """{(character, "r1"|"r2"): the answer} the round saved in answers/ (the lock pass's are never resumed)."""
     d = Path(rdir, "answers")
     out = {}
-    for entry in sorted(d.iterdir(), key=lambda path: path.name) if os.path.isdir(d) else ():
+    for entry in sorted(d.iterdir(), key=lambda path: path.name) if d.is_dir() else ():
         f = entry.name
         cid, _, stage = f[: -len(".json")].rpartition("-") if f.endswith(".json") else ("", "", "")
         if cid in characters.IDS and stage in ("r1", "r2"):
@@ -489,8 +491,8 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
             "kind": kind,
             "created": now_iso(),
             "status": "running",
-            "input": os.path.abspath(os.path.expanduser(input_path)) if input_path else None,
-            "contexts": [os.path.abspath(os.path.expanduser(c)) for c in contexts or ()],
+            "input": absolute_user_path(input_path) if input_path else None,
+            "contexts": [absolute_user_path(c) for c in contexts or ()],
             "since": since_utc,
             "pr": pr,
             "pr_title": (b.pr or {}).get("title"),
@@ -557,7 +559,7 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
     def call(cid, stage, system_text, user_text, sch, budget, timeout, max_tool_turns):
         guard.check(budget)
         sys_path = str(Path(rdir, "prompts", f"system-{sha256_text(system_text)}.md"))
-        if not os.path.exists(sys_path):
+        if not Path(sys_path).exists():
             write_new(sys_path, system_text)
             state.touch(sys_path)
         _w(state, str(Path(rdir, "prompts", f"{cid}-{stage}.user.md")), user_text)
@@ -906,7 +908,7 @@ def _locks_lifted_since_last_round(state, stk):
     """
     seen = 0
     rd = state.rounds_dir()
-    for directory in Path(rd).iterdir() if os.path.isdir(rd) else ():
+    for directory in Path(rd).iterdir() if Path(rd).is_dir() else ():
         rj = read_json(directory / "round.json") or {}
         if rj.get("status") == "done":
             seen = max(seen, rj.get("stack_history_n") or 0)
@@ -1230,7 +1232,7 @@ def _print_plan(out, cfg, kind, b, points, r1_prompts, balances, sch1, readable,
     out("every pass reads the same --add-dir list (round 1 and round 2):")
     for d in readable:
         out(f"  --add-dir {d}")
-    missing = [d for d in cfg["read_dirs"] if not os.path.isdir(os.path.expanduser(d))]
+    missing = [d for d in cfg["read_dirs"] if not os.path.isdir(expand_user_path(d))]  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
     for d in missing:
         out(f"  (read_dirs: {d} does not exist, left out)")
     out("  deny rules on top: %d (depot2 config lists them)" % len(cfg["deny_read"]))  # noqa: UP031

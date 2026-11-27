@@ -25,7 +25,7 @@ from pathlib import Path
 
 from . import backup
 from .i18n import t
-from .store import atomic_write, now_iso, read_json, write_json
+from .store import atomic_write, expand_user_path, now_iso, read_json, write_json
 
 STAMP = "git.json"  # all four in .backup/, which git ignores and the Drive archive leaves out
 LOG = "git.log"
@@ -127,9 +127,7 @@ def check_cfg(g):
 
 
 def scan_argv(state, g, key="scan_args", d=""):
-    return [os.path.expanduser(g["scan"] or "")] + [
-        x.replace("{state}", state.root).replace("{dir}", d) for x in g[key]
-    ]
+    return [expand_user_path(g["scan"] or "")] + [x.replace("{state}", state.root).replace("{dir}", d) for x in g[key]]
 
 
 # --- git, read-only ---------------------------------------------------------------------------
@@ -229,7 +227,7 @@ def due(state, st, g, n, now):
     if n < int(g["every_commits"]) or _needs_person(st):
         return False
     sp = state.path(backup.DIR, SPAWNED)
-    if os.path.exists(sp) and now - Path(sp).stat().st_mtime < wait_min(g, st) * 60:  # noqa: SIM103
+    if Path(sp).exists() and now - Path(sp).stat().st_mtime < wait_min(g, st) * 60:  # noqa: SIM103
         return False  # one start per window; a push still going holds its lock anyway
     return True
 
@@ -296,17 +294,17 @@ RAW_OFF = ("0", "off", "no", "false")
 
 
 def gate_raw(state, cfg, path, out=print):
-    if os.environ.get("DEPOT2_RAW_SCAN", "").lower() in RAW_OFF or not os.path.isfile(path):
+    if os.environ.get("DEPOT2_RAW_SCAN", "").lower() in RAW_OFF or not os.path.isfile(path):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
         return None
     g = cfg["backup"]["git"]
     why = raw_verdict(state, g, path)
     if why is None:
         return None
     rel = os.path.relpath(path, state.root)
-    qdir = os.path.expanduser(g["quarantine"])
-    dest = os.path.join(qdir, _safe_rel(rel))
+    qdir = expand_user_path(g["quarantine"])
+    dest = str(Path(qdir, _safe_rel(rel)))
     base, n = dest, 2
-    while os.path.exists(dest):
+    while Path(dest).exists():
         dest, n = "%s.%d" % (base, n), n + 1  # noqa: UP031
     Path(dest).parent.mkdir(parents=True, mode=0o700, exist_ok=True)
     shutil.move(path, dest)
@@ -325,7 +323,7 @@ def raw_verdict(state, g, path):
     try:
         shutil.copyfile(path, Path(d, Path(path).name))
         argv = scan_argv(state, g, "scan_pushed_args", d)
-        if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):
+        if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
             return t("push.raw_no_scan", path=argv[0])
         code, text, _ = run_group(backup._nice(argv), None, int(g["scan_timeout_s"]), cwd=tempfile.gettempdir())
         if code is None:
@@ -337,7 +335,7 @@ def raw_verdict(state, g, path):
 
 def _safe_rel(path):
     parts = [p for p in path.replace("\\", "/").split("/") if p not in ("", ".", "..")]
-    return os.path.join(*parts) if parts else "blob"
+    return str(Path(*parts)) if parts else "blob"
 
 
 def export_range(root, base, head, dest, spec=None):
@@ -377,7 +375,7 @@ def export_range(root, base, head, dest, spec=None):
                 cat.stdout.read(1)
                 if parts[1] != b"blob":
                     continue
-                out = os.path.join(dest, "blobs", parts[0][:12].decode(), _safe_rel(paths.get(parts[0], "blob")))
+                out = str(Path(dest, "blobs", parts[0][:12].decode(), _safe_rel(paths.get(parts[0], "blob"))))
                 Path(out).parent.mkdir(parents=True, exist_ok=True)
                 with Path(out).open("wb") as f:
                     f.write(body)
@@ -483,7 +481,7 @@ class Pusher:
     def run_scan(self, argv, what):
         """One run of the private scan. Only its verdict is shown: its lines name private things."""
         g = self.g
-        if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):
+        if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
             raise PushError(t("push.scan_missing", path=argv[0]), "scan", person=True)
         t0 = time.time()
         code, out, _ = run_group(backup._nice(argv), None, int(g["scan_timeout_s"]), cwd=tempfile.gettempdir())
@@ -635,7 +633,7 @@ def command(state, cfg, a):
 
 
 def quarantine_line(g):
-    qdir = os.path.expanduser(g["quarantine"])
+    qdir = expand_user_path(g["quarantine"])
     n = sum(len(files) for _, _, files in os.walk(qdir))
     return (
         "quarantine: {} in {} (outside the depot: the private scan did not say CLEAN; a marker in the depot in its "

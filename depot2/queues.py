@@ -17,7 +17,7 @@ from . import i18n, stages
 from . import priority as pri
 from .i18n import t
 from .stack import _cell
-from .store import append_jsonl, now_iso, read_json, read_jsonl, today, write_json
+from .store import absolute_user_path, append_jsonl, expand_user_path, now_iso, read_json, read_jsonl, today, write_json
 
 if TYPE_CHECKING:
     from .stack import Stack
@@ -83,7 +83,7 @@ class Queue:
         return read_jsonl(self.history_path)
 
     def imported(self, path):
-        path = os.path.abspath(os.path.expanduser(path))
+        path = absolute_user_path(path)
         return [h for h in self.history() if h.get("event") == "import" and h.get("file") == path]
 
     def ordered(self, open_only=True):
@@ -750,8 +750,8 @@ def source_line(s):
 
 
 def repo_version(cfg):
-    clone = os.path.expanduser((cfg.get("deep_repo") or {}).get("clone") or "")
-    if not clone or not os.path.isdir(clone):
+    clone = expand_user_path((cfg.get("deep_repo") or {}).get("clone") or "")
+    if not clone or not os.path.isdir(clone):  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
         return None
     ver = None
     pkg = read_json(Path(clone, "package.json"))

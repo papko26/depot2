@@ -9,10 +9,11 @@ repair  the repair car itself: a free slot takes it out of turn (`trains next`).
 
 import os
 import re
+from pathlib import Path
 
 from . import gates, i18n, stages
 from .i18n import t
-from .store import now_iso
+from .store import expand_user_path, now_iso
 
 V = 1
 ON_PROD = ("rolling", "arrived")
@@ -35,15 +36,15 @@ def clip(text, n):
 
 
 def bugs_path(cfg):
-    return os.path.expanduser((cfg.get("repair") or {}).get("bugs") or "")
+    return expand_user_path((cfg.get("repair") or {}).get("bugs") or "")
 
 
 def read_bugs(cfg):
     path = bugs_path(cfg)
     out: dict[str, dict[str, str]] = {}
-    if not path or not os.path.isfile(path):
+    if not path or not os.path.isfile(path):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
         return out
-    with open(path, encoding="utf-8") as f:
+    with Path(path).open(encoding="utf-8") as f:
         for line in f:
             if not line.startswith("|"):
                 continue
@@ -188,7 +189,7 @@ def add(state, cfg, of, bug=None, title=None, brief=None, why=None, size=None, b
     if bug and bug not in bugs:
         unmet.append(
             t("claims.no_bug", bug=bug, path=bugs_path(cfg))
-            if os.path.isfile(bugs_path(cfg))
+            if os.path.isfile(bugs_path(cfg))  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
             else t("claims.no_bugs_file", path=bugs_path(cfg))
         )
     # the gate's name is a shown word (it is kept in the forced history row as it is shown, in the run's language)

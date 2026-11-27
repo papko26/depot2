@@ -19,7 +19,7 @@ from depot2.persona import Persona
 from depot2.store import State
 
 FAKE = str(Path(HERE, "fake_executor.py"))
-with open(os.environ["DEPOT2_CONFIG"], encoding="utf-8") as _f:
+with Path(os.environ["DEPOT2_CONFIG"]).open(encoding="utf-8") as _f:
     TEAM = json.load(_f)["characters"]  # the test project's team of five; config.load sets it again for each depot
 characters.configure(TEAM)
 
@@ -42,7 +42,7 @@ os.environ["PATH"] = NO_NET + os.pathsep + os.environ.get("PATH", "")
 
 
 def slurp(path):
-    with open(path, encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:  # noqa: PTH123 - pass the original path spelling to open
         return f.read()
 
 

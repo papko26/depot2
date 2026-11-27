@@ -19,7 +19,7 @@ import re
 
 from . import i18n, stages
 from .i18n import is_word, rx, t
-from .store import now_iso, read_text
+from .store import expand_user_path, now_iso, read_text
 
 DOR = ("brief", "questions", "after", "project", "checks")
 DOD = ("ci", "heavy", "scan", "shots", "principles", "docs")
@@ -129,7 +129,7 @@ def dod_cells(cfg, obj, principles=None, docs=None):
 
 
 def brief_docs(path):
-    m = RE_DOCS.search(read_text(os.path.expanduser(path)) or "") if path else None
+    m = RE_DOCS.search(read_text(expand_user_path(path)) or "") if path else None
     return None if m is None else not m.group(1)
 
 
@@ -141,7 +141,7 @@ def docs_need(recs):
         if r.get("docs") is not None:
             return t("gates.docs_flag") if r["docs"] else None
     brief = next((r.get("brief") for r in recs if r.get("brief")), None)
-    return t("gates.docs_sketch") if brief and os.path.isfile(os.path.expanduser(brief)) and brief_docs(brief) else None
+    return t("gates.docs_sketch") if brief and os.path.isfile(expand_user_path(brief)) and brief_docs(brief) else None  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
 
 
 DOCS_WORD = i18n.Labels("gates.docs_word", ("ahead", "now", "passed", "skipped"))
@@ -219,8 +219,8 @@ def checks_old(cfg, car=None, obj=None):
 
 
 def _checks_unmet(items, brief):
-    path = os.path.expanduser(brief) if brief else None
-    if path and os.path.isfile(path):
+    path = expand_user_path(brief) if brief else None
+    if path and os.path.isfile(path):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
         missing = checks_missing(path)
         if missing:
             return [t("gates.checks_missing", sections=", ".join(f"«{m}»" for m in missing))]
@@ -255,7 +255,7 @@ def dor_unmet(stack, tracks, obj=None, car=None, track=None, items=None):
         pass
     elif not brief:
         out.append(t("gates.no_brief"))
-    elif not os.path.isfile(os.path.expanduser(brief)):
+    elif not os.path.isfile(expand_user_path(brief)):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
         out.append(t("gates.brief_not_found", path=brief))
     qs = open_questions(recs) if "questions" in items else []
     if qs:

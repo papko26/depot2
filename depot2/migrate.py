@@ -4,7 +4,7 @@ Each step reads the data of one schema and writes the next, with a history row t
 has nothing to move says so. The web view never migrates: it answers 503 until the next command does.
 """
 
-import os
+from pathlib import Path
 
 from . import i18n, stages
 from . import priority as pri
@@ -252,7 +252,7 @@ def verify(old, track_data, train_data):
 def history_rows(state):
     """The old history (the archive when an earlier run made it), each row with `train` read as `track`."""
     arch = state.path(ARCHIVE_HISTORY)
-    src = arch if os.path.exists(arch) else state.path("trains-history.jsonl")
+    src = arch if Path(arch).exists() else state.path("trains-history.jsonl")
     out = []
     for h in read_jsonl(src):
         h = dict(h)
@@ -291,7 +291,7 @@ def step_tracks_trains(state, dry_run=False, names=None):
     """Schema 1 → 2: the old trains become the tracks and the trains (the module's head)."""
     old = read_json(state.path("trains.json"))
     arch = state.path(ARCHIVE_TRAINS)
-    if os.path.exists(arch):  # a run cut short: the trains.json of before is the archive's
+    if Path(arch).exists():  # a run cut short: the trains.json of before is the archive's
         old = read_json(arch)
     track_data, train_data, rows, mig, L = plan(old, names)
     verify(old, track_data, train_data)
@@ -299,11 +299,11 @@ def step_tracks_trains(state, dry_run=False, names=None):
     L.append(t("migrate.history", n=len(hist), hist=ARCHIVE_HISTORY, trains=ARCHIVE_TRAINS))
     if dry_run:
         return L
-    if not os.path.exists(arch):
+    if not Path(arch).exists():
         write_new(arch, read_text(state.path("trains.json")))
         state.touch(arch)
     harch = state.path(ARCHIVE_HISTORY)
-    if not os.path.exists(harch) and os.path.exists(state.path("trains-history.jsonl")):
+    if not Path(harch).exists() and Path(state.path("trains-history.jsonl")).exists():
         write_new(harch, read_text(state.path("trains-history.jsonl")))
         state.touch(harch)
     from .store import dumps_line

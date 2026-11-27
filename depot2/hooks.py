@@ -26,6 +26,8 @@ import os
 from pathlib import Path
 from types import ModuleType
 
+from .store import absolute_user_path
+
 HOOKS = ("smoke_verdict", "after_merge", "snapshot_test", "round_context")
 _cache: dict[str, ModuleType] = {}
 
@@ -38,10 +40,10 @@ def _load_one(spec):
     if spec in _cache:
         return _cache[spec]
     if spec.endswith(".py") or os.sep in spec:
-        path = os.path.abspath(os.path.expanduser(spec))
-        if not os.path.isfile(path):
+        path = absolute_user_path(spec)
+        if not Path(path).is_file():
             raise HookError(f"plugin {spec}: no such file")
-        name = f"depot2_plugin_{os.path.splitext(Path(path).name)[0]}"
+        name = f"depot2_plugin_{os.path.splitext(Path(path).name)[0]}"  # noqa: PTH122 - keep splitext semantics for plugin module names
         mspec = importlib.util.spec_from_file_location(name, path)
         mod = importlib.util.module_from_spec(mspec)
         mspec.loader.exec_module(mod)

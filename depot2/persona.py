@@ -122,11 +122,11 @@ class Persona:
         """Every version file matches its full sha256, and portrait.md is the newest one."""
         versions = self.versions()
         for v in versions:
-            body = read_text(os.path.join(self.dir, v["path"]))
+            body = read_text(os.path.join(self.dir, v["path"]))  # noqa: PTH118 - preserve lexical path components
             if body is None or sha256_text(body) != v["sha256"]:
                 raise WriteCheckError("%s v%04d does not match its sha256" % (self.cid, v["version"]))  # noqa: UP031
             if v.get("summary_en_path"):
-                en = read_text(os.path.join(self.dir, v["summary_en_path"]))
+                en = read_text(os.path.join(self.dir, v["summary_en_path"]))  # noqa: PTH118 - preserve lexical path components
                 if en is None or sha256_text(en) != v["summary_en_sha256"]:
                     raise WriteCheckError("%s v%04d.en does not match its sha256" % (self.cid, v["version"]))  # noqa: UP031
         if versions and sha256_text(self.portrait()) != versions[-1]["sha256"]:
@@ -138,7 +138,7 @@ class Persona:
         v = self.versions()
         if not v or not v[-1].get("summary_en_path"):
             return None
-        return read_text(os.path.join(self.dir, v[-1]["summary_en_path"]))
+        return read_text(os.path.join(self.dir, v[-1]["summary_en_path"]))  # noqa: PTH118 - preserve lexical path components
 
     # --- thoughts -----------------------------------------------------------------------------
 

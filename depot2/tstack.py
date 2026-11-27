@@ -14,6 +14,7 @@ from . import characters, effort, i18n
 from . import priority as pri
 from .i18n import is_word, t
 from .stack import WHERE, Stack, StackError, _cell
+from .store import absolute_user_path
 
 KINDS = ("review", "review-10", "discuss", "ballot", "brainstorm", "solo", "question", "reflect", "export", "other")
 KIND_RU = i18n.Labels("tstack.kind", KINDS)
@@ -64,7 +65,7 @@ class TeamStack(Stack):
             raise StackError("unknown dependency: {}".format(", ".join(bad)))
         who = _who(who)
         effort.check_size(size, self.cfg)
-        path = os.path.abspath(os.path.expanduser(input_path)) if input_path else None
+        path = absolute_user_path(input_path) if input_path else None
         if not (title or "").strip():
             title = KIND_RU[kind] + (": " + Path(path).name if path else "")
         obj = {
@@ -97,7 +98,7 @@ class TeamStack(Stack):
         if fields.get("who") is not None:
             fields["who"] = _who(fields["who"])
         if fields.get("input"):
-            fields["input"] = os.path.abspath(os.path.expanduser(fields["input"]))
+            fields["input"] = absolute_user_path(fields["input"])
         return super().set(oid, **fields)
 
     def record_round(self, oid, rid, costs):

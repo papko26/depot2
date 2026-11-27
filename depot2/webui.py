@@ -26,6 +26,7 @@ from collections.abc import Callable
 from pathlib import Path
 
 from . import i18n
+from .store import expand_user_path
 
 NAME = "depot2"
 HOST = "127.0.0.1"
@@ -41,8 +42,8 @@ RETRY_S = 0.25
 DOCS_BASE = None
 READ_DIRS = None
 DOC_BASE = None
-PAGE = str(Path(os.path.dirname(os.path.abspath(__file__)), "web", "index.html"))
-CODE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+PAGE = str(Path(__file__).absolute().parent / "web" / "index.html")
+CODE_ROOT = str(Path(__file__).absolute().parents[1])
 FD_ENV = "DEPOT2_WEB_FD"
 CODE_CHECK_S = 1.0  # at most one look at the code's files a second
 RESTART_WAIT_S = 0.6  # a request that found new code waits this long for its 307: the old loop stops meanwhile
@@ -289,12 +290,12 @@ def code_files(root=CODE_ROOT):
         (str(Path("depot2", "executors")), lambda n: n.endswith(".py")),
         (str(Path("depot2", "web")), lambda n: True),
     ):
-        d = os.path.join(root, sub)
-        if os.path.isdir(d):
+        d = Path(root, sub)
+        if d.is_dir():
             out += [
-                os.path.join(d, n)
-                for n in sorted(entry.name for entry in Path(d).iterdir())
-                if keep(n) and os.path.isfile(os.path.join(d, n))
+                str(entry)
+                for entry in sorted(d.iterdir(), key=lambda path: path.name)
+                if keep(entry.name) and entry.is_file()
             ]
     return out
 
@@ -335,7 +336,7 @@ def code_broken(root=CODE_ROOT):
         if not f.endswith(".py"):
             continue
         try:
-            with open(f, encoding="utf-8") as fh:
+            with Path(f).open(encoding="utf-8") as fh:
                 compile(fh.read(), f, "exec")
         except (OSError, SyntaxError, ValueError) as e:
             return f"{os.path.relpath(f, root)}: {e}"
@@ -361,7 +362,7 @@ def reexec(srv):
 
 def inside(real, dirs):
     for d in dirs:
-        rd = os.path.realpath(os.path.expanduser(d))
+        rd = os.path.realpath(expand_user_path(d))
         if real.startswith(rd + os.sep):
             return True
     return False
@@ -370,13 +371,13 @@ def inside(real, dirs):
 def safe_md(path, dirs, base=DOCS_BASE):
     if not isinstance(path, str) or not path or "\0" in path or len(path) > 1024 or not dirs:
         return None
-    p = os.path.expanduser(path.strip())
+    p = expand_user_path(path.strip())
     if not Path(p).is_absolute():
         if not base:
             return None
-        p = os.path.join(os.path.expanduser(base), p)
+        p = os.path.join(expand_user_path(base), p)  # noqa: PTH118 - preserve lexical path components
     real = os.path.realpath(p)
-    if not real.endswith(".md") or not os.path.isfile(real) or not inside(real, dirs):
+    if not real.endswith(".md") or not os.path.isfile(real) or not inside(real, dirs):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
         return None
     return real
 
@@ -397,14 +398,14 @@ def url_doc(rel, dirs, base=DOC_BASE):
     parts = rel.split("/")
     if any(x in ("", ".", "..") for x in parts) or not rel.endswith(".md"):
         return None
-    joined = os.path.join(os.path.realpath(os.path.expanduser(base)), *parts)
+    joined = str(Path(os.path.realpath(expand_user_path(base)), *parts))
     if not inside(joined, dirs):
         return None
     return safe_md(joined, dirs, base)
 
 
 def read_md(real):
-    with open(real, "rb") as f:
+    with Path(real).open("rb") as f:
         data = f.read(MAX_DOC + 1)
     return data[:MAX_DOC].decode("utf-8", errors="replace"), len(data) > MAX_DOC
 
@@ -524,7 +525,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             self.server.cfg()  # the run's language as the config says it now
         except Exception:
             pass  # a config that does not load: the page still comes (in the language of the start), its API says why
-        with open(PAGE, encoding="utf-8") as f:
+        with Path(PAGE).open(encoding="utf-8") as f:
             html = page_html(f.read())
         body = html.encode("utf-8")
         self.send_response(200)

@@ -18,20 +18,20 @@ def files_under(d, skip_git):
         if skip_git:
             dirs[:] = [x for x in dirs if x != ".git"]
         for f in fs:
-            out.append(os.path.relpath(os.path.join(root, f), d))
+            out.append(os.path.relpath(Path(root, f), d))
     return sorted(out)
 
 
 def calls(log):
-    if not log or not os.path.exists(log):
+    if not log or not os.path.exists(log):  # noqa: PTH110 - keep os.path error and path-spelling semantics
         return 0
-    with open(log) as f:
+    with Path(log).open() as f:
         return sum(1 for ln in f if ln.strip())
 
 
 def move_head(state, n):
-    p = os.path.join(state, "scan-moved-%d.txt" % n)  # noqa: UP031
-    with open(p, "w") as f:
+    p = str(Path(state, "scan-moved-%d.txt" % n))  # noqa: UP031
+    with Path(p).open("w") as f:
         f.write("written during the scan %d\n" % n)  # noqa: UP031
     subprocess.run(["git", "-C", state, "add", "--", Path(p).name], check=True)
     subprocess.run(
@@ -67,7 +67,7 @@ def main():
         return 2
     seen = files_under(d, skip_git)
     if log:
-        with open(log, "a") as f:
+        with Path(log).open("a") as f:
             f.write(json.dumps({"argv": argv, "files": seen}) + "\n")
     commit = os.environ.get("FAKE_SCAN_COMMIT", "")
     if commit and n == 0:
@@ -75,7 +75,7 @@ def main():
     hits = []
     for rel in seen:
         try:
-            with open(os.path.join(d, rel), encoding="utf-8", errors="replace") as f:
+            with Path(d, rel).open(encoding="utf-8", errors="replace") as f:
                 for ln in f:
                     if hit and hit in ln:
                         hits.append(f"HIT file {rel}: {ln.strip()}")

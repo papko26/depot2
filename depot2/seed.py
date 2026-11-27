@@ -13,7 +13,7 @@ from .i18n import t
 from .ledger import Decisions, Ledger, Pending
 from .persona import Persona, genders
 from .reflect import changes_since, owner_facts, run_portrait_calls
-from .store import read_text, write_json
+from .store import expand_user_path, read_text, write_json
 
 VOTE_HEAD = re.compile(r"^(B\d+)\.\s+(.*)$")
 
@@ -24,10 +24,10 @@ def init_state(state, brief_path):
     """
     state.init_git()
     cfg_path = state.path("config.json")
-    if not os.path.exists(cfg_path):
+    if not Path(cfg_path).exists():
         write_json(cfg_path, {})
         state.touch(cfg_path)
-    specs = characters.extract_specs(read_text(os.path.expanduser(brief_path)))
+    specs = characters.extract_specs(read_text(expand_user_path(brief_path)))
     for cid in characters.IDS:
         c = characters.BY_ID[cid]
         text = t("seed.spec", name=c["name"], full=c["full"], brief=Path(brief_path).name, spec=specs[cid])
@@ -42,11 +42,11 @@ def init_empty(state, balance=5):
     role) and their opening balances. Refused when the depot has a ledger already.
     """
     led = Ledger(state)
-    if os.path.isdir(state.root) and led.entries():
+    if Path(state.root).is_dir() and led.entries():
         raise ValueError(f"{state.root} is a depot already (its ledger has entries)")
     state.init_git()
     cfg_path = state.path("config.json")
-    if not os.path.exists(cfg_path):
+    if not Path(cfg_path).exists():
         write_json(cfg_path, {})
         state.touch(cfg_path)
     for cid in characters.IDS:
@@ -159,13 +159,13 @@ def mention_lines(text, cid, line_max=500, section_max=1500):
 
 def material(cid, ballot_dir, review_dir, cap):
     parts = []
-    votes = sorted(glob.glob(os.path.join(ballot_dir, "votes-*.md"))) if ballot_dir else []
+    votes = sorted(glob.glob(os.path.join(ballot_dir, "votes-*.md"))) if ballot_dir else []  # noqa: PTH118, PTH207 - retain glob hidden-file and pattern semantics
     for v in votes:
         lines = vote_lines(read_text(v), cid)
         parts.append((t("seed.part_votes", file=Path(v).name), lines, cap * 2 // 5))
-    for dpath in sorted(glob.glob(os.path.join(ballot_dir, "decisions-*.md"))) if ballot_dir else []:
+    for dpath in sorted(glob.glob(os.path.join(ballot_dir, "decisions-*.md"))) if ballot_dir else []:  # noqa: PTH118, PTH207 - retain glob hidden-file and pattern semantics
         parts.append((t("seed.part_decisions", file=Path(dpath).name), mention_lines(read_text(dpath), cid), cap // 10))
-    reviews = sorted(glob.glob(os.path.join(review_dir, "*.md")), reverse=True) if review_dir else []
+    reviews = sorted(glob.glob(os.path.join(review_dir, "*.md")), reverse=True) if review_dir else []  # noqa: PTH118, PTH207 - retain glob hidden-file and pattern semantics
     rv = []
     for r in reviews:
         lines = mention_lines(read_text(r), cid)
@@ -215,5 +215,5 @@ def seed_portraits(state, cfg, ballot_dir, review_dir, only=None, dry_run=False,
 
 
 def load_seed(path):
-    with open(os.path.expanduser(path), encoding="utf-8") as f:
+    with open(expand_user_path(path), encoding="utf-8") as f:  # noqa: PTH123 - pass the original path spelling to open
         return json.load(f)

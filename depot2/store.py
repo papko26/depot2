@@ -48,18 +48,28 @@ def sha256_text(text):
     return hashlib.sha256(text.encode("utf-8")).hexdigest()
 
 
+def expand_user_path(path):
+    """Expand ~ while preserving empty paths, trailing separators, and unknown user names."""
+    return os.path.expanduser(path)  # noqa: PTH111 - Path.expanduser changes these inputs
+
+
+def absolute_user_path(path):
+    """Expand a configured path and collapse .. without following symlinks."""
+    return os.path.abspath(expand_user_path(path))  # noqa: PTH100 - collapse .. without resolving symlinks
+
+
 def read_text(path, default=None):
-    if not os.path.exists(path):
+    if not os.path.exists(path):  # noqa: PTH110 - keep os.path error and path-spelling semantics
         return default
-    with open(path, encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:  # noqa: PTH123 - pass the original path spelling to open
         return f.read()
 
 
 def atomic_write(path, text):
     """Write via a temp file and rename, then read back and compare."""
-    Path(os.fsdecode(os.path.dirname(path))).mkdir(parents=True, exist_ok=True)
+    Path(os.fsdecode(os.path.dirname(path))).mkdir(parents=True, exist_ok=True)  # noqa: PTH120 - preserve the parent implied by a trailing slash
     tmp = "%s.tmp-%d" % (path, os.getpid())  # noqa: UP031
-    with open(tmp, "w", encoding="utf-8") as f:
+    with Path(tmp).open("w", encoding="utf-8") as f:
         f.write(text)
         _sync(f)
     Path(tmp).replace(path)
@@ -69,7 +79,7 @@ def atomic_write(path, text):
 
 def write_new(path, text):
     """Create a file that must not exist yet (history is never overwritten)."""
-    Path(os.fsdecode(os.path.dirname(path))).mkdir(parents=True, exist_ok=True)
+    Path(os.fsdecode(os.path.dirname(path))).mkdir(parents=True, exist_ok=True)  # noqa: PTH120 - preserve the parent implied by a trailing slash
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(text)
@@ -97,11 +107,11 @@ def dumps_line(rec):
 def append_jsonl(path, rec):
     """Append one record, fsync, then check the file's last line is exactly that record."""
     line = dumps_line(rec)
-    Path(os.fsdecode(os.path.dirname(path))).mkdir(parents=True, exist_ok=True)
-    with open(path, "a", encoding="utf-8") as f:
+    Path(os.fsdecode(os.path.dirname(path))).mkdir(parents=True, exist_ok=True)  # noqa: PTH120 - preserve the parent implied by a trailing slash
+    with open(path, "a", encoding="utf-8") as f:  # noqa: PTH123 - pass the original path spelling to open
         f.write(line + "\n")
         _sync(f)
-    with open(path, "rb") as f:
+    with open(path, "rb") as f:  # noqa: PTH123 - pass the original path spelling to open
         f.seek(0, os.SEEK_END)
         size = f.tell()
         f.seek(max(0, size - len(line.encode("utf-8")) - 1))
@@ -113,9 +123,9 @@ def append_jsonl(path, rec):
 
 def read_jsonl(path):
     out = []
-    if not os.path.exists(path):
+    if not os.path.exists(path):  # noqa: PTH110 - keep os.path error and path-spelling semantics
         return out
-    with open(path, encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:  # noqa: PTH123 - pass the original path spelling to open
         for n, line in enumerate(f, 1):
             line = line.strip()
             if not line:
@@ -131,11 +141,11 @@ class State:
     """The state dir (a local git repo). Collects the paths a command touched, then commits them."""
 
     def __init__(self, root) -> None:
-        self.root = os.path.abspath(os.path.expanduser(root))
+        self.root = absolute_user_path(root)
         self.touched: set[str] = set()
 
     def path(self, *parts):
-        return os.path.join(self.root, *parts)
+        return os.path.join(self.root, *parts)  # noqa: PTH118 - preserve lexical path components
 
     @property
     def ledger_path(self):
@@ -156,10 +166,10 @@ class State:
         return self.path("rounds")
 
     def touch(self, path):
-        self.touched.add(os.path.abspath(path))
+        self.touched.add(os.path.abspath(path))  # noqa: PTH100 - collapse .. without resolving symlinks
 
     def exists(self):
-        return os.path.isdir(self.root)
+        return Path(self.root).is_dir()
 
     @contextlib.contextmanager
     def lock(self, wait_s=None):
@@ -189,7 +199,7 @@ class State:
             os.close(fd)
 
     def is_git(self):
-        return os.path.isdir(self.path(".git"))
+        return Path(self.path(".git")).is_dir()
 
     def git(self, *args, check=True):
         return subprocess.run(["git", "-C", self.root, *list(args)], check=check, capture_output=True, text=True)
@@ -199,7 +209,7 @@ class State:
         if not self.is_git():
             self.git("init", "-q")
         gi = self.path(".gitignore")
-        if not os.path.exists(gi):
+        if not Path(gi).exists():
             atomic_write(gi, ".lock\n*.tmp-*\n")
         self.touch(gi)
 
@@ -207,7 +217,7 @@ class State:
         """git add exactly the touched paths (never -A) and commit. Returns the commit id or None."""
         if not self.is_git() or not self.touched:
             return None
-        rel = sorted(os.path.relpath(p, self.root) for p in self.touched if os.path.exists(p))
+        rel = sorted(os.path.relpath(p, self.root) for p in self.touched if os.path.exists(p))  # noqa: PTH110 - keep os.path error and path-spelling semantics
         if not rel:
             return None
         self.git("add", "--", *rel)

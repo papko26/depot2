@@ -78,8 +78,8 @@ def locked(path):
     if not line.startswith("gitdir:"):
         return None
     gd = line[len("gitdir:") :].strip()
-    p = os.path.join(path, gd, "locked")
-    if not os.path.exists(p):
+    p = str(Path(path, gd, "locked"))
+    if not Path(p).exists():
         return None
     try:
         with Path(p).open() as f:
@@ -136,7 +136,7 @@ class WorktreesMixin:
         """None: the worktree at path may go; else why it stays, in one line."""
         from .merge import clip
 
-        if not os.path.isdir(path):
+        if not os.path.isdir(path):  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
             return t("mergewt.no_dir")
         w = known.get(os.path.realpath(path))
         if w is None:
@@ -174,11 +174,11 @@ class WorktreesMixin:
         link = str(Path(path, NODE_MODULES))
         target = None
         if Path(link).is_symlink() and self.git(path, "check-ignore", "-q", NODE_MODULES)[0] != 0:
-            target = os.readlink(link)
+            target = os.readlink(link)  # noqa: PTH115 - restore the exact symlink target text
             Path(link).unlink()  # the link itself: what it points at is never touched
         code, out, err = self.git(self.clone, "worktree", "remove", path)
         if code != 0:
-            if target is not None and os.path.isdir(path) and not os.path.lexists(link):
+            if target is not None and os.path.isdir(path) and not os.path.lexists(link):  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
                 os.symlink(target, link)
             return {"removed": False, "reason": f"git worktree remove: {clip(err or out, 160)}"}
         return {"removed": True, "freed": size}
@@ -191,7 +191,7 @@ class WorktreesMixin:
         from .merge import clip, expand, stamp
 
         e = self.entry(eid)
-        path = e.get("worktree") or os.path.join(expand(self.m["worktrees"]), e["branch"])
+        path = e.get("worktree") or str(Path(expand(self.m["worktrees"]), e["branch"]))
         try:
             self.git(self.clone, "fetch", "-q", self.remote, self.base, timeout=300)  # origin/main with the merge in it
             why = self.wt_busy(e["branch"], but=eid) or self.wt_verdict(path, e["branch"], self.wt_known())
@@ -242,7 +242,7 @@ class WorktreesMixin:
         for e in MergeQueue(self.state).entries():
             if e["status"] == "merged":
                 merged_q[e["branch"]] = e["pr"]
-        under = sorted(p for p in known if p.startswith(root + os.sep) and os.path.isdir(p))  # (a gone one: nothing)
+        under = sorted(p for p in known if p.startswith(root + os.sep) and Path(p).is_dir())  # (a gone one: nothing)
         rows = [(os.path.relpath(p, root), p, known[p]) for p in under]
         removed, kept, freed = [], [], 0
         for name, p, w in rows:
@@ -280,10 +280,10 @@ class WorktreesMixin:
             else:
                 kept.append((name, res["reason"]))
         others = 0
-        if os.path.isdir(root):
+        if os.path.isdir(root):  # noqa: PTH112 - unusable directories must test false, including on Python 3.11
             for entry in sorted(Path(root).iterdir(), key=lambda path: path.name):
                 p = os.path.realpath(entry)
-                if p in known or not os.path.isdir(p) or any(k.startswith(p + os.sep) for k in under):
+                if p in known or not Path(p).is_dir() or any(k.startswith(p + os.sep) for k in under):
                     continue
                 kept.append((entry.name, t("mergewt.not_a_worktree", clone=self.clone)))
                 others += 1

@@ -10,8 +10,10 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
 
 from . import effort
+from .store import expand_user_path
 
 DEFAULT_STATE = "~/.local/share/depot2/depot"  # or $DEPOT2_STATE, or --state
 
@@ -383,16 +385,16 @@ def load(state_root, sets=None, warn=_warn_once):
     layers = []
     project = os.environ.get("DEPOT2_CONFIG")
     if project:
-        project = os.path.expanduser(project)
-        if not os.path.isfile(project):
+        project = expand_user_path(project)
+        if not os.path.isfile(project):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
             raise ValueError(f"DEPOT2_CONFIG={project}: no such file")
-        with open(project, encoding="utf-8") as f:
+        with Path(project).open(encoding="utf-8") as f:
             over = json.load(f)
         drop_obsolete(over, project, warn)
         layers.append((project, over))
-    path = os.path.join(state_root, "config.json")
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as f:
+    path = str(Path(state_root, "config.json"))
+    if Path(path).exists():
+        with Path(path).open(encoding="utf-8") as f:
             over = json.load(f)
         drop_obsolete(over, path, warn)
         layers.append((path, over))
@@ -422,7 +424,7 @@ def load(state_root, sets=None, warn=_warn_once):
     i18n.configure(cfg["language"])
     for sect, key, sub in (("brainstorm", "topics_dir", "topics"), ("orders", "results_dir", "orders")):
         if not cfg[sect].get(key):  # null: a folder of the depot itself
-            cfg[sect][key] = os.path.join(state_root, sub)
+            cfg[sect][key] = str(Path(state_root, sub))
     from . import characters
 
     characters.configure(cfg.get("characters"))

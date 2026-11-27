@@ -16,7 +16,7 @@ from pathlib import Path
 from . import characters, effort, i18n, stages
 from . import priority as pri
 from .i18n import is_word, t
-from .store import append_jsonl, now_iso, read_json, read_jsonl, write_json
+from .store import absolute_user_path, append_jsonl, now_iso, read_json, read_jsonl, write_json
 
 
 # What a lock means; the README and the report say the same. The orchestrator honours it.
@@ -204,9 +204,7 @@ class Stack:
         clears a car's live link, a car stacked again gets a new object), the live link winning.
         """
         paths = [self.state.path("tracks.json"), self.state.path("tracks-history.jsonl")]
-        stamp = tuple(
-            (Path(p).stat().st_mtime_ns, Path(p).stat().st_size) if os.path.exists(p) else None for p in paths
-        )
+        stamp = tuple((Path(p).stat().st_mtime_ns, Path(p).stat().st_size) if Path(p).exists() else None for p in paths)
         if self._links and self._links[0] == stamp:
             return self._links[1]
         data = read_json(paths[0]) or {}
@@ -377,7 +375,7 @@ class Stack:
             "where": "queue",
             "branch": branch,
             "pr": pr,
-            "brief": os.path.abspath(os.path.expanduser(brief)) if brief else None,
+            "brief": absolute_user_path(brief) if brief else None,
             "depends_on": list(depends or ()),
             "status": status or t("stack.waiting"),
             "added": now_iso(),
@@ -527,7 +525,7 @@ class Stack:
         if handed:
             changed["dod"] = dict(o.get("dod") or {}, **handed)
         if "brief" in changed:
-            changed["brief"] = os.path.abspath(os.path.expanduser(changed["brief"]))
+            changed["brief"] = absolute_user_path(changed["brief"])
         if "autostart" in changed:
             changed["autostart"] = bool(changed["autostart"])
         if "priority" in changed:
@@ -1121,8 +1119,8 @@ def round_title(rec):
     if rec.get("pr"):
         return "PR #{} {}".format(rec["pr"], rec.get("pr_title") or "")
     path = rec.get("input")
-    if path and os.path.exists(path):
-        with open(path, encoding="utf-8") as f:
+    if path and os.path.exists(path):  # noqa: PTH110 - keep os.path error and path-spelling semantics
+        with open(path, encoding="utf-8") as f:  # noqa: PTH123 - pass the original path spelling to open
             for line in f:
                 if line.startswith("# "):
                     return line[2:].strip()

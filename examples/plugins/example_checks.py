@@ -47,7 +47,7 @@ def snapshot_test(path):
     head, name = os.path.split(path)
     if Path(head).name != "__snapshots__" or not name.endswith(".snap"):
         return None
-    return os.path.join(os.path.dirname(head), name[: -len(".snap")])
+    return os.path.join(os.path.dirname(head), name[: -len(".snap")])  # noqa: PTH118, PTH120 - preserve lexical path components
 
 
 def after_merge(cfg, entry):

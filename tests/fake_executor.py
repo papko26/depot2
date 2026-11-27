@@ -13,6 +13,7 @@ import json
 import os
 import sys
 import time
+from pathlib import Path
 
 
 def emit(obj):
@@ -61,7 +62,7 @@ def minimal(schema):
 def main():
     mode = os.environ.get("FAKE_MODE", "ok")
     if os.environ.get("FAKE_ARGV"):
-        with open(os.environ["FAKE_ARGV"], "w") as f:
+        with Path(os.environ["FAKE_ARGV"]).open("w") as f:
             json.dump(
                 {
                     "argv": sys.argv[1:],

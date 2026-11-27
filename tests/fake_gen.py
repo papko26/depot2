@@ -37,7 +37,7 @@ def main():
         with Path("strings.txt").open() as f:
             words = f.read().split()
         d, name = os.path.split(test)
-        with Path(os.path.join(d, "__snapshots__", name + ".snap")).open("w") as f:
+        with Path(d, "__snapshots__", name + ".snap").open("w") as f:
             f.write("snap: {}\n".format(" ".join(sorted(words))))
         return 1 if "BROKEN" in words else 0
     if argv[0] == "golden":

@@ -112,7 +112,7 @@ def bdir(state):
     d = state.path(DIR)
     Path(d).mkdir(parents=True, exist_ok=True)
     gi = str(Path(d, ".gitignore"))
-    if not os.path.exists(gi):
+    if not Path(gi).exists():
         with Path(gi).open("w") as f:
             f.write("*\n")
     return d
@@ -133,7 +133,7 @@ def save_stamp(state, st):
 
 def rotate_log(state, name=LOG):
     p = log_path(state, name)
-    if os.path.exists(p) and Path(p).stat().st_size > LOG_MAX:
+    if Path(p).exists() and Path(p).stat().st_size > LOG_MAX:
         Path(p).replace(p + ".1")
 
 
@@ -158,7 +158,7 @@ def backup_lock(state, name=LOCK):
 def is_running(state, name=LOCK):
     """For --status only: a probe takes the lock for an instant."""
     p = state.path(DIR, name)
-    if not os.path.exists(p):
+    if not Path(p).exists():
         return False
     fd = os.open(p, os.O_RDWR)
     try:
@@ -403,7 +403,7 @@ class Runner:
             _nice(["gzip", "-6", "-n", tar_path]), stdin=subprocess.DEVNULL, capture_output=True, text=True
         )
         local = str(Path(tmp, name))
-        if p.returncode != 0 or not os.path.isfile(local):
+        if p.returncode != 0 or not Path(local).is_file():
             raise BackupError(t("backup.gzip", code=p.returncode), "snapshot", p.stderr.strip()[-500:])
         h = hashlib.sha256()
         with Path(local).open("rb") as f:
@@ -514,7 +514,7 @@ class Runner:
     def _dry(self, name, files):
         size = 0
         for root, dirs, fs in os.walk(self.state.root):
-            if os.path.abspath(root) == self.state.root:
+            if root == self.state.root:
                 dirs[:] = [d for d in dirs if d != DIR]
             size += sum(Path(root, f).stat().st_size for f in fs if f != ".lock")
         keep, drop = plan_retention([*list(files), name], self.host, self.b["keep_daily"])
@@ -578,7 +578,7 @@ class Runner:
             )
             if p.returncode != 0:
                 raise BackupError(t("backup.v_tar_x", code=p.returncode), "verify", p.stderr.strip()[-500:])
-            repo = os.path.join(x, top)
+            repo = str(Path(x, top))
             p = subprocess.run(
                 _nice(["git", "-C", repo, "fsck", "--full", "--no-progress"]),
                 stdin=subprocess.DEVNULL,
@@ -660,7 +660,7 @@ def due(state, st, b, now):
     if st.get("source") and st["source"] != state.root:
         return False  # a copied state dir: its archives would carry this host's name
     sp = state.path(DIR, SPAWNED)
-    if os.path.exists(sp) and now - Path(sp).stat().st_mtime < float(b["retry_min"]) * 60:  # noqa: SIM103
+    if Path(sp).exists() and now - Path(sp).stat().st_mtime < float(b["retry_min"]) * 60:  # noqa: SIM103
         return False  # one start per retry window; a run still going holds its lock anyway
     return True
 
@@ -673,7 +673,7 @@ def spawn(state, sets, args=("--drive", "--auto"), marker=SPAWNED, log=LOG):
     rotate_log(state, log)
     with Path(d, marker).open("w") as f:
         f.write(utc_iso() + "\n")
-    team = str(Path(os.path.dirname(os.path.abspath(__file__)), "__main__.py"))
+    team = str(Path(__file__).absolute().with_name("__main__.py"))
     argv = [sys.executable, team, "--state", state.root]
     for s in sets or []:
         argv += ["--set", s]
@@ -695,7 +695,7 @@ def after_command(state, a):
     """
     if os.environ.get("DEPOT2_BACKUP", "").lower() in ("0", "off", "no", "false"):
         return
-    if getattr(a, "cmd", None) in ("backup", "seed") or not os.path.isdir(state.root):
+    if getattr(a, "cmd", None) in ("backup", "seed") or not Path(state.root).is_dir():
         return
     try:
         from . import config

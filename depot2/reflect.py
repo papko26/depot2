@@ -8,7 +8,6 @@ The code stores the new portrait as a new version and keeps every old one. No ba
 this runs only when called.
 """
 
-import os
 from pathlib import Path
 
 from . import characters, effort, i18n, prompts, push, schema
@@ -99,7 +98,7 @@ def rounds_since(state, cid, since_iso):
     """This character's final positions in the rounds after its last reflection."""
     rd = state.rounds_dir()
     out = []
-    if not os.path.isdir(rd):
+    if not Path(rd).is_dir():
         return out
     since = to_utc(since_iso) if since_iso else None
     for directory in sorted(Path(rd).iterdir(), key=lambda entry: entry.name):
@@ -163,9 +162,9 @@ def run_portrait_calls(state, cfg, jobs, label, out=print, runner=None, dry_run=
         return {}
     if not jobs:
         return {}
-    base = os.path.join(state.path("reflections"), "{}-{}".format(now_iso()[:19].replace(":", ""), label))
+    base = str(Path(state.path("reflections"), "{}-{}".format(now_iso()[:19].replace(":", ""), label)))
     d, n = base, 2
-    while os.path.exists(d):
+    while Path(d).exists():
         d, n = "%s-%d" % (base, n), n + 1  # noqa: UP031
     Path(d, "raw").mkdir(parents=True)
     guard = Guard(cfg)
@@ -178,7 +177,7 @@ def run_portrait_calls(state, cfg, jobs, label, out=print, runner=None, dry_run=
                 status[cid] = f"skipped: {e}"
                 continue
             sys_path = str(Path(d, f"system-{sha256_text(system_text)}.md"))
-            if not os.path.exists(sys_path):
+            if not Path(sys_path).exists():
                 write_new(sys_path, system_text)
                 state.touch(sys_path)
             up = str(Path(d, f"{cid}.user.md"))

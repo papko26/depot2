@@ -10,12 +10,12 @@ agents-history.jsonl every change of a run ({"agent": ag-NNNN, "event": start|at
 """
 
 import datetime
-import os
 import re
+from pathlib import Path
 
 from . import effort, executors, gates, i18n, stages
 from .i18n import t
-from .store import append_jsonl, now_iso, read_json, write_json
+from .store import absolute_user_path, append_jsonl, expand_user_path, now_iso, read_json, write_json
 
 
 def parse_ts(text):
@@ -71,8 +71,8 @@ def find_transcript(cfg, agent_id):
 
 
 def _tilde(path):
-    home = os.path.expanduser("~")
-    path = os.path.abspath(os.path.expanduser(path))
+    home = expand_user_path("~")
+    path = absolute_user_path(path)
     return "~" + path[len(home) :] if home not in ("", "~", "/") and path.startswith(home + "/") else path
 
 
@@ -393,8 +393,8 @@ class Agents:
             raise AgentError(f"a run id is letters and digits (the executor's run id), got {agent_id!r}")
         agent_id = m.group(1)
         if transcript:
-            path = os.path.abspath(os.path.expanduser(transcript))
-            if not os.path.isfile(path):
+            path = absolute_user_path(transcript)
+            if not Path(path).is_file():
                 raise AgentError(f"no file {transcript}")
         else:
             path = find_transcript(self.cfg, agent_id)
@@ -515,7 +515,7 @@ def live_by_object(state, cfg, places):
     """{st: the newest live agent on that object's car, short} for `stack --json` (places: Stack.car_places()).
     Read only: a finished one is booked by the next `agents` command.
     """
-    if not os.path.exists(state.path("agents.json")):
+    if not Path(state.path("agents.json")).exists():
         return {}
     ags = Agents(state, cfg)
     by_car = {}

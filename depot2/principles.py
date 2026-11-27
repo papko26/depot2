@@ -22,7 +22,7 @@ from . import i18n
 from .i18n import rx, t
 from .queues import Queue, QueueError, _clip
 from .stack import _cell
-from .store import atomic_write, now_iso, read_text, sha256_text, today
+from .store import absolute_user_path, atomic_write, expand_user_path, now_iso, read_text, sha256_text, today
 
 SECTION_CODES = ("core", "mechanics", "work", "checks", "voice")
 SECTION_TITLE = i18n.Labels("principles.section", SECTION_CODES)
@@ -332,7 +332,7 @@ class Principles(Queue):
         the depot has, and when the render of what was read is not the file line for line (but the banner). A real
         import writes the entries, then renders the file in place (read-only).
         """
-        path = os.path.abspath(os.path.expanduser(path))
+        path = absolute_user_path(path)
         if self.imported(path):
             raise QueueError("{} was imported already ({})".format(path, self.imported(path)[0]["ts"]))
         text = read_text(path)
@@ -377,12 +377,12 @@ class Principles(Queue):
     def live_target(self):
         from .config import DEFAULT_STATE
 
-        live = os.path.realpath(os.path.expanduser(DEFAULT_STATE))
+        live = os.path.realpath(expand_user_path(DEFAULT_STATE))
         t = self.target()
         return (
             bool(t)
             and os.path.realpath(self.state.root) != live
-            and os.path.realpath(t).startswith(os.path.dirname(live) + os.sep)
+            and os.path.realpath(t).startswith(str(Path(live).parent) + os.sep)
         )
 
     def write(self, out=None):
@@ -390,7 +390,7 @@ class Principles(Queue):
         write bit off again). Returns (path, changed); changed is None when the target is the live depot's and this
         depot another (live_target): nothing written.
         """
-        path = os.path.abspath(os.path.expanduser(out)) if out else self.target()
+        path = absolute_user_path(out) if out else self.target()
         if not path:
             raise QueueError("no PRINCIPLES.md yet: `depot2 principles import FILE` first, or `render --out PATH`")
         if path == self.target() and self.live_target():

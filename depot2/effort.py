@@ -90,7 +90,7 @@ def from_transcript(path):
     seen = set()
     tok = dict.fromkeys(WEIGHTS, 0)
     n = 0
-    with open(path, encoding="utf-8", errors="replace") as f:
+    with open(path, encoding="utf-8", errors="replace") as f:  # noqa: PTH123 - pass the original path spelling to open
         for line in f:
             if '"usage"' not in line:
                 continue
