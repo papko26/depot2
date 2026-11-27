@@ -23,6 +23,7 @@ Plugins run in the depot's process with its rights: they are the project's code,
 import importlib
 import importlib.util
 import os
+from pathlib import Path
 from types import ModuleType
 
 HOOKS = ("smoke_verdict", "after_merge", "snapshot_test", "round_context")
@@ -40,7 +41,7 @@ def _load_one(spec):
         path = os.path.abspath(os.path.expanduser(spec))
         if not os.path.isfile(path):
             raise HookError(f"plugin {spec}: no such file")
-        name = f"depot2_plugin_{os.path.splitext(os.path.basename(path))[0]}"
+        name = f"depot2_plugin_{os.path.splitext(Path(path).name)[0]}"
         mspec = importlib.util.spec_from_file_location(name, path)
         mod = importlib.util.module_from_spec(mspec)
         mspec.loader.exec_module(mod)

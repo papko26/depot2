@@ -8,6 +8,7 @@ team-stack-history.jsonl every change
 """
 
 import os
+from pathlib import Path
 
 from . import characters, effort, i18n
 from . import priority as pri
@@ -65,7 +66,7 @@ class TeamStack(Stack):
         effort.check_size(size, self.cfg)
         path = os.path.abspath(os.path.expanduser(input_path)) if input_path else None
         if not (title or "").strip():
-            title = KIND_RU[kind] + (": " + os.path.basename(path) if path else "")
+            title = KIND_RU[kind] + (": " + Path(path).name if path else "")
         obj = {
             "id": self._new_id(),
             "kind": kind,
@@ -152,7 +153,7 @@ class TeamStack(Stack):
                         pri.cell(o),
                         KIND_RU.get(o["kind"], o["kind"]),
                         who_ru(o.get("who")),
-                        _cell(os.path.basename(o["input"]) if o.get("input") else None),
+                        _cell(os.path.basename(o["input"]) if o.get("input") else None),  # noqa: PTH119 - preserve stored path spelling
                         _cell(o.get("round") or "—"),
                         _cell(o.get("status")),
                         effort.cell(effort.item_expected(o, self.cfg), spent_of(o, self.cfg), self.cfg),

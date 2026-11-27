@@ -1424,7 +1424,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                 ),
             )
             code, out, err = self.sh.run(argv, cwd=wt, timeout=int(self.m.get("golden_timeout_s") or 5400))
-            name = os.path.basename(g.get("file") or "golden.json")
+            name = os.path.basename(g.get("file") or "golden.json")  # noqa: PTH119 - a trailing slash has an empty basename
             got = sorted(os.path.join(d, f) for d, _, fs in os.walk(out_dir) for f in fs if f == name)
             if code != 0 or len(got) != 1:
                 raise Stop(

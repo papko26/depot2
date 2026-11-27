@@ -13,6 +13,7 @@ and replace the bodies with what your project checks.
 import json
 import os
 import time
+from pathlib import Path
 
 
 def smoke_verdict(code, out):
@@ -44,7 +45,7 @@ def smoke_verdict(code, out):
 def snapshot_test(path):
     """tests/__snapshots__/parser.test.py.snap -> tests/parser.test.py (None for any other path)."""
     head, name = os.path.split(path)
-    if os.path.basename(head) != "__snapshots__" or not name.endswith(".snap"):
+    if Path(head).name != "__snapshots__" or not name.endswith(".snap"):
         return None
     return os.path.join(os.path.dirname(head), name[: -len(".snap")])
 

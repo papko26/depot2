@@ -323,7 +323,7 @@ def raw_verdict(state, g, path):
         return None
     d = tempfile.mkdtemp(prefix="team-raw-scan-")
     try:
-        shutil.copyfile(path, os.path.join(d, os.path.basename(path)))
+        shutil.copyfile(path, Path(d, Path(path).name))
         argv = scan_argv(state, g, "scan_pushed_args", d)
         if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):
             return t("push.raw_no_scan", path=argv[0])

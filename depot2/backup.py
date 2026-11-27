@@ -397,7 +397,7 @@ class Runner:
         if p.returncode != 0:
             raise BackupError(t("backup.tar", code=p.returncode), "snapshot", p.stderr.strip()[-500:])
         self.say(
-            f"snapshot: {os.path.basename(tar_path)}, {Path(tar_path).stat().st_size / 1e6:.1f} MB, the state lock held {held:.1f} s (waited {time.time() - t0 - held:.1f} s)"
+            f"snapshot: {Path(tar_path).name}, {Path(tar_path).stat().st_size / 1e6:.1f} MB, the state lock held {held:.1f} s (waited {time.time() - t0 - held:.1f} s)"
         )
         p = subprocess.run(
             _nice(["gzip", "-6", "-n", tar_path]), stdin=subprocess.DEVNULL, capture_output=True, text=True

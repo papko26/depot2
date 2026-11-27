@@ -338,7 +338,7 @@ class Principles(Queue):
         text = read_text(path)
         if text is None:
             raise QueueError(f"no such file: {path}")
-        head, items = parse(text, os.path.basename(path))
+        head, items = parse(text, Path(path).name)
         for it in items:
             if any(x["id"] == pc_id(it["n"], it["suffix"]) for x in self.data["entries"]):
                 raise QueueError("{} is in the depot already: nothing imported".format(pc_id(it["n"], it["suffix"])))

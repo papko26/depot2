@@ -371,7 +371,7 @@ def safe_md(path, dirs, base=DOCS_BASE):
     if not isinstance(path, str) or not path or "\0" in path or len(path) > 1024 or not dirs:
         return None
     p = os.path.expanduser(path.strip())
-    if not os.path.isabs(p):
+    if not Path(p).is_absolute():
         if not base:
             return None
         p = os.path.join(os.path.expanduser(base), p)

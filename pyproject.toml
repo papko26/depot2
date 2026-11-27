@@ -75,6 +75,8 @@ extend-select = [
     "PTH109", # os-getcwd
     "PTH114", # os-path-islink
     "PTH116", # os-stat
+    "PTH117", # os-path-isabs
+    "PTH119", # os-path-basename
     "PTH121", # os-path-samefile
     "PTH124", # py-path
     "PTH201", # path-constructor-current-directory

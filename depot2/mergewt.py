@@ -78,7 +78,7 @@ def locked(path):
     if not line.startswith("gitdir:"):
         return None
     gd = line[len("gitdir:") :].strip()
-    p = os.path.join(gd if os.path.isabs(gd) else os.path.join(path, gd), "locked")
+    p = os.path.join(path, gd, "locked")
     if not os.path.exists(p):
         return None
     try:

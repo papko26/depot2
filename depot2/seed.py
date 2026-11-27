@@ -30,7 +30,7 @@ def init_state(state, brief_path):
     specs = characters.extract_specs(read_text(os.path.expanduser(brief_path)))
     for cid in characters.IDS:
         c = characters.BY_ID[cid]
-        text = t("seed.spec", name=c["name"], full=c["full"], brief=os.path.basename(brief_path), spec=specs[cid])
+        text = t("seed.spec", name=c["name"], full=c["full"], brief=Path(brief_path).name, spec=specs[cid])
         p = Persona(state, cid)
         p.write_spec(text)
         p.set_gender(p.gender())  # the seeding default, unless the state already has one
@@ -162,17 +162,15 @@ def material(cid, ballot_dir, review_dir, cap):
     votes = sorted(glob.glob(os.path.join(ballot_dir, "votes-*.md"))) if ballot_dir else []
     for v in votes:
         lines = vote_lines(read_text(v), cid)
-        parts.append((t("seed.part_votes", file=os.path.basename(v)), lines, cap * 2 // 5))
+        parts.append((t("seed.part_votes", file=Path(v).name), lines, cap * 2 // 5))
     for dpath in sorted(glob.glob(os.path.join(ballot_dir, "decisions-*.md"))) if ballot_dir else []:
-        parts.append(
-            (t("seed.part_decisions", file=os.path.basename(dpath)), mention_lines(read_text(dpath), cid), cap // 10)
-        )
+        parts.append((t("seed.part_decisions", file=Path(dpath).name), mention_lines(read_text(dpath), cid), cap // 10))
     reviews = sorted(glob.glob(os.path.join(review_dir, "*.md")), reverse=True) if review_dir else []
     rv = []
     for r in reviews:
         lines = mention_lines(read_text(r), cid)
         if lines:
-            rv.append(f"### {os.path.basename(r)}")
+            rv.append(f"### {Path(r).name}")
             rv.extend(lines)
     parts.append((t("seed.part_reviews"), rv, cap // 2))
     out = []

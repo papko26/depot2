@@ -326,7 +326,7 @@ def cmd_order(state, cfg, a):
         Path(d).mkdir(parents=True, exist_ok=True)
         dest = []
         for f in a.result:
-            to = os.path.join(d, os.path.basename(f))
+            to = os.path.join(d, Path(f).name)
             if os.path.exists(to):
                 raise ValueError(f"{to} exists already; results are never overwritten")
             shutil.copy2(f, to)

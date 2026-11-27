@@ -186,7 +186,7 @@ def run_portrait_calls(state, cfg, jobs, label, out=print, runner=None, dry_run=
             state.touch(up)
             raw = str(Path(d, "raw", f"{cid}.jsonl"))
             spec = CallSpec(
-                f"{os.path.basename(d)}/{cid}",
+                f"{Path(d).name}/{cid}",
                 cfg["model"],
                 cfg["effort"],
                 sys_path,

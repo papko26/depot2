@@ -11,6 +11,7 @@ import json
 import os
 import re
 import subprocess
+from pathlib import Path
 
 from . import i18n
 from .i18n import t
@@ -268,7 +269,7 @@ def build(kind, cfg, input_path=None, contexts=(), since=None, gh=gh_json, pr=No
         b.points = parse_points(text)
         if kind == "ballot" and not b.points:
             raise ValueError("the ballot input has no '### B<n>. title' questions")
-        b.add(TITLE[kind], text, bc["max_chars"] // 2, os.path.basename(input_path))
+        b.add(TITLE[kind], text, bc["max_chars"] // 2, Path(input_path).name)
     if kind == "review" and pr is not None:
         _one_pr(b, cfg, pr, gh)
     elif kind == "review":
@@ -314,15 +315,15 @@ def build(kind, cfg, input_path=None, contexts=(), since=None, gh=gh_json, pr=No
         if text is None:
             raise ValueError(f"no such context file: {c}")
         b.sources.append(os.path.abspath(os.path.expanduser(c)))
-        b.add(t("bundle.context", name=os.path.basename(c)), text, bc["context_max_chars"], os.path.basename(c))
+        b.add(t("bundle.context", name=Path(c).name), text, bc["context_max_chars"], Path(c).name)
     dec = latest_decisions(cfg)
     if dec:
         b.sources.append(dec)
         b.add(
-            t("bundle.decisions", name=os.path.basename(dec)),
+            t("bundle.decisions", name=Path(dec).name),
             read_text(dec),
             bc["decisions_max_chars"],
-            os.path.basename(dec),
+            Path(dec).name,
         )
     elif bc.get("decisions_glob"):
         b.cuts.append(t("bundle.no_decisions", glob=bc["decisions_glob"]))
