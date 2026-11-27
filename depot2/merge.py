@@ -107,6 +107,7 @@ class Dropped(Exception):
 
 # --- small helpers -------------------------------------------------------------------------------------
 
+
 def epoch(iso):
     try:
         return datetime.datetime.fromisoformat(iso.replace("Z", "+00:00")).timestamp()  # noqa: FURB162
@@ -120,12 +121,13 @@ def hhmm(iso):
 
 def age(iso, now=None):
     from .stack import age_ru
+
     return age_ru(iso, now)
 
 
 def clip(text, n=160):
     t = " ".join(str(text or "").split())
-    return t if len(t) <= n else t[:n - 1] + "…"
+    return t if len(t) <= n else t[: n - 1] + "…"
 
 
 def expand(p):
@@ -143,13 +145,13 @@ def argv_of(cmd, **subs):
 
 
 class Sh:
-
     def __init__(self, env=None) -> None:
         self.env = env
 
     def run(self, argv, cwd=None, timeout=None, env_extra=None, input_text=None):
         """→ (exit code or None on a timeout, stdout, stderr)."""
         from .push import run_group
+
         env = dict(os.environ if self.env is None else self.env)
         env.update(env_extra or {})
         try:
@@ -159,6 +161,7 @@ class Sh:
 
 
 # --- the queue's file ----------------------------------------------------------------------------------
+
 
 class MergeQueue:
     def __init__(self, state) -> None:
@@ -219,6 +222,7 @@ class MergeQueue:
 
     def history(self):
         from .store import read_jsonl
+
         return read_jsonl(self.history_path)
 
 
@@ -227,6 +231,7 @@ def log_line(e, text):
 
 
 # --- prepared conflict resolutions ---------------------------------------------------------------------
+
 
 class Resolutions:
     """A conflict is resolved only from a resolution worked out and tested beforehand, keyed by the two
@@ -261,11 +266,17 @@ class Resolutions:
         while file.startswith("./"):
             file = file[2:]
         if not file or file.startswith("/") or ".." in file.split("/"):
-            raise MergeError("the file is the conflicting path inside the repo (as `git diff --diff-filter=U` "
-                             f"names it), got {file!r}")
+            raise MergeError(
+                "the file is the conflicting path inside the repo (as `git diff --diff-filter=U` "
+                f"names it), got {file!r}"
+            )
         for name, b in (("--ours", ours), ("--theirs", theirs)):
             if not BLOB_RE.match(b or ""):
-                raise MergeError("{} is the full blob id (`git rev-parse :{}:{}`), got {!r}".format(name, "2" if name == "--ours" else "3", file, b))
+                raise MergeError(
+                    "{} is the full blob id (`git rev-parse :{}:{}`), got {!r}".format(
+                        name, "2" if name == "--ours" else "3", file, b
+                    )
+                )
         src = expand(src)
         if not os.path.isfile(src):
             raise MergeError(f"no such file: {src} (--from is the resolved file)")
@@ -275,11 +286,24 @@ class Resolutions:
             raise MergeError(f"{src} still has conflict markers: a resolution is the resolved file")
         old = self.find(ours, theirs)
         if old is not None and not replace:
-            raise MergeError("a resolution for {} ({} / {}) is there already ({}): --replace to change it".format(old["file"], ours[:12], theirs[:12], old["added"][:16]))
+            raise MergeError(
+                "a resolution for {} ({} / {}) is there already ({}): --replace to change it".format(
+                    old["file"], ours[:12], theirs[:12], old["added"][:16]
+                )
+            )
         import hashlib
-        it = {"key": f"{ours}-{theirs}", "file": file, "ours": ours, "theirs": theirs,
-              "sha256": hashlib.sha256(body).hexdigest(), "bytes": len(body), "from": os.path.abspath(src),
-              "note": (note or "").strip() or None, "added": stamp()}
+
+        it = {
+            "key": f"{ours}-{theirs}",
+            "file": file,
+            "ours": ours,
+            "theirs": theirs,
+            "sha256": hashlib.sha256(body).hexdigest(),
+            "bytes": len(body),
+            "from": os.path.abspath(src),
+            "note": (note or "").strip() or None,
+            "added": stamp(),
+        }
         os.makedirs(self.dir, exist_ok=True)
         dest = self.file_of(it)
         tmp = "%s.tmp-%d" % (dest, os.getpid())  # noqa: UP031
@@ -312,6 +336,7 @@ class Resolutions:
 
 # --- the CI runs: what a set of runs says ----------------------------------------------------------------
 
+
 def _ran(j):
     return bool(j.get("runner_name")) or bool(j.get("steps"))
 
@@ -330,27 +355,58 @@ def classify(runs, jobs_of, now, queued_max_min):
         jobs = jobs_of(rid) or []
         status, concl = r.get("status"), r.get("conclusion") or ""
         if status != "completed":
-            stuck = [j for j in jobs if j.get("status") in NOT_STARTED and not _ran(j)
-                     and (epoch(j.get("created_at") or "") or now) <= now - queued_max_min * 60]
+            stuck = [
+                j
+                for j in jobs
+                if j.get("status") in NOT_STARTED
+                and not _ran(j)
+                and (epoch(j.get("created_at") or "") or now) <= now - queued_max_min * 60
+            ]
             if stuck:
-                verdicts.append(("github", i18n.t("merge.ci_stuck", job=stuck[0].get("name"),
-                                                  min=int((now - epoch(stuck[0]["created_at"])) // 60)), rid, False))
+                verdicts.append(
+                    (
+                        "github",
+                        i18n.t(
+                            "merge.ci_stuck",
+                            job=stuck[0].get("name"),
+                            min=int((now - epoch(stuck[0]["created_at"])) // 60),
+                        ),
+                        rid,
+                        False,
+                    )
+                )
             else:
                 verdicts.append(("pending", i18n.t("merge.ci_running", status=status), rid, False))
             continue
         if concl in OK_CONCLUSIONS:
             verdicts.append(("green", concl, rid, False))
             continue
-        ran_bad = [j for j in jobs if j.get("status") == "completed" and j.get("conclusion") in BAD_CONCLUSIONS
-                   and _ran(j)]
-        never = [j for j in jobs if j.get("status") in NOT_STARTED or
-                 (j.get("conclusion") in BAD_CONCLUSIONS and not _ran(j))]
+        ran_bad = [
+            j for j in jobs if j.get("status") == "completed" and j.get("conclusion") in BAD_CONCLUSIONS and _ran(j)
+        ]
+        never = [
+            j
+            for j in jobs
+            if j.get("status") in NOT_STARTED or (j.get("conclusion") in BAD_CONCLUSIONS and not _ran(j))
+        ]
         if ran_bad:
-            verdicts.append(("failed", "{}: {}".format(concl or "?", ", ".join(
-                "{} {}".format(j.get("name"), j.get("conclusion")) for j in ran_bad)), rid, False))
+            verdicts.append(
+                (
+                    "failed",
+                    "{}: {}".format(
+                        concl or "?", ", ".join("{} {}".format(j.get("name"), j.get("conclusion")) for j in ran_bad)
+                    ),
+                    rid,
+                    False,
+                )
+            )
         elif never or concl == "startup_failure":
-            what = ", ".join("«{}» ({})".format(j.get("name"), j.get("status") if j.get("status") != "completed"
-                                             else j.get("conclusion")) for j in never) or i18n.t("merge.ci_the_run")
+            what = ", ".join(
+                "«{}» ({})".format(
+                    j.get("name"), j.get("status") if j.get("status") != "completed" else j.get("conclusion")
+                )
+                for j in never
+            ) or i18n.t("merge.ci_the_run")
             verdicts.append(("github", i18n.t("merge.ci_not_started", what=what, conclusion=concl), rid, True))
         else:
             verdicts.append(("failed", i18n.t("merge.ci_failed_no_job", conclusion=concl or "?"), rid, False))
@@ -370,38 +426,74 @@ def label_names(labels):
 
 
 def back_command(fb):
-    return "gh variable set {} --body '{}'{}".format(fb.get("var"), labels_json(fb.get("back_to") or []),
-                                                 " -R {}".format(fb["repo"]) if fb.get("repo") else "")
+    return "gh variable set {} --body '{}'{}".format(
+        fb.get("var"), labels_json(fb.get("back_to") or []), " -R {}".format(fb["repo"]) if fb.get("repo") else ""
+    )
 
 
-FALLBACKS = {"ci": ("ci_fallback", "CI"),  # the config's key, the English name; the shown words: merge.fb_what.<key>
-             "cd": ("cd_fallback", "the deploy")}
+FALLBACKS = {
+    "ci": ("ci_fallback", "CI"),  # the config's key, the English name; the shown words: merge.fb_what.<key>
+    "cd": ("cd_fallback", "the deploy"),
+}
 
 
 def fb_reason(fb, key):
-    return i18n.t("merge.fb_reason", main=label_names(fb.get("back_to")), what=i18n.t("merge.fb_what." + key),
-                  spare=label_names(fb.get("to")), run=fb.get("run"))
+    return i18n.t(
+        "merge.fb_reason",
+        main=label_names(fb.get("back_to")),
+        what=i18n.t("merge.fb_what." + key),
+        spare=label_names(fb.get("to")),
+        run=fb.get("run"),
+    )
 
 
 def runner_line(fb, key):
     var, main, spare = fb.get("var"), label_names(fb.get("back_to")), label_names(fb.get("to"))
     what, waits = i18n.t("merge.fb_what." + key), i18n.t("merge.fb_waits." + key)
     if fb.get("var_refused"):
-        return i18n.t("merge.fb_var_refused", var=var, main=main, job=fb.get("job"), waited=fb.get("waited_min"),
-                      to=labels_json(fb.get("to") or []), error=fb["var_refused"], waits=waits)
+        return i18n.t(
+            "merge.fb_var_refused",
+            var=var,
+            main=main,
+            job=fb.get("job"),
+            waited=fb.get("waited_min"),
+            to=labels_json(fb.get("to") or []),
+            error=fb["var_refused"],
+            waits=waits,
+        )
     if fb.get("cancel_refused"):
-        head = i18n.t("merge.fb_cancel_refused", var=var, main=main, job=fb.get("job"), waited=fb.get("waited_min"),
-                      run=fb.get("run"), error=fb["cancel_refused"], waits=waits)
+        head = i18n.t(
+            "merge.fb_cancel_refused",
+            var=var,
+            main=main,
+            job=fb.get("job"),
+            waited=fb.get("waited_min"),
+            run=fb.get("run"),
+            error=fb["cancel_refused"],
+            waits=waits,
+        )
     else:
-        head = i18n.t("merge.fb_switched", var=var, main=main, job=fb.get("job"), waited=fb.get("waited_min"),
-                      what=what, spare=spare, run=fb.get("run"))
+        head = i18n.t(
+            "merge.fb_switched",
+            var=var,
+            main=main,
+            job=fb.get("job"),
+            waited=fb.get("waited_min"),
+            what=what,
+            spare=spare,
+            run=fb.get("run"),
+        )
     if fb.get("back"):
         tail = i18n.t("merge.fb_back", var=var, back_to=labels_json(fb.get("back_to") or []), at=hhmm(fb["back"]))
     elif fb.get("back_error"):
         tail = i18n.t("merge.fb_back_error", var=var, error=fb["back_error"], cmd=back_command(fb))
     else:
-        tail = i18n.t("merge.fb_back_later", var=var, to=labels_json(fb.get("to") or []),
-                      back_to=labels_json(fb.get("back_to") or []))
+        tail = i18n.t(
+            "merge.fb_back_later",
+            var=var,
+            to=labels_json(fb.get("to") or []),
+            back_to=labels_json(fb.get("back_to") or []),
+        )
     return head + "; " + tail
 
 
@@ -436,6 +528,7 @@ def smoke_verdict(cfg, code, out):
 
 # --- the runner: one PR's ride ---------------------------------------------------------------------------
 
+
 def git_subcommand(args):
     """git's subcommand among its arguments (past -c NAME=V, -C DIR and the other leading options)."""
     i = 0
@@ -466,8 +559,16 @@ class Rider(TrialsMixin, WorktreesMixin):
             code, out, err = fn()
             if code == 0 or i == tries or not mergeauto.is_net(code, "{}\n{}".format(err or "", out or "")):
                 return code, out, err
-            self.out("network: %s failed (%s): again in %d s (%d of %d)" % (  # noqa: UP031
-                what, clip(err or out, 140) if code is not None else "no answer in time", pause, i + 1, tries))
+            self.out(
+                "network: %s failed (%s): again in %d s (%d of %d)"  # noqa: UP031
+                % (
+                    what,
+                    clip(err or out, 140) if code is not None else "no answer in time",
+                    pause,
+                    i + 1,
+                    tries,
+                )
+            )
             self.sleep(pause)
         return code, out, err
 
@@ -478,14 +579,16 @@ class Rider(TrialsMixin, WorktreesMixin):
 
         def run():
             return self.sh.run(["git", *list(args)], cwd=cwd, timeout=timeout, env_extra=extra)
+
         return self.net_retry(f"git {sub}", run) if sub in NET_GIT else run()
 
     def unmerged(self, cwd):
         return self.git(cwd, "diff", "--name-only", "--diff-filter=U")[1].split()
 
     def rev(self, cwd, ref):
-        code, out, _ = self.git(cwd, "rev-parse", "--verify", "-q", ref + "^{commit}" if not ref.startswith(":")
-                                else ref)
+        code, out, _ = self.git(
+            cwd, "rev-parse", "--verify", "-q", ref + "^{commit}" if not ref.startswith(":") else ref
+        )
         return out.strip() if code == 0 and out.strip() else None
 
     def is_ancestor(self, cwd, a, b):
@@ -493,8 +596,10 @@ class Rider(TrialsMixin, WorktreesMixin):
 
     def gh(self, *args, timeout=120, net=True):
         """gh; a network failure is tried again (net_retry), but never `pr merge` (step_merge looks first)."""
+
         def run():
             return self.sh.run(["gh", *list(args)], timeout=timeout)
+
         if not net or tuple(args[:2]) == ("pr", "merge"):
             return run()
         return self.net_retry("gh {}".format(" ".join(args[:2])), run)
@@ -509,16 +614,41 @@ class Rider(TrialsMixin, WorktreesMixin):
             raise MergeError("gh {}: not JSON: {}".format(" ".join(args[:2]), clip(out, 120)))  # noqa: B904
 
     def pr_view(self, n):
-        return self.gh_json("pr", "view", str(n), "-R", self.repo, "--json",
-                            "number,title,state,headRefName,headRefOid,baseRefName,isDraft,mergeCommit,url")
+        return self.gh_json(
+            "pr",
+            "view",
+            str(n),
+            "-R",
+            self.repo,
+            "--json",
+            "number,title,state,headRefName,headRefOid,baseRefName,isDraft,mergeCommit,url",
+        )
 
     def runs(self, branch, sha):
-        return self.gh_json("run", "list", "-R", self.repo, "--workflow", self.m["ci_workflow"], "--branch", branch,
-                            "--commit", sha, "--limit", "20", "--json",
-                            "databaseId,status,conclusion,headSha,event,createdAt,attempt,url") or []
+        return (
+            self.gh_json(
+                "run",
+                "list",
+                "-R",
+                self.repo,
+                "--workflow",
+                self.m["ci_workflow"],
+                "--branch",
+                branch,
+                "--commit",
+                sha,
+                "--limit",
+                "20",
+                "--json",
+                "databaseId,status,conclusion,headSha,event,createdAt,attempt,url",
+            )
+            or []
+        )
 
     def jobs(self, run_id):
-        data = self.gh_json("api", "--paginate", "--slurp", f"repos/{self.repo}/actions/runs/{run_id}/jobs?per_page=100")
+        data = self.gh_json(
+            "api", "--paginate", "--slurp", f"repos/{self.repo}/actions/runs/{run_id}/jobs?per_page=100"
+        )
         pages = data if isinstance(data, list) else [data]
         return [j for p in pages for j in (p or {}).get("jobs") or []]
 
@@ -526,9 +656,15 @@ class Rider(TrialsMixin, WorktreesMixin):
         """The repository's self-hosted runners → [(name, status, {its labels, lower-case})]."""
         data = self.gh_json("api", "--paginate", "--slurp", f"repos/{self.repo}/actions/runners?per_page=100")
         pages = data if isinstance(data, list) else [data]
-        return [(r.get("name"), r.get("status"), {str(x.get("name") if isinstance(x, dict) else x).lower()
-                                                  for x in r.get("labels") or []})
-                for p in pages for r in (p or {}).get("runners") or []]
+        return [
+            (
+                r.get("name"),
+                r.get("status"),
+                {str(x.get("name") if isinstance(x, dict) else x).lower() for x in r.get("labels") or []},
+            )
+            for p in pages
+            for r in (p or {}).get("runners") or []
+        ]
 
     # --- the state ---
     @contextlib.contextmanager
@@ -541,8 +677,19 @@ class Rider(TrialsMixin, WorktreesMixin):
     def entry(self, eid):
         return MergeQueue(self.state).get(eid)
 
-    COMMIT_ON = ("start", "stop", "github", "github_over", "rerun", "merged_pr", "merged", "cd_runner",
-                 "cd_runner_back", "ci_runner", "ci_runner_back")
+    COMMIT_ON = (
+        "start",
+        "stop",
+        "github",
+        "github_over",
+        "rerun",
+        "merged_pr",
+        "merged",
+        "cd_runner",
+        "cd_runner_back",
+        "ci_runner",
+        "ci_runner_back",
+    )
 
     def update(self, eid, event, say=None, **fields):
         """Every change is written and in the history at once; the state's git commits at the status changes
@@ -555,7 +702,11 @@ class Rider(TrialsMixin, WorktreesMixin):
             e.update(fields)
             if say:
                 log_line(e, say)
-            q.save(event, eid, **{k: v for k, v in fields.items() if k in ("status", "step", "head", "reason", "sha", "wt")})
+            q.save(
+                event,
+                eid,
+                **{k: v for k, v in fields.items() if k in ("status", "step", "head", "reason", "sha", "wt")},
+            )
             if event in self.COMMIT_ON:
                 self.state.commit("team: merge %s #%d %s" % (eid, e["pr"], event))  # noqa: UP031
         if say:
@@ -617,10 +768,18 @@ class Rider(TrialsMixin, WorktreesMixin):
             q = MergeQueue(self.state)
             st = q.stopped()
             if st is not None:
-                self.out("STOP: the merge queue is stopped at %s #%d: %s" % (st["id"], st["pr"],  # noqa: UP031
-                                                                           (st.get("stop") or {}).get("reason")))
-                self.out('  after the fix: depot2 merge resume %d; or: depot2 merge drop %d --reason "…"'  # noqa: UP031
-                         % (st["pr"], st["pr"]))
+                self.out(
+                    "STOP: the merge queue is stopped at %s #%d: %s"  # noqa: UP031
+                    % (
+                        st["id"],
+                        st["pr"],
+                        (st.get("stop") or {}).get("reason"),
+                    )
+                )
+                self.out(
+                    '  after the fix: depot2 merge resume %d; or: depot2 merge drop %d --reason "…"'  # noqa: UP031
+                    % (st["pr"], st["pr"])
+                )
                 return 1
             e = q.head()
             if e is None:
@@ -638,8 +797,15 @@ class Rider(TrialsMixin, WorktreesMixin):
         e = self.entry(eid)
         if e["status"] == "waiting":
             start = e.get("step") or ("deploy" if e.get("merged") else "sync")
-            e = self.update(eid, "start", status="riding", step=start, step_since=stamp(self.clock()), stop=None,
-                            say="== #%d (%s)%s" % (e["pr"], e["branch"], f", from {start}" if start != "sync" else ""))  # noqa: UP031
+            e = self.update(
+                eid,
+                "start",
+                status="riding",
+                step=start,
+                step_since=stamp(self.clock()),
+                stop=None,
+                say="== #%d (%s)%s" % (e["pr"], e["branch"], f", from {start}" if start != "sync" else ""),  # noqa: UP031
+            )
         try:
             while True:
                 e = self.entry(eid)
@@ -657,9 +823,11 @@ class Rider(TrialsMixin, WorktreesMixin):
             return "stopped"
         except GithubExit:
             g = self.entry(eid).get("github") or {}
-            self.out("waiting for GitHub since %s (%s): the runner leaves %s waiting; `depot2 merge run` goes on, "  # noqa: UP031
-                     "`depot2 merge rerun %d` reruns its run" % (hhmm(g.get("since")), g.get("reason"), eid,
-                                                                  self.entry(eid)["pr"]))
+            self.out(
+                "waiting for GitHub since %s (%s): the runner leaves %s waiting; `depot2 merge run` goes on, "  # noqa: UP031
+                "`depot2 merge rerun %d` reruns its run"
+                % (hhmm(g.get("since")), g.get("reason"), eid, self.entry(eid)["pr"])
+            )
             return "github"
         except Dropped:
             self.out(f"{eid} was dropped from the merge queue while it rode: not merged here")
@@ -681,6 +849,7 @@ class Rider(TrialsMixin, WorktreesMixin):
 
     def arrive_own(self, e):
         from .stages import Car, StageError
+
         ref = e.get("car") or e.get("st")
         if not ref:
             return ["no stack object, no car: no stage to move"]
@@ -689,17 +858,24 @@ class Rider(TrialsMixin, WorktreesMixin):
                 car = Car(self.state, self.cfg, ref)
                 if car.obj is not None:
                     return ["{} is still in the stack: its stage moves with its stack done".format(car.obj["id"])]
-                was, rows = car.move("arrived", why=i18n.t("merge.why_arrived", pr=e["pr"], outcome=outcome_text(e) or
-                                                           i18n.t("merge.deploy_passed")),
-                                     by="merge run ({})".format(e["id"]), force=car.stage() != "rolling")
+                was, rows = car.move(
+                    "arrived",
+                    why=i18n.t(
+                        "merge.why_arrived", pr=e["pr"], outcome=outcome_text(e) or i18n.t("merge.deploy_passed")
+                    ),
+                    by="merge run ({})".format(e["id"]),
+                    force=car.stage() != "rolling",
+                )
             except Exception as ex:  # the stage is a record: it never stops the queue after a merge
                 return ["stage: {}{}".format("" if isinstance(ex, StageError) else type(ex).__name__ + ": ", ex)]
             self.state.commit("team: merge %s #%d: arrived" % (e["id"], e["pr"]))  # noqa: UP031
         from .stages import ru
+
         return ["{}: {} → {}".format(car.label, ru(was), ru("arrived"))] if rows else []
 
     def arrive_earlier(self, e):
         from .stages import Car, StageError, hand_why, rolled_before, ru
+
         out = []
         with self.state.lock():
             q = MergeQueue(self.state)
@@ -719,8 +895,11 @@ class Rider(TrialsMixin, WorktreesMixin):
                 try:
                     car = Car(self.state, self.cfg, ref)
                     if car.obj is None and car.stage() == "rolling":
-                        car.move("arrived", why=i18n.t("merge.why_arrived_next", pr=e["pr"], id=e["id"]),
-                                 by="merge run ({}, handoff {})".format(e["id"], h["id"]))
+                        car.move(
+                            "arrived",
+                            why=i18n.t("merge.why_arrived_next", pr=e["pr"], id=e["id"]),
+                            by="merge run ({}, handoff {})".format(e["id"], h["id"]),
+                        )
                         out.append("%s: %s → %s (with #%d)" % (car.label, ru("rolling"), ru("arrived"), e["pr"]))  # noqa: UP031
                 except Exception as ex:  # a record: it never stops the queue
                     out.append("stage: {}{}".format("" if isinstance(ex, StageError) else type(ex).__name__ + ": ", ex))
@@ -732,8 +911,16 @@ class Rider(TrialsMixin, WorktreesMixin):
             for car, at in hand:
                 try:
                     car.move("arrived", why=hand_why(e), by=i18n.t("merge.by_hand_merged", id=e["id"]))
-                    out.append(i18n.t("merge.arrived_by_hand", car=car.label, was=ru("rolling"), now=ru("arrived"),
-                                      at=hhmm(at), pr=e["pr"]))
+                    out.append(
+                        i18n.t(
+                            "merge.arrived_by_hand",
+                            car=car.label,
+                            was=ru("rolling"),
+                            now=ru("arrived"),
+                            at=hhmm(at),
+                            pr=e["pr"],
+                        )
+                    )
                 except Exception as ex:  # a record: it never stops the queue
                     out.append("stage: {}{}".format("" if isinstance(ex, StageError) else type(ex).__name__ + ": ", ex))
             self.state.commit("team: merge %s #%d: the earlier merges arrived" % (e["id"], e["pr"]))  # noqa: UP031
@@ -741,10 +928,19 @@ class Rider(TrialsMixin, WorktreesMixin):
 
     def stop(self, eid, reason):
         e = self.entry(eid)
-        self.update(eid, "stop", status="stopped", stop={"ts": stamp(self.clock()), "reason": reason, "step": e.get("step")},
-                    github=None, reason=reason, say=f"STOP: {reason}")
-        self.out('  the queue is stopped: after the fix `depot2 merge resume %d`, or `depot2 merge drop %d --reason "…"'  # noqa: UP031
-                 % (e["pr"], e["pr"]))
+        self.update(
+            eid,
+            "stop",
+            status="stopped",
+            stop={"ts": stamp(self.clock()), "reason": reason, "step": e.get("step")},
+            github=None,
+            reason=reason,
+            say=f"STOP: {reason}",
+        )
+        self.out(
+            '  the queue is stopped: after the fix `depot2 merge resume %d`, or `depot2 merge drop %d --reason "…"'  # noqa: UP031
+            % (e["pr"], e["pr"])
+        )
         try:  # the trials stood on it: thrown away (mergetrials.py)
             self.discard_trials("#%d stopped" % e["pr"])  # noqa: UP031
         except Exception as ex:
@@ -754,12 +950,16 @@ class Rider(TrialsMixin, WorktreesMixin):
     def gates(self, e):
         from .stack import Stack
         from .tracks import Tracks
+
         stk = Stack(self.state, self.cfg)
         if e.get("st") and stk._dep_open(e["st"]):
             o = stk.get(e["st"])
             if o.get("lock"):
-                raise Stop("{} is locked ({}: {}): a locked object does not merge".format(
-                    e["st"], o["lock"]["id"], o["lock"]["condition"]))
+                raise Stop(
+                    "{} is locked ({}: {}): a locked object does not merge".format(
+                        e["st"], o["lock"]["id"], o["lock"]["condition"]
+                    )
+                )
         tr = Tracks(self.state, self.cfg)
         t, c = tr.car_by_stack(e["st"]) if e.get("st") else (None, None)
         if c is None and e.get("car"):
@@ -767,7 +967,9 @@ class Rider(TrialsMixin, WorktreesMixin):
         if c is not None:
             b = tr.car_blockers(t, c, lock=False)
             if b:
-                raise Stop("{}:{} waits for {}: its PR is blocked, not ready to merge".format(t["id"], c["n"], ", ".join(b)))
+                raise Stop(
+                    "{}:{} waits for {}: its PR is blocked, not ready to merge".format(t["id"], c["n"], ", ".join(b))
+                )
 
     def check_pr(self, e, pr):
         if pr["state"] == "MERGED":
@@ -820,8 +1022,14 @@ class Rider(TrialsMixin, WorktreesMixin):
             self.git(wt, "reset", "-q", "--hard", pre)
             what = "main" if label == f"{self.remote}/{self.base}" else label
             return dict(none, note=f"{what} adds nothing to {br}: its head stays", resolved=got["prepared"])
-        return {"head": self.rev(wt, "HEAD"), "push": True, "note": f"merged {label} ({m7}) into {br}",
-                "resolved": got["prepared"], "auto": got["auto"], "golden": got["golden"]}
+        return {
+            "head": self.rev(wt, "HEAD"),
+            "push": True,
+            "note": f"merged {label} ({m7}) into {br}",
+            "resolved": got["prepared"],
+            "auto": got["auto"],
+            "golden": got["golden"],
+        }
 
     def resolve(self, wt, files, mode="real"):
         res = Resolutions(self.state)
@@ -831,12 +1039,21 @@ class Rider(TrialsMixin, WorktreesMixin):
         for f in files:
             o, t = self.rev(wt, ":2:" + f), self.rev(wt, ":3:" + f)
             if not o or not t:
-                stops.append((f, "conflict in {}: one side deleted it ({} / {}): no prepared resolution covers that".format(f, (o or "—")[:12], (t or "—")[:12])))
+                stops.append(
+                    (
+                        f,
+                        "conflict in {}: one side deleted it ({} / {}): no prepared resolution covers that".format(
+                            f, (o or "—")[:12], (t or "—")[:12]
+                        ),
+                    )
+                )
                 continue
             it = res.find(o, t)
             if it is not None:
                 if it["file"] != f:
-                    stops.append((f, "the prepared resolution {}… is for {}, not {}".format(it["key"][:25], it["file"], f)))
+                    stops.append(
+                        (f, "the prepared resolution {}… is for {}, not {}".format(it["key"][:25], it["file"], f))
+                    )
                     continue
                 shutil.copyfile(res.file_of(it), os.path.join(wt, f))
                 if self.git(wt, "add", "--", f)[0] != 0:
@@ -853,7 +1070,9 @@ class Rider(TrialsMixin, WorktreesMixin):
                 test = mergeauto.snapshot_test(f, self.cfg) if rule == "snapshot" else None
                 if rule == "snapshot" and not os.path.isfile(os.path.join(wt, test)):
                     why = f"no {test} beside the snapshot to update it with"
-                elif self.git(wt, "checkout", "-q", "--theirs", "--", f)[0] != 0 or self.git(wt, "add", "--", f)[0] != 0:
+                elif (
+                    self.git(wt, "checkout", "-q", "--theirs", "--", f)[0] != 0 or self.git(wt, "add", "--", f)[0] != 0
+                ):
                     why = f"git checkout --theirs {f} failed"
                 elif rule == "generated":
                     got["generated"] = True
@@ -862,15 +1081,28 @@ class Rider(TrialsMixin, WorktreesMixin):
                 else:
                     got["golden"] = True
                     g = auto["golden"]
-                    got["auto"].append("{}: main's side{}".format(f, "; re-recorded after the push (`{}`)".format(" ".join(
-                        argv_of(g["cmd"], remote=self.remote, branch="<branch>", out="<dir>")))
-                        if mode != "trial" else "; re-recorded at the PR's own turn"))
+                    got["auto"].append(
+                        "{}: main's side{}".format(
+                            f,
+                            "; re-recorded after the push (`{}`)".format(
+                                " ".join(argv_of(g["cmd"], remote=self.remote, branch="<branch>", out="<dir>"))
+                            )
+                            if mode != "trial"
+                            else "; re-recorded at the PR's own turn",
+                        )
+                    )
             else:
                 why = ""
             if why is not None:
-                stops.append((f, "no prepared resolution for {} ({} / {}): depot2 merge resolve add {} --ours {} "
-                                 "--theirs {} --from <the resolved file>{}".format(f, o[:12], t[:12], f, o, t,
-                                                                               f" ({why})" if why else "")))
+                stops.append(
+                    (
+                        f,
+                        "no prepared resolution for {} ({} / {}): depot2 merge resolve add {} --ours {} "
+                        "--theirs {} --from <the resolved file>{}".format(
+                            f, o[:12], t[:12], f, o, t, f" ({why})" if why else ""
+                        ),
+                    )
+                )
         if stops:
             more = "; also: {}".format("; ".join(r for _, r in stops[1:])) if len(stops) > 1 else ""
             raise Stop(stops[0][1] + more, files=[f for f, _ in stops])
@@ -881,7 +1113,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         (why not, None).
         """
         code, out, err = self.git(wt, "checkout-index", "--stage=all", "--temp", "--", f)
-        names = (out.split("\t")[0].split() if code == 0 else [])
+        names = out.split("\t")[0].split() if code == 0 else []
         tmps = [os.path.join(wt, x) for x in names if x != "."]
         try:
             if code != 0:
@@ -889,9 +1121,21 @@ class Rider(TrialsMixin, WorktreesMixin):
             if len(names) != 3 or "." in names:
                 return "a side has no such file (both added it, or one took it away)", None
             b, o, t = (os.path.join(wt, x) for x in names)
-            code, out, err = self.git(wt, "merge-file", "--diff3", "--marker-size=%d" % mergeauto.MARK,  # noqa: UP031
-                                      "-L", mergeauto.TAG + "ours", "-L", mergeauto.TAG + "base",
-                                      "-L", mergeauto.TAG + "theirs", o, b, t)
+            code, out, err = self.git(
+                wt,
+                "merge-file",
+                "--diff3",
+                "--marker-size=%d" % mergeauto.MARK,  # noqa: UP031
+                "-L",
+                mergeauto.TAG + "ours",
+                "-L",
+                mergeauto.TAG + "base",
+                "-L",
+                mergeauto.TAG + "theirs",
+                o,
+                b,
+                t,
+            )
             if code is None or code >= 128:
                 return f"git merge-file failed: {clip(err or out, 120)}", None
             with open(o, "rb") as fh:
@@ -910,7 +1154,10 @@ class Rider(TrialsMixin, WorktreesMixin):
             if self.git(wt, "add", "--", f)[0] != 0:
                 return f"git add {f} failed", None
             return None, "%s: both sides only added (%d place%s): the branch's lines, then main's" % (  # noqa: UP031
-                f, n, "" if n == 1 else "s")
+                f,
+                n,
+                "" if n == 1 else "s",
+            )
         finally:
             for p in tmps:
                 if os.path.exists(p):
@@ -927,9 +1174,15 @@ class Rider(TrialsMixin, WorktreesMixin):
                 continue
             code, out, err = self.sh.run(argv, cwd=wt, timeout=int(self.m.get("generate_timeout_s") or 1800))
             if code != 0:
-                raise Stop("{}: main's side, then `{}` is red ({}): {}".format(snap, " ".join(argv), "timeout" if code is None
-                                                                            else "exit %d" % code,  # noqa: UP031
-                                                                            clip((out + err)[-300:], 200)), files=[snap])
+                raise Stop(
+                    "{}: main's side, then `{}` is red ({}): {}".format(
+                        snap,
+                        " ".join(argv),
+                        "timeout" if code is None else "exit %d" % code,  # noqa: UP031
+                        clip((out + err)[-300:], 200),
+                    ),
+                    files=[snap],
+                )
             self.git(wt, "add", "--", snap)
             parts.append("{}: main's side, then `{}`: green".format(snap, " ".join(argv)))
         c = auto.get("generated") or {}
@@ -942,11 +1195,21 @@ class Rider(TrialsMixin, WorktreesMixin):
             code, out, err = self.sh.run(argv, cwd=wt, timeout=int(self.m.get("generate_timeout_s") or 1800))
             if code != 0:
                 if got["generated"]:
-                    raise Stop("{}: main's side, then `{}` fails ({}): {}".format(
-                        c["file"], " ".join(argv), "timeout" if code is None else "exit %d" % code,  # noqa: UP031
-                        clip((out + err)[-300:], 200)), files=[c["file"]])
+                    raise Stop(
+                        "{}: main's side, then `{}` fails ({}): {}".format(
+                            c["file"],
+                            " ".join(argv),
+                            "timeout" if code is None else "exit %d" % code,  # noqa: UP031
+                            clip((out + err)[-300:], 200),
+                        ),
+                        files=[c["file"]],
+                    )
                 self.git(wt, "checkout", "-q", "--", c["file"])
-                parts.append("{}: `{}` failed ({}): git's merge of it kept".format(c["file"], " ".join(argv), clip(err or out, 80)))
+                parts.append(
+                    "{}: `{}` failed ({}): git's merge of it kept".format(
+                        c["file"], " ".join(argv), clip(err or out, 80)
+                    )
+                )
                 return parts
             stale = self.git(wt, "diff", "--quiet", "--", c["file"])[0] != 0
             self.git(wt, "add", "--", c["file"])
@@ -963,9 +1226,17 @@ class Rider(TrialsMixin, WorktreesMixin):
         code, out, err = self.git(repo, "worktree", "add", "-q", "--detach", tw, sha)
         if code != 0:
             shutil.rmtree(tmp, ignore_errors=True)
-            raise Stop("no throwaway worktree for the {} at {}: {}".format(what, (sha or "?")[:7], clip(err or out, 160)))
-        nm = next((p for p in (os.path.join(self.clone, "node_modules"), os.path.join(repo, "node_modules"))
-                   if os.path.isdir(p)), None)
+            raise Stop(
+                "no throwaway worktree for the {} at {}: {}".format(what, (sha or "?")[:7], clip(err or out, 160))
+            )
+        nm = next(
+            (
+                p
+                for p in (os.path.join(self.clone, "node_modules"), os.path.join(repo, "node_modules"))
+                if os.path.isdir(p)
+            ),
+            None,
+        )
         link = os.path.join(tw, "node_modules")
         if nm and not os.path.exists(link):
             os.symlink(os.path.realpath(nm), link)
@@ -983,14 +1254,22 @@ class Rider(TrialsMixin, WorktreesMixin):
         """
         pre = self.rev(wt, "HEAD")
         if self.is_ancestor(wt, main_ref, "HEAD"):
-            return {"head": pre, "push": False, "note": f"{main_ref} is in {br} already: its head stays",
-                    "resolved": [], "auto": [], "golden": False}
+            return {
+                "head": pre,
+                "push": False,
+                "note": f"{main_ref} is in {br} already: its head stays",
+                "resolved": [],
+                "auto": [],
+                "golden": False,
+            }
         with self.scratch(wt, pre) as tw:
             res = self.merge_in(tw, main_ref, br, main_ref, "real")
         if res["push"]:
             code, out, err = self.git(wt, "merge", "-q", "--ff-only", res["head"])
             if code != 0:
-                raise Stop("{}: the fast-forward to the merge {} failed: {}".format(br, res["head"][:7], clip(err or out, 200)))
+                raise Stop(
+                    "{}: the fast-forward to the merge {} failed: {}".format(br, res["head"][:7], clip(err or out, 200))
+                )
         return res
 
     def after_resolve(self, wt, br):
@@ -998,12 +1277,19 @@ class Rider(TrialsMixin, WorktreesMixin):
             argv = argv_of(cmd)
             code, out, err = self.sh.run(argv, cwd=wt, timeout=int(self.m["after_resolve_timeout_s"]))
             if code != 0:
-                raise Stop("after the prepared resolution on {}, `{}` fails ({}): {}".format(
-                    br, " ".join(argv), "timeout" if code is None else "exit %d" % code, clip((err or out)[-300:], 200)))  # noqa: UP031
+                raise Stop(
+                    "after the prepared resolution on {}, `{}` fails ({}): {}".format(
+                        br,
+                        " ".join(argv),
+                        "timeout" if code is None else "exit %d" % code,  # noqa: UP031
+                        clip((err or out)[-300:], 200),
+                    )
+                )
 
     def scan(self, wt, br):
         from .backup import _nice
         from .push import is_clean
+
         if self.m.get("scan") is False:  # the project chose to push without a scan
             return True
         if not self.m.get("scan"):
@@ -1023,8 +1309,14 @@ class Rider(TrialsMixin, WorktreesMixin):
         pr = self.pr_view(e["pr"])
         self.check_pr(e, pr)
         if pr["state"] == "MERGED":
-            self.say(eid, "#%d is merged already (%s): the queue takes its merge commit" % (  # noqa: UP031
-                e["pr"], ((pr.get("mergeCommit") or {}).get("oid") or "?")[:7]))
+            self.say(
+                eid,
+                "#%d is merged already (%s): the queue takes its merge commit"  # noqa: UP031
+                % (
+                    e["pr"],
+                    ((pr.get("mergeCommit") or {}).get("oid") or "?")[:7],
+                ),
+            )
             return "merge"
         self.gates(e)
         if not os.path.isdir(wt):
@@ -1042,8 +1334,16 @@ class Rider(TrialsMixin, WorktreesMixin):
         if not ob:
             raise Stop(f"no {self.remote}/{br}")
         if pr.get("headRefOid") and not self.pr_head_is(e["pr"], ob, pr):
-            raise Stop("PR #%d's head on GitHub is %s, %s/%s is %s" % (e["pr"], pr["headRefOid"][:7], self.remote, br,  # noqa: UP031
-                                                                      ob[:7]))
+            raise Stop(
+                "PR #%d's head on GitHub is %s, %s/%s is %s"  # noqa: UP031
+                % (
+                    e["pr"],
+                    pr["headRefOid"][:7],
+                    self.remote,
+                    br,
+                    ob[:7],
+                )
+            )
         ahead = []
         if head != ob:
             if self.is_ancestor(wt, head, ob):
@@ -1051,10 +1351,14 @@ class Rider(TrialsMixin, WorktreesMixin):
                     raise Stop(f"git merge --ff-only {self.remote}/{br} failed in {wt}")
                 self.say(eid, f"{br}: fast-forwarded to {self.remote}/{br} ({ob[:7]})")
             elif self.is_ancestor(wt, ob, head):
-                ahead = self.git(wt, "log", "--first-parent", "--format=%h %s", f"{self.remote}/{br}..HEAD")[1] \
-                    .splitlines()
-                self.say(eid, "%s: the local head %s is %d commit(s) ahead of %s/%s (%s): pushed after the scan, not "  # noqa: UP031
-                              "waited for" % (br, head[:7], len(ahead), self.remote, br, clip("; ".join(ahead), 200)))
+                ahead = self.git(wt, "log", "--first-parent", "--format=%h %s", f"{self.remote}/{br}..HEAD")[
+                    1
+                ].splitlines()
+                self.say(
+                    eid,
+                    "%s: the local head %s is %d commit(s) ahead of %s/%s (%s): pushed after the scan, not "  # noqa: UP031
+                    "waited for" % (br, head[:7], len(ahead), self.remote, br, clip("; ".join(ahead), 200)),
+                )
             else:
                 raise Stop(f"{br} and {self.remote}/{br} have diverged ({head[:7]} / {ob[:7]})")
         main_ref = f"{self.remote}/{self.base}"
@@ -1062,17 +1366,32 @@ class Rider(TrialsMixin, WorktreesMixin):
         for f in res["resolved"]:
             self.say(eid, f"resolved {f} from the prepared resolution")
         if res["auto"]:  # the journal's line: what the queue resolved by itself, and how (one merge commit)
-            self.say(eid, "the queue resolved in the merge of {} ({}) into {}: {}".format(
-                main_ref, (self.rev(wt, main_ref) or "?")[:7], br, "; ".join(res["auto"])))
+            self.say(
+                eid,
+                "the queue resolved in the merge of {} ({}) into {}: {}".format(
+                    main_ref, (self.rev(wt, main_ref) or "?")[:7], br, "; ".join(res["auto"])
+                ),
+            )
         line = self.trial_tree_line(e, wt, res["head"])
         if line:
             self.say(eid, line)
         if res.get("golden"):  # kept before the push: a stop at the scan or the push re-records it on the resume
             self.update(eid, "golden", golden_pending=res["head"])
         if res["push"] or ahead:
-            self.push(eid, wt, br, res["head"], "%s, CI anew" % (
-                "pushed {} ({}) into {}: {}".format(main_ref, (self.rev(wt, main_ref) or "?")[:7], br, res["head"][:7])
-                if res["push"] else "pushed the local head of {}: {} ({})".format(br, res["head"][:7], res["note"])))
+            self.push(
+                eid,
+                wt,
+                br,
+                res["head"],
+                "%s, CI anew"
+                % (
+                    "pushed {} ({}) into {}: {}".format(
+                        main_ref, (self.rev(wt, main_ref) or "?")[:7], br, res["head"][:7]
+                    )
+                    if res["push"]
+                    else "pushed the local head of {}: {} ({})".format(br, res["head"][:7], res["note"])
+                ),
+            )
         else:
             self.update(eid, "head", head=res["head"], pushed=False, say=res["note"])
         g = (self.m.get("auto") or {}).get("golden") or {}
@@ -1080,11 +1399,18 @@ class Rider(TrialsMixin, WorktreesMixin):
         if res.get("golden"):
             self.golden(eid, wt, br, res["head"])
         elif pend:
-            if self.is_ancestor(wt, pend, res["head"]) and \
-                    self.git(wt, "diff", "--quiet", pend, res["head"], "--", g.get("file") or ".")[0] == 0:
+            if (
+                self.is_ancestor(wt, pend, res["head"])
+                and self.git(wt, "diff", "--quiet", pend, res["head"], "--", g.get("file") or ".")[0] == 0
+            ):
                 self.golden(eid, wt, br, res["head"])
             else:
-                self.update(eid, "golden_done", golden_pending=None, say="{} has a {} of its own since {}: no re-record".format(br, g.get("file"), pend[:7]))
+                self.update(
+                    eid,
+                    "golden_done",
+                    golden_pending=None,
+                    say="{} has a {} of its own since {}: no re-record".format(br, g.get("file"), pend[:7]),
+                )
         return "ci"
 
     def golden(self, eid, wt, br, head):
@@ -1092,21 +1418,41 @@ class Rider(TrialsMixin, WorktreesMixin):
         out_dir = tempfile.mkdtemp(prefix="merge-golden-")
         try:
             argv = argv_of(g.get("cmd") or [], remote=self.remote, branch=br, out=out_dir)
-            self.update(eid, "golden", golden_pending=head, say="{}: main's {} is in {}: re-recorded on it: `{}`".format(
-                br, g.get("file"), head[:7], " ".join(argv)))
+            self.update(
+                eid,
+                "golden",
+                golden_pending=head,
+                say="{}: main's {} is in {}: re-recorded on it: `{}`".format(
+                    br, g.get("file"), head[:7], " ".join(argv)
+                ),
+            )
             code, out, err = self.sh.run(argv, cwd=wt, timeout=int(self.m.get("golden_timeout_s") or 5400))
             name = os.path.basename(g.get("file") or "golden.json")
             got = sorted(os.path.join(d, f) for d, _, fs in os.walk(out_dir) for f in fs if f == name)
             if code != 0 or len(got) != 1:
-                raise Stop("the re-record of %s on %s @ %s failed (%s, %d %s): %s — main's %s is in the branch: re-record "  # noqa: UP031
-                           "it, commit, push, then `depot2 merge resume %d` (on the resume the queue tries it again "
-                           "while the branch has no %s of its own)" % (
-                               g.get("file"), br, head[:7], "timeout" if code is None else "exit %d" % code, len(got),  # noqa: UP031
-                               name, clip((err or out)[-300:], 160), g.get("file"), self.entry(eid)["pr"], name))
+                raise Stop(
+                    "the re-record of %s on %s @ %s failed (%s, %d %s): %s — main's %s is in the branch: re-record "  # noqa: UP031
+                    "it, commit, push, then `depot2 merge resume %d` (on the resume the queue tries it again "
+                    "while the branch has no %s of its own)"
+                    % (
+                        g.get("file"),
+                        br,
+                        head[:7],
+                        "timeout" if code is None else "exit %d" % code,  # noqa: UP031
+                        len(got),
+                        name,
+                        clip((err or out)[-300:], 160),
+                        g.get("file"),
+                        self.entry(eid)["pr"],
+                        name,
+                    )
+                )
             shutil.copyfile(got[0], os.path.join(wt, g["file"]))
             if self.git(wt, "status", "--porcelain", "--", g["file"])[1].strip():
-                if self.git(wt, "add", "--", g["file"])[0] != 0 or \
-                        self.git(wt, "commit", "-q", "-m", "Re-record {} on the merge".format(g["file"]))[0] != 0:
+                if (
+                    self.git(wt, "add", "--", g["file"])[0] != 0
+                    or self.git(wt, "commit", "-q", "-m", "Re-record {} on the merge".format(g["file"]))[0] != 0
+                ):
                     raise Stop("the commit of the re-recorded {} on {} failed".format(g["file"], br))
                 new = self.rev(wt, "HEAD")
                 self.push(eid, wt, br, new, "re-recorded {} on the merge: {}, CI anew".format(g["file"], new[:7]))
@@ -1159,8 +1505,16 @@ class Rider(TrialsMixin, WorktreesMixin):
                 if now - t0 < float(m["run_appear_min"]) * 60:
                     kind = "pending"
                 else:
-                    kind, text = "github", "no %s run for %s @ %s after %d min" % (m["ci_workflow"], branch, sha[:7],  # noqa: UP031
-                                                                                 int((now - t0) // 60))
+                    kind, text = (
+                        "github",
+                        "no %s run for %s @ %s after %d min"  # noqa: UP031
+                        % (
+                            m["ci_workflow"],
+                            branch,
+                            sha[:7],
+                            int((now - t0) // 60),
+                        ),
+                    )
             if kind == "green":
                 self.github_over(eid)
                 return runs
@@ -1174,8 +1528,12 @@ class Rider(TrialsMixin, WorktreesMixin):
                 g = self.github(eid, text, rid, rerunnable)
                 last = epoch(g.get("last_rerun") or g["since"]) or now
                 after = m.get("github_rerun_after_min")
-                if rerunnable and after is not None and g.get("reruns", 0) < int(m["github_reruns_max"]) and \
-                        now - last >= float(after) * 60:
+                if (
+                    rerunnable
+                    and after is not None
+                    and g.get("reruns", 0) < int(m["github_reruns_max"])
+                    and now - last >= float(after) * 60
+                ):
                     self.do_rerun(eid, rid, f"the timer ({after} min)")
                 elif now - (epoch(g["since"]) or now) >= float(m["github_wait_max_min"]) * 60:
                     raise GithubExit
@@ -1201,11 +1559,18 @@ class Rider(TrialsMixin, WorktreesMixin):
             return False
         code, out, err = self.gh("run", "rerun", k, "--failed", "-R", self.repo)
         if code != 0:
-            self.say(eid, f"gh run rerun {k} --failed (the network failed it: «{hit}») refused: {clip(err or out, 160)}")
+            self.say(
+                eid, f"gh run rerun {k} --failed (the network failed it: «{hit}») refused: {clip(err or out, 160)}"
+            )
             return False
         done[k] = int(done.get(k) or 0) + 1
-        self.update(eid, "ci_net_rerun", ci_net=done, say="%s failed only on the network («%s» in its failed log): "  # noqa: UP031
-                    "gh run rerun %s --failed (%d of %d)" % (what, hit, k, done[k], mx))
+        self.update(
+            eid,
+            "ci_net_rerun",
+            ci_net=done,
+            say="%s failed only on the network («%s» in its failed log): "  # noqa: UP031
+            "gh run rerun %s --failed (%d of %d)" % (what, hit, k, done[k], mx),
+        )
         return True
 
     def github(self, eid, text, rid, rerunnable):
@@ -1219,16 +1584,26 @@ class Rider(TrialsMixin, WorktreesMixin):
         st = self.githubstatus() if e["status"] != "github" else g.get("githubstatus")
         if st:
             g["githubstatus"] = st
-        self.update(eid, "github", status="github", github=g,
-                    say="waiting for GitHub: {}{} (not a failure)".format(text, f"; githubstatus: {st}" if st else ""))
+        self.update(
+            eid,
+            "github",
+            status="github",
+            github=g,
+            say="waiting for GitHub: {}{} (not a failure)".format(text, f"; githubstatus: {st}" if st else ""),
+        )
         return g
 
     def github_over(self, eid):
         e = self.entry(eid)
         if e["status"] != "github":
             return False
-        self.update(eid, "github_over", status="riding", github=None,
-                    say="GitHub is back: {}".format((e.get("github") or {}).get("reason")))
+        self.update(
+            eid,
+            "github_over",
+            status="riding",
+            github=None,
+            say="GitHub is back: {}".format((e.get("github") or {}).get("reason")),
+        )
         return True
 
     def githubstatus(self):
@@ -1257,8 +1632,18 @@ class Rider(TrialsMixin, WorktreesMixin):
             self.update(eid, "rerun_refused", github=g)
             return False
         g.update(reruns=int(g.get("reruns", 0)) + 1, last_rerun=stamp(self.clock()))
-        self.update(eid, "rerun", github=g, say="gh run rerun %s --failed (%s, %d of %s)" % (  # noqa: UP031
-            rid, why, g["reruns"], self.m["github_reruns_max"]))
+        self.update(
+            eid,
+            "rerun",
+            github=g,
+            say="gh run rerun %s --failed (%s, %d of %s)"  # noqa: UP031
+            % (
+                rid,
+                why,
+                g["reruns"],
+                self.m["github_reruns_max"],
+            ),
+        )
         return True
 
     def fallbacks(self, eid, runs, kind, now, keys):
@@ -1289,9 +1674,13 @@ class Rider(TrialsMixin, WorktreesMixin):
         want = {x.lower() for x in c["main"]}
         limit = now - float(self.m["queued_max_min"]) * 60
         for j in self.jobs(r.get("databaseId")) or []:
-            if j.get("name") in names and j.get("status") in NOT_STARTED and not _ran(j) and \
-                    (epoch(j.get("created_at") or "") or now) <= limit and \
-                    want <= {str(x).lower() for x in j.get("labels") or []}:
+            if (
+                j.get("name") in names
+                and j.get("status") in NOT_STARTED
+                and not _ran(j)
+                and (epoch(j.get("created_at") or "") or now) <= limit
+                and want <= {str(x).lower() for x in j.get("labels") or []}
+            ):
                 return j
         return None
 
@@ -1308,39 +1697,79 @@ class Rider(TrialsMixin, WorktreesMixin):
         try:
             rs = self.runners()
         except MergeError as ex:
-            self.fb_note(eid, key, "the runners unreadable ({}): {} waits for {}".format(clip(ex, 120), what,
-                                                                                    label_names(c["main"])))
+            self.fb_note(
+                eid,
+                key,
+                "the runners unreadable ({}): {} waits for {}".format(clip(ex, 120), what, label_names(c["main"])),
+            )
             return False
 
         def online(labels):
             want = {x.lower() for x in labels}
             return sorted(str(n) for n, st, have in rs if st == "online" and want <= have)
+
         if online(c["main"]):
             return False
         spare = online(c["fallback"])
         if not spare:
-            self.fb_note(eid, key, "no {} runner online, and no {} one either: {} waits".format(
-                label_names(c["main"]), label_names(c["fallback"]), what))
+            self.fb_note(
+                eid,
+                key,
+                "no {} runner online, and no {} one either: {} waits".format(
+                    label_names(c["main"]), label_names(c["fallback"]), what
+                ),
+            )
             return False
         rid = r.get("databaseId")
         waited = int((now - (epoch(dep.get("created_at") or "") or now)) // 60)
-        fb = {"var": c["var"], "run": rid, "attempt": int(r.get("attempt") or 1), "job": dep.get("name"),
-              "waited_min": waited, "to": list(c["fallback"]), "back_to": list(c["main"]), "spare": spare,
-              "since": stamp(self.clock()), "back": None, "repo": self.repo}
+        fb = {
+            "var": c["var"],
+            "run": rid,
+            "attempt": int(r.get("attempt") or 1),
+            "job": dep.get("name"),
+            "waited_min": waited,
+            "to": list(c["fallback"]),
+            "back_to": list(c["main"]),
+            "spare": spare,
+            "since": stamp(self.clock()),
+            "back": None,
+            "repo": self.repo,
+        }
         self.update(eid, field, **{field: fb})  # kept first: a runner that dies after the change still sets it back
         code, out, err = self.set_var(c["var"], c["fallback"])
         if code != 0:
             fb = dict(fb, var_refused=clip(err or out, 120), back=stamp(self.clock()))
-            self.update(eid, field + "_refused", say="gh variable set {} refused ({}): {} waits for {}".format(
-                c["var"], fb["var_refused"], what, label_names(c["main"])), **{field: fb})
+            self.update(
+                eid,
+                field + "_refused",
+                say="gh variable set {} refused ({}): {} waits for {}".format(
+                    c["var"], fb["var_refused"], what, label_names(c["main"])
+                ),
+                **{field: fb},
+            )
             return False
-        self.say(eid, "no %s runner online, «%s» queued %d+ min: %s → %s (%s), gh run cancel %s, then rerun --failed" % (  # noqa: UP031
-            label_names(c["main"]), dep.get("name"), waited, c["var"], labels_json(c["fallback"]), ", ".join(spare), rid))
+        self.say(
+            eid,
+            "no %s runner online, «%s» queued %d+ min: %s → %s (%s), gh run cancel %s, then rerun --failed"  # noqa: UP031
+            % (
+                label_names(c["main"]),
+                dep.get("name"),
+                waited,
+                c["var"],
+                labels_json(c["fallback"]),
+                ", ".join(spare),
+                rid,
+            ),
+        )
         code, out, err = self.gh("run", "cancel", str(rid), "-R", self.repo)
         if code != 0:
             fb = dict(self.entry(eid)[field], cancel_refused=clip(err or out, 120))
-            self.update(eid, key + "_cancel_refused", say="gh run cancel {} refused: {}".format(
-                rid, fb["cancel_refused"]), **{field: fb})
+            self.update(
+                eid,
+                key + "_cancel_refused",
+                say="gh run cancel {} refused: {}".format(rid, fb["cancel_refused"]),
+                **{field: fb},
+            )
             self.fb_back(eid, key, fb, "the cancel was refused")
             return False
         self.github(eid, fb_reason(fb, key), rid, False)
@@ -1353,7 +1782,9 @@ class Rider(TrialsMixin, WorktreesMixin):
         done = r.get("status") == "completed"
         if int(r.get("attempt") or 1) > int(fb["attempt"]):  # the rerun is GitHub's now: back once it is over
             if done:
-                self.fb_back(eid, key, fb, "run {}, attempt {}: {}".format(fb["run"], r.get("attempt"), r.get("conclusion")))
+                self.fb_back(
+                    eid, key, fb, "run {}, attempt {}: {}".format(fb["run"], r.get("attempt"), r.get("conclusion"))
+                )
             return False
         acted = False
         if done and not fb.get("rerun"):
@@ -1373,12 +1804,22 @@ class Rider(TrialsMixin, WorktreesMixin):
         code, out, err = self.set_var(fb["var"], fb["back_to"])
         if code != 0:
             fb = dict(fb, back_error=clip(err or out, 120))
-            self.update(eid, field + "_back_refused", say="gh variable set {} refused ({}): set it back by hand: {}".format(
-                fb["var"], fb["back_error"], back_command(fb)), **{field: fb})
+            self.update(
+                eid,
+                field + "_back_refused",
+                say="gh variable set {} refused ({}): set it back by hand: {}".format(
+                    fb["var"], fb["back_error"], back_command(fb)
+                ),
+                **{field: fb},
+            )
             return
         fb = dict(fb, back=stamp(self.clock()), back_error=None, back_why=why)
-        self.update(eid, field + "_back", say="{} → {} again ({})".format(fb["var"], labels_json(fb["back_to"]), why),
-                    **{field: fb})
+        self.update(
+            eid,
+            field + "_back",
+            say="{} → {} again ({})".format(fb["var"], labels_json(fb["back_to"]), why),
+            **{field: fb},
+        )
 
     # --- step 2: the branch's CI ---
     def step_ci(self, e):
@@ -1387,10 +1828,16 @@ class Rider(TrialsMixin, WorktreesMixin):
         if os.path.isdir(wt):  # CI runs only on a head GitHub has: one it lacks goes back to the sync (and its push)
             remote = self.remote_head(wt, e["branch"])
             if remote and remote != head:
-                self.say(e["id"], "{}/{} is {}, not the head {}: back to the sync, which pushes it".format(
-                    self.remote, e["branch"], remote[:7], head[:7]))
+                self.say(
+                    e["id"],
+                    "{}/{} is {}, not the head {}: back to the sync, which pushes it".format(
+                        self.remote, e["branch"], remote[:7], head[:7]
+                    ),
+                )
                 return "sync"
-        self.wait_runs(e["id"], e["branch"], head, float(self.m["ci_timeout_min"]), "CI of {} @ {}".format(e["branch"], head[:7]))
+        self.wait_runs(
+            e["id"], e["branch"], head, float(self.m["ci_timeout_min"]), "CI of {} @ {}".format(e["branch"], head[:7])
+        )
         self.say(e["id"], "CI green on {} @ {}".format(e["branch"], head[:7]))
         return "merge"
 
@@ -1403,8 +1850,14 @@ class Rider(TrialsMixin, WorktreesMixin):
             if not e.get("head"):
                 raise Stop("#%d has no tested head" % n)  # noqa: UP031
             if pr.get("headRefOid") != e["head"]:
-                raise Stop("PR #%d's head moved: %s, not the %s CI tested" % (n, (pr.get("headRefOid") or "?")[:7],  # noqa: UP031
-                                                                              e["head"][:7]))
+                raise Stop(
+                    "PR #%d's head moved: %s, not the %s CI tested"  # noqa: UP031
+                    % (
+                        n,
+                        (pr.get("headRefOid") or "?")[:7],
+                        e["head"][:7],
+                    )
+                )
             self.gates(e)
             self.alive(eid)
             code, out, err = self.pr_merge(n, e["head"])
@@ -1418,8 +1871,13 @@ class Rider(TrialsMixin, WorktreesMixin):
         sha = (pr.get("mergeCommit") or {}).get("oid")
         if pr["state"] != "MERGED" or not sha:
             raise Stop("#%d: no merge commit after the merge (%s)" % (n, pr["state"]))  # noqa: UP031
-        e = self.update(eid, "merged_pr", merged={"sha": sha, "ts": stamp(self.clock())}, sha=sha,
-                        say="#%d merged as %s" % (n, sha[:7]))  # noqa: UP031
+        e = self.update(
+            eid,
+            "merged_pr",
+            merged={"sha": sha, "ts": stamp(self.clock())},
+            sha=sha,
+            say="#%d merged as %s" % (n, sha[:7]),  # noqa: UP031
+        )
         for line in self.stack_done(e, sha):
             self.say(eid, line)
         self.after_merge_worktree(eid)
@@ -1434,8 +1892,16 @@ class Rider(TrialsMixin, WorktreesMixin):
             code, out, err = self.gh("pr", "merge", str(n), "-R", self.repo, "--merge", "--match-head-commit", head)
             if code == 0 or i == tries or not mergeauto.is_net(code, "{}\n{}".format(err or "", out or "")):
                 return code, out, err
-            self.out("network: gh pr merge %d failed (%s): the PR looked at, again in %d s (%d of %d)" % (  # noqa: UP031
-                n, clip(err or out, 140) if code is not None else "no answer in time", pause, i + 1, tries))
+            self.out(
+                "network: gh pr merge %d failed (%s): the PR looked at, again in %d s (%d of %d)"  # noqa: UP031
+                % (
+                    n,
+                    clip(err or out, 140) if code is not None else "no answer in time",
+                    pause,
+                    i + 1,
+                    tries,
+                )
+            )
             self.sleep(pause)
             try:
                 if self.pr_view(n)["state"] == "MERGED":
@@ -1449,6 +1915,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         from .stack import Stack
         from .tracks import Tracks
         from .trains import freed_slot_lines
+
         reason = i18n.t("merge.done_reason", pr=e["pr"], sha=sha[:7], id=e["id"], word=clip(e.get("word"), 120))
         out = []
         with self.state.lock():
@@ -1482,8 +1949,15 @@ class Rider(TrialsMixin, WorktreesMixin):
     def step_deploy(self, e):
         eid, n = e["id"], e["pr"]
         sha = e["merged"]["sha"]
-        runs = self.wait_runs(eid, self.base, sha, float(self.m["deploy_timeout_min"]), "CI/CD of %s @ %s (#%d merged)"  # noqa: UP031
-                              % (self.base, sha[:7], n), deploy=True)
+        runs = self.wait_runs(
+            eid,
+            self.base,
+            sha,
+            float(self.m["deploy_timeout_min"]),
+            "CI/CD of %s @ %s (#%d merged)"  # noqa: UP031
+            % (self.base, sha[:7], n),
+            deploy=True,
+        )
         run = ([r for r in runs if r.get("event") == "push"] or runs)[0]
         jobs = self.jobs(run["databaseId"])
         if self.m.get("deploy_job"):
@@ -1493,8 +1967,20 @@ class Rider(TrialsMixin, WorktreesMixin):
             dep_c = run.get("conclusion") or run.get("status")
         site = self.site()
         d = {"run": run["databaseId"], "conclusion": run.get("conclusion"), "deploy_job": dep_c, "site": site}
-        self.update(eid, "deploy", deploy=d, say="CI/CD %s %s; #%d deploy %s; #%d site %s" % (  # noqa: UP031
-            sha[:7], run.get("conclusion"), n, dep_c, n, site))
+        self.update(
+            eid,
+            "deploy",
+            deploy=d,
+            say="CI/CD %s %s; #%d deploy %s; #%d site %s"  # noqa: UP031
+            % (
+                sha[:7],
+                run.get("conclusion"),
+                n,
+                dep_c,
+                n,
+                site,
+            ),
+        )
         if site not in [str(x) for x in self.m["site_ok"]]:
             raise Stop("after #%d's deploy the site answers %s" % (n, site))  # noqa: UP031
         return "smoke"
@@ -1515,8 +2001,9 @@ class Rider(TrialsMixin, WorktreesMixin):
             why = f"no deploy (deploy {dep}): nothing new to see" if dep != "success" else "merge.smoke is off"
             self.update(eid, "smoke", smoke={"ok": None, "summary": why}, say="#%d smoke skipped: %s" % (n, why))  # noqa: UP031
             return "usage"
-        code, out, _ = self.sh.run(argv_of(cmd), cwd=self.clone if os.path.isdir(self.clone) else None,
-                                   timeout=int(self.m["smoke_timeout_s"]))
+        code, out, _ = self.sh.run(
+            argv_of(cmd), cwd=self.clone if os.path.isdir(self.clone) else None, timeout=int(self.m["smoke_timeout_s"])
+        )
         ok, summary = smoke_verdict(self.cfg, code, out)
         self.update(eid, "smoke", smoke={"ok": ok, "summary": summary}, say="#%d smoke: %s" % (n, summary))  # noqa: UP031
         if not ok:
@@ -1531,7 +2018,9 @@ class Rider(TrialsMixin, WorktreesMixin):
         cur = self.git(c, "symbolic-ref", "--short", "-q", "HEAD")[1].strip()
         dirty = [ln for ln in self.git(c, "status", "--porcelain")[1].splitlines() if ln and not ln.startswith("??")]
         if cur != self.base or dirty:
-            self.say(eid, "the main clone {} is {}: not fast-forwarded".format(c, "dirty" if dirty else "on " + (cur or "?")))
+            self.say(
+                eid, "the main clone {} is {}: not fast-forwarded".format(c, "dirty" if dirty else "on " + (cur or "?"))
+            )
             return
         if self.git(c, "merge", "-q", "--ff-only", f"{self.remote}/{self.base}")[0] == 0:
             self.say(eid, "the main clone → {}".format((self.rev(c, "HEAD") or "?")[:7]))
@@ -1553,8 +2042,14 @@ class Rider(TrialsMixin, WorktreesMixin):
         u["lines"] = [str(g.get("line")) for g in got if isinstance(g, dict) and g.get("line")]
         u["plugins"] = [g for g in got if isinstance(g, dict)]
         u["ts"] = stamp(self.clock())
-        self.update(e["id"], "usage", usage=u, say="after the merge: {}{}".format(
-            "; ".join(u["lines"]) or "nothing", " ({})".format(u["error"]) if u.get("error") else ""))
+        self.update(
+            e["id"],
+            "usage",
+            usage=u,
+            say="after the merge: {}{}".format(
+                "; ".join(u["lines"]) or "nothing", " ({})".format(u["error"]) if u.get("error") else ""
+            ),
+        )
         return
 
     # --- the dry run ---
@@ -1570,9 +2065,11 @@ class Rider(TrialsMixin, WorktreesMixin):
         L.append(f"runner: {runner_cell(self.state)}")
         st = q.stopped()
         if st is not None:
-            L.append("STOPPED at %s #%d: %s — the runner rides nothing until `merge resume %d` or `merge drop %d`; "  # noqa: UP031
-                     "below, the plan after that" % (st["id"], st["pr"], (st.get("stop") or {}).get("reason"),
-                                                      st["pr"], st["pr"]))
+            L.append(
+                "STOPPED at %s #%d: %s — the runner rides nothing until `merge resume %d` or `merge drop %d`; "  # noqa: UP031
+                "below, the plan after that"
+                % (st["id"], st["pr"], (st.get("stop") or {}).get("reason"), st["pr"], st["pr"])
+            )
         if not os.path.isdir(self.clone):
             return [*L, f"no main clone {self.clone} (merge.clone)"]
         if self.git(self.clone, "fetch", "-q", self.remote, timeout=300)[0] != 0:
@@ -1581,15 +2078,21 @@ class Rider(TrialsMixin, WorktreesMixin):
         sim_main = self.rev(self.clone, main_ref)
         tmp = tempfile.mkdtemp(prefix="merge-plan-")
         sim = os.path.join(tmp, "sim")
-        ident = {"GIT_AUTHOR_NAME": "merge-plan", "GIT_AUTHOR_EMAIL": "merge-plan@localhost",
-                 "GIT_COMMITTER_NAME": "merge-plan", "GIT_COMMITTER_EMAIL": "merge-plan@localhost"}
+        ident = {
+            "GIT_AUTHOR_NAME": "merge-plan",
+            "GIT_AUTHOR_EMAIL": "merge-plan@localhost",
+            "GIT_COMMITTER_NAME": "merge-plan",
+            "GIT_COMMITTER_EMAIL": "merge-plan@localhost",
+        }
         try:
             if self.git(self.clone, "worktree", "add", "-q", "--detach", sim, sim_main)[0] != 0:
                 return [*L, f"could not make a throwaway worktree in {tmp}"]
             label, ahead, bases = main_ref, [], [("main", sim_main)]
             if self.depth() > 0:
-                L.append("trials: the %d PR(s) after the one riding are tried on top of it on %s<PR> while it rides "  # noqa: UP031
-                         "(merge.presync_depth); a stop of it throws them away" % (self.depth(), self.m.get("trial_prefix")))
+                L.append(
+                    "trials: the %d PR(s) after the one riding are tried on top of it on %s<PR> while it rides "  # noqa: UP031
+                    "(merge.presync_depth); a stop of it throws them away" % (self.depth(), self.m.get("trial_prefix"))
+                )
             for i, e in enumerate(items, 1):
                 L.append("")
                 L += self.plan_one(i, e, sim, sim_main, label, ident, bases=bases, prev=ahead[-1] if ahead else None)
@@ -1606,24 +2109,45 @@ class Rider(TrialsMixin, WorktreesMixin):
     def plan_one(self, i, e, sim, sim_main, label, ident, bases=None, prev=None):
         from .stack import Stack
         from .tracks import Tracks
+
         n, br, wt = e["pr"], e["branch"], e["worktree"]
-        L = [i18n.t("merge.plan_entry", i=i, id=e["id"], pr=n, title=clip(e.get("title"), 70), branch=br,
-                    status=STATUS_RU[e["status"]],
-                    step=" ({})".format(STEP_RU.get(e.get("step"), e.get("step"))) if e.get("step") else "",
-                    word=clip(e.get("word"), 80))]
+        L = [
+            i18n.t(
+                "merge.plan_entry",
+                i=i,
+                id=e["id"],
+                pr=n,
+                title=clip(e.get("title"), 70),
+                branch=br,
+                status=STATUS_RU[e["status"]],
+                step=" ({})".format(STEP_RU.get(e.get("step"), e.get("step"))) if e.get("step") else "",
+                word=clip(e.get("word"), 80),
+            )
+        ]
         try:
             pr = self.pr_view(n)
         except MergeError as ex:
             return [*L, f"  gh: {ex}"]
-        L.append("  PR: {}{}, head {}, into {}".format(pr["state"], ", draft" if pr.get("isDraft") else "",
-                                                  (pr.get("headRefOid") or "?")[:7], pr.get("baseRefName")))
+        L.append(
+            "  PR: {}{}, head {}, into {}".format(
+                pr["state"],
+                ", draft" if pr.get("isDraft") else "",
+                (pr.get("headRefOid") or "?")[:7],
+                pr.get("baseRefName"),
+            )
+        )
         stk, tr = Stack(self.state, self.cfg), Tracks(self.state, self.cfg)
         if e.get("st") and stk._dep_open(e["st"]):
             o = stk.get(e["st"])
             t, c = tr.car_by_stack(e["st"])
-            L.append("  stack: {} ({}){}{}".format(e["st"], WHERE_RU.get(o["where"], o["where"]),
-                                               ", car {}:{}".format(t["id"], c["n"]) if c else "",
-                ", LOCKED {}: {}".format(o["lock"]["id"], o["lock"]["condition"]) if o.get("lock") else ""))
+            L.append(
+                "  stack: {} ({}){}{}".format(
+                    e["st"],
+                    WHERE_RU.get(o["where"], o["where"]),
+                    ", car {}:{}".format(t["id"], c["n"]) if c else "",
+                    ", LOCKED {}: {}".format(o["lock"]["id"], o["lock"]["condition"]) if o.get("lock") else "",
+                )
+            )
         elif e.get("car"):
             L.append("  stack: no object; car {} (parked)".format(e["car"]))
         else:
@@ -1633,16 +2157,28 @@ class Rider(TrialsMixin, WorktreesMixin):
         except Stop as s:
             L.append(f"  STOP at the gate: {s.reason}")
         if e.get("merged"):
-            return [*L, "  merged already as {}: the runner goes on with the deploy, smoke and usage".format(e["merged"]["sha"][:7])]
+            return [
+                *L,
+                "  merged already as {}: the runner goes on with the deploy, smoke and usage".format(
+                    e["merged"]["sha"][:7]
+                ),
+            ]
         if pr["state"] == "MERGED":
-            return [*L, "  merged on GitHub already ({}): the runner takes its merge commit".format(((pr.get("mergeCommit") or {}).get("oid") or "?")[:7])]
+            return [
+                *L,
+                "  merged on GitHub already ({}): the runner takes its merge commit".format(
+                    ((pr.get("mergeCommit") or {}).get("oid") or "?")[:7]
+                ),
+            ]
         head0 = self.rev(self.clone, f"{self.remote}/{br}") or pr.get("headRefOid")
         ahead = False
         if not os.path.isdir(wt):
             L.append(f"  worktree: none at {wt} — the real run stops here")
         else:
             cur = self.git(wt, "symbolic-ref", "--short", "-q", "HEAD")[1].strip()
-            dirty = [ln for ln in self.git(wt, "status", "--porcelain")[1].splitlines() if ln and not ln.startswith("??")]
+            dirty = [
+                ln for ln in self.git(wt, "status", "--porcelain")[1].splitlines() if ln and not ln.startswith("??")
+            ]
             local, ob = self.rev(wt, "HEAD"), self.rev(wt, f"{self.remote}/{br}")
             if local == ob:
                 rel = f"= {self.remote}/{br}"
@@ -1651,12 +2187,17 @@ class Rider(TrialsMixin, WorktreesMixin):
             elif local and ob and self.is_ancestor(wt, ob, local):
                 ahead, head0 = True, local
                 rel = "{} ahead of {}/{} by {} commit(s): the real run pushes it after the scan".format(
-                    local[:7], self.remote, br, self.git(wt, "rev-list", "--count", f"{ob}..{local}")[1].strip())
+                    local[:7], self.remote, br, self.git(wt, "rev-list", "--count", f"{ob}..{local}")[1].strip()
+                )
             else:
-                rel = "diverged from {}/{} ({} / {}) — the real run stops here".format(self.remote, br, (local or "?")[:7],
-                                                                                (ob or "?")[:7])
-            L.append("  worktree: {}, on {}, {}, {}".format(wt, cur or "?", "DIRTY — the real run stops here" if dirty else "clean",
-                                                        rel))
+                rel = "diverged from {}/{} ({} / {}) — the real run stops here".format(
+                    self.remote, br, (local or "?")[:7], (ob or "?")[:7]
+                )
+            L.append(
+                "  worktree: {}, on {}, {}, {}".format(
+                    wt, cur or "?", "DIRTY — the real run stops here" if dirty else "clean", rel
+                )
+            )
         if not head0 or self.git(sim, "checkout", "-q", "--detach", head0)[0] != 0:
             return [*L, f"  no {self.remote}/{br} to try"]
         trial = self.plan_trial(e, label, prev)
@@ -1665,25 +2206,51 @@ class Rider(TrialsMixin, WorktreesMixin):
         except Stop as s:
             who = self.attribute(sim, s.files, bases or [("main", sim_main)], head0) if s.files else []
             conflicts = ", ".join(i18n.t("merge.conflict_with", other=c["with"], file=c["file"]) for c in who)
-            return L + [f"  STOP: {s.reason}"] + (["  " + i18n.t("merge.conflict_n", n=n, conflicts=conflicts)]
-                                                    if who else []) + trial + [
-                "  (a failure stops the queue: the PRs after it would not ride; below, without this PR)"]
+            return (
+                L
+                + [f"  STOP: {s.reason}"]
+                + (["  " + i18n.t("merge.conflict_n", n=n, conflicts=conflicts)] if who else [])
+                + trial
+                + ["  (a failure stops the queue: the PRs after it would not ride; below, without this PR)"]
+            )
         try:
             kind, text, _, _ = classify(self.runs(br, head0), self.jobs, self.clock(), float(self.m["queued_max_min"]))
         except MergeError as ex:
             kind, text = "?", str(ex)
-        ci = "CI on {}: {}{}".format(head0[:7], {"green": "green", "failed": "FAILED", "github": "waiting for GitHub",
-                                              "pending": "running", "none": "no run"}.get(kind, kind),
-                                 "" if kind == "green" else f" ({text})")
+        ci = "CI on {}: {}{}".format(
+            head0[:7],
+            {
+                "green": "green",
+                "failed": "FAILED",
+                "github": "waiting for GitHub",
+                "pending": "running",
+                "none": "no run",
+            }.get(kind, kind),
+            "" if kind == "green" else f" ({text})",
+        )
         if res["push"]:
-            L.append("  sync: would merge {} into {} with a merge commit{}{}; private scan; git push {} {}; CI anew on "
-                     "the new head (now: {})".format(label, br, "; resolved from the prepared resolutions: " + ", ".join(
-                         res["resolved"]) + " (then merge.after_resolve)" if res["resolved"] else "",
-                         "; the queue resolves by itself: " + "; ".join(res["auto"]) if res["auto"] else "", self.remote,
-                         br, ci))
+            L.append(
+                "  sync: would merge {} into {} with a merge commit{}{}; private scan; git push {} {}; CI anew on "
+                "the new head (now: {})".format(
+                    label,
+                    br,
+                    "; resolved from the prepared resolutions: "
+                    + ", ".join(res["resolved"])
+                    + " (then merge.after_resolve)"
+                    if res["resolved"]
+                    else "",
+                    "; the queue resolves by itself: " + "; ".join(res["auto"]) if res["auto"] else "",
+                    self.remote,
+                    br,
+                    ci,
+                )
+            )
         elif ahead:
-            L.append("  sync: {}; the local head is not on GitHub: private scan, git push {} {}, CI on it".format(
-                res["note"], self.remote, br))
+            L.append(
+                "  sync: {}; the local head is not on GitHub: private scan, git push {} {}, CI on it".format(
+                    res["note"], self.remote, br
+                )
+            )
         else:
             L.append("  sync: {} — no push; {}".format(res["note"], ci))
         L += trial
@@ -1691,15 +2258,21 @@ class Rider(TrialsMixin, WorktreesMixin):
         after = []
         if e.get("st") and stk._dep_open(e["st"]):
             t, c = tr.car_by_stack(e["st"])
-            after.append("stack done {} --car merged{}".format(e["st"], i18n.t("merge.plan_car_merged", car="{}:{}".format(
-                t["id"], c["n"])) if c else ""))
+            after.append(
+                "stack done {} --car merged{}".format(
+                    e["st"], i18n.t("merge.plan_car_merged", car="{}:{}".format(t["id"], c["n"])) if c else ""
+                )
+            )
         elif e.get("car"):
             after.append(i18n.t("merge.plan_parked_merged", car=e["car"]))
         after.append(f"CI/CD of the merge commit on {self.base}, the deploy job, the site, smoke; the plugins' lines")
         L.append("  after: " + "; ".join(after))
         # the PR merged on top of the simulated main: what the next PR would see
-        if self.git(sim, "checkout", "-q", "--detach", sim_main)[0] != 0 or \
-                self.git(sim, "merge", "-q", "--no-ff", res["head"], "-m", "simulated merge of #%d" % n, env=ident)[0] != 0:  # noqa: UP031
+        if (
+            self.git(sim, "checkout", "-q", "--detach", sim_main)[0] != 0
+            or self.git(sim, "merge", "-q", "--no-ff", res["head"], "-m", "simulated merge of #%d" % n, env=ident)[0]  # noqa: UP031
+            != 0
+        ):
             self.git(sim, "merge", "--abort")
             return L + ["  (the simulated merge of #%d into main failed: the next PRs are tried without it)" % n]  # noqa: RUF005, UP031
         return L + ["  → simulated merge of #%d: %s" % (n, self.rev(sim, "HEAD"))]  # noqa: RUF005, UP031
@@ -1710,26 +2283,36 @@ class Rider(TrialsMixin, WorktreesMixin):
             return []
         name = self.trial_branch(e["pr"])
         now = trial_brief(e["pr"], e["trial"]) if e.get("trial") else "none yet"
-        return ["  trial: %s = #%d + (%s), built while %s rides (the merge as above, the private scan of what it "  # noqa: UP031
-                "carries, git push %s %s; CI on it); now: %s" % (name, e["pr"], label, prev, self.remote, name, now)]
+        return [
+            "  trial: %s = #%d + (%s), built while %s rides (the merge as above, the private scan of what it "  # noqa: UP031
+            "carries, git push %s %s; CI on it); now: %s" % (name, e["pr"], label, prev, self.remote, name, now)
+        ]
 
 
 # --- commands --------------------------------------------------------------------------------------------
+
 
 def find_object(state, cfg, n):
     """The stack object with PR n, or the parked car with it: → (object or None, car ref or None)."""
     from .stack import Stack
     from .tracks import Tracks
+
     stk = Stack(state, cfg)
     objs = [o for o in stk.objects() if o.get("pr") == n]
     tr = Tracks(state, cfg)
     if len(objs) > 1:
-        raise MergeError("PR #%d is the PR of %s: one object per PR (stack set … --pr)" % (n, ", ".join(o["id"] for o in objs)))  # noqa: UP031
+        raise MergeError(
+            "PR #%d is the PR of %s: one object per PR (stack set … --pr)" % (n, ", ".join(o["id"] for o in objs))  # noqa: UP031
+        )
     if objs:
         t, c = tr.car_by_stack(objs[0]["id"])
         return objs[0], ("{}:{}".format(t["id"], c["n"]) if c else None)
-    cars = ["{}:{}".format(t["id"], c["n"]) for t in tr.tracks() for c in t["cars"] if c.get("pr") == n
-            and c["status"] not in ("merged", "dropped")]
+    cars = [
+        "{}:{}".format(t["id"], c["n"])
+        for t in tr.tracks()
+        for c in t["cars"]
+        if c.get("pr") == n and c["status"] not in ("merged", "dropped")
+    ]
     return None, (cars[0] if cars else None)
 
 
@@ -1756,7 +2339,9 @@ def move(state, cfg, ref, at):
     q = MergeQueue(state)
     e = q.get(ref)
     if e["status"] not in ("waiting", "stopped"):
-        raise MergeError("%s #%d is %s: only a waiting or stopped entry moves" % (e["id"], e["pr"], STATUS_RU[e["status"]]))  # noqa: UP031
+        raise MergeError(
+            "%s #%d is %s: only a waiting or stopped entry moves" % (e["id"], e["pr"], STATUS_RU[e["status"]])  # noqa: UP031
+        )
     if int(at) < 1:
         raise MergeError("--at is a place from 1")
     was = [x["id"] for x in q.entries(open_only=True)].index(e["id"]) + 1
@@ -1765,7 +2350,9 @@ def move(state, cfg, ref, at):
     q.save("move", e["id"], at=n, was=was)
     lines = ["%s #%d: place %d → %d in the merge queue" % (e["id"], e["pr"], was, n)]  # noqa: UP031
     if n > int(at):
-        lines.append("note: ahead of it the runner holds what rides or waits for GitHub: place %d is the first free" % n)  # noqa: UP031
+        lines.append(
+            "note: ahead of it the runner holds what rides or waits for GitHub: place %d is the first free" % n  # noqa: UP031
+        )
     return e, lines
 
 
@@ -1775,8 +2362,11 @@ def fallback_notes(e):
     for key, (_, what) in FALLBACKS.items():
         fb = e.get(key + "_runner") or {}
         if fb and not fb.get("back"):
-            lines.append("note: {} is still {} ({}'s fallback, run {}): once that run is over, {}".format(
-                fb.get("var"), labels_json(fb.get("to") or []), what, fb.get("run"), back_command(fb)))
+            lines.append(
+                "note: {} is still {} ({}'s fallback, run {}): once that run is over, {}".format(
+                    fb.get("var"), labels_json(fb.get("to") or []), what, fb.get("run"), back_command(fb)
+                )
+            )
     return lines
 
 
@@ -1786,32 +2376,49 @@ def handoff(state, cfg, ref, reason):
     q = MergeQueue(state)
     e = q.get(ref)
     if not e.get("merged"):
-        raise MergeError("%s #%d is not merged: a handoff is for a merged PR whose ride did not end (an open one "  # noqa: UP031
-                         "waits, `merge drop` takes it out)" % (e["id"], e["pr"]))
+        raise MergeError(
+            "%s #%d is not merged: a handoff is for a merged PR whose ride did not end (an open one "  # noqa: UP031
+            "waits, `merge drop` takes it out)" % (e["id"], e["pr"])
+        )
     if e["status"] not in OPEN:
         raise MergeError("%s #%d is %s: only an open entry is handed off" % (e["id"], e["pr"], STATUS_RU[e["status"]]))  # noqa: UP031
     lines = []
     if e["status"] in ("riding", "github") and Rider(state, cfg).lock_held():
         lines.append("note: the runner rides it now: it stops watching it at its next step")
     lines += fallback_notes(e)
-    e.update(status="merged", step=None, stop=None, github=None,
-             handoff={"ts": stamp(), "reason": reason.strip(), "step": (e.get("stop") or {}).get("step") or e.get("step")})
+    e.update(
+        status="merged",
+        step=None,
+        stop=None,
+        github=None,
+        handoff={"ts": stamp(), "reason": reason.strip(), "step": (e.get("stop") or {}).get("step") or e.get("step")},
+    )
     log_line(e, f"handed off: its deploy rides with the next merge ({reason})")
     q.save("handoff", e["id"], reason=reason)
     from .stages import ru
-    return e, ["%s #%d (merged as %s) is no longer watched: its deploy rides with the next merge; «%s» until "  # noqa: RUF005, UP031
-               "that one arrives (%s)" % (e["id"], e["pr"], e["merged"]["sha"][:7], ru("rolling"), reason)] + lines
+
+    return (
+        e,
+        [  # noqa: RUF005
+            "%s #%d (merged as %s) is no longer watched: its deploy rides with the next merge; «%s» until "  # noqa: UP031
+            "that one arrives (%s)" % (e["id"], e["pr"], e["merged"]["sha"][:7], ru("rolling"), reason)
+        ]
+        + lines,
+    )
 
 
 def check(state, cfg, pr_n, word, sh=None, force=False, why=None):
     from .tracks import Tracks
+
     if word is None or not str(word).strip():
         raise MergeError(i18n.t("merge.no_word"))
     n = int(pr_n)
     q = MergeQueue(state)
     live = [e for e in q.entries(open_only=True) if e["pr"] == n]
     if live:
-        raise MergeError("PR #%d is in the merge queue already (%s, %s)" % (n, live[0]["id"], STATUS_RU[live[0]["status"]]))  # noqa: UP031
+        raise MergeError(
+            "PR #%d is in the merge queue already (%s, %s)" % (n, live[0]["id"], STATUS_RU[live[0]["status"]])  # noqa: UP031
+        )
     r = Rider(state, cfg, sh=sh)
     pr = r.pr_view(n)
     if pr["state"] != "OPEN":
@@ -1827,8 +2434,11 @@ def check(state, cfg, pr_n, word, sh=None, force=False, why=None):
         if o.get("branch") and o["branch"] != br:
             raise MergeError("%s's branch is %s, PR #%d's is %s" % (o["id"], o["branch"], n, br))  # noqa: UP031
         if o.get("lock"):
-            raise MergeError("{} is locked ({}: {}): a locked object does not merge".format(o["id"], o["lock"]["id"],
-                                                                                         o["lock"]["condition"]))
+            raise MergeError(
+                "{} is locked ({}: {}): a locked object does not merge".format(
+                    o["id"], o["lock"]["id"], o["lock"]["condition"]
+                )
+            )
     tr = Tracks(state, cfg)
     t, c = tr.car(car) if car else (None, None)
     if c is not None:
@@ -1836,22 +2446,36 @@ def check(state, cfg, pr_n, word, sh=None, force=False, why=None):
         if b:
             raise MergeError("{} waits for {}: its PR is blocked, not ready to merge".format(car, ", ".join(b)))
     from . import gates, marks
+
     reading, forced = None, None
     if marks.wanted(cfg):
         body = r.gh_json("pr", "view", str(n), "-R", r.repo, "--json", "body") or {}
-        reading = marks.Reading(state, cfg, car or (o["id"] if o is not None else None), pr=n,
-                                body=str(body.get("body") or ""))
+        reading = marks.Reading(
+            state, cfg, car or (o["id"] if o is not None else None), pr=n, body=str(body.get("body") or "")
+        )
         lines += reading.lines()
-        unmet = {"DoD": [i18n.t("merge.dod_principles", unmet="; ".join(reading.verdict["unmet"]))]
-                 if reading.verdict["unmet"] else []}
+        unmet = {
+            "DoD": [i18n.t("merge.dod_principles", unmet="; ".join(reading.verdict["unmet"]))]
+            if reading.verdict["unmet"]
+            else []
+        }
         from .stages import ru
+
         try:
-            forced = gates.check(unmet, force, why, "PR #%d" % n, ru("queued"),  # noqa: UP031
-                                 "depot2 merge add %d --word «…»" % n, error=MergeError)  # noqa: UP031
+            forced = gates.check(
+                unmet,
+                force,
+                why,
+                "PR #%d" % n,  # noqa: UP031
+                ru("queued"),
+                "depot2 merge add %d --word «…»" % n,  # noqa: UP031
+                error=MergeError,
+            )
         except MergeError as e:  # what the PR's section gave, under the refusal
             raise MergeError("\n".join([str(e), *lines]))  # noqa: B904
-    return types.SimpleNamespace(n=n, q=q, pr=pr, br=br, o=o, car=car, tr=tr, c=c, reading=reading, forced=forced,
-                                 lines=lines)
+    return types.SimpleNamespace(
+        n=n, q=q, pr=pr, br=br, o=o, car=car, tr=tr, c=c, reading=reading, forced=forced, lines=lines
+    )
 
 
 def add(state, cfg, pr_n, word, sh=None, at=None, force=False, why=None):
@@ -1861,6 +2485,7 @@ def add(state, cfg, pr_n, word, sh=None, at=None, force=False, why=None):
     """
     from . import gates, marks
     from .stack import Stack
+
     if at is not None and int(at) < 1:
         raise MergeError("--at is a place from 1")
     k = check(state, cfg, pr_n, word, sh=sh, force=force, why=why)
@@ -1868,32 +2493,81 @@ def add(state, cfg, pr_n, word, sh=None, at=None, force=False, why=None):
     reading, forced, lines = k.reading, k.forced, k.lines
     wt = os.path.join(expand(cfg["merge"]["worktrees"]), br)
     eid = q.new_id()
-    e = {"id": eid, "pr": n, "title": pr.get("title"), "branch": br, "worktree": wt, "url": pr.get("url"),
-         "st": o["id"] if o else None, "car": car, "word": str(word), "added": stamp(), "status": "waiting",
-         "step": None, "head": None, "pushed": None, "github": None, "stop": None, "merged": None, "deploy": None,
-         "smoke": None, "usage": None, "prev_status": o.get("status") if o else None, "log": []}
+    e = {
+        "id": eid,
+        "pr": n,
+        "title": pr.get("title"),
+        "branch": br,
+        "worktree": wt,
+        "url": pr.get("url"),
+        "st": o["id"] if o else None,
+        "car": car,
+        "word": str(word),
+        "added": stamp(),
+        "status": "waiting",
+        "step": None,
+        "head": None,
+        "pushed": None,
+        "github": None,
+        "stop": None,
+        "merged": None,
+        "deploy": None,
+        "smoke": None,
+        "usage": None,
+        "prev_status": o.get("status") if o else None,
+        "log": [],
+    }
     if reading is not None:
         e["principles"] = marks.compact(reading.verdict)
     if forced:
         e["forced"] = {"why": why, "gates": forced}
     log_line(e, f"added on the owner's word: «{word}»")
-    e["prev_stage"] = (Stack(state, cfg).stage_of(o) if o is not None else tr.stage_of(c) if c is not None else None)
+    e["prev_stage"] = Stack(state, cfg).stage_of(o) if o is not None else tr.stage_of(c) if c is not None else None
     q.data["entries"].append(e)
     where = place(q, e, at) if at is not None else len(q.entries(open_only=True))
-    q.save("add", eid, pr=n, word=str(word), branch=br, st=e["st"], car=car, at=where if at is not None else None,
-           forced=True if forced else None, why=why if forced else None, gates=forced)
-    lines.append("%s: PR #%d (%s) is in the merge queue, place %d; the owner's word: «%s»" % (  # noqa: UP031
-        eid, n, br, where, word))
+    q.save(
+        "add",
+        eid,
+        pr=n,
+        word=str(word),
+        branch=br,
+        st=e["st"],
+        car=car,
+        at=where if at is not None else None,
+        forced=True if forced else None,
+        why=why if forced else None,
+        gates=forced,
+    )
+    lines.append(
+        "%s: PR #%d (%s) is in the merge queue, place %d; the owner's word: «%s»"  # noqa: UP031
+        % (
+            eid,
+            n,
+            br,
+            where,
+            word,
+        )
+    )
     if forced:
         lines.append(i18n.t("merge.forced", id=eid, why=why, gates=gates.gates_text(forced)))
-    lines += on_the_tracks(state, cfg, e, "queued", i18n.t("merge.why_queued", word=word, id=eid, force=f"; --force: {why}" if forced else ""), "merge add", forced=bool(forced))
+    lines += on_the_tracks(
+        state,
+        cfg,
+        e,
+        "queued",
+        i18n.t("merge.why_queued", word=word, id=eid, force=f"; --force: {why}" if forced else ""),
+        "merge add",
+        forced=bool(forced),
+    )
     if o is not None:
         status = i18n.t("merge.st_status", id=eid)
         Stack(state, cfg).set(o["id"], status=status)
         lines.append("{} → {}{}".format(o["id"], status, f" — car {car}" if car else ""))
         if o["where"] == "slot":
-            lines.append("note: {} is in a slot: its agent must be done with {} before the ride (a dirty worktree "
-                         "stops it)".format(o["id"], wt))
+            lines.append(
+                "note: {} is in a slot: its agent must be done with {} before the ride (a dirty worktree "
+                "stops it)".format(o["id"], wt)
+            )
     elif car:
         lines.append(f"no stack object: car {car} (parked) is marked merged after the merge")
     else:
@@ -1910,6 +2584,7 @@ def on_the_tracks(state, cfg, e, stage, why, by, forced=False):
     from . import stages
     from .stack import Stack
     from .tracks import Tracks
+
     out = []
     stk = Stack(state, cfg)
     if e.get("st") and stk._dep_open(e["st"]):
@@ -1928,6 +2603,7 @@ def on_the_tracks(state, cfg, e, stage, why, by, forced=False):
 
 def restore_status(state, cfg, e):
     from .stack import Stack
+
     stk = Stack(state, cfg)
     if e.get("st") and stk._dep_open(e["st"]):
         o = stk.get(e["st"])
@@ -1947,10 +2623,24 @@ def resume(state, cfg, ref=None, reason=None):
     stop = e.get("stop") or {}
     step = "deploy" if e.get("merged") else None
     e.update(status="waiting", stop=None, step=step, step_since=None)
-    log_line(e, "resumed{} (it stopped at {}: {})".format(": " + reason if reason else "", stop.get("step"), stop.get("reason")))
+    log_line(
+        e,
+        "resumed{} (it stopped at {}: {})".format(
+            ": " + reason if reason else "", stop.get("step"), stop.get("reason")
+        ),
+    )
     q.save("resume", e["id"], reason=reason, step=step)
-    return e, ["%s #%d waits again, %s; the queue goes on: depot2 merge run" % (  # noqa: UP031
-        e["id"], e["pr"], "from the deploy (merged as {})".format(e["merged"]["sha"][:7]) if step else "from the start")]
+    return (
+        e,
+        [
+            "%s #%d waits again, %s; the queue goes on: depot2 merge run"  # noqa: UP031
+            % (
+                e["id"],
+                e["pr"],
+                "from the deploy (merged as {})".format(e["merged"]["sha"][:7]) if step else "from the start",
+            )
+        ],
+    )
 
 
 def drop(state, cfg, ref, reason):
@@ -1962,8 +2652,10 @@ def drop(state, cfg, ref, reason):
         raise MergeError("%s #%d is %s: only an open entry is dropped" % (e["id"], e["pr"], STATUS_RU[e["status"]]))  # noqa: UP031
     lines = []
     if e.get("merged"):
-        lines.append("note: #%d is merged already (%s): drop only stops watching it (its deploy riding with the next "  # noqa: UP031
-                     "merge: `merge handoff %d --reason …`)" % (e["pr"], e["merged"]["sha"][:7], e["pr"]))
+        lines.append(
+            "note: #%d is merged already (%s): drop only stops watching it (its deploy riding with the next "  # noqa: UP031
+            "merge: `merge handoff %d --reason …`)" % (e["pr"], e["merged"]["sha"][:7], e["pr"])
+        )
     elif e["status"] in ("riding", "github") and Rider(state, cfg).lock_held():
         lines.append("note: the runner rides it now: it stops before the merge")
     lines += fallback_notes(e)
@@ -1972,8 +2664,9 @@ def drop(state, cfg, ref, reason):
     q.save("drop", e["id"], reason=reason)
     if not e.get("merged"):
         lines += restore_status(state, cfg, e)
-        lines += on_the_tracks(state, cfg, e, back_stage(state, cfg, e),
-                               i18n.t("merge.why_dropped", reason=reason.strip()), "merge drop")
+        lines += on_the_tracks(
+            state, cfg, e, back_stage(state, cfg, e), i18n.t("merge.why_dropped", reason=reason.strip()), "merge drop"
+        )
     return e, ["%s #%d left the merge queue: %s" % (e["id"], e["pr"], reason)] + lines  # noqa: RUF005, UP031
 
 
@@ -1982,22 +2675,35 @@ def rerun(state, cfg, ref, sh=None):
     e = q.get(ref)
     g = e.get("github") or {}
     if e["status"] != "github" or not g.get("run"):
-        raise MergeError("%s #%d is %s: nothing GitHub left unstarted to rerun" % (e["id"], e["pr"], STATUS_RU[e["status"]]))  # noqa: UP031
+        raise MergeError(
+            "%s #%d is %s: nothing GitHub left unstarted to rerun" % (e["id"], e["pr"], STATUS_RU[e["status"]])  # noqa: UP031
+        )
     r = Rider(state, cfg, sh=sh)
     code, out, err = r.gh("run", "rerun", str(g["run"]), "--failed", "-R", r.repo)
     if code != 0:
-        raise MergeError("gh run rerun {} --failed: {} (a run still queued has nothing to rerun: wait, or "
-                         "gh run cancel {} first)".format(g["run"], clip(err or out, 200), g["run"]))
+        raise MergeError(
+            "gh run rerun {} --failed: {} (a run still queued has nothing to rerun: wait, or "
+            "gh run cancel {} first)".format(g["run"], clip(err or out, 200), g["run"])
+        )
     g = dict(g, reruns=int(g.get("reruns", 0)) + 1, last_rerun=stamp())
     e["github"] = g
     log_line(e, "gh run rerun {} --failed (by hand)".format(g["run"]))
     q.save("rerun", e["id"], run=g["run"])
-    return e, ["gh run rerun %s --failed: %s #%d (rerun %d)%s" % (  # noqa: UP031
-        g["run"], e["id"], e["pr"], g["reruns"], "" if r.lock_held() else "; the runner is not running: depot2 merge run")]
+    return e, [
+        "gh run rerun %s --failed: %s #%d (rerun %d)%s"  # noqa: UP031
+        % (
+            g["run"],
+            e["id"],
+            e["pr"],
+            g["reruns"],
+            "" if r.lock_held() else "; the runner is not running: depot2 merge run",
+        )
+    ]
 
 
 def back_stage(state, cfg, e):
     from .stack import Stack
+
     if e.get("prev_stage") and e["prev_stage"] != "queued":
         return e["prev_stage"]
     stk = Stack(state, cfg)
@@ -2068,8 +2774,9 @@ def runner_cell(state, s=None):
 def spawn_runner(argv, log, cwd):
     """The runner, detached: its own session, no tty, its output appended to the log."""
     with open(log, "a") as out:
-        return subprocess.Popen(argv, stdin=subprocess.DEVNULL, stdout=out, stderr=out, cwd=cwd,
-                                start_new_session=True, close_fds=True)
+        return subprocess.Popen(
+            argv, stdin=subprocess.DEVNULL, stdout=out, stderr=out, cwd=cwd, start_new_session=True, close_fds=True
+        )
 
 
 SPAWN = spawn_runner  # the tests swap it for a stand-in that takes the lock like a runner
@@ -2091,9 +2798,12 @@ def ensure(state, cfg, sets=None, wait_s=None):
         return 0, [i18n.t("merge.ensure_empty")]
     st = s["stopped"]
     if st is not None:
-        return 1, [i18n.t("merge.ensure_stopped", id=st["id"], pr=st["pr"],
-                          reason=clip((st.get("stop") or {}).get("reason"), 200)),
-                   i18n.t("merge.ensure_after_fix", pr=st["pr"])]
+        return 1, [
+            i18n.t(
+                "merge.ensure_stopped", id=st["id"], pr=st["pr"], reason=clip((st.get("stop") or {}).get("reason"), 200)
+            ),
+            i18n.t("merge.ensure_after_fix", pr=st["pr"]),
+        ]
     was = lock_pid(state)
     lines = [i18n.t("merge.ensure_start", was=i18n.t("merge.ensure_stale_lock", pid=was) if was else "", n=s["open"])]
     log = os.path.join(run_dir(state), RUN_LOG)
@@ -2116,7 +2826,8 @@ def ensure(state, cfg, sets=None, wait_s=None):
         code = p.poll()
         if code is not None:  # killed by a signal (a negative code): a failure all the same
             return code if code >= 0 else 1, lines + [i18n.t("merge.ensure_exited", pid=p.pid, code=code, log=log)] + [
-                "  " + ln for ln in log_tail(log)]
+                "  " + ln for ln in log_tail(log)
+            ]
         if time.monotonic() >= end:
             return 0, [*lines, i18n.t("merge.ensure_no_lock", pid=p.pid, log=log)]
         time.sleep(0.1)
@@ -2128,15 +2839,22 @@ def prune_worktrees(state, cfg, dry_run=False, sh=None):
 
 # --- the tables and the report ----------------------------------------------------------------------------
 
+
 def state_cell(e, now=None):
     s = e["status"]
     if s == "waiting":
-        return STATUS_RU["waiting"] + (i18n.t("merge.cell_from_step", step=STEP_RU.get(e["step"], e["step"]))
-                                       if e.get("step") else "") + (
-            " · {}".format(trial_cell(e["trial"])) if e.get("trial") else "")
+        return (
+            STATUS_RU["waiting"]
+            + (i18n.t("merge.cell_from_step", step=STEP_RU.get(e["step"], e["step"])) if e.get("step") else "")
+            + (" · {}".format(trial_cell(e["trial"])) if e.get("trial") else "")
+        )
     if s == "riding":
-        out = i18n.t("merge.cell_riding", step=STEP_RU.get(e.get("step"), e.get("step")),
-                     since=hhmm(e.get("step_since"))[11:], age=age(e.get("step_since"), now))
+        out = i18n.t(
+            "merge.cell_riding",
+            step=STEP_RU.get(e.get("step"), e.get("step")),
+            since=hhmm(e.get("step_since"))[11:],
+            age=age(e.get("step_since"), now),
+        )
         if e.get("merged"):
             out += i18n.t("merge.cell_merged_sha", sha=e["merged"]["sha"][:7])
         elif e.get("head"):
@@ -2144,22 +2862,43 @@ def state_cell(e, now=None):
         return out
     if s == "github":
         g = e.get("github") or {}
-        return i18n.t("merge.cell_github", step=STEP_RU.get(e.get("step"), e.get("step")),
-                      reason=clip(g.get("reason"), 120), since=hhmm(g.get("since"))[11:], age=age(g.get("since"), now),
-                      reruns=int(g.get("reruns") or 0),
-                      status="; githubstatus: {}".format(g["githubstatus"]) if g.get("githubstatus") else "")
+        return i18n.t(
+            "merge.cell_github",
+            step=STEP_RU.get(e.get("step"), e.get("step")),
+            reason=clip(g.get("reason"), 120),
+            since=hhmm(g.get("since"))[11:],
+            age=age(g.get("since"), now),
+            reruns=int(g.get("reruns") or 0),
+            status="; githubstatus: {}".format(g["githubstatus"]) if g.get("githubstatus") else "",
+        )
     if s == "stopped":
         st = e.get("stop") or {}
-        return i18n.t("merge.cell_stopped", step=STEP_RU.get(st.get("step"), st.get("step")), at=hhmm(st.get("ts")),
-                      reason=clip(st.get("reason"), 200), pr=e["pr"])
+        return i18n.t(
+            "merge.cell_stopped",
+            step=STEP_RU.get(st.get("step"), st.get("step")),
+            at=hhmm(st.get("ts")),
+            reason=clip(st.get("reason"), 200),
+            pr=e["pr"],
+        )
     if s == "merged":
         h = e.get("handoff")
-        tail = i18n.t("merge.cell_handoff", reason=clip(h.get("reason"), 120), arrived=i18n.t(
-            "merge.cell_handoff_arrived", pr=h["arrived"]["pr"]) if h.get("arrived") else "") if h else ""
-        return i18n.t("merge.cell_merged", sha=((e.get("merged") or {}).get("sha") or "?")[:7],
-                      at=hhmm((e.get("merged") or {}).get("ts")),
-                      outcome="; " + outcome_text(e) if outcome_text(e) else "", handoff=tail,
-                      wt="; " + wt_text(e.get("wt")) if e.get("wt") else "")
+        tail = (
+            i18n.t(
+                "merge.cell_handoff",
+                reason=clip(h.get("reason"), 120),
+                arrived=i18n.t("merge.cell_handoff_arrived", pr=h["arrived"]["pr"]) if h.get("arrived") else "",
+            )
+            if h
+            else ""
+        )
+        return i18n.t(
+            "merge.cell_merged",
+            sha=((e.get("merged") or {}).get("sha") or "?")[:7],
+            at=hhmm((e.get("merged") or {}).get("ts")),
+            outcome="; " + outcome_text(e) if outcome_text(e) else "",
+            handoff=tail,
+            wt="; " + wt_text(e.get("wt")) if e.get("wt") else "",
+        )
     return i18n.t("merge.cell_dropped", reason=clip((e.get("dropped") or {}).get("reason"), 120))
 
 
@@ -2175,8 +2914,10 @@ def outcome_text(e):
         parts.append(i18n.t("merge.outcome_deploy", job=d.get("deploy_job"), site=d.get("site")))
     ls = e.get("smoke")
     if ls:
-        parts.append("smoke {}".format(smoke_word(ls.get("ok")))
-                     + (" ({})".format(ls.get("summary")) if ls.get("ok") is not True else ""))
+        parts.append(
+            "smoke {}".format(smoke_word(ls.get("ok")))
+            + (" ({})".format(ls.get("summary")) if ls.get("ok") is not True else "")
+        )
     return ", ".join(parts)
 
 
@@ -2186,17 +2927,28 @@ def _object_cell(e):
 
 def md(state, cfg, all_=False, now=None, heading=True):
     from .stack import _cell
+
     q = MergeQueue(state)
     items = q.entries() if all_ else q.entries(open_only=True)
     L = [i18n.t("merge.md_heading"), ""] if heading else []
     from .stages import entry_stage, ru
+
     L.append(i18n.t("merge.md_header"))
     L.append("|---|---|---|---|---|---|---|---|")
     for i, e in enumerate(items, 1):
-        L.append("| %d | %s | %s | %s | %s | %s | %s | %s |" % (  # noqa: UP031
-            i, _cell("#%d %s" % (e["pr"], clip(e.get("title"), 60))), _cell(e["branch"]), _cell(_object_cell(e)),  # noqa: UP031
-            _cell(state_cell(e, now)), _cell("«{}»".format(clip(e.get("word"), 80))), hhmm(e.get("added")),
-            ru(entry_stage(e))))
+        L.append(
+            "| %d | %s | %s | %s | %s | %s | %s | %s |"  # noqa: UP031
+            % (
+                i,
+                _cell("#%d %s" % (e["pr"], clip(e.get("title"), 60))),  # noqa: UP031
+                _cell(e["branch"]),
+                _cell(_object_cell(e)),
+                _cell(state_cell(e, now)),
+                _cell("«{}»".format(clip(e.get("word"), 80))),
+                hhmm(e.get("added")),
+                ru(entry_stage(e)),
+            )
+        )
     if not items:
         L.append(i18n.t("merge.md_empty"))
     L.append("")
@@ -2209,8 +2961,14 @@ def md(state, cfg, all_=False, now=None, heading=True):
     tried = [e for e in items if e["status"] == "waiting" and e.get("trial")]
     if tried:
         m = cfg.get("merge") or {}
-        L.append(i18n.t("merge.md_trials", prefix=m.get("trial_prefix") or "mq/", depth=m.get("presync_depth"),
-                        trials="; ".join(trial_brief(e["pr"], e["trial"]) for e in tried)))
+        L.append(
+            i18n.t(
+                "merge.md_trials",
+                prefix=m.get("trial_prefix") or "mq/",
+                depth=m.get("presync_depth"),
+                trials="; ".join(trial_brief(e["pr"], e["trial"]) for e in tried),
+            )
+        )
     last = last_merged(q)
     if last:
         L.append(i18n.t("merge.md_last", last=merged_brief(last)))
@@ -2241,10 +2999,12 @@ def merged_brief(e):
 def stack_part(state, cfg, now=None, places=None):
     from . import priority as pri
     from .stack import Stack, _cell, lock_cell, place_cell
+
     q = MergeQueue(state)
     items = q.entries(open_only=True)
     stk = Stack(state, cfg)
     from .stages import entry_stage, ru
+
     blank = " | |" if places is not None else ""
     L = [i18n.t("merge.stack_heading", n=len(items)) + blank]
     if not items:
@@ -2253,40 +3013,73 @@ def stack_part(state, cfg, now=None, places=None):
         o = stk.get(e["st"]) if e.get("st") and stk._dep_open(e["st"]) else None
         what = "{} {}".format(e["st"], o["title"]) if o else "PR #%d %s" % (e["pr"], e.get("title") or "")  # noqa: UP031
         pl = (places or {}).get(e.get("st")) or {}
-        cells = " {} | {} |".format(_cell(place_cell(pl, "train")), _cell(place_cell(pl, "track"))) if places is not None else ""
-        L.append("| %s | %s | %s | %s | %s / PR #%d | %s | — | — | — | %s | %s |%s" % (  # noqa: UP031
-            i18n.t("merge.stack_row", n=i), i18n.t("merge.stack_kind"), _cell(clip(what, 160)),
-            pri.cell(o) if o else "—", _cell(e["branch"]), e["pr"], _cell(state_cell(e, now)),
-            _cell(lock_cell(o.get("lock")) if o else "—"), ru(entry_stage(e)), cells))
+        cells = (
+            " {} | {} |".format(_cell(place_cell(pl, "train")), _cell(place_cell(pl, "track")))
+            if places is not None
+            else ""
+        )
+        L.append(
+            "| %s | %s | %s | %s | %s / PR #%d | %s | — | — | — | %s | %s |%s"  # noqa: UP031
+            % (
+                i18n.t("merge.stack_row", n=i),
+                i18n.t("merge.stack_kind"),
+                _cell(clip(what, 160)),
+                pri.cell(o) if o else "—",
+                _cell(e["branch"]),
+                e["pr"],
+                _cell(state_cell(e, now)),
+                _cell(lock_cell(o.get("lock")) if o else "—"),
+                ru(entry_stage(e)),
+                cells,
+            )
+        )
     return L
 
 
 def legend(state):
     q = MergeQueue(state)
     last = last_merged(q)
-    return i18n.t("merge.legend", means=means(), runner=runner_cell(state),
-                  last=i18n.t("merge.legend_last", last=merged_brief(last)) if last else "")
+    return i18n.t(
+        "merge.legend",
+        means=means(),
+        runner=runner_cell(state),
+        last=i18n.t("merge.legend_last", last=merged_brief(last)) if last else "",
+    )
 
 
 def to_json(state, all_=False):
     from .stages import entry_stage
+
     q = MergeQueue(state)
     r = runner_status(state, q)
     last = last_merged(q)
-    return {"entries": [dict(e, stage=entry_stage(e), status_ru=STATUS_RU.get(e["status"], e["status"]))
-                        for e in q.entries(open_only=not all_)], "runner_pid": r["pid"],
-            "runner_idle": None if r["pid"] or not r["open"] else {
-                "open": r["open"], "stopped": r["stopped"]["pr"] if r["stopped"] else None},
-            "last_merged": {"id": last["id"], "pr": last["pr"], "sha": (last.get("merged") or {}).get("sha"),
-                            "ts": (last.get("merged") or {}).get("ts"), "branch": last.get("branch"),
-                            "wt": last.get("wt")} if last else None}
+    return {
+        "entries": [
+            dict(e, stage=entry_stage(e), status_ru=STATUS_RU.get(e["status"], e["status"]))
+            for e in q.entries(open_only=not all_)
+        ],
+        "runner_pid": r["pid"],
+        "runner_idle": None
+        if r["pid"] or not r["open"]
+        else {"open": r["open"], "stopped": r["stopped"]["pr"] if r["stopped"] else None},
+        "last_merged": {
+            "id": last["id"],
+            "pr": last["pr"],
+            "sha": (last.get("merged") or {}).get("sha"),
+            "ts": (last.get("merged") or {}).get("ts"),
+            "branch": last.get("branch"),
+            "wt": last.get("wt"),
+        }
+        if last
+        else None,
+    }
 
 
 def report_json(state, last=1):
     """`merge report --json` and the web view's merge tab: the entries of the last `last` merges (`merges`, the ones
     `merge report` shows) as the queue keeps them, with their deploy, smoke and the plugins' after_merge lines.
     """
-    return merges(MergeQueue(state))[-max(1, int(last)):]
+    return merges(MergeQueue(state))[-max(1, int(last)) :]
 
 
 def counts(state):
@@ -2304,31 +3097,48 @@ def overview_row(state):
     head = ["#%d %s" % (e["pr"], state_cell(e).split(" — ")[0]) for e in q.entries(open_only=True)[:3]]  # noqa: UP031
     if not head:
         last = last_merged(q)
-        head = [i18n.t("merge.overview_last", pr=last["pr"], sha=((last.get("merged") or {}).get("sha") or "?")[:7])] \
-            if last else []
+        head = (
+            [i18n.t("merge.overview_last", pr=last["pr"], sha=((last.get("merged") or {}).get("sha") or "?")[:7])]
+            if last
+            else []
+        )
     return (i18n.t("merge.overview_title"), count, head, "merge", None)
 
 
 def report_entry(e):
     """The owner's lines for one merged PR."""
     m = e.get("merged") or {}
-    L = [i18n.t("merge.report_entry", pr=e["pr"], title=clip(e.get("title"), 80), sha=(m.get("sha") or "?")[:7],
-                at=hhmm(m.get("ts")), word=clip(e.get("word"), 80))]
+    L = [
+        i18n.t(
+            "merge.report_entry",
+            pr=e["pr"],
+            title=clip(e.get("title"), 80),
+            sha=(m.get("sha") or "?")[:7],
+            at=hhmm(m.get("ts")),
+            word=clip(e.get("word"), 80),
+        )
+    ]
     d = e.get("deploy") or {}
     if d:
-        L.append(i18n.t("merge.report_deploy", conclusion=d.get("conclusion"), job=d.get("deploy_job"),
-                        site=d.get("site")))
+        L.append(
+            i18n.t("merge.report_deploy", conclusion=d.get("conclusion"), job=d.get("deploy_job"), site=d.get("site"))
+        )
     ls = e.get("smoke") or {}
     if ls:
-        L.append("  smoke: %s" % (SMOKE_RU[{True: "ok", False: "bad", None: "skipped"}[ls.get("ok")]] + " — " +
-                                  (ls.get("summary") or "")))
+        L.append(
+            "  smoke: %s"
+            % (SMOKE_RU[{True: "ok", False: "bad", None: "skipped"}[ls.get("ok")]] + " — " + (ls.get("summary") or ""))
+        )
     so = [x for x in e.get("log") or [] if " stack done " in x or RE_LOG_MERGED.search(x) or "no stack" in x]
     if so:
         L.append(i18n.t("merge.report_stack", line=so[-1].split(" ", 1)[1]))
     w = e.get("wt")
     if w:
-        L.append(i18n.t("merge.report_wt_removed", size=size_text(w.get("freed"))) if w.get("removed") else
-                 i18n.t("merge.report_wt_kept", reason=clip(w.get("reason"), 200)))
+        L.append(
+            i18n.t("merge.report_wt_removed", size=size_text(w.get("freed")))
+            if w.get("removed")
+            else i18n.t("merge.report_wt_kept", reason=clip(w.get("reason"), 200))
+        )
     for key in FALLBACKS:  # CI's first, then the deploy's: as they happen
         if e.get(key + "_runner"):
             L.append("  " + runner_line(e[key + "_runner"], key))
@@ -2344,7 +3154,7 @@ def report(state, cfg, last=1, now=None):
     q = MergeQueue(state)
     done = merges(q)
     L = [i18n.t("merge.report_heading", at=stamp()[:16].replace("T", " ")), ""]
-    for e in done[-max(1, int(last)):]:
+    for e in done[-max(1, int(last)) :]:
         L += report_entry(e)
         if e["status"] != "merged":
             L.append("  " + i18n.t("merge.now", state=state_cell(e, now)))
@@ -2352,8 +3162,14 @@ def report(state, cfg, last=1, now=None):
         L.append(i18n.t("merge.report_none"))
     c, _ = counts(state)
     L.append("")
-    L.append(i18n.t("merge.report_queue", counts=", ".join("%s %d" % (STATUS_RU[k], c[k]) for k in SHOWN if k in c) or  # noqa: UP031
-                    i18n.t("merge.report_queue_empty"), runner=runner_cell(state)))
+    L.append(
+        i18n.t(
+            "merge.report_queue",
+            counts=", ".join("%s %d" % (STATUS_RU[k], c[k]) for k in SHOWN if k in c)  # noqa: UP031
+            or i18n.t("merge.report_queue_empty"),
+            runner=runner_cell(state),
+        )
+    )
     for e in q.entries(open_only=True):
         if e["status"] in ("stopped", "github"):
             L.append("- #%d %s" % (e["pr"], state_cell(e, now)))  # noqa: UP031
