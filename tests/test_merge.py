@@ -26,7 +26,7 @@ EXAMPLE_PLUGIN = os.path.join(os.path.dirname(HERE), "examples", "plugins", "exa
 
 
 def sh(cwd, *argv, check=True):
-    p = subprocess.run(list(argv), cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    p = subprocess.run(list(argv), cwd=cwd, capture_output=True, text=True)
     if check and p.returncode != 0:
         raise AssertionError(f"{argv} failed: {p.stdout} {p.stderr}")
     return p.stdout.strip()

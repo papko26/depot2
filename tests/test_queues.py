@@ -146,7 +146,7 @@ class TodoTest(QBase):
         write(d, "package.json", '{"name": "app", "version": "2.4.0"}\n')
 
         def git(*a):
-            subprocess.run(["git", "-C", d] + list(a), check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            subprocess.run(["git", "-C", d] + list(a), check=True, capture_output=True)
         git("init", "-q")
         git("add", "package.json")
         git("-c", "user.name=t", "-c", "user.email=t@localhost", "commit", "-q", "-m", "x")

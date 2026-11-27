@@ -165,8 +165,7 @@ def gh_json(args):
     """A read-only gh call. The tool never writes to GitHub."""
     if args[0] not in ("pr",) or args[1] not in ("list", "view", "diff"):
         raise ValueError("gh: read-only pr list/view only")
-    p = subprocess.run(["gh"] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                       text=True, timeout=120)
+    p = subprocess.run(["gh"] + args, capture_output=True, text=True, timeout=120)
     if p.returncode != 0:
         raise RuntimeError("gh {} failed: {}".format(" ".join(args[:2]), p.stderr.strip()[:300]))
     return json.loads(p.stdout or "[]")

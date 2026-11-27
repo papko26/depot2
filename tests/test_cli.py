@@ -51,7 +51,7 @@ class CliTest(unittest.TestCase):
                             "--set", "deep_repo.clone=", "--set", "read_dirs=[]",
                             "--set", "brainstorm.topics_dir=" + os.path.join(self.dir, "topics"),
                             "--set", "orders.results_dir=" + os.path.join(self.dir, "orders")] + list(args),
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                           capture_output=True, text=True)
         if ok and p.returncode != 0:
             raise AssertionError("depot2 %s failed (%d): %s %s" % (args, p.returncode, p.stdout, p.stderr))  # noqa: UP031
         return p
@@ -225,8 +225,8 @@ class CliTest(unittest.TestCase):
         with open(os.path.join(self.state, "config.json"), "w") as f:
             json.dump({"deep_levels": {"1": {"price": 1, "max_tool_turns": 11}},
                        "deep_dirs": [self.dir], "free": {"max_tool_turns_r1": 10}}, f)
-        p = subprocess.run([sys.executable, TEAM, "--state", self.state, "config"], stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE, text=True)
+        p = subprocess.run([sys.executable, TEAM, "--state", self.state, "config"], capture_output=True,
+                           text=True)
         self.assertEqual(p.returncode, 0, p.stderr)
         cfg = json.loads(p.stdout)
         self.assertNotIn("deep_levels", cfg)
@@ -239,7 +239,7 @@ class CliTest(unittest.TestCase):
         p = subprocess.run([sys.executable, TEAM, "--state", self.state, "--set", "deep_repo.clone=",
                             "--set", "bundle.decisions_glob=" + os.path.join(self.dir, "none-*.md"),
                             "round", "--kind", "ballot", "--input", os.path.join(self.dir, "q.md"), "--dry-run"],
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                           capture_output=True, text=True)
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertIn(f"  --add-dir <a snapshot of origin/main>\n  --add-dir {self.dir}\n", p.stdout)
         from depot2 import config

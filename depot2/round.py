@@ -133,8 +133,8 @@ def repo_snapshot(cfg, out=print, commit_wanted=None):
         return None, None
 
     def git(*args, **kw):
-        return subprocess.run(["git", "-C", clone] + list(args), stdout=subprocess.PIPE,
-                              stderr=subprocess.PIPE, timeout=120, **kw)
+        return subprocess.run(["git", "-C", clone] + list(args), capture_output=True,
+                              timeout=120, **kw)
 
     if r.get("fetch"):
         f = git("fetch", "-q", "origin", commit_wanted or "main")

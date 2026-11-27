@@ -108,8 +108,8 @@ class OldDollarKeysTest(unittest.TestCase):
     def test_the_cli_reads_them_and_says_so(self):
         with open(os.path.join(self.t.dir, "config.json"), "w") as f:
             json.dump({"round": {"budget_usd": 6}, "free": {"budget_usd_r1": 1.0}}, f)
-        p = subprocess.run([sys.executable, TEAM, "--state", self.t.dir, "config"], stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE, text=True)
+        p = subprocess.run([sys.executable, TEAM, "--state", self.t.dir, "config"], capture_output=True,
+                           text=True)
         self.assertEqual(p.returncode, 0, p.stderr)
         cfg = json.loads(p.stdout)
         self.assertEqual((cfg["round"]["budget_mtok"], cfg["free"]["budget_mtok_r1"]), (2.4, 0.4))

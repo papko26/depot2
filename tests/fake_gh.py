@@ -96,8 +96,7 @@ def opt(argv, name):
 
 
 def git(d, *args, cwd=None):
-    return subprocess.run([d["git"]] + list(args), cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                          text=True)
+    return subprocess.run([d["git"]] + list(args), cwd=cwd, capture_output=True, text=True)
 
 
 def head_of(d, branch):

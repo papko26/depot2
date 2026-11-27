@@ -616,8 +616,8 @@ def repo_version(cfg):
     pkg = read_json(os.path.join(clone, "package.json"))
     if pkg:
         ver = pkg.get("version")
-    r = subprocess.run(["git", "-C", clone, "rev-parse", "--short=7", "origin/main"], stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE, text=True, timeout=30)
+    r = subprocess.run(["git", "-C", clone, "rev-parse", "--short=7", "origin/main"], capture_output=True,
+                       text=True, timeout=30)
     commit = r.stdout.strip() if r.returncode == 0 else None
     parts = [x for x in (ver, ("main " + commit) if commit else None) if x]
     return ", ".join(parts) or None

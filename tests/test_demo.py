@@ -27,8 +27,7 @@ class DemoTest(unittest.TestCase):
     def setUpClass(cls):
         cls.tmp = tempfile.mkdtemp(prefix="depot2-demo-test-")
         cls.state = os.path.join(cls.tmp, "demo")
-        p = subprocess.run(["sh", SCRIPT, cls.state], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                           text=True)
+        p = subprocess.run(["sh", SCRIPT, cls.state], capture_output=True, text=True)
         if p.returncode != 0:
             raise AssertionError(f"make-demo.sh failed: {p.stdout} {p.stderr}")
 
@@ -42,8 +41,8 @@ class DemoTest(unittest.TestCase):
             env["DEPOT2_LANG"] = lang
         else:
             env.pop("DEPOT2_LANG", None)
-        p = subprocess.run([sys.executable, MAIN, "--state", self.state] + list(args), stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE, text=True, env=env)
+        p = subprocess.run([sys.executable, MAIN, "--state", self.state] + list(args), capture_output=True,
+                           text=True, env=env)
         self.assertEqual(p.returncode, 0, p.stderr)
         return p.stdout
 

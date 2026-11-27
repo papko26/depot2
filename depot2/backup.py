@@ -243,7 +243,7 @@ class Runner:
         try:
             p = subprocess.run([self.b["pass_bin"], "show", entry], env=env, text=True,
                                stdin=subprocess.DEVNULL if self.auto else None,
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60 if self.auto else 300)
+                               capture_output=True, timeout=60 if self.auto else 300)
         except FileNotFoundError:
             raise BackupError(t("backup.no_pass_bin"), "pass")
         except subprocess.TimeoutExpired:
@@ -261,7 +261,7 @@ class Runner:
     def obscure(self, key):
         try:
             p = subprocess.run([self.b["rclone_bin"], "obscure", "-"], input=key + "\n", text=True,
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
+                               capture_output=True, timeout=60)
         except FileNotFoundError:
             raise BackupError(t("backup.no_rclone"), "rclone")
         out = self.secrets.add((p.stdout or "").strip())
@@ -292,7 +292,7 @@ class Runner:
         self.secrets.check_argv(argv)
         try:
             return subprocess.run(argv, env=self.env, stdin=subprocess.DEVNULL, text=True,
-                                  stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=int(self.b["timeout_s"]))
+                                  capture_output=True, timeout=int(self.b["timeout_s"]))
         except FileNotFoundError:
             raise BackupError(t("backup.no_rclone"), step)
         except subprocess.TimeoutExpired:
@@ -337,8 +337,7 @@ class Runner:
                 # Not niced: it is short (~0.4 s for 100 MB) and holds the lock.
                 p = subprocess.run(["tar", "-C", parent, "-cf", tar_path, f"--exclude={base}/.lock",
                                     f"--exclude={base}/{DIR}", "--exclude=*.tmp-*", base],
-                                   stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   text=True)
+                                   stdin=subprocess.DEVNULL, capture_output=True, text=True)
                 held = time.time() - held
         except RuntimeError:
             w = int(self.b["lock_wait_s"])
@@ -348,7 +347,7 @@ class Runner:
             raise BackupError(t("backup.tar", code=p.returncode), "snapshot", p.stderr.strip()[-500:])
         self.say(f"snapshot: {os.path.basename(tar_path)}, {os.path.getsize(tar_path) / 1e6:.1f} MB, the state lock held {held:.1f} s (waited {time.time() - t0 - held:.1f} s)")
         p = subprocess.run(_nice(["gzip", "-6", "-n", tar_path]), stdin=subprocess.DEVNULL,
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                           capture_output=True, text=True)
         local = os.path.join(tmp, name)
         if p.returncode != 0 or not os.path.isfile(local):
             raise BackupError(t("backup.gzip", code=p.returncode), "snapshot", p.stderr.strip()[-500:])
@@ -490,8 +489,8 @@ class Runner:
             sha = h.hexdigest()
             if st.get("archive") == name and st.get("sha256") and st["sha256"] != sha:
                 raise BackupError(t("backup.v_sha"), "verify")
-            p = subprocess.run(_nice(["tar", "-tzf", local]), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, text=True)
+            p = subprocess.run(_nice(["tar", "-tzf", local]), stdin=subprocess.DEVNULL, capture_output=True,
+                               text=True)
             if p.returncode != 0:
                 raise BackupError(t("backup.v_tar_t", code=p.returncode), "verify", p.stderr.strip()[-500:])
             entries = [ln for ln in p.stdout.split("\n") if ln]
@@ -502,19 +501,18 @@ class Runner:
             x = os.path.join(tmp, "x")
             os.makedirs(x)
             p = subprocess.run(_nice(["tar", "-xzf", local, "-C", x]), stdin=subprocess.DEVNULL,
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                               capture_output=True, text=True)
             if p.returncode != 0:
                 raise BackupError(t("backup.v_tar_x", code=p.returncode), "verify", p.stderr.strip()[-500:])
             repo = os.path.join(x, top)
             p = subprocess.run(_nice(["git", "-C", repo, "fsck", "--full", "--no-progress"]),
-                               stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               text=True)
+                               stdin=subprocess.DEVNULL, capture_output=True, text=True)
             if p.returncode != 0:
                 raise BackupError(t("backup.v_fsck", code=p.returncode), "verify", (p.stdout + p.stderr).strip()[-800:])
-            commits = subprocess.run(["git", "-C", repo, "rev-list", "--count", "HEAD"], stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE, text=True).stdout.strip()
-            head = subprocess.run(["git", "-C", repo, "log", "-1", "--format=%cI %s"], stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE, text=True).stdout.strip()
+            commits = subprocess.run(["git", "-C", repo, "rev-list", "--count", "HEAD"], capture_output=True,
+                                     text=True).stdout.strip()
+            head = subprocess.run(["git", "-C", repo, "log", "-1", "--format=%cI %s"], capture_output=True,
+                                  text=True).stdout.strip()
             self.say("verified: {}, sha256 {}{}".format(name, sha, " (= the upload's)" if st.get("archive") == name else ""))
             self.say("  %d entries under %s/; git fsck --full ok; %s commits; HEAD %s" % (len(entries), top, commits,  # noqa: UP031
                                                                                          head))

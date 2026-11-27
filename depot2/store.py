@@ -188,8 +188,7 @@ class State:
 
     def git(self, *args, check=True):
         return subprocess.run(["git", "-C", self.root] + list(args), check=check,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                              text=True)
+                              capture_output=True, text=True)
 
     def init_git(self):
         os.makedirs(self.root, exist_ok=True)

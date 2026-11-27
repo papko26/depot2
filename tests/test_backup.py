@@ -80,8 +80,7 @@ class BackupBase(unittest.TestCase):
         argv = [sys.executable, TEAM, "--state", self.root]
         for s in self.sets:
             argv += ["--set", s]
-        p = subprocess.run(argv + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                           text=True, env=e, timeout=60)
+        p = subprocess.run(argv + list(args), capture_output=True, text=True, env=e, timeout=60)
         self.outputs.append(p.stdout + p.stderr)
         if ok and p.returncode != 0:
             raise AssertionError("depot2 %s failed (%d): %s %s" % (args, p.returncode, p.stdout, p.stderr))  # noqa: UP031

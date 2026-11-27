@@ -109,7 +109,7 @@ def scan_argv(state, g, key="scan_args", d=""):
 def _git(state, *args):
     try:
         return subprocess.run(["git", "-C", state.root] + list(args), stdin=subprocess.DEVNULL,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                              capture_output=True, text=True)
     except FileNotFoundError:
         raise PushError(t("push.no_git"), "git")
 
@@ -306,7 +306,7 @@ def export_range(root, base, head, dest, spec=None):
     spec: the revisions instead (the merge queue's trial: [head, "--not", its parents]). → (blobs, bytes)."""
     spec = list(spec) if spec else [base + ".." + head] if base else [head]
     p = subprocess.run(["git", "-C", root, "rev-list", "--objects"] + spec, stdin=subprocess.DEVNULL,
-                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                       capture_output=True)
     if p.returncode != 0:
         raise PushError(t("push.rev_list", code=p.returncode), "scan", os.fsdecode(p.stderr).strip()[-300:])
     paths = {}
@@ -345,7 +345,7 @@ def export_range(root, base, head, dest, spec=None):
             cat.wait()
     os.remove(lst)
     p = subprocess.run(["git", "-C", root, "log", "--format=commit %H%n%B"] + spec, stdin=subprocess.DEVNULL,
-                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                       capture_output=True)
     if p.returncode != 0:
         raise PushError(t("push.git_log", code=p.returncode), "scan")
     with open(os.path.join(dest, "commits.txt"), "wb") as f:

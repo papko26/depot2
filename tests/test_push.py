@@ -26,7 +26,7 @@ FORCE = ("--force", "-f", "--force-with-lease", "--mirror", "--delete", "-d", "-
 
 def git(cwd, *args, check=True):
     return subprocess.run(["git", "-C", cwd, "-c", "user.name=t", "-c", "user.email=t@localhost"] + list(args),
-                          check=check, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+                          check=check, capture_output=True, text=True)
 
 
 class PushBase(unittest.TestCase):
@@ -62,8 +62,7 @@ class PushBase(unittest.TestCase):
         argv = [sys.executable, TEAM, "--state", self.root]
         for s in self.sets:
             argv += ["--set", s]
-        p = subprocess.run(argv + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                           text=True, env=e, timeout=120)
+        p = subprocess.run(argv + list(args), capture_output=True, text=True, env=e, timeout=120)
         self.outputs.append(p.stdout + p.stderr)
         if ok and p.returncode != 0:
             raise AssertionError("depot2 %s failed (%d): %s %s" % (args, p.returncode, p.stdout, p.stderr))  # noqa: UP031
