@@ -247,7 +247,7 @@ def variable_set(d, argv):
 
 
 def api(d, argv):
-    path = [a for a in argv[1:] if not a.startswith("--")][0]
+    path = next(a for a in argv[1:] if not a.startswith("--"))
     if path.split("?")[0].endswith("/actions/runners"):
         return out([{"total_count": len(d.get("runners", [])), "runners": d.get("runners", [])}])
     if "/actions/runs/" in path and "/jobs" in path:

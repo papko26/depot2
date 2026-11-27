@@ -265,7 +265,7 @@ class BoardTest(GateBase):
         self.assertNotIn("st-0001", [i["ref"] for c in json.loads(self.team("board", "--json")[1])["columns"]
                                      for i in c["items"]])
         full = json.loads(self.team("board", "--json", "--all")[1])
-        arrived = [c for c in full["columns"] if c["stage"] == "arrived"][0]
+        arrived = next(c for c in full["columns"] if c["stage"] == "arrived")
         self.assertEqual([(i["ref"], i["kind"]) for i in arrived["items"]], [("st-0001", "left")])
         self.assertIn("### Прибыл — 1", self.team("board", "--all")[1])
 
@@ -421,7 +421,7 @@ class DocsTest(GateBase):
         self.assertIn("Документация нужна (эскиз: «Документация: нужна»): этап пройден.",
                       self.team("car", "show", "tr-0001:0")[1])
         data = json.loads(self.team("board", "--json")[1])
-        it = [i for c in data["columns"] for i in c["items"] if i["ref"] == "tr-0001:0"][0]
+        it = next(i for c in data["columns"] for i in c["items"] if i["ref"] == "tr-0001:0")
         self.assertEqual((it["stage"], it["docs"]["state"], it["gate"]), ("acceptance", "passed", None))
 
     def test_the_flag_wins_and_force_passes(self):
@@ -472,14 +472,14 @@ class DocsTest(GateBase):
         self.assertIn("Документация — необязательный этап после сборки: держит слот сборки", md)
         data = json.loads(self.team("board", "--json")[1])
         self.assertEqual([c["stage"] for c in data["columns"]][3:6], ["build", "docs", "acceptance"])
-        col = [c for c in data["columns"] if c["stage"] == "docs"][0]
+        col = next(c for c in data["columns"] if c["stage"] == "docs")
         self.assertEqual((col["ru"], col["means"], col["count"], col["limit"]),
                          ("документация", "доки к изменению: README, справка, карты модулей", 1, None))
         it = col["items"][0]
         self.assertEqual((it["ref"], it["where"], it["docs"]["done"], it["gate"]["name"], it["moves"]),
                          ("tr-0001:0", "slot", True, "DoD", ["acceptance", "queued", "build", "scrapped"]))
         self.assertNotIn("документация", "; ".join(it["gate"]["unmet"]))
-        build = [c for c in data["columns"] if c["stage"] == "build"][0]
+        build = next(c for c in data["columns"] if c["stage"] == "build")
         self.assertEqual([(i["ref"], i["docs"]) for i in build["items"]], [("tr-0001:1", None)])
         self.assertEqual(data["summary"]["docs"], 1)
         self.assertEqual([c["stage"] for c in json.loads(self.team("board", "--view", "stack", "--json")[1])["columns"]],
@@ -544,7 +544,7 @@ class MergePlaceTest(MergeBase):
         self.assertIn("выкатка — со следующим мерджем (main красный: нестабильный тест)",
                       self.team("merge", "--all")[1])
         board = json.loads(self.team("board", "--json")[1])
-        rolling = [c for c in board["columns"] if c["stage"] == "rolling"][0]
+        rolling = next(c for c in board["columns"] if c["stage"] == "rolling")
         self.assertEqual([i["ref"] for i in rolling["items"]], ["st-0001"])
         rc, out, err = self.team("merge", "run")
         self.assertEqual(rc, 0, out + err)

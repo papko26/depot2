@@ -423,14 +423,14 @@ class ViewsTest(DepotBase):
         self.assertEqual(json.loads(self.ok("train", "search", "--json"))["cars"][0]["principles"]["score"], 0)
         b = json.loads(self.ok("board", "--json"))
         self.assertEqual(b["slots"]["cells"][0]["principles"]["cell"], cell)
-        item = [i for c in b["columns"] for i in c["items"] if i["ref"] == "tr-0001:0"][0]
+        item = next(i for c in b["columns"] for i in c["items"] if i["ref"] == "tr-0001:0")
         self.assertEqual((item["principles"]["passed"], item["gate"]["unmet"]),
                          (True, ["CI: не сдано", "Heavy: не сдано", "скан: не сдано", "шоты: не сдано"]))
         self.ok("stack", "add", "--title", "второй", "--brief", self.brief)
         self.ok("stack", "start", "st-0002")
         self.assertIn("- С2 st-0002: не проверен", self.ok("stack", "--md"))
         b = json.loads(self.ok("board", "--json"))
-        item = [i for c in b["columns"] for i in c["items"] if i["ref"] == "st-0002"][0]
+        item = next(i for c in b["columns"] for i in c["items"] if i["ref"] == "st-0002")
         self.assertIn("принципы, ворота: нет строки — 5, 26", item["gate"]["unmet"])
         self.assertIn("принципы, ворота: нет строки — 5, 26", self.ok("board"))
         # the web view knows the fields and labels them (its labels: the catalog's messages it is served with)

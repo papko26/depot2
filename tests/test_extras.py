@@ -83,7 +83,7 @@ class Base(unittest.TestCase):
         return r, runner
 
     def rows(self, rep, heading="## Ставки"):
-        part = [x for x in rep[rep.index(heading):].split("\n\n") if x.startswith("| Персонаж")][0]
+        part = next(x for x in rep[rep.index(heading):].split("\n\n") if x.startswith("| Персонаж"))
         return {r.split(" | ")[0].strip("| "): [c.strip() for c in r.strip("|").split("|")]
                 for r in part.splitlines()[2:]}
 
@@ -220,7 +220,7 @@ class BrainstormTest(Base):
         r, runner = self.unanimous(n=2, vote=False)  # refused by code: nothing to vote on
         self.assertIn("**Поиск и фильтры** (предлагает Счетовод) — не прошло", r["report"])
         self.assertIn("- Почему нет: предложение отклонено: вопросов 2, нужно 3–5", r["report"])
-        self.assertNotIn("brainstorm_votes", [c[3] for c in runner.calls if c[1] == "r2"][0].schema["properties"])
+        self.assertNotIn("brainstorm_votes", next(c[3] for c in runner.calls if c[1] == "r2").schema["properties"])
 
     def test_the_brainstorm_round_runs_on_its_topic(self):
         self.unanimous()

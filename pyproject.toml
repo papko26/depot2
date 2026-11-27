@@ -33,7 +33,7 @@ dev = [
 ]
 
 [tool.ruff.lint]
-select = ["B", "C4", "E9", "F", "FA", "G", "I", "RET", "RUF021", "RUF059", "RUF100", "TC", "UP"]
+select = ["B", "C4", "E9", "F", "FA", "G", "I", "RET", "RUF015", "RUF021", "RUF059", "RUF100", "TC", "UP"]
 ignore = [
     "B904",   # raise-without-from-inside-except
 ]

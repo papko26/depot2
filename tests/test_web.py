@@ -343,7 +343,7 @@ class WebTest(WebBase):
         self.assertEqual((car["ref"], car["car"]), ("tr-0001:1", "tr-0001:5"))
         self.assertEqual(car["records"]["car"]["moved_from"][0]["from"], "tr-0001:1")
         _, trains = self.web.json("/api/trains")
-        self.assertEqual([tn["cars"] for tn in trains["trains"] if tn["name"] == "search"][0][1]["ref"], "tr-0001:5")
+        self.assertEqual(next(tn["cars"] for tn in trains["trains"] if tn["name"] == "search")[1]["ref"], "tr-0001:5")
 
     def test_the_agents_are_their_json_command_and_never_booked_here(self):
         fx = os.path.join(HERE, "transcripts", "-work-depot", "sess-0001", "subagents")

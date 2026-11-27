@@ -423,7 +423,7 @@ class JsonTest(AgentsBase):
                          {"id": "ag-0001", "role": "build", "state": "silent", "turns": 2, "spent_mtok": 0.0265})
         self.assertEqual(o["agent"]["last_action"]["arg"], "/work/app/main.py")
         rc, out, err = self.team("stack", "--md")
-        row = [x for x in out.splitlines() if x.startswith("| С1 | слот | st-0001 ")][0]
+        row = next(x for x in out.splitlines() if x.startswith("| С1 | слот | st-0001 "))
         self.assertRegex(row, r"\| агент ag-0001 \(сборка\): молчит [^|]*; последнее — Edit: /work/app/main\.py "
                               r"\(\d\d:\d\d\) \|")
         # done: no live agent on the object
@@ -431,5 +431,5 @@ class JsonTest(AgentsBase):
         o = json.loads(self.team("stack", "--json")[1])["in_slots"][0]
         self.assertIsNone(o["agent"])
         self.assertIsNone(read_json(self.t.state.path("stack.json"))["objects"][0].get("agent"))  # never stored
-        row = [x for x in self.team("stack", "--md")[1].splitlines() if x.startswith("| С1 | слот | st-0001 ")][0]
+        row = next(x for x in self.team("stack", "--md")[1].splitlines() if x.startswith("| С1 | слот | st-0001 "))
         self.assertNotIn("ag-0001", row)  # no live agent: the status as stored

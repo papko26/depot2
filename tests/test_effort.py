@@ -220,8 +220,8 @@ class RoundInMtokTest(unittest.TestCase):
         runner = FakeRunner(self.t.state, {})
         lines = []
         r = run_round(self.t.state, self.t.cfg, "ballot", self.input, runner=runner, out=lines.append)
-        r1 = [c[3] for c in runner.calls if c[1] == "r1"][0]
-        r2 = [c[3] for c in runner.calls if c[1] == "r2"][0]
+        r1 = next(c[3] for c in runner.calls if c[1] == "r1")
+        r2 = next(c[3] for c in runner.calls if c[1] == "r2")
         self.assertEqual((r1.budget_mtok, r1.budget_usd), (0.16, 0.4))
         self.assertEqual((r2.budget_mtok, r2.budget_usd), (0.2, 0.5))
         costs = json.loads(slurp(os.path.join(r["dir"], "costs.json")))

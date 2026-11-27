@@ -61,7 +61,7 @@ class StackTest(Base):
         self.assertEqual(s2.add("ещё")["id"], "st-0005")  # ids are never reused
         events = [h["event"] for h in s2.history()]
         self.assertEqual(events.count("done"), 1)
-        self.assertEqual([h for h in s2.history() if h["event"] == "done"][0]["obj"]["pr"], 180)
+        self.assertEqual(next(h for h in s2.history() if h["event"] == "done")["obj"]["pr"], 180)
 
     def test_a_locked_object_does_not_start_or_leave(self):
         s = self.stack()
@@ -257,7 +257,7 @@ class LockPassTest(Base):
         self.assertEqual(r3[0].max_tool_turns, 2)
         self.assertEqual(r3[0].budget_usd, 1.50)  # lock.budget_mtok 0.6 × usage.usd_per_mtok 2.5
         self.assertEqual(r3[0].add_dirs, [self.snaps[0]])
-        self.assertIn("У тебя 15 ток.", [c.user for c in r3 if "keeper" in c.call_id][0])
+        self.assertIn("У тебя 15 ток.", next(c.user for c in r3 if "keeper" in c.call_id))
         system = slurp(r3[0].system_path)
         self.assertIn("## Стек: слоты агентов и очередь задач", system)
         self.assertIn("st-0001 Импорт 3", system)

@@ -704,7 +704,7 @@ class CdRunnerTest(MergeBase):
         line = ("  CD_RUNNER: primary не в сети, «Deploy» ждал 20+ мин → выкатка на spare "
                 f"(прогон {rid}: отмена, перезапуск упавших); CD_RUNNER снова {PRIMARY} (")
         rep = self.team("merge", "report")[1]
-        self.assertEqual([ln for ln in rep.splitlines() if "CD_RUNNER" in ln][0][:len(line)], line)
+        self.assertEqual(next(ln for ln in rep.splitlines() if "CD_RUNNER" in ln)[:len(line)], line)
         self.assertLess(rep.index("CD_RUNNER:"), rep.index("после мерджа"))
         self.assertIn(line.strip(), out)  # the ride's own report too
 
@@ -812,7 +812,7 @@ class CiRunnerTest(MergeBase):
         line = ("  CI_RUNNER: primary не в сети, «Test and build» ждал 20+ мин → CI на spare "
                 f"(прогон {rid}: отмена, перезапуск упавших); CI_RUNNER снова {PRIMARY} (")
         rep = self.team("merge", "report")[1]
-        self.assertEqual([ln for ln in rep.splitlines() if "CI_RUNNER" in ln][0][:len(line)], line)
+        self.assertEqual(next(ln for ln in rep.splitlines() if "CI_RUNNER" in ln)[:len(line)], line)
 
     def test_mains_test_job_stuck_goes_to_spare_in_the_deploy_step(self):
         self.runners("offline")

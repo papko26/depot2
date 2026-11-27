@@ -350,7 +350,7 @@ class StakeReportTest(unittest.TestCase):
         }, turns={("painter", "r1"): 4, ("builder", "r1"): 3, ("counter", "r1"): 1, ("chronicler", "r1"): 1})
 
     def rows(self, rep, heading):
-        part = [x for x in rep[rep.index(heading):].split("\n\n") if x.startswith("| Персонаж")][0]
+        part = next(x for x in rep[rep.index(heading):].split("\n\n") if x.startswith("| Персонаж"))
         return {r.split(" | ")[0].strip("| "): [c.strip() for c in r.strip("|").split("|")]
                 for r in part.splitlines()[2:]}
 
@@ -406,7 +406,7 @@ class StakeReportTest(unittest.TestCase):
         r = self.mixed()
         led = Ledger(self.t.state)
         txs = [json.loads(l) for l in slurp(led.path).splitlines()]
-        back = [t for t in txs if t["type"] == "auto_refund" and t["character"] == "chronicler"][0]
+        back = next(t for t in txs if t["type"] == "auto_refund" and t["character"] == "chronicler")
         back["amount"] = 1
         with open(led.path, "w") as f:
             f.write("".join(json.dumps(t, ensure_ascii=False) + "\n" for t in txs))
@@ -864,7 +864,7 @@ class GenderTest(unittest.TestCase):
         rep, runner = self.everyone_agrees()
         self.assertIn("- Строитель: согласна\n", rep)
         self.assertIn("- Копилка: согласен\n", rep)
-        spec = [c[3] for c in runner.calls if c[0] == "builder" and c[1] == "r1"][0]
+        spec = next(c[3] for c in runner.calls if c[0] == "builder" and c[1] == "r1")
         self.assertIn("Ты говоришь о себе в женском роде", spec.user)
         system = slurp(spec.system_path)
         self.assertIn("Строитель («Строгий строитель»): simple code, small budgets", system)

@@ -103,7 +103,7 @@ class CliTest(unittest.TestCase):
     def test_report_round_rebuilds_without_a_model(self):
         self.team("seed", "--specs", os.path.join(self.dir, "brief.md"), "--ledger", os.path.join(self.dir, "seed.json"))
         self.team("round", "--kind", "ballot", "--input", os.path.join(self.dir, "q.md"))
-        rid = [d for d in os.listdir(os.path.join(self.state, "rounds")) if d != "old-review"][0]
+        rid = next(d for d in os.listdir(os.path.join(self.state, "rounds")) if d != "old-review")
         path = os.path.join(self.state, "rounds", rid, "report.md")
         saved = slurp(path)
         self.assertIn("Ставок нет.", saved)
@@ -152,7 +152,7 @@ class CliTest(unittest.TestCase):
         os.environ["FAKE_MODE"] = "quota"
         p = self.team("round", "--kind", "ballot", "--input", os.path.join(self.dir, "q.md"), ok=False)
         self.assertEqual(p.returncode, 2)
-        rid = [d for d in os.listdir(os.path.join(self.state, "rounds")) if d != "old-review"][0]
+        rid = next(d for d in os.listdir(os.path.join(self.state, "rounds")) if d != "old-review")
         self.assertIn(f"depot2 round --resume {rid}", p.stderr)
         os.environ["FAKE_MODE"] = "ok"
         p = self.team("round", "--resume", rid, "--kind", "ballot", ok=False)

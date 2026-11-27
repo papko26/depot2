@@ -152,7 +152,7 @@ class SoloCliTest(unittest.TestCase):
         self.assertIn("SOLO round: only Копилка", out)
         out = self.team("round", "--kind", "ballot", "--input", q, "--item", "tm-0001").stdout
         self.assertIn("# Команда: бюллетень, сольный раунд (Копилка)", out)
-        rid = [d for d in os.listdir(os.path.join(self.state, "rounds")) if d.endswith("-solo-keeper")][0]
+        rid = next(d for d in os.listdir(os.path.join(self.state, "rounds")) if d.endswith("-solo-keeper"))
         item = json.loads(self.team("tstack", "--json").stdout)["in_slots"][0]
         self.assertEqual((item["id"], item["round"]), ("tm-0001", rid))
         self.assertGreater(item["cost_usd"], 0)  # the CLI's ≈$, kept as data

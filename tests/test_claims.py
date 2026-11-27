@@ -88,7 +88,7 @@ class ReturnTest(ClaimBase):
         self.assertEqual((j["returns"], j["claims"], j["claim_links"], j["repair"], j["fixes"]), (2, 0, [], None, []))
         self.assertEqual([e["why"] for e in j["returns_log"]], ["доработать 1", "доработать 2"])
         board = json.loads(self.ok("board", "--json"))
-        it = [i for c in board["columns"] for i in c["items"] if i["ref"] == "tr-0001:0"][0]
+        it = next(i for c in board["columns"] for i in c["items"] if i["ref"] == "tr-0001:0")
         self.assertEqual((it["returns"], it["claims"], it["repair"]), (2, 0, None))
         self.assertIn("| tr-0001:0 (st-0001) · брак 2 |", self.ok("board"))
 
