@@ -457,7 +457,7 @@ def entry_car(tr, trk, name, e, n, by):
     return c
 
 
-def queue_plan(state, cfg, by=None):
+def queue_plan(state, cfg):
     """What the step does, read only: [{name, path (the file it reads), data, track (or None: a new one), others
     (more tracks of the name), cars [(entry, the car's name)], found {id: the car's ref of a run cut short}}]."""
     from .queues import ARCHIVE, OLD_QUEUES
