@@ -1,7 +1,7 @@
 """The priority 1–10 of every train and every car in any of its forms (10 — the most important, 5 by default).
 
-On: a train, a track's car, a stack object and a team stack item, a wish, a to-think entry, a todo. A car and its live
-stack object are one car: one priority, written on both. An entry taken into a new car gives it its priority.
+On: a train, a track's car, a stack object and a team stack item. A car and its live stack object are one car: one
+priority, written on both.
 `depot2 priority ID [N]` prints or sets it; `--priority N` on the add and set commands does the same.
 """
 
@@ -53,12 +53,10 @@ def arg(text):
         raise argparse.ArgumentTypeError(str(e))
 
 
-def add_arg(parser, synonym=False):
-    """--priority N on an add or a set (and --prio, its synonym, where the queues had it)."""
-    flags = ("--priority", "--prio") if synonym else ("--priority",)
-    parser.add_argument(*flags, dest="priority", type=arg, metavar="N",
-                        help="priority %d–%d, 10 — the most important (default %d)%s" % (
-                            MIN, MAX, DEFAULT, "; --prio high|normal|later = 8 / 5 / 2" if synonym else ""))
+def add_arg(parser):
+    """--priority N on an add or a set."""
+    parser.add_argument("--priority", dest="priority", type=arg, metavar="N",
+                        help="priority %d–%d, 10 — the most important (default %d)" % (MIN, MAX, DEFAULT))
 
 
 def of(rec):
@@ -91,7 +89,7 @@ def ordered(rows, rec=lambda x: x):
 # --- `depot2 priority ID [N]`: any train or car --------------------------------------------------------------
 
 def kind_of(ref):
-    """What a ref names: train, car, stack, tstack, wishes, think, todo; a track is refused (a theme has none)."""
+    """What a ref names: train, car, stack, tstack; a track is refused (a theme has none)."""
     from .tracks import RE_CAR, RE_TRACK
     from .trains import RE_NAME
     ref = (ref or "").strip()
@@ -100,17 +98,12 @@ def kind_of(ref):
     if RE_TRACK.match(ref):
         raise PriorityError(t("priority.is_track", ref=ref))
     head = ref[:3]
-    kind = {"st-": "stack", "tm-": "tstack", "wl-": "wishes", "th-": "think", "td-": "todo"}.get(head)
+    kind = {"st-": "stack", "tm-": "tstack"}.get(head)
     if kind and re.match(r"^[a-z]{2}-\d{4}$", ref):
         return kind
     if RE_NAME.match(ref):
         return "train"
     raise PriorityError(t("priority.bad_ref", ref=repr(ref)))
-
-
-def _queue(state, cfg, kind):
-    from . import queues
-    return {"wishes": queues.Wishes, "think": queues.Think, "todo": queues.Todo}[kind](state, cfg)
 
 
 def get_any(state, cfg, ref):
@@ -125,16 +118,10 @@ def get_any(state, cfg, ref):
         tr = Trains(state, cfg).tracks
         trk, c = tr.car(ref)
         return kind, "%s:%s" % (trk["id"], c["n"]), c
-    if kind in ("stack", "tstack"):
-        stk = (Stack if kind == "stack" else TeamStack)(state, cfg)
-        if not stk._dep_open(ref):
-            raise PriorityError(t("priority.not_in_stack" if kind == "stack" else "priority.not_in_tstack", ref=ref))
-        return kind, ref, stk.get(ref)
-    q = _queue(state, cfg, kind)
-    e = q.get(ref)
-    if e is None:
-        raise PriorityError(t("priority.not_in_queue", ref=ref, queue=q.NAME))
-    return kind, ref, e
+    stk = (Stack if kind == "stack" else TeamStack)(state, cfg)
+    if not stk._dep_open(ref):
+        raise PriorityError(t("priority.not_in_stack" if kind == "stack" else "priority.not_in_tstack", ref=ref))
+    return kind, ref, stk.get(ref)
 
 
 def set_any(state, cfg, ref, n, by="priority"):
@@ -156,13 +143,10 @@ def set_any(state, cfg, ref, n, by="priority"):
         label = t("priority.label_twin", car=car_ref, st=twin) if twin else car_ref
         if ref not in (car_ref, twin):
             label = "%s → %s" % (ref, label)  # a moved car's old ref
-    elif kind in ("stack", "tstack"):
+    else:  # a stack object with no car, a team stack item
         from .stack import Stack
         from .tstack import TeamStack
         (Stack if kind == "stack" else TeamStack)(state, cfg).set(ref, priority=n)
-        label = ref
-    else:
-        _queue(state, cfg, kind).set(ref, priority=n)
         label = ref
     return [t("priority.set", label=label, before=before, n=n) if before != n else
             t("priority.same", label=label, n=n)]

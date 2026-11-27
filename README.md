@@ -24,6 +24,7 @@ License 2.0 ([License](#license)).
 - [How it works](#how-it-works)
 - [Tracks and trains](#tracks-and-trains)
 - [The merge queue](#the-merge-queue)
+- [Queues](#queues)
 - [Connecting your project](#connecting-your-project)
 - [Plugins (hooks)](#plugins-hooks)
 - [Executors](#executors)
@@ -95,8 +96,10 @@ post-stack: PRs that wait only for the owner's merge and hold no slot (`stack.po
 a freed slot only with `autostart`. Any stack object can carry a lock. The team stack (`tstack`) is a second, lighter
 stack for the team rounds.
 
-**Queues** of entries that are not cars yet: wishes (`wl-`), things to think over (`th-`), todos (`td-`). Any entry can
-be taken into a car (`take`). Everything — trains, cars, stack objects, entries — has a priority from 1 to 10.
+**Small things are cars too.** A wish, a thing to think over, a leftover found during a build: each is a car on a
+track, a bogie until it gets a brief. A depot that wants them apart keeps tracks of their own (`todo`, `to-think`,
+`wishes`); a car's note says where it was found (`tracks car add … --note`), an open question waits on the car itself
+(`car ask`). Everything — trains, cars, stack objects — has a priority from 1 to 10.
 
 **Principles** (`pc-`) are the project's design rules, kept in the depot and rendered to a Markdown file. The *three
 checks* every brief and PR passes are: the owner's words, a check against the code as it is, and a line per principle
@@ -149,6 +152,30 @@ can be lost; `merge prune-worktrees` takes the old ones. A command waits 10 s fo
 holds it longer (a team round holds it for its whole run), a write of the runner waits up to `merge.lock_wait_s`
 (30 min), with a line in its log, and goes on; past that the runner leaves and `merge run --ensure` goes on from the
 same step.
+
+## Queues
+
+`depot2 queues` shows every queue the depot keeps, a row each — its count, what is on top and the command that prints
+it; `queues --json` and the web view's Queues tab carry the same rows with the line of what each one is:
+
+| Queue | What it holds | Who writes into it | How a thing leaves it |
+|---|---|---|---|
+| The agents' stack | the executors' slots, the post-stack (PRs waiting only for the owner's merge), the tasks waiting for a slot | `stack`, `tracks car stack` | `stack done`, or the merge queue merging its PR |
+| The merge queue | the PRs the owner let in, with his word verbatim, in their order | `merge add` (the word), `merge move/resume/drop` | the runner (`merge run`) merges them one at a time; a merged one is in `merge report` |
+| The team's stack | the team rounds' slots and queue | `tstack add/start` | `tstack done`, or `tstack take` into a car |
+| Trains | named runs of cars from any tracks: design → implementation → merge | `trains add/set/state/car` | `trains done/drop`; `trains next` says what a free slot takes |
+| Tracks | the themes and their cars — every piece of work, the todos and the things to think over too | `tracks add/car add/car set/car move`; the stack and the merge queue move the cars' stages | a car leaves the board arrived or scrapped; its track keeps it |
+| Agents | the executors' runs | `agents start` (its gates), `agents attach` | finished (its log says so, its spend booked on the car), or `agents stop` |
+| Ballots | the team rounds' ballots waiting for the owner | `ballots add/point/at` | `ballots done/drop` |
+| Decisions | the owner's decisions, append-only | `decide` (and a lock the owner lifts) | nothing leaves |
+| Principles | the project's design principles, rendered to its Markdown file | `principles add/set` | `principles replace/drop` (in `--all`) |
+
+A depot of schema 5 kept three more queues — wishes (`wl-`), things to think over (`th-`) and todos (`td-`).
+`depot2 migrate` (any command runs it first; `--dry-run` says what it would do) makes each one a track of the same
+name: every open entry becomes a car there, named by its entry's number where that is free, with `from` naming the
+entry and its text, date and place in the car's note; a track whose title (before a colon) is the name is used, else
+one is added. The closed and taken entries stay in an archive (`wishes-v5.json`, `think-v5.json`, `todo-v5.json`
+and their histories) that an old ref still reads: a car's `from` shows the entry, and where it moved.
 
 ## Connecting your project
 
@@ -306,7 +333,7 @@ stream that is not CLEAN goes to a quarantine outside the depot.
 
 Every `--json` output is a stable format; the web view reads nothing else:
 `board --json` (the columns, their cars and limits), `tracks --json`, `track ID --json`, `trains --json [next]`,
-`stack --json`, `merge --json`, `agents --json`, `wishes|think|todo --json`, `principles --json`,
+`stack --json`, `merge --json`, `agents --json`, `principles --json`,
 `decisions --json`, `queues --json`. Each is one JSON object; new fields may be added, existing ones keep their
 meaning. `merge report --json [--last N]` (the merge queue's tab reads it too) is a list: the last merges' entries,
 the same ones `merge report` shows (a PR dropped from the queue after its merge is not among them).
@@ -349,8 +376,8 @@ The command line's words in both languages, with the keys the data use:
 
 ## Commands
 
-Every command and subcommand has `--help`. Aliases: `wish` = `wishes`, `agent` = `agents`, `train` = `trains` (one
-train), `track` = `tracks` (one track), `principle` = `principles`.
+Every command and subcommand has `--help`. Aliases: `agent` = `agents`, `train` = `trains` (one train), `track` =
+`tracks` (one track), `principle` = `principles`.
 
 ```
 depot2 round                       # run a team round
@@ -413,9 +440,9 @@ depot2 trains car add              # a car tr-NNNN:N at the end (or --at N)
 depot2 trains car move             # its place in the train
 depot2 trains car drop             # out of the train
 depot2 train                       # one train: its cars in order
-depot2 migrate                     # bring the depot's data to today's form, once (schema 1 → 5: tracks and trains, …
+depot2 migrate                     # bring the depot's data to today's form, once (schema 1 → 6: tracks and trains, …
 depot2 priority                    # the priority 1–10 (10 — the most important, default 5) of a train or a car in …
-depot2 car                         # one car (tr-NNNN:N, st-, wl-, th-): its stage, show, its open questions, the …
+depot2 car                         # one car (tr-NNNN:N or st-NNNN): its stage, show, its open questions, the stage …
 depot2 car stage                   # move its stage, on the route; the moves a command makes are refused, each with …
 depot2 car show                    # its stage, where it may go, the next gate, its history
 depot2 car ask                     # an open question: the DoR waits for its answer
@@ -432,29 +459,6 @@ depot2 agents attach               # link it to its transcript: found by the age
 depot2 agents show                 # one agent: its fields and its last actions
 depot2 agents stop                 # record its stop (the orchestrator stops the process): its spend so far on the car
 depot2 web                         # depot2's web view, seven tabs: tracks, trains, board, merge queue, agents, …
-depot2 wishes                      # the owner's wishes not scheduled yet (wishes.json); no action: print it
-depot2 wishes add                  # a new open entry (its id never reused)
-depot2 wishes set                  # change an open entry's fields (--note, --link, --question, --where append)
-depot2 wishes show                 # every field of one entry
-depot2 wishes take                 # it becomes a track's car and closes «→ tr-NNNN:N»: --to tr-NNNN a new bogie (its …
-depot2 wishes drop                 # declined
-depot2 wishes done                 # «done»: it came true (not drop); off the open table, in --all
-depot2 think                       # open questions for a brainstorm, a round or the owner (think.json); no action: …
-depot2 think add                   # a new open entry (its id never reused)
-depot2 think set                   # change an open entry's fields (--note, --link, --question, --where append)
-depot2 think show                  # every field of one entry
-depot2 think take                  # it becomes a track's car and closes «→ tr-NNNN:N»: --to tr-NNNN a new bogie (its …
-depot2 think round                 # link it to a team round (a round id or a tm-NNNN)
-depot2 think decide                # decided: --dec dec-NNNNNN and/or --reason
-depot2 think drop                  # no longer a question
-depot2 todo                        # leftovers and reminders (todo.json): date, version, place; no action: print it
-depot2 todo add                    # a new open entry (its id never reused)
-depot2 todo set                    # change an open entry's fields (--note, --link, --question, --where append)
-depot2 todo show                   # every field of one entry
-depot2 todo take                   # it becomes a track's car and closes «→ tr-NNNN:N»: --to tr-NNNN a new bogie (its …
-depot2 todo pr                     # a PR takes it
-depot2 todo done                   # done (several ids at once)
-depot2 todo wont                   # we won't (several ids at once)
 depot2 principles                  # the design principles (principles.json): PRINCIPLES.md is rendered from them, …
 depot2 principles add              # a new principle: the next number (never reused)
 depot2 principles set              # change one: fields replaced (the history keeps them), --words and --sub appended

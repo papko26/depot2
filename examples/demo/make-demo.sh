@@ -30,10 +30,12 @@ d trains add --name accounts --title "Accounts" --car tr-0002:0 --car tr-0002:1 
 # the stack: one task waiting for a slot
 d stack add --title "Fix the flaky date test" --size S --autostart no
 
-# the queues: a wish, a thing to think over, a todo
-d wishes add --title "Dark mode for the reader" --words "would be nice for night reading" --area product
-d think add --topic "Should search be offline-first?" --question "What do we lose without a server?"
-d todo add --text "The catalogue import logs every row at debug level" --where "src/catalogue/import.py:88" --kind cleanup
+# the small things are cars too: a track of leftovers, a wish in the owner's words, an open question on a car
+d tracks add --title "todo"
+d tracks car add tr-0003 --title "The catalogue import logs every row at debug level" \
+  --note "found in src/catalogue/import.py:88, version 0.4.1" --priority 3
+d tracks car add tr-0002 --title "Dark mode for the reader" --note "the owner: would be nice for night reading"
+d car ask tr-0001:0 "Should search be offline-first? What do we lose without a server?"
 
 # principles: one gate, one scored
 d principles add --section core --title "The answer first" --text "The first line of a search result is what was asked for." --check yes

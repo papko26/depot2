@@ -34,11 +34,9 @@ MESSAGES = {
     "in.priority.normal": r"обычный",
     "in.priority.later": r"потом",
     "priority.is_track": "{ref} — трек (тема): приоритет у поезда и у вагонов, не у трека; вагон — {ref}:N",
-    "priority.bad_ref": ("приоритет — у поезда (его имя), вагона tr-NNNN:N, объекта st-/tm-NNNN, хотелки wl-, "
-                         "«подумать» th-, todo td-NNNN; не {ref}"),
+    "priority.bad_ref": "приоритет — у поезда (его имя), вагона tr-NNNN:N или объекта st-/tm-NNNN; не {ref}",
     "priority.not_in_stack": "{ref} не в стеке: приоритет — у того, что стоит в стеке",
     "priority.not_in_tstack": "{ref} не в стеке команды: приоритет — у того, что стоит в стеке",
-    "priority.not_in_queue": "нет {ref} в очереди {queue}",
     "priority.label_train": "поезд {ref}",
     "priority.label_twin": "{car} (объект {st})",
     "priority.set": "{label}: приоритет P{before} → P{n}",
@@ -112,13 +110,32 @@ MESSAGES = {
     "migrate.arr_line": "- {car} «{title}» (в пути с {at}) → прибыл: {why}",
     "migrate.arr_left": ("остаются «в пути» (слиты после последней выкатки, или их везёт мердж-очередь, или объект в "
                          "стеке): {n} — {refs}"),
+    "migrate.head_6": ("миграция данных депо: схема 5 → 6 (очереди хотелок, «подумать» и todo → одноимённые треки: "
+                       "открытая запись — вагон там, файлы прежних очередей — архив)"),
+    "migrate.queues_none": "очередей хотелок, «подумать» и todo нет: нечего переносить",
+    "migrate.queue_line": ("{queue}: записей {total} — открытые {n} → вагоны {where} ({prio}); закрытые и взятые "
+                           "({closed}) остаются в архиве {archive}"),
+    "migrate.queue_new_track": "нового трека «{name}»",
+    "migrate.queue_old_track": "{id} «{title}»",
+    "migrate.new_track": "новый трек",
+    "migrate.queue_found": "из них {n} уже вагоны (прерванный прогон): оставлены",
+    "migrate.queue_others": "ещё треки с этим именем, оставлены как есть: {ids}",
+    "migrate.queue_first": "первые: {list}",
+    "migrate.queues_planned": "треки — как они на диске сейчас (шаги выше ещё не записаны)",
+    "migrate.queue_by": "depot2 migrate (схема 6)",
+    "migrate.queue_why": "из {id} (прежние очереди → треки)",
+    "migrate.queue_track_note": ("прежняя очередь {queue} ({prefix}-NNNN), перенесена сюда миграцией данных "
+                                 "(схема 6): имя вагона — номер его записи"),
+    "migrate.bit_by": "поднял: {v}",
+    "migrate.bit_related": "связано: {v}",
+    "migrate.bit_round": "в раунде {v}",
+    "migrate.bit_in_pr": "в PR #{v}",
+    "migrate.bit_links": "(ссылки: {v})",
     # --- the board (board.py) ---
     "board.kind.car": "вагон",
     "board.kind.stack": "объект стека",
     "board.kind.left": "вышел из стека",
     "board.kind.merge": "PR в мердж-очереди",
-    "board.kind.wish": "хотелка",
-    "board.kind.think": "подумать",
     "board.where.slot": "слот",
     "board.where.post": "пост-стек",
     "board.where.queue": "очередь стека",
@@ -173,7 +190,6 @@ MESSAGES = {
     "claims.not_on_prod": ("{ref} на этапе «{stage}», не на проде (рекламация — на прибывший вагон; брак до мерджа — "
                            "возврат в сборку, «доработать»: depot2 stack start из пост-стека)"),
     "claims.of_and_bug": "--of {of} — не вагон (st-NNNN, tr-NNNN:N, #PR), и --bug {bug}: баг — один",
-    "claims.not_rolled": "{of} — не выехавший вагон: рекламация — на st-NNNN, tr-NNNN:N или #PR",
     "claims.of_needed": "--of: виновник (st-NNNN, tr-NNNN:N, #PR) или id бага из BUGS.md",
     "claims.no_bug": "нет бага {bug} в {path}",
     "claims.no_bugs_file": "нет файла {path} (repair.bugs)",
@@ -349,7 +365,7 @@ MESSAGES = {
                                 "word"),
     "cli.help.trains_next": ("what a free slot takes now: a repair out of turn, then the trains in «имплементация» by "
                              "priority (their cars past the DoR), then the stack's autostart queue"),
-    "cli.help.car": ("one car (tr-NNNN:N, st-, wl-, th-): its stage, show, its open questions, the stage «проект» "
+    "cli.help.car": ("one car (tr-NNNN:N or st-NNNN): its stage, show, its open questions, the stage «проект» "
                      "required"),
     "cli.help.stage_by": "who (default: car stage), e.g. «владелец»",
     "cli.help.answer_by": "whose answer, e.g. «владелец»",
@@ -370,7 +386,6 @@ MESSAGES = {
                              "stage REF docs first); mergefix — приёмка, на путях"),
     "cli.help.agents_by": "who starts it (default: оркестратор)",
     "cli.help.agents_stop_by": "who stops it (default: оркестратор)",
-    "cli.help.queue_done": "«сделано»: it came true (not drop); off the open table, in --all",
     "cli.help.principles_checks": "the three checks: the owner's words, «Сверка с кодом», the check principles",
     "cli.help.merge_word": "the owner's words, verbatim (e.g. «мердж»)",
     "cli.help.merge_force": "the DoD's principles (its PR's «Проверка по принципам»: priority 1 are gates)",
@@ -427,7 +442,7 @@ MESSAGES = {
                            "вручную (выкатка уже прошла) — depot2 car stage {ref} arrived --why «выкачен с #N …»"),
     "stages.no_object": "нет объекта {ref} в стеке",
     "stages.left_no_record": "{ref} вышел из стека без записи объекта",
-    "stages.bad_ref": "вагон — это st-NNNN, tr-NNNN:N, wl-NNNN или th-NNNN; не {ref!r}",
+    "stages.bad_ref": "вагон — это st-NNNN или tr-NNNN:N; не {ref!r}",
     "stages.label_object": "{car} (объект {obj})",
     "stages.owned_queued": "на путях ставит мердж-очередь: depot2 merge add <PR> --word «слова владельца»",
     "stages.owned_back_to_brief": ("{oid} {where}: назад к брифу — depot2 stack done {oid} --car back (вагон) "
@@ -442,11 +457,6 @@ MESSAGES = {
     "stages.owned_car_acceptance": "приёмка — пост-стек: depot2 tracks car stack {ref}, затем stack post",
     "stages.owned_car_rolling": "в пути — depot2 tracks car set {ref} --status merged",
     "stages.owned_car_scrapped": "списан — depot2 tracks car set {ref} --status dropped --note «…»",
-    "stages.owned_entry_scrapped": "списан — depot2 {name} drop {ref} --reason «…»",
-    "stages.owned_wish_arrived": "прибыл — depot2 wishes done {ref} --reason «…»",
-    "stages.owned_wish_take": "хотелка сама не собирается: её берут в работу — depot2 wish take {ref} --to st-…|tr-…:N",
-    "stages.owned_think_take": ("запись «подумать» сама не собирается: её берут в работу — depot2 wish take {ref} "
-                                "--to st-…|tr-…:N"),
     "stages.owned_left": "{ref} вышел из стека: вручную — только «в пути» → «прибыл»",
     "stages.next_arrive_mq": "Дальше: «прибыл» поставит мердж-очередь, когда {id} #{pr} выкатится.",
     "stages.next_line": "Дальше: {hint}.",
@@ -486,12 +496,9 @@ MESSAGES = {
     "stages.show_none_row": "- (нет)",
     "stages.note_car": "вагон: {note}",
     "stages.note_obj": "объект: {note}",
-    "stages.note_entry": "запись: {note}",
     "stages.migrated_why": "перенос: {why}",
     "stages.migrate_stack": "этапы: стек — записан у {n} объектов ({counts})",
     "stages.migrate_tracks": "этапы: вагоны треков — записан у {n} ({counts})",
-    "stages.migrate_wishes": "этапы: хотелки — записан у {n} ({counts})",
-    "stages.migrate_think": "этапы: на подумать — записан у {n} ({counts}); вопрос (question) у {asked}",
 
     # --- треки (tracks.py) ---
     "tracks.car.waiting": "ждёт",
@@ -860,65 +867,23 @@ MESSAGES = {
     "in.tstack.all": r"все",
     "tstack.all": "все",
     # --- очереди (queues.py) ---
-    "queues.why_entry": "запись",
     "queues.take_note": "из {id} — {kind} от {date}: {text}",
-    "queues.take_new_only_car": "--n, --size и --title — для нового вагона: --to tr-NNNN; {to} — вагон, что уже есть",
-    "queues.take_new_only_other": "--n, --size и --title — для нового вагона: --to tr-NNNN; {to} — не трек",
-    "queues.took_new": "{id} → {ref}: новый вагон «{title}» ({stage})",
-    "queues.took_car": "{id} → {ref}: в вагон «{title}» (его заметка и from)",
-    "queues.took_car_prio": ("{id} → {ref}: в вагон «{title}» (его заметка и from); приоритет вагона — его, {cprio} "
-                             "(у {id} был {eprio})"),
-    "queues.col.n": "№",
-    "queues.col.stage": "Этап",
-    "queues.col.date": "Дата",
-    "queues.col.priority": "Приоритет",
-    "queues.col.status": "Статус",
-    "queues.col.wish": "Хотелка",
-    "queues.col.words": "Слова владельца",
-    "queues.col.area": "Область",
-    "queues.col.topic": "Тема",
-    "queues.col.questions": "Вопросы",
-    "queues.col.by": "Поднял",
-    "queues.col.related": "Связано",
-    "queues.col.what": "Что",
-    "queues.col.version": "Версия",
-    "queues.col.where": "Где",
-    "queues.col.source": "Источник",
-    "queues.col.kind": "Вид",
-    "queues.open_of": "Открыто {n} из {total}.",
-    "queues.open_of_first": "Открыто {n} из {total}; показаны первые {limit}.",
-    "queues.stage_note": ("Этап: хотелка и «подумать» — тележки; взятая хотелка живёт дальше в том, что её взяло "
-                          "(«тележка → …» — его этап сейчас); история — `depot2 car show ID`."),
-    "queues.area.product": "продукт",
-    "queues.area.tools": "тулзы",
-    "queues.area.infra": "инфра",
-    "queues.area.release": "выпуск",
-    "queues.area.site": "сайт",
-    "queues.wishes.title": "Очередь хотелок",
     "queues.wishes.status.waiting": "ждёт",
     "queues.wishes.status.taken": "взята",
     "queues.wishes.status.declined": "отклонена",
     "queues.wishes.status.done": "сделано",
-    "queues.wishes.kind": "хотелка",
-    "queues.wishes.why_taken": "взята → {to} (дальше — этапы {to})",
     "queues.wishes.take_words": "; слова владельца: «{words}»",
-    "queues.think.title": "Очередь на-подумать",
     "queues.think.status.waiting": "ждёт",
     "queues.think.status.in_round": "в раунде",
     "queues.think.status.decided": "решено",
     "queues.think.status.dropped": "снято",
     "queues.think.status.taken": "взято",
-    "queues.think.kind": "«подумать»",
-    "queues.think.why_decided": "решено: вопрос закрыт",
-    "queues.think.why_taken": "взято → {to} (дальше — этапы {to})",
-    "queues.think.why_open": "на подумать, с вопросом",
     "queues.think.take_questions": "; вопросы: {list}",
     "queues.kind.bug": "баг",
     "queues.kind.perf": "перф",
     "queues.kind.text": "текст",
     "queues.kind.cleanup": "чистка",
     "queues.kind.reminder": "напоминание",
-    "queues.todo.title": "Очередь todo",
     "queues.todo.status.open": "открыт",
     "queues.todo.status.in_pr": "в PR",
     "queues.todo.status.done": "сделан",
@@ -936,13 +901,9 @@ MESSAGES = {
     "queues.source.tstack": "стек команды",
     "queues.source_live": "в стеке",
     "queues.source_left": "вышел из стека",
+    "queues.source_moved": "перенесён в {to}",
     "queues.migrate_autostart": "stack: autostart = нет записан явно у {n} объектов{list}",
     "queues.migrate_nothing": "нечего переносить: миграция уже прошла",
-    "queues.migrate_no_car": "{id} → {to} (ни один вагон трека его не называет)",
-    "queues.migrate_many_cars": "{id} → {to} (его называют {n} вагона)",
-    "queues.migrate_from": "вагоны: откуда пришли (from) — записано у {n}{list}",
-    "queues.migrate_moved": "взяты в трек, не в вагон: {n} → вагон, что их называет{moved}{left}",
-    "queues.migrate_left": "; вагон не найден, остались как были: {list}",
     "queues.ov.tag_slot": " (слот)",
     "queues.ov.tag_post": " (пост-стек)",
     "queues.ov.stack": "Стек агентов",
@@ -956,8 +917,33 @@ MESSAGES = {
     "queues.ov.tracks_count": "{n} открыто из {total}",
     "queues.ov.ballots": "Бюллетени",
     "queues.ov.at_point": " (на {point})",
-    "queues.ov.wishes": "Хотелки",
-    "queues.ov.think": "На подумать",
+    "queues.ov.agents": "Агенты",
+    "queues.ov.agents_count": "{n} в работе",
+    "queues.ov.decisions": "Решения",
+    "queues.ov.decisions_count": "всего {n}",
+    # что такое каждая очередь обзора, одной строкой: что держит, кто в неё пишет, как из неё выходят
+    "queues.means.stack": ("слоты исполнителей, пост-стек (PR, которые ждут только мерджа владельца) и задачи, "
+                           "ждущие слота; пишут `stack` и `tracks car stack`; объект выходит по `stack done` или "
+                           "когда мердж-очередь сливает его PR"),
+    "queues.means.merge": ("PR, впущенные владельцем, с его словом дословно, по порядку; пишут `merge add` (слово), "
+                           "`merge move|resume|drop`; один исполнитель (`merge run`) сливает их по одному, слитый "
+                           "уходит в `merge report`"),
+    "queues.means.tstack": ("слоты и очередь раундов команды; пишут `tstack add|start`; выходят по `tstack done` или "
+                            "`tstack take` (в вагон)"),
+    "queues.means.trains": ("именованные прогоны вагонов из любых треков: дизайн → имплементация → мердж; пишут "
+                            "`trains add|set|state|car`; `trains next` говорит, что берёт свободный слот; поезд "
+                            "выходит по `trains done|drop`"),
+    "queues.means.tracks": ("темы и их вагоны — вся работа, в том числе todo и то, о чём подумать; пишут `tracks "
+                            "add|car add|car set|car move`, этапы вагонов двигают стек и мердж-очередь; вагон уходит с "
+                            "доски прибывшим или списанным, трек его хранит"),
+    "queues.means.agents": ("прогоны исполнителей; пишут `agents start` (его ворота) и `agents attach`; прогон выходит "
+                            "законченным (так говорит его лог, расход записан на вагон) или по `agents stop`"),
+    "queues.means.ballots": ("бюллетени раундов команды, ждущие владельца; пишут `ballots add|point|at`; бюллетень "
+                             "выходит по `ballots done|drop`"),
+    "queues.means.decisions": ("решения владельца, только дописываются; пишет `decide` (и снятый владельцем лок); "
+                               "ничто не выходит"),
+    "queues.means.principles": ("принципы проекта, рендерятся в его Markdown-файл; пишут `principles add|set`; "
+                                "принцип выходит по `principles replace|drop` (виден в --all)"),
     "queues.ov.principles": "Принципы",
     "queues.ov.principles_count": "{n} действуют",
     "queues.ov.heading": "## Очереди ({ts})",
@@ -965,8 +951,8 @@ MESSAGES = {
     "queues.ov.priority_legend": ("Приоритет: открытые по приоритету 1–10 (P10 — важнее всего; `depot2 priority ID N`); "
                                   "«Сверху» — по нему же; у принципов «Сверху» — принципы третьей проверки (③, "
                                   "`depot2 principles checks`)."),
-    "queues.ov.stages": ("Этапы вагонов (стек, открытые вагоны поездов, хотелки, «подумать»; без прибывших и "
-                         "списанных): {counts}; история вагона — `depot2 car show ID`."),
+    "queues.ov.stages": ("Этапы вагонов (стек, открытые вагоны треков; без прибывших и списанных): {counts}; история "
+                         "вагона — `depot2 car show ID`."),
     # --- добавки раунда: мозговые штурмы и заказы (extras.py) ---
     "extras.brainstorm.approved": "одобрен, ждёт запуска",
     "extras.brainstorm.done": "прошёл",
@@ -1785,9 +1771,6 @@ MESSAGES = {
 
     # === веб-морда ===
     # --- the server (webui.py) ---
-    "webui.queue.todo": "Todo",
-    "webui.queue.think": "Подумать",
-    "webui.queue.wishes": "Хотелки",
     "webui.queue.ballots": "Бюллетени",
     "webui.queue.tstack": "Стек команды",
     "webui.queue.orders": "Заказы замеров",
@@ -1795,7 +1778,7 @@ MESSAGES = {
     "webui.who_all": "все",
     "webui.bad_track": "трек — это tr-NNNN, не {got}",
     "webui.bad_train": "поезд — это его имя (search-v1), не {got}",
-    "webui.bad_ref": "вагон — это st-NNNN, tr-NNNN:N, wl-NNNN или th-NNNN; не {got}",
+    "webui.bad_ref": "вагон — это st-NNNN или tr-NNNN:N; не {got}",
     "webui.bad_limit": "limit — это число от 0, не {got}",
     "webui.bad_last": "last — это число от 1, не {got}",
     "webui.bad_queue": "очередь — одна из {names}, не {got}",
@@ -1890,8 +1873,6 @@ MESSAGES = {
     "web.kind.stack": "объект стека",
     "web.kind.left": "вышел из стека",
     "web.kind.merge": "PR в мердж-очереди",
-    "web.kind.wish": "хотелка",
-    "web.kind.think": "подумать",
     "web.state.design": "дизайн",
     "web.state.impl": "имплементация",
     "web.state.merge": "мердж-очередь",
@@ -2079,9 +2060,6 @@ MESSAGES = {
     "web.dec.none": "решений ещё нет",
     "web.dec.note": ("Новые сверху. Пишет их <code>depot2 decide</code>; здесь только показ (<code>depot2 "
                      "decisions</code>)."),
-    "web.q.when": "когда: {v}",
-    "web.q.questions": "вопросов {n}: {first}",
-    "web.q.raised_by": "поднял: {who}",
     "web.q.stopped_at": "остановились на {point}",
     "web.q.points_left": "осталось пунктов {n}: {points}",
     "web.q.no_points_left": "пунктов не осталось",
@@ -2103,6 +2081,11 @@ MESSAGES = {
     "web.q.closed_n": "закрытые {n}",
     "web.q.total": "· всего {n}",
     "web.q.open_line": "открыто: {heads}",
+    "web.q.overview_h": "Все очереди",
+    "web.q.col_queue": "Очередь",
+    "web.q.col_open": "Открыто",
+    "web.q.col_head": "Сверху",
+    "web.q.col_means": "Что это",
     "web.q.hint": ("поезда, треки, стек агентов и мердж-очередь — на своих вкладках; правят очереди команды "
                    "<code>depot2</code>, здесь только показ"),
     "web.q.hint_closed": ("поезда, треки, стек агентов и мердж-очередь — на своих вкладках; правят очереди команды "
@@ -2188,18 +2171,12 @@ MESSAGES = {
     "web.panel.branch": "Ветка",
     "web.panel.after": "После",
     "web.panel.dod": "Сдано (DoD)",
-    "web.panel.taken_to": "Взят в",
     "web.panel.agents": "Агенты",
     "web.panel.added": "Добавлен",
     "web.panel.started": "Начат",
     "web.panel.finished": "Закончен",
     "web.panel.marks_h": "Оценка по принципам",
-    "web.panel.owner_words": "Слова владельца",
-    "web.panel.topic": "Тема",
-    "web.panel.questions": "Вопросы",
-    "web.panel.text": "Текст",
     "web.panel.rec_object": "объект",
-    "web.panel.rec_entry": "запись",
     "web.panel.notes_h": "Заметки",
     "web.panel.hist_h": "История этапов",
     "web.panel.obj_hist_h": "История объекта {object}",

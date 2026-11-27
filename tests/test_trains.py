@@ -492,9 +492,10 @@ class MigrateTest(TracksBase):
         self.assertEqual([h.get("track") for h in hist[:3]], ["tr-0001", "tr-0002", None])
         self.assertEqual(hist[2]["tracks"], ["tr-0001"])
         self.assertFalse(any("train" in h for h in hist))
-        self.assertEqual([(h["event"], h["schema"]) for h in hist[-4:]], [("migrate", 2), ("migrate", 3),
-                                                                          ("migrate", 4), ("migrate", 5)])
-        self.assertEqual(hist[-4]["planning"]["tr-0004"]["status"], "paused")
+        self.assertEqual([(h["event"], h["schema"]) for h in hist[-5:]], [("migrate", 2), ("migrate", 3),
+                                                                          ("migrate", 4), ("migrate", 5),
+                                                                          ("migrate", 6)])
+        self.assertEqual(hist[-5]["planning"]["tr-0004"]["status"], "paused")
         self.assertEqual(open(self.t.state.path(migrate.ARCHIVE_TRAINS), "rb").read(), before["trains.json"])
         self.assertEqual(open(self.t.state.path(migrate.ARCHIVE_HISTORY), "rb").read(), before["trains-history.jsonl"])
         self.assertEqual([h["train"] for h in Trains(self.t.state, self.t.cfg).history()], ["akkaunty", "chitatelskiy"])
@@ -520,7 +521,7 @@ class MigrateTest(TracksBase):
         self.assertEqual([t["name"] for t in read_json(self.t.state.path("trains.json"))["trains"]],
                          [t["name"] for t in done["trains.json"]["trains"]])
         self.assertEqual([h["schema"] for h in read_jsonl(self.t.state.path("tracks-history.jsonl"))
-                          if h["event"] == "migrate"], [2, 3, 4, 5])  # one row per step, the run cut short not counted twice
+                          if h["event"] == "migrate"], [2, 3, 4, 5, 6])  # one row per step, the run cut short not counted twice
         rc, out, err = self.team("migrate")
         self.assertIn("нечего переносить", out)
 

@@ -206,10 +206,14 @@ class State:
         self.touch(gi)
 
     def commit(self, message):
-        """git add exactly the touched paths (never -A) and commit. Returns the commit id or None."""
+        """git add exactly the touched paths (never -A) and commit: a touched path that is gone is staged as removed
+        when git has it (an archived file of before). Returns the commit id or None."""
         if not self.is_git() or not self.touched:
             return None
         rel = sorted(os.path.relpath(p, self.root) for p in self.touched if os.path.exists(p))
+        gone = sorted(os.path.relpath(p, self.root) for p in self.touched if not os.path.exists(p))
+        if gone:
+            rel = sorted(rel + [g for g in self.git("ls-files", "--", *gone).stdout.splitlines() if g])
         if not rel:
             return None
         self.git("add", "--", *rel)

@@ -5,11 +5,11 @@ import shutil
 import tempfile
 
 from helpers import slurp
+from test_queues import entry, old_queue
 from test_tracks import PAST, TracksBase
 
 from depot2 import migrate
 from depot2 import priority as pri
-from depot2.queues import Think, Todo, Wishes
 from depot2.stack import Stack
 from depot2.store import State, read_json, read_jsonl, write_json
 from depot2.tracks import SCHEMA, Tracks
@@ -70,30 +70,20 @@ class SetTest(PBase):
                       self.ok("stack", "add", "--title", "чужой", "--priority", "P3"))
         self.assertIn("tm-0001 added to the team queue (1/4), P6",
                       self.ok("tstack", "add", "--kind", "question", "--priority", "6"))
-        self.ok("wishes", "add", "--title", "обложки", "--prio", "high")      # the old word: a synonym
-        self.ok("think", "add", "--topic", "подсказки", "--priority", "4")
-        self.ok("todo", "add", "--text", "хвост", "--version", "v", "--prio", "later")
-        self.assertEqual([e["priority"] for q in (Wishes, Think, Todo) for e in q(self.t.state).entries()], [8, 4, 2])
-        for q in (Wishes, Think, Todo):
-            self.assertNotIn("prio", q(self.t.state).entries()[0])
         # set, on every kind
         self.ok("tracks", "car", "set", "tr-0001:2", "--priority", "2")
         self.ok("trains", "set", "katalog", "--priority", "1")
         self.ok("stack", "set", "st-0001", "--priority", "10")
         self.ok("tstack", "set", "tm-0001", "--priority", "1")
-        self.ok("wishes", "set", "wl-0001", "--priority", "3")
-        self.ok("think", "set", "th-0001", "--prio", "normal")
-        self.ok("todo", "set", "td-0001", "--priority", "9")
         tk = self.tracks()
         self.assertEqual([c["priority"] for c in tk.get("tr-0001")["cars"]], [7, 2])
         self.assertEqual(tk.trains.get("katalog")["priority"], 1)
         self.assertEqual(Stack(self.t.state, self.t.cfg).get("st-0001")["priority"], 10)
         self.assertEqual(TeamStack(self.t.state, self.t.cfg).get("tm-0001")["priority"], 1)
-        self.assertEqual([e["priority"] for q in (Wishes, Think, Todo) for e in q(self.t.state).entries()], [3, 5, 9])
         # out of range: the parser's error, nothing written
         before = slurp(self.t.state.path("tracks.json"))
         self.assertIn("priority is 1–10", self.refused("tracks", "car", "set", "tr-0001:2", "--priority", "11"))
-        self.assertIn("priority is a whole number", self.refused("todo", "set", "td-0001", "--prio", "urgent"))
+        self.assertIn("priority is a whole number", self.refused("stack", "set", "st-0001", "--priority", "urgent"))
         self.assertEqual(slurp(self.t.state.path("tracks.json")), before)
         # the tables
         self.assertIn("| № | Поезд | Приоритет | Состояние |", self.ok("trains", "--md"))
@@ -109,22 +99,14 @@ class SetTest(PBase):
         self.assertIn("| 1 | очередь | st-0001 чужой | P10 |", out)
         self.assertIn("Приоритет: приоритет 1–10 (10 — важнее всего", out)
         self.assertIn("| 1 | очередь | tm-0001 вопрос команде | P1 |", self.ok("tstack", "--md"))
-        self.assertIn("| 1 | td-0001 хвост | ", self.ok("todo", "--md"))
-        self.assertIn("| P9 | открыт |", self.ok("todo", "--md"))
-        self.assertIn("| P3 | ждёт |", self.ok("wishes", "--md"))
-        self.assertIn("| Хотелки | 1 | P3 1 |", self.ok("queues", "--md"))
-        self.assertEqual([r["priority"] for r in json.loads(self.ok("queues", "--json"))][-4:-1],
-                         [{"3": 1}, {"5": 1}, {"9": 1}])
         self.assertIn("Приоритет: P7 (1–10, 10 — важнее всего; `depot2 priority tr-0001:1 N`).",
                       self.ok("car", "show", "tr-0001:1"))
-        self.assertEqual(json.loads(self.ok("car", "show", "wl-0001", "--json"))["priority"], 3)
         self.assertEqual(json.loads(self.ok("tracks", "--json"))["tracks"][0]["cars"][0]["priority"], 7)
         self.assertEqual(json.loads(self.ok("trains", "--json"))["trains"][0]["priority"], 1)
         self.assertEqual(json.loads(self.ok("stack", "--json"))["queue"][0]["priority"], 10)
         board = json.loads(self.ok("board", "--json"))
         items = {it["ref"]: it for c in board["columns"] for it in c["items"]}
-        self.assertEqual((items["tr-0001:1"]["priority"], items["st-0001"]["priority"], items["wl-0001"]["priority"]),
-                         (7, 10, 3))
+        self.assertEqual((items["tr-0001:1"]["priority"], items["st-0001"]["priority"]), (7, 10))
         self.assertIn("| Вагон | Приоритет | Что |", self.ok("board", "--md"))
 
     def test_the_one_command_for_every_kind_and_one_car_one_priority(self):
@@ -133,16 +115,13 @@ class SetTest(PBase):
         self.trains().add("katalog", "Каталог", cars=["tr-0001:1"])
         Stack(self.t.state, self.t.cfg).add("чужой")
         TeamStack(self.t.state, self.t.cfg).add("question")
-        Wishes(self.t.state).add("обложки")
-        Think(self.t.state).add("подсказки")
-        Todo(self.t.state).add("хвост", version="v")
-        for ref, n in (("katalog", 9), ("tr-0001:1", 8), ("st-0001", 7), ("tm-0001", 6), ("wl-0001", 4),
-                       ("th-0001", 3), ("td-0001", 2)):
+        for ref, n in (("katalog", 9), ("tr-0001:1", 8), ("st-0001", 7), ("tm-0001", 6)):
             self.assertIn(": приоритет P5 → P%d" % n, self.ok("priority", ref, str(n)))
             self.assertIn("%s: приоритет P%d (1–10" % (ref, n), self.ok("priority", ref))
-        self.assertIn("приоритет P2 (был тот же)", self.ok("priority", "td-0001", "2"))
+        self.assertIn("приоритет P6 (был тот же)", self.ok("priority", "tm-0001", "6"))
         self.assertIn("трек (тема)", self.refused("priority", "tr-0001", "5"))
-        self.assertIn("priority is 1–10", self.refused("priority", "wl-0001", "0"))
+        self.assertIn("priority is 1–10", self.refused("priority", "st-0001", "0"))
+        self.assertIn("no train wl-0001", self.refused("priority", "wl-0001", "5"))  # an id of the queues of before
         self.assertIn("no train nope", self.refused("priority", "nope", "5"))
         # a car and its object: one car — whichever is named, both get it
         out = self.ok("tracks", "car", "stack", "tr-0001:1")
@@ -167,19 +146,12 @@ class SetTest(PBase):
         self.ok("tracks", "car", "set", "tr-0002:1", "--st", "st-0003")
         self.assertEqual(Stack(self.t.state, self.t.cfg).get("st-0003")["priority"], 7)
 
-    def test_take_gives_the_new_car_the_entry_s_priority(self):
-        Wishes(self.t.state).add("обложки", priority=9)
-        Todo(self.t.state).add("хвост", version="v", priority=2)
+    def test_take_gives_the_new_car_the_object_s_priority(self):
         Stack(self.t.state, self.t.cfg).add("объект", priority=8)
         TeamStack(self.t.state, self.t.cfg).add("question", priority=3)
-        self.ok("wishes", "take", "wl-0001", "--to", "tr-0001")
         self.ok("stack", "take", "st-0001", "--to", "tr-0001")
         self.ok("tstack", "take", "tm-0001", "--to", "tr-0001")
-        self.assertEqual([c["priority"] for c in self.tracks().get("tr-0001")["cars"]], [9, 8, 3])
-        out = self.ok("todo", "take", "td-0001", "--to", "tr-0001:0")  # a car that is: it keeps its own
-        self.assertIn("приоритет вагона — его, P9 (у td-0001 был P2)", out)
-        self.assertEqual(self.tracks().car("tr-0001:0")[1]["priority"], 9)
-        self.assertEqual(Todo(self.t.state).get("td-0001")["priority"], 2)
+        self.assertEqual([c["priority"] for c in self.tracks().get("tr-0001")["cars"]], [8, 3])
 
 
 class NextByPriorityTest(PBase):
@@ -219,9 +191,12 @@ class NextByPriorityTest(PBase):
 
 class MigrateTest(PBase):
     """Schema 3 → 4: every record gets `priority`; the queues' `prio` words 8 / 5 / 2 (a `prio:` note, else 5), the
-    field off, kept in the queues' history rows; the gate last; a second run changes nothing."""
+    field off, kept in the queues' history rows; the gate last; a second run changes nothing. (Schema 6 then makes the
+    queues tracks: their files are the archive.)"""
 
     FILES = ("tracks.json", "trains.json", "stack.json", "team-stack.json", "wishes.json", "think.json", "todo.json")
+    AFTER = ("tracks.json", "trains.json", "stack.json", "team-stack.json", "wishes-v5.json", "think-v5.json",
+             "todo-v5.json")
 
     def depot3(self, state):
         """A depot as schema 3 left it: no `priority` anywhere, the queues' `prio` words."""
@@ -232,11 +207,11 @@ class MigrateTest(PBase):
         self.trains().add("katalog", "Каталог", cars=["tr-0001:0"])
         Stack(state, self.t.cfg).add("чужой")
         TeamStack(state, self.t.cfg).add("question")
-        Wishes(state).add("высокая")
-        Wishes(state).add("потом")
-        Think(state).add("обычная")
-        for text in ("из поля", "из заметки", "без ничего", "поле и заметка"):
-            Todo(state).add(text, version="v")
+        old_queue(state, "wishes", [entry("wl-0001", "waiting", title="высокая", area="product"),
+                                    entry("wl-0002", "waiting", title="потом", area="product")])
+        old_queue(state, "think", [entry("th-0001", "waiting", topic="обычная")])
+        old_queue(state, "todo", [entry("td-%04d" % i, "open", text=text, version="v", kind="bug") for i, text in
+                                  enumerate(("из поля", "из заметки", "без ничего", "поле и заметка"), 1)])
         prio = {"wl-0001": "high", "wl-0002": "later", "th-0001": "normal", "td-0001": "later", "td-0004": "high"}
         for f in self.FILES:
             d = read_json(state.path(f))
@@ -265,29 +240,31 @@ class MigrateTest(PBase):
         self.assertIn("приоритет 5 (по умолчанию): поездов 1, вагонов треков 1, объектов стека 2, стека команды 1 "
                       "(объект вагона — как у его вагона)", lines)
         self.assertEqual({f: slurp(self.t.state.path(f)) for f in self.FILES}, before)  # a dry run writes nothing
-        rc, out, err = self.team("todo", "--md")  # any command migrates first
+        rc, out, err = self.team("track", "tr-0004")  # any command migrates first
         self.assertEqual(rc, 0, err)
         self.assertIn("миграция данных депо: схема 3 → 4", err)
         self.assertEqual(migrate.version(self.t.state), SCHEMA)
         self.assertEqual(read_json(self.t.state.path("tracks.json"))["schema"], SCHEMA)
-        got = {e["id"]: e["priority"] for q in (Wishes, Think, Todo) for e in q(self.t.state).entries()}
-        self.assertEqual(got, {"wl-0001": 8, "wl-0002": 2, "th-0001": 5, "td-0001": 2, "td-0002": 8, "td-0003": 5,
-                               "td-0004": 8})
-        self.assertFalse(any("prio" in e for q in (Wishes, Think, Todo) for e in q(self.t.state).entries()))
+        arch = [e for f in ("wishes-v5.json", "think-v5.json", "todo-v5.json")
+                for e in read_json(self.t.state.path(f))["entries"]]
+        want = {"wl-0001": 8, "wl-0002": 2, "th-0001": 5, "td-0001": 2, "td-0002": 8, "td-0003": 5, "td-0004": 8}
+        self.assertEqual({e["id"]: e["priority"] for e in arch}, want)
+        self.assertFalse(any("prio" in e for e in arch))
         tk = self.tracks()
+        self.assertEqual({c["from"][0]: c["priority"] for t in tk.tracks() for c in t["cars"] if c.get("from")}, want)
         self.assertEqual((tk.car("tr-0001:0")[1]["priority"], tk.trains.get("katalog")["priority"]), (5, 5))
         self.assertEqual([o["priority"] for o in Stack(self.t.state, self.t.cfg).objects()], [5, 5])
         self.assertEqual(TeamStack(self.t.state, self.t.cfg).get("tm-0001")["priority"], 5)
-        rows = [h for h in read_jsonl(self.t.state.path("todo-history.jsonl")) if h["event"] == "migrate_priority"]
+        rows = [h for h in read_jsonl(self.t.state.path("todo-history-v5.jsonl")) if h["event"] == "migrate_priority"]
         self.assertEqual([(h["prio"], h["from_notes"]) for h in rows],
                          [({"td-0001": "later", "td-0002": "high", "td-0003": None, "td-0004": "high"}, ["td-0002"])])
         row = [h for h in read_jsonl(self.t.state.path("tracks-history.jsonl")) if h.get("schema") == 4]
         self.assertEqual([h["priority"]["todo"] for h in row], [4])
-        self.assertIn("| P8 | открыт |", out)
-        snap = {f: slurp(self.t.state.path(f)) for f in self.FILES}
+        self.assertIn("| 2 | P8 | из заметки (2015-11-06: prio: high — из заметки) (+1) |", out)
+        snap = {f: slurp(self.t.state.path(f)) for f in self.AFTER}
         self.assertEqual(migrate.run(self.t.state, self.t.cfg),
                          (["миграция данных депо: нечего переносить (схема %d)" % SCHEMA], 0))
-        self.assertEqual({f: slurp(self.t.state.path(f)) for f in self.FILES}, snap)
+        self.assertEqual({f: slurp(self.t.state.path(f)) for f in self.AFTER}, snap)
 
     def run_team(self, state_dir, *argv):
         import subprocess

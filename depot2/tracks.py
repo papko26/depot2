@@ -4,7 +4,7 @@ A track is a theme: its id `tr-NNNN`, its title, its notes and its cars (a desig
 executor's task in the stack while it runs. The cars' refs are `tr-NNNN:N`. The planning of what runs when is the
 trains' (trains.py).
 
-tracks.json          {"schema": 5, "next": n, "tracks": [...]}: in the order they are shown
+tracks.json          {"schema": 6, "next": n, "tracks": [...]}: in the order they are shown
 tracks-history.jsonl every change
 """
 
@@ -21,7 +21,7 @@ from . import stages
 from .stack import Stack, _cell
 from .store import append_jsonl, now_iso, read_json, write_json
 
-SCHEMA = 5
+SCHEMA = 6
 CAR_STATUSES = ("waiting", "ready", "running", "pr", "merged", "dropped")
 CAR_RU = i18n.Labels("tracks.car", CAR_STATUSES)  # a car's status in words, in the run's language
 CAR_BUSY = ("running", "pr")       # holds an agent's slot

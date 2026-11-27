@@ -16,7 +16,7 @@ from . import priority as pri  # noqa: E402
 from .executors import FatalError  # noqa: E402
 from .ledger import Decisions, Ledger, LedgerError, Pending  # noqa: E402
 from .persona import Persona  # noqa: E402
-from .store import LockBusy, State  # noqa: E402
+from .store import LockBusy, State, today  # noqa: E402
 
 
 def cmd_round(state, cfg, a):
@@ -937,7 +937,8 @@ def _cmd_car(state, cfg, tr, a):
     if act == "add":
         t, c = tr.car_add(a.track, a.title, n=a.n, after=a.after or (), size=a.size, est_mtok=_est(cfg, a),
                           brief=a.brief, branch=a.branch, pr=a.pr, status=a.status or "waiting",
-                          spent_mtok=a.spent_mtok, at=a.at, stage=_planning(a), priority=a.priority)
+                          spent_mtok=a.spent_mtok, at=a.at, stage=_planning(a), priority=a.priority,
+                          note="%s: %s" % (today(), a.note.strip()) if (a.note or "").strip() else None)
         print("%s:%s added, %s" % (t["id"], c["n"], pri.cell(c)))
     elif act == "set":
         before = [tr.moved_note(a.ref), tr.closed_note(*tr.car(a.ref))]  # the car as it was, before the write
@@ -1099,96 +1100,6 @@ def cmd_web(state, cfg, a):
     if srv.restarting:
         print(t("cli.web_restart", name=webui.NAME), flush=True)
         webui.reexec(srv)
-    return 0
-
-
-QUEUES = {"wishes": "Wishes", "wish": "Wishes", "think": "Think", "todo": "Todo"}
-
-
-def cmd_queue(state, cfg, a):
-    """The wishes, to-think and todo queues: print, add, set, the status moves, show, import."""
-    from . import queues
-    name = "wishes" if a.cmd == "wish" else a.cmd
-    q = getattr(queues, QUEUES[name])(state, cfg)
-    act = a.action
-    if not act:
-        if a.json:
-            print(json.dumps(q.to_json(open_only=not a.all), ensure_ascii=False, indent=1))
-        else:
-            print(q.md(open_only=not a.all, limit=a.limit), end="")
-        return 0
-    if act == "show":
-        print(q.show(a.id), end="")
-        return 0
-    ids = []
-    if act == "add":
-        if name == "wishes":
-            e = q.add(a.title, words=a.words, date=a.date, area=a.area, priority=a.priority, links=a.link or ())
-        elif name == "think":
-            e = q.add(a.topic, questions=a.question or (), by=a.by, related=a.related or (), date=a.date,
-                      links=a.link or (), priority=a.priority)
-        else:
-            version = a.version or queues.repo_version(cfg)
-            e = q.add(a.text, title=a.title, where=a.where or (), version=version, date=a.date, source=a.source,
-                      kind=a.kind, trigger=a.trigger, links=a.link or (), priority=a.priority)
-        print("%s added" % e["id"])
-        ids = [e["id"]]
-    elif act == "set":
-        fields = {k: getattr(a, k, None) for k in q.FIELDS}
-        fields.update(links=a.link, notes=a.note)
-        for k in ("question", "related", "where"):
-            if getattr(a, k, None):
-                fields["questions" if k == "question" else k] = getattr(a, k)
-        q.set(a.id, **{k: v for k, v in fields.items() if v is not None})
-        print("%s updated" % a.id)
-        ids = [a.id]
-    elif act == "take":
-        from .stack import Stack
-        from .tracks import Tracks
-        from .tstack import TeamStack
-        known = Stack(state, cfg).known_ids() | TeamStack(state, cfg).known_ids()
-        tr = Tracks(state, cfg)
-        e, ref, lines = q.take(a.id, a.to, tr, stack=lambda x: x in known, n=a.n, size=a.size, title=a.title)
-        for line in lines:
-            print(line)
-        if ":" in ref:  # the car on its track
-            print("")
-            print(tr.car_md(ref.split(":")[0]), end="")
-        ids = [a.id, "→", ref]
-    elif act == "round":
-        q.to_round(a.id, a.round, cfg)
-        print("%s → round %s" % (a.id, a.round))
-        ids = [a.id]
-    elif act == "decide":
-        decs = {d["id"] for d in Decisions(state).records()} if a.dec else None
-        q.decide(a.id, dec=a.dec, reason=a.reason, decisions=decs)
-        print("%s decided%s" % (a.id, " (%s)" % a.dec if a.dec else ""))
-        ids = [a.id]
-    elif act == "pr":
-        q.in_pr(a.id, a.pr)
-        print("%s → PR #%d" % (a.id, a.pr))
-        ids = [a.id]
-    elif act == "done" and name == "wishes":
-        for eid in a.ids:
-            q.closable(eid, "done")
-        for eid in a.ids:
-            q.done(eid, a.reason)
-            print("%s → %s" % (eid, q.STATUS_RU["done"]))
-        ids = list(a.ids)
-    elif act in ("drop", "done", "wont"):
-        status = {"wishes": {"drop": "declined"}, "think": {"drop": "dropped"},
-                  "todo": {"done": "done", "wont": "wont"}}[name][act]
-        for eid in a.ids:  # every id checked before the first is written
-            q.closable(eid, status)
-        for eid in a.ids:
-            q.to_status(eid, status, reason=a.reason)
-            print("%s → %s" % (eid, q.STATUS_RU[status]))
-        ids = list(a.ids)
-    for line in q.notes:
-        print(line)
-    print("")
-    print(q.md(), end="")
-    state.commit("team: %s %s %s" % (name, act, " ".join(ids)[:80]))
     return 0
 
 
@@ -1375,21 +1286,19 @@ def cmd_merge(state, cfg, a):
 
 
 def cmd_queues(state, cfg, a):
-    from .queues import migrate, overview
+    from .queues import migrate, overview, overview_json
     if a.action == "migrate":
         lines, changed = migrate(state, cfg, dry_run=a.dry_run)
         print(t("cli.queues_migrate_dry" if a.dry_run else "cli.queues_migrate", n=changed))
         for line in lines:
             print("- " + line)
         if not a.dry_run and changed:
-            state.commit("team: queues migrate (stack autostart, stages, from; %d)" % changed)
+            state.commit("team: queues migrate (stack autostart, stages; %d)" % changed)
         return 0
-    text, rows = overview(state, cfg)
     if a.json:
-        print(json.dumps([{"queue": r[0], "open": r[1], "head": r[2], "command": r[3], "priority": r[4]} for r in rows],
-                         ensure_ascii=False, indent=1))
+        print(json.dumps(overview_json(state, cfg), ensure_ascii=False, indent=1))
     else:
-        print(text, end="")
+        print(overview(state, cfg)[0], end="")
     return 0
 
 
@@ -1476,10 +1385,9 @@ def _migrate_first(state, cfg, a):
     print("\n".join(lines), file=sys.stderr)
 
 
-ID_OF = {"stack": "st-NNNN", "tstack": "tm-NNNN", "wishes": "wl-NNNN", "wish": "wl-NNNN", "think": "th-NNNN",
-         "todo": "td-NNNN", "agents": "ag-NNNN", "agent": "ag-NNNN", "brainstorm": "bs-NNNN", "order": "ord-NNNN",
-         "principles": "pc-NNNN", "principle": "pc-NNNN", "tracks": "tr-NNNN", "track": "tr-NNNN",
-         "car": "the car: tr-NNNN:N, st-NNNN, wl-NNNN or th-NNNN"}
+ID_OF = {"stack": "st-NNNN", "tstack": "tm-NNNN", "agents": "ag-NNNN", "agent": "ag-NNNN", "brainstorm": "bs-NNNN",
+         "order": "ord-NNNN", "principles": "pc-NNNN", "principle": "pc-NNNN", "tracks": "tr-NNNN", "track": "tr-NNNN",
+         "car": "the car: tr-NNNN:N or st-NNNN"}
 ARG_HELP = {
     "id": "{id}", "ids": "one or more: {id}", "ref": "the car, tr-NNNN:N (an old ref of a moved car finds it)",
     "track": "the track, tr-NNNN", "name": "the train's name (a slug, e.g. search-v1)",
@@ -1503,12 +1411,8 @@ ARG_HELP = {
     "owner": "the owner lifts it (written as his decision about the locker)",
     "kind": "its kind", "input": "the input file the round reads", "who": "all, or one character",
     "answer": "the answer, in words", "by": "who (kept in the history)",
-    "link": "a link: dec-…, wl-…, tr-…:…, #PR or a URL (repeatable)", "area": "where it belongs",
+    "link": "a link: dec-…, tr-…:…, #PR or a URL (repeatable)",
     "date": "YYYY-MM-DD (default today)", "words": "the owner's words, verbatim",
-    "topic": "what to think about", "question": "one question (repeatable)", "related": "a related id (repeatable)",
-    "where": "FILE:LINE (repeatable)", "version": "the project's version: its release + main's commit",
-    "source": "PR / agent / tester / owner", "trigger": "a reminder's trigger, e.g. «after the v2 train is "
-    "deployed»", "dec": "the decision, dec-NNNNNN (checked against decisions.jsonl)",
     "result": "a result file (repeatable; copied into orders.results_dir/<id>/)",
     "only": "one character only", "spec": "its spec too", "dry_run": "say what it would do, write nothing",
     "ballot_dir": "where the ballot files are", "review_dir": "where the review files are",
@@ -1788,6 +1692,7 @@ def build_parser():
                    help="its first status (default waiting)")
     c.add_argument("--at", type=int)
     c.add_argument("--stage", help="its first stage: bogie, sketch or project (default: by its status and brief)")
+    c.add_argument("--note", help="its first note, a dated line (where it was found, the version, by whom)")
     pri.add_arg(c)
     c = csub.add_parser("set", help="change a car (tr-NNNN:N)")
     c.add_argument("ref")
@@ -1908,17 +1813,18 @@ def build_parser():
     p.add_argument("--md", action="store_true", help="the markdown table (the default)")
     p.set_defaults(fn=cmd_train, mutates=False)
 
-    p = sub.add_parser("migrate", help="bring the depot's data to today's form, once (schema 1 → 5: tracks and "
+    p = sub.add_parser("migrate", help="bring the depot's data to today's form, once (schema 1 → 6: tracks and "
                                        "trains, the marks by the principles, the priorities, the cars merged by hand "
-                                       "before the merge queue's last ride → arrived); any command runs it first")
+                                       "before the merge queue's last ride → arrived, the queues of wishes, to-think "
+                                       "and todo → tracks of those names); any command runs it first")
     p.add_argument("--dry-run", action="store_true", help="say what it would do, write nothing")
     p.set_defaults(fn=cmd_migrate, mutates=True)
 
     p = sub.add_parser("priority", help="the priority 1–10 (10 — the most important, default 5) of a train or a car in "
                                         "any form: print it, or set it (the same as --priority N on its "
                                         "set). A free slot takes the trains by it, then the cars (trains next)")
-    p.add_argument("id", help="a train's name, tr-NNNN:N, st-/tm-NNNN, wl-/th-/td-NNNN (a car and its live stack "
-                              "object are one car: both get it)")
+    p.add_argument("id", help="a train's name, tr-NNNN:N, st-/tm-NNNN (a car and its live stack object are one car: "
+                              "both get it)")
     p.add_argument("n", nargs="?", help="1–10 (P7 too; high|normal|later = 8 / 5 / 2); left out: print it")
     p.set_defaults(fn=cmd_priority, mutates=True)
 
@@ -1927,7 +1833,7 @@ def build_parser():
     csub.required = True
     c = csub.add_parser("stage", help="move its stage, on the route; the moves a command makes are refused, "
                                       "each with its command")
-    c.add_argument("id", help="st-NNNN, tr-NNNN:N, wl-NNNN or th-NNNN")
+    c.add_argument("id", help="st-NNNN or tr-NNNN:N")
     c.add_argument("stage", help="bogie sketch project build docs acceptance queued rolling arrived scrapped (or the "
                                  "Russian name); build ⇄ docs is car stage's own, in a slot")
     c.add_argument("--why", help="the reason; required for a step back and for scrapped")
@@ -2039,98 +1945,6 @@ def build_parser():
     p.add_argument("--verbose", action="store_true", help="log every request to stderr")
     p.set_defaults(fn=cmd_web, mutates=False)
 
-    from .queues import AREAS, KINDS as TODO_KINDS
-    for name, aliases, hlp in (("wishes", ["wish"], "the owner's wishes not scheduled yet (wishes.json)"),
-                               ("think", [], "open questions for a brainstorm, a round or the owner (think.json)"),
-                               ("todo", [], "leftovers and reminders (todo.json): date, version, place")):
-        p = sub.add_parser(name, aliases=aliases, help=hlp + "; no action: print it")
-        p.add_argument("--json", action="store_true")
-        p.add_argument("--md", action="store_true", help="the markdown table (the default)")
-        p.add_argument("--all", action="store_true", help="closed ones too")
-        p.add_argument("--limit", type=int, help="the first N rows")
-        qsub = p.add_subparsers(dest="action")
-        q = qsub.add_parser("add", help="a new open entry (its id never reused)")
-        q.add_argument("--date", help="YYYY-MM-DD (default today)")
-        q.add_argument("--link", action="append")
-        if name == "wishes":
-            q.add_argument("--title", required=True)
-            q.add_argument("--words", help="the owner's words, verbatim")
-            q.add_argument("--area", choices=AREAS, default="product")
-            pri.add_arg(q, synonym=True)
-        elif name == "think":
-            q.add_argument("--topic", required=True)
-            q.add_argument("--question", action="append")
-            q.add_argument("--by", help="who raised it")
-            q.add_argument("--related", action="append")
-            pri.add_arg(q, synonym=True)
-        else:
-            pri.add_arg(q, synonym=True)
-            q.add_argument("--text", required=True, help="what it is, in words")
-            q.add_argument("--title")
-            q.add_argument("--where", action="append", metavar="FILE:LINE")
-            q.add_argument("--version", help="default: package.json + origin/main of the main clone")
-            q.add_argument("--source", help="PR / agent / tester / owner")
-            q.add_argument("--kind", choices=TODO_KINDS, default="bug")
-            q.add_argument("--trigger", help="a reminder's trigger, e.g. «after the v2 train is deployed»")
-        q = qsub.add_parser("set", help="change an open entry's fields (--note, --link, --question, --where append)")
-        q.add_argument("id")
-        q.add_argument("--date")
-        q.add_argument("--link", action="append")
-        q.add_argument("--note", action="append")
-        if name == "wishes":
-            for f in ("--title", "--words"):
-                q.add_argument(f)
-            q.add_argument("--area", choices=AREAS)
-            pri.add_arg(q, synonym=True)
-        elif name == "think":
-            q.add_argument("--topic")
-            q.add_argument("--by")
-            q.add_argument("--question", action="append")
-            q.add_argument("--related", action="append")
-            pri.add_arg(q, synonym=True)
-        else:
-            for f in ("--text", "--title", "--version", "--source", "--trigger"):
-                q.add_argument(f)
-            pri.add_arg(q, synonym=True)
-            q.add_argument("--where", action="append")
-            q.add_argument("--kind", choices=TODO_KINDS)
-        q = qsub.add_parser("show", help="every field of one entry")
-        q.add_argument("id")
-        q = qsub.add_parser("take", help="it becomes a track's car and closes «→ tr-NNNN:N»: --to tr-NNNN "
-                                         "a new bogie (its title, words and date in a note, from: the entry), tr-NNNN:N "
-                                         "a car that is (the note and from too), st-/tm-NNNN a stack object (linked only)")
-        _take_args(q)
-        q.add_argument("--to", required=True, metavar="TRACK_CAR_OR_ST")
-        if name == "wishes":
-            q = qsub.add_parser("drop", help="declined")
-            q.add_argument("ids", nargs="+")
-            q.add_argument("--reason", required=True)
-            q = qsub.add_parser("done", help=t("cli.help.queue_done"))
-            q.add_argument("ids", nargs="+")
-            q.add_argument("--reason", required=True)
-        elif name == "think":
-            q = qsub.add_parser("round", help="link it to a team round (a round id or a tm-NNNN)")
-            q.add_argument("id")
-            q.add_argument("--round", required=True, help="a round's id, or the team stack item tm-NNNN")
-            q = qsub.add_parser("decide", help="decided: --dec dec-NNNNNN and/or --reason")
-            q.add_argument("id")
-            q.add_argument("--dec")
-            q.add_argument("--reason")
-            q = qsub.add_parser("drop", help="no longer a question")
-            q.add_argument("ids", nargs="+")
-            q.add_argument("--reason", required=True)
-        else:
-            q = qsub.add_parser("pr", help="a PR takes it")
-            q.add_argument("id")
-            q.add_argument("--pr", type=int, required=True)
-            q = qsub.add_parser("done", help="done (several ids at once)")
-            q.add_argument("ids", nargs="+")
-            q.add_argument("--reason")
-            q = qsub.add_parser("wont", help="we won't (several ids at once)")
-            q.add_argument("ids", nargs="+")
-            q.add_argument("--reason", required=True)
-        p.set_defaults(fn=cmd_queue, mutates=False)
-
     from .principles import SECTIONS as PC_SECTIONS
     p = sub.add_parser("principles", aliases=["principle"],
                        help="the design principles (principles.json): PRINCIPLES.md is rendered from them, the three "
@@ -2155,7 +1969,7 @@ def build_parser():
         q.add_argument("--date", help="YYYY-MM-DD (default today)")
         q.add_argument("--order", type=float, help="its place in the section (default: the end)")
         q.add_argument("--check", choices=("yes", "no"), help="part of the third check (`principles checks`)")
-        q.add_argument("--link", action="append", help="dec-…, wl-…, tr-…:…")
+        q.add_argument("--link", action="append", help="dec-…, tr-…:…")
         if act == "set":
             q.add_argument("--sub-set", nargs=2, metavar=("N", "TEXT"), help="sub N (from 1) becomes TEXT")
             q.add_argument("--sub-drop", type=int, metavar="N", help="sub N (from 1) goes")
@@ -2246,12 +2060,12 @@ def build_parser():
     p.set_defaults(fn=cmd_merge, mutates=False)
 
     p = sub.add_parser("queues", help="the heads of every queue with counts (stack, merge queue, team stack, trains, "
-                                      "tracks, ballots, wishes, to-think, todo, principles)")
+                                      "tracks, agents, ballots, decisions, principles)")
     p.add_argument("--json", action="store_true")
     p.add_argument("--md", action="store_true", help="the markdown table (the default)")
     qsub = p.add_subparsers(dest="action")
     q = qsub.add_parser("migrate", help="one shot, idempotent: the stack's autostart = no written explicitly, every "
-                                        "car's stage, the cars' `from` (the priorities: `depot2 migrate`)")
+                                        "car's stage (the priorities and the queues of before: `depot2 migrate`)")
     q.add_argument("--dry-run", action="store_true", help="print what it would move, write nothing")
     p.set_defaults(fn=cmd_queues, mutates=False)
 
@@ -2337,9 +2151,8 @@ def main(argv=None):
     a, extra = ap.parse_known_args(argv)
     if extra:
         ap.error(_unrecognized(argv, extra))
-    if a.cmd in ("stack", "ballots", "tstack", "tracks", "trains", "wishes", "wish", "think", "todo", "queues",
-                 "principles", "principle", "agents", "agent") and getattr(a, "action", None) not in (
-                     None, "next", "show", "checks"):
+    if a.cmd in ("stack", "ballots", "tstack", "tracks", "trains", "queues", "principles", "principle", "agents",
+                 "agent") and getattr(a, "action", None) not in (None, "next", "show", "checks"):
         a.mutates = True  # an action changes the file; printing it does not
     if a.cmd == "merge" and (a.action in ("add", "move", "handoff", "resume", "drop", "rerun") or
                              (a.action == "resolve" and getattr(a, "res_action", None) in ("add", "drop"))):

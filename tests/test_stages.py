@@ -12,7 +12,6 @@ from test_extras import Base
 from test_merge import MergeBase
 
 from depot2 import merge, stages
-from depot2.queues import Think, Wishes
 from depot2.stack import Stack
 from depot2.store import read_json, read_jsonl, write_json
 from depot2.tracks import Tracks
@@ -139,8 +138,7 @@ class StackStagesTest(Base):
         self.assertEqual(js["in_slots"][0]["stage"], "build")
         self.assertEqual(rows(js["in_slots"][0]), [(None, "bogie"), ("bogie", "build")])
         out = self.team("queues", "--md")[1]
-        self.assertIn("Этапы вагонов (стек, открытые вагоны поездов, хотелки, «подумать»; без прибывших и списанных): "
-                      "1 — сборка 1", out)
+        self.assertIn("Этапы вагонов (стек, открытые вагоны треков; без прибывших и списанных): 1 — сборка 1", out)
 
 
 class TrainStagesTest(Base):
@@ -227,47 +225,6 @@ class TrainStagesTest(Base):
         self.assertEqual((r["stage"], r["forced"], r["off_route"]), ("build", True, True))
 
 
-class QueueStagesTest(Base):
-    def test_wishes_and_think(self):
-        self.team("wishes", "add", "--title", "кнопка", "--words", "сделай кнопку")
-        self.team("wishes", "add", "--title", "обложки")
-        self.team("wishes", "add", "--title", "автоимпорт")
-        self.team("think", "add", "--topic", "подсказки", "--question", "Нужна ли она?", "--question", "Когда?")
-        self.team("think", "add", "--topic", "обложки")
-        w, th = Wishes(self.t.state), Think(self.t.state)
-        self.assertEqual([e["stage"] for e in w.entries()], ["bogie"] * 3)
-        self.assertEqual([(e["stage"], e["question"]) for e in th.entries()],
-                         [("bogie", "Нужна ли она?"), ("bogie", "обложки")])
-        self.team("stack", "add", "--title", "Кнопка")
-        self.team("stack", "start", "st-0001")
-        self.team("wish", "take", "wl-0001", "--to", "st-0001")
-        self.team("wishes", "drop", "wl-0002", "--reason", "не в v1")
-        rc, out, _ = self.team("wishes", "done", "wl-0003", "--reason", "сделано в #300")
-        self.assertIn("этап: wl-0003 «тележка» → «прибыл» не по маршруту (wishes done)", out)
-        self.team("think", "drop", "th-0002", "--reason", "слито")
-        w, th = Wishes(self.t.state), Think(self.t.state)
-        self.assertEqual([e["stage"] for e in w.entries()], ["bogie", "scrapped", "arrived"])
-        self.assertEqual(w.get("wl-0002")["stages"][-1]["why"], "не в v1")
-        self.assertEqual(th.get("th-0002")["stage"], "scrapped")
-        md = self.team("wishes", "--all")[1]
-        self.assertIn("| Приоритет | Статус | Этап |", md)
-        self.assertIn("| взята → st-0001 | тележка → сборка |", md)  # the wish lives on in what took it
-        self.assertIn("| отклонена | списан |", md)
-        self.assertIn("| Статус | Этап |", self.team("think")[1])
-        self.assertEqual(json.loads(self.team("wishes", "--json", "--all")[1])[1]["stage"], "scrapped")
-        rc, _, err = self.team("car", "stage", "wl-0001", "scrapped", "--why", "x")
-        self.assertIn("списан — depot2 wishes drop wl-0001", err)
-        rc, out, err = self.team("car", "stage", "th-0001", "sketch")
-        self.assertEqual(rc, 0, err)
-        self.assertIn("stages:", self.team("think", "show", "th-0001")[1])
-        self.assertIn("Взята → st-0001: сборка.", self.team("car", "show", "wl-0001")[1])
-        # a todo is no car
-        self.team("todo", "add", "--text", "опечатка", "--version", "v")
-        self.assertNotIn("stage", self.team("todo", "show", "td-0001")[1])
-        self.assertNotIn("Этап", self.team("todo")[1])
-        self.assertIn("вагон — это st-NNNN", self.team("car", "show", "td-0001")[2])
-
-
 class MigrateStagesTest(Base):
     """`queues migrate` writes the stage the place says on every car from before the field, once."""
 
@@ -295,15 +252,11 @@ class MigrateStagesTest(Base):
             tr.car_add(t["id"], "вагон " + n, n=n, status=status, brief=brief if n == "e" else None,
                        pr=404 if n == "d" else None)
         tr.car_set("tr-0001:d", st="st-0005")
-        Wishes(self.t.state).add("хотелка")
-        Wishes(self.t.state).add("ещё одна")
-        self.team("wishes", "drop", "wl-0002", "--reason", "нет")
-        Think(self.t.state).add("вопрос", questions=["Какой?"])
         self.strip()
 
     def strip(self):
-        """As before the field: no stage, no history, no question."""
-        for name, key in (("stack.json", "objects"), ("wishes.json", "entries"), ("think.json", "entries")):
+        """As before the field: no stage, no history."""
+        for name, key in (("stack.json", "objects"),):
             d = read_json(self.t.state.path(name))
             for r in d[key]:
                 for k in ("stage", "stages", "question"):
@@ -317,8 +270,8 @@ class MigrateStagesTest(Base):
         write_json(self.t.state.path("tracks.json"), d)
 
     def files(self):
-        return {n: slurp(self.t.state.path(n)) for n in ("stack.json", "tracks.json", "wishes.json", "think.json",
-                                                         "stack-history.jsonl", "tracks-history.jsonl")}
+        return {n: slurp(self.t.state.path(n)) for n in ("stack.json", "tracks.json", "stack-history.jsonl",
+                                                         "tracks-history.jsonl")}
 
     def test_dry_run_then_once_and_idempotent(self):
         # before the move the views show the place's stage already
@@ -339,12 +292,8 @@ class MigrateStagesTest(Base):
         self.assertEqual(cars, {"a": "arrived", "b": "scrapped", "c": "bogie", "d": "bogie", "e": "sketch"})
         self.assertEqual(Tracks(self.t.state, self.t.cfg).car("tr-0001:d")[1]["stages"][0]["why"],
                          "перенос: как его объект st-0005")
-        self.assertEqual([e["stage"] for e in Wishes(self.t.state).entries()], ["bogie", "scrapped"])
-        e = Think(self.t.state).get("th-0001")
-        self.assertEqual((e["stage"], e["question"]), ("bogie", "Какой?"))
         self.assertIn("- этапы: вагоны треков — записан у 5 (тележка 2 · эскиз 1 · прибыл 1 · списан 1)", out)
-        self.assertIn("- этапы: на подумать — записан у 1 (тележка 1); вопрос (question) у 1", out)
-        self.assertIn("перенесено: 14 записей и объектов", out)  # 5 objects, 5 cars, 2 wishes, 1 entry + its question
+        self.assertIn("перенесено: 10 записей и объектов", out)  # 5 objects, 5 cars
         h = Stack(self.t.state, self.t.cfg).history()[-1]
         self.assertEqual((h["event"], h["objects"]["st-0003"]), ("migrate_stage", "queued"))
         after = self.files()
@@ -503,8 +452,8 @@ class MigrateArrivalsTest(Base):
                          ("rolling", "выкачен с #302 (mq-0002, 2015-11-18 12:00): слит руками раньше (миграция)",
                           "depot2 migrate (схема 5)"))
         hist = [h for h in read_jsonl(self.t.state.path("tracks-history.jsonl")) if h["event"] == "migrate"]
-        self.assertEqual([(h["schema"], h["arrived"], h["last_ride"]) for h in hist],
-                         [(5, {"tr-0001:1": "mq-0001", "tr-0001:2": "mq-0002"}, "mq-0002")])
+        self.assertEqual([(h["schema"], h.get("arrived"), h.get("last_ride")) for h in hist],
+                         [(5, {"tr-0001:1": "mq-0001", "tr-0001:2": "mq-0002"}, "mq-0002"), (6, None, None)])
         snap = {f: slurp(self.t.state.path(f)) for f in before}
         self.assertEqual(migrate.run(self.t.state, self.t.cfg),
                          (["миграция данных депо: нечего переносить (схема %d)" % migrate.SCHEMA], 0))

@@ -1,9 +1,9 @@
 """The board: every live car in the column of its stage, as a Kanban board (`depot2 board`, the web's first tab).
 
 A column holds the cars on that stage: the stack's objects (a track's car's object is its car), the tracks' cars, the
-objects that left the stack still on their way, the merge queue's PRs with no car, the open wishes and to-think
-entries. Each row: the car, what it is, its train, its size, where it is, how long it has stood on its stage, and the
-next gate as it stands (gates.py). The build and the acceptance have soft limits (`stack.slots`, `stack.post_max`).
+objects that left the stack still on their way, the merge queue's PRs with no car. Each row: the car, what it is, its
+train, its size, where it is, how long it has stood on its stage, and the next gate as it stands (gates.py). The build
+and the acceptance have soft limits (`stack.slots`, `stack.post_max`).
 """
 
 from . import gates
@@ -17,7 +17,7 @@ from .tracks import Tracks
 V = 1
 VIEWS = ("all", "stack")
 STACK_VIEW = ("build", "docs", "acceptance", "queued")
-KIND_RU = i18n.Labels("board.kind", ("car", "stack", "left", "merge", "wish", "think"))
+KIND_RU = i18n.Labels("board.kind", ("car", "stack", "left", "merge"))
 WHERE_RU = i18n.Labels("board.where", ("slot", "post", "queue", "parked", "track", "merge"))
 
 
@@ -97,9 +97,8 @@ class Board(object):
 
     def items(self, all_=False, with_gates=True):
         """Every car on the board, in order: the stack (slots, post-stack, queue), the tracks' cars in the tracks'
-        order, the objects that left still on their way, the merge queue's PRs with no car, the wishes, the
-        to-think entries. all_: the terminal stages too."""
-        from .queues import Think, Wishes
+        order, the objects that left still on their way, the merge queue's PRs with no car. all_: the terminal
+        stages too."""
         out = []
         objs = self.stk.objects()
         live = {o["id"] for o in objs}
@@ -158,14 +157,6 @@ class Board(object):
             out.append(self._item("merge", "#%d" % e["pr"], e, s, e.get("title") or "", where="merge",
                                   since=(e.get("merged") or {}).get("ts") if s == "rolling" else e.get("added"),
                                   with_gates=False, merge=e))
-        for q in (Wishes(self.state), Think(self.state)):
-            kind = "wish" if q.NAME == "wishes" else "think"
-            for e in (q.entries() if all_ else q.entries(open_only=True)):
-                s = q.stage_of(e)
-                if s in stages.TERMINAL and not all_:
-                    continue
-                out.append(self._item(kind, e["id"], e, s, e.get("title") or e.get("topic") or e.get("text") or "",
-                                      since=e.get("added"), with_gates=False))
         return out
 
 

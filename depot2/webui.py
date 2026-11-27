@@ -44,15 +44,13 @@ CODE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FD_ENV = "DEPOT2_WEB_FD"
 CODE_CHECK_S = 1.0  # at most one look at the code's files a second
 RESTART_WAIT_S = 0.6  # a request that found new code waits this long for its 307: the old loop stops meanwhile
-RE_REF = re.compile(r"^(?:(?:st|wl|th)-\d{4}|tr-\d{4}:[^\s/\\:]{1,24})$")
+RE_REF = re.compile(r"^(?:st-\d{4}|tr-\d{4}:[^\s/\\:]{1,24})$")
 RE_TRACK = re.compile(r"^tr-\d{4}$")
 RE_TRAIN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MAX_DOC = 2 * 1024 * 1024
 # the queues of the Queues tab: (name, the catalog key of its title, the command that edits it)
-QUEUES = (("todo", "webui.queue.todo", "todo"), ("think", "webui.queue.think", "think"),
-          ("wishes", "webui.queue.wishes", "wishes"), ("ballots", "webui.queue.ballots", "ballots"),
-          ("tstack", "webui.queue.tstack", "tstack"), ("orders", "webui.queue.orders", "orders"),
-          ("brainstorms", "webui.queue.brainstorms", "brainstorm list"))
+QUEUES = (("ballots", "webui.queue.ballots", "ballots"), ("tstack", "webui.queue.tstack", "tstack"),
+          ("orders", "webui.queue.orders", "orders"), ("brainstorms", "webui.queue.brainstorms", "brainstorm list"))
 RE_MESSAGES = re.compile(r'(<script type="application/json" id="messages">)(.*?)(</script>)', re.S)
 RE_LANG = re.compile(r'<html lang="[^"]*">')
 
@@ -166,15 +164,18 @@ def decisions(state, cfg, q):
     return dec.to_json(state, grep=(q.get("q") or [""])[-1].strip() or None, limit=int(limit) if limit else None)
 
 
+def queues_overview(state, cfg):
+    """`queues --json`: every queue the depot keeps, a row each, with what it is (the Queues tab's head)."""
+    from . import queues
+    return queues.overview_json(state, cfg)
+
+
 def queue(state, cfg, name, q):
     """A queue's `--json` (QUEUES): the open entries, with ?all=1 every one; the team stack is its slots and queue."""
-    from . import extras, queues
+    from . import extras
     from .stack import Ballots
     from .tstack import TeamStack
     all_ = _flag(q, "all")
-    if name in ("todo", "think", "wishes"):
-        return getattr(queues, {"todo": "Todo", "think": "Think", "wishes": "Wishes"}[name])(state, cfg).to_json(
-            open_only=not all_)
     if name == "ballots":
         return Ballots(state).entries(open_only=not all_)
     if name == "tstack":
@@ -192,13 +193,10 @@ def plain(words):
 def queue_meta():
     """What the page needs to draw the queues: each one's open statuses and their names, its labels (/api/meta).
     No team (characters.IDS empty): the who-list is `all` alone."""
-    from . import characters, extras, prompts, queues, tstack
+    from . import characters, extras, prompts, tstack
     from .stack import BALLOT_RU
     who = dict({"all": i18n.t("webui.who_all")}, **{c: characters.name(c) for c in characters.IDS})
-    q = {"todo": (queues.Todo.OPEN, queues.Todo.STATUS_RU, {"kind": queues.KIND_RU}),
-         "think": (queues.Think.OPEN, queues.Think.STATUS_RU, {}),
-         "wishes": (queues.Wishes.OPEN, queues.Wishes.STATUS_RU, {"area": queues.AREA_RU}),
-         "ballots": (("waiting", "presenting"), BALLOT_RU, {"kind": dict(prompts.KIND_RU.items())}),
+    q = {"ballots": (("waiting", "presenting"), BALLOT_RU, {"kind": dict(prompts.KIND_RU.items())}),
          "tstack": ((), {}, {"kind": tstack.KIND_RU, "who": who}),
          "orders": (extras.Orders.OPEN, extras.Orders.STATUS_RU, {"who": who}),
          "brainstorms": (extras.Brainstorms.OPEN, extras.Brainstorms.STATUS_RU, {"who": who})}
@@ -589,7 +587,8 @@ class Server(http.server.ThreadingHTTPServer):
                   "trains": lambda c: trains(st, c), "stack": lambda c: stack(st, c),
                   "merge": lambda c: merge_queue(st, c), "meta": lambda c: meta(st, c, self.code_info()),
                   "doc": lambda c: self.doc(q), "principles": lambda c: principles(st, c, q),
-                  "decisions": lambda c: decisions(st, c, q), "agents": lambda c: agents(st, c, q)}
+                  "decisions": lambda c: decisions(st, c, q), "agents": lambda c: agents(st, c, q),
+                  "queues": lambda c: queues_overview(st, c)}
         if rest is None and head in simple:
             return simple[head]
         if rest and head == "track":

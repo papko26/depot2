@@ -1,19 +1,19 @@
-
+"""The overview of every queue (`depot2 queues`), the team's stack, and the queues of before — wishes, to-think,
+todo — that the data migration makes tracks of the same name (schema 5 → 6, migrate.py). Every entry is made up."""
 import json
 import os
-import stat
-import subprocess
-import tempfile
 
-from helpers import slurp
+from helpers import TempState, slurp
 from test_extras import Base
 
-from depot2.queues import QueueError, Think, Todo, Wishes, repo_version
+from depot2 import migrate
+from depot2.queues import ROWS
 from depot2.stack import Stack, StackError
-from depot2.store import read_json, write_json
-from depot2.tracks import Tracks
+from depot2.store import read_json, read_jsonl, write_json
+from depot2.tracks import SCHEMA, Tracks
 from depot2.trains import Trains
 from depot2.tstack import TeamStack
+
 
 def write(d, name, text):
     path = os.path.join(d, name)
@@ -22,142 +22,34 @@ def write(d, name, text):
     return path
 
 
+TS = "2015-11-04T10:00:00+02:00"
+
+
+def entry(eid, status, **fields):
+    """An entry of a queue of before, as a depot of schema 5 kept it."""
+    e = {"id": eid, "added": TS, "date": TS[:10], "status": status, "links": [], "notes": [], "priority": 5}
+    e.update(fields)
+    return e
+
+
+def old_queue(state, name, entries):
+    """<name>.json and <name>-history.jsonl as the queue left them: one `add` row an entry."""
+    write_json(state.path(name + ".json"), {"next": len(entries) + 1, "entries": entries})
+    with open(state.path(name + "-history.jsonl"), "w", encoding="utf-8") as f:
+        for e in entries:
+            f.write(json.dumps({"ts": TS, "event": "add", "entry": e["id"]}, ensure_ascii=False) + "\n")
+
+
+def at_schema(state, n):
+    for f, empty in (("tracks.json", {"next": 1, "tracks": []}), ("trains.json", {"trains": []})):
+        d = read_json(state.path(f)) or dict(empty)
+        d["schema"] = n
+        write_json(state.path(f), d)
+
+
 class QBase(Base):
     def team(self, *argv):
         return super(QBase, self).team("--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent", *argv)
-
-
-class WishesTest(QBase):
-    def test_add_take_drop_and_the_table(self):
-        w = Wishes(self.t.state)
-        a = w.add("обложки видны сразу", words="обложки должны быть заметнее в выдаче", date="2015-11-05")
-        b = w.add("автоимпорт", date="2015-11-04", priority="later")
-        c = w.add("пустая полка", words="пустые полки выглядят как ошибка", priority=8, date="2015-11-05", area="product")
-        with self.assertRaises(QueueError):
-            w.add("x", area="kitchen")
-        md = Wishes(self.t.state).md()
-        self.assertIn("## Очередь хотелок", md)
-        self.assertIn("| № | Хотелка | Дата | Слова владельца | Область | Приоритет | Статус |", md)
-        self.assertLess(md.index(c["id"]), md.index(a["id"]))  # high first, later last
-        self.assertLess(md.index(a["id"]), md.index(b["id"]))
-        self.assertIn("| 1 | wl-0003 пустая полка | 2015-11-05 | пустые полки выглядят как ошибка | продукт | P8 | ждёт |", md)
-        Stack(self.t.state, self.t.cfg).add("Полка")
-        tr = Tracks(self.t.state, self.t.cfg)
-        tr.add("Поиск")
-        tr.car_add("tr-0001", "полка", size="M")
-        rc, out, err = self.team("wish", "take", "wl-0003", "--to", "tr-0001:0")
-        self.assertEqual(rc, 0, err)
-        self.assertEqual(Wishes(self.t.state).get("wl-0003")["taken_to"], "tr-0001:0")
-        self.assertEqual(self.team("wishes", "take", "wl-0001", "--to", "st-0404")[0], 1)
-        self.assertEqual(self.team("wishes", "take", "wl-0001", "--to", "st-0001")[0], 0)
-        self.assertEqual(self.team("wishes", "take", "wl-0001", "--to", "st-0001")[0], 1)  # taken already
-        rc, out, _ = self.team("wishes", "drop", "wl-0002", "--reason", "не в v1")
-        self.assertIn("wl-0002 → отклонена", out)
-        self.assertIn("| — | (пусто) |", self.team("wishes")[1])
-        rc, out, _ = self.team("wishes", "--all")
-        self.assertIn("взята → tr-0001:0", out)
-        self.assertIn("отклонена", out)
-        rc, out, _ = self.team("wishes", "add", "--title", "кнопка экспорта", "--words", "значок «CSV»", "--area", "product")
-        self.assertIn("wl-0004 added", out)
-        rc, out, _ = self.team("wishes", "set", "wl-0004", "--prio", "high", "--note", "в вагон 4")
-        self.assertEqual(Wishes(self.t.state).get("wl-0004")["priority"], 8)
-        self.assertIn("в вагон 4", self.team("wishes", "show", "wl-0004")[1])
-        self.assertEqual([h["event"] for h in Wishes(self.t.state).history()][-2:], ["add", "set"])
-
-
-class ThinkTest(QBase):
-    def test_add_round_decide_drop(self):
-        rc, out, err = self.team("think", "add", "--topic", "подсказки по мере нужды", "--question", "Показывать сразу?",
-                                 "--by", "Краски", "--related", "X1")
-        self.assertEqual(rc, 0, err)
-        self.assertIn("| 1 | th-0001 подсказки по мере нужды |", out)
-        self.assertIn("| 1: Показывать сразу? | Краски | X1 | P5 | ждёт |", out)
-        self.assertEqual(self.team("think", "round", "th-0001", "--round", "2015-11-05-discuss")[0], 1)  # no such round
-        os.makedirs(os.path.join(self.t.state.rounds_dir(), "2015-11-05-discuss"))
-        with open(os.path.join(self.t.state.rounds_dir(), "2015-11-05-discuss", "round.json"), "w") as f:
-            f.write("{}")
-        rc, out, _ = self.team("think", "round", "th-0001", "--round", "2015-11-05-discuss")
-        self.assertIn("в раунде 2015-11-05-discuss", out)
-        TeamStack(self.t.state, self.t.cfg).add("discuss", title="тема")
-        self.assertEqual(self.team("think", "round", "th-0001", "--round", "tm-0001")[0], 0)
-        self.assertEqual(self.team("think", "decide", "th-0001", "--dec", "dec-000999")[0], 1)  # unknown
-        self.team("decide", "all", "--text", "делаем по мере нужды")
-        rc, out, err = self.team("think", "decide", "th-0001", "--dec", "dec-000001")
-        self.assertEqual(rc, 0, err)
-        self.assertEqual(Think(self.t.state).get("th-0001")["decision"], "dec-000001")
-        self.team("think", "add", "--topic", "обложки")
-        self.assertEqual(self.team("think", "drop", "th-0002", "--reason", "в хотелки")[0], 0)
-        self.assertIn("решено dec-000001", self.team("think", "--all")[1])
-
-
-class TodoTest(QBase):
-    def test_add_pr_done_wont(self):
-        rc, out, err = self.team("todo", "add", "--text", "maxQueryMs не сбрасывается", "--where", "lib/search.ts:1029",
-                                 "--version", "2.4.0, main 3c9e1d7", "--source", "агент slow-search", "--kind", "perf",
-                                 "--date", "2015-11-05")
-        self.assertEqual(rc, 0, err)
-        self.assertIn("| 1 | td-0001 maxQueryMs не сбрасывается | 2015-11-05 | 2.4.0, main 3c9e1d7 | lib/search.ts:1029 | "
-                      "агент slow-search | перф | P5 | открыт |", out)
-        self.team("todo", "add", "--text", "напомнить про повторный импорт", "--kind", "reminder",
-                  "--trigger", "после выкатки поиска", "--version", "2.4.0")
-        self.assertIn("(когда: после выкатки поиска)", self.team("todo")[1])
-        with self.assertRaises(SystemExit):  # argparse refuses a kind it does not know
-            self.team("todo", "add", "--text", "x", "--kind", "nope")
-        rc, out, _ = self.team("todo", "pr", "td-0001", "--pr", "195")
-        self.assertIn("в PR #195", out)
-        self.team("todo", "add", "--text", "третий", "--version", "v")
-        rc, out, _ = self.team("todo", "done", "td-0001", "td-0003", "--reason", "#195 слит")
-        self.assertIn("td-0001 → сделан", out)
-        self.assertIn("td-0003 → сделан", out)
-        self.assertEqual(self.team("todo", "wont", "td-0002", "--reason", "устарело")[0], 0)
-        self.assertEqual(Todo(self.t.state).entries(open_only=True), [])
-        self.assertEqual(self.team("todo", "set", "td-0002", "--where", "lib/x.ts:1")[0], 0)
-        self.assertEqual(Todo(self.t.state).get("td-0002")["where"], ["lib/x.ts:1"])
-
-    def test_a_closed_entry_stays_closed_and_several_ids_all_or_none(self):
-        for text in ("первый", "второй"):
-            self.team("todo", "add", "--text", text, "--version", "v")
-        self.assertEqual(self.team("todo", "done", "td-0001", "--reason", "слит")[0], 0)
-        for argv in (("todo", "pr", "td-0001", "--pr", "9"), ("todo", "wont", "td-0001", "--reason", "x"),
-                     ("todo", "done", "td-0001", "--reason", "ещё раз")):
-            rc, out, err = self.team(*argv)
-            self.assertEqual(rc, 1, argv)
-            self.assertIn("error: td-0001 is «сделан»: it is closed and stays so (only an open one — открыт, в PR — "
-                          "changes); the history keeps it, new work is a new entry: depot2 todo add …", err)
-        self.assertEqual(Todo(self.t.state).get("td-0001")["status"], "done")
-        rows = len(Todo(self.t.state).history())
-        rc, out, err = self.team("todo", "done", "td-0002", "td-0009", "--reason", "частично")
-        self.assertEqual((rc, out), (1, ""))
-        self.assertIn("no td-0009 in todo", err)
-        self.assertEqual((Todo(self.t.state).get("td-0002")["status"], len(Todo(self.t.state).history())), ("open", rows))
-        th = Think(self.t.state).add("вопрос")
-        Think(self.t.state).decide(th["id"], reason="решили")
-        self.assertEqual(self.team("think", "round", th["id"], "--round", "r1")[0], 1)
-        self.assertEqual(Think(self.t.state).get(th["id"])["status"], "decided")
-        w = Wishes(self.t.state)
-        w.add("знак")
-        w.to_status("wl-0001", "taken", taken_to="st-0001")
-        self.assertEqual(self.team("wishes", "drop", "wl-0001", "--reason", "передумал")[0], 1)
-        self.assertEqual(self.team("wishes", "done", "wl-0001", "--reason", "сбылась")[0], 0)  # a taken wish came true
-        self.assertEqual(Wishes(self.t.state).get("wl-0001")["status"], "done")
-
-    def test_the_version_comes_from_the_main_clone(self):
-        d = tempfile.mkdtemp(prefix="team-clone-")
-        write(d, "package.json", '{"name": "app", "version": "2.4.0"}\n')
-
-        def git(*a):
-            subprocess.run(["git", "-C", d] + list(a), check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        git("init", "-q")
-        git("add", "package.json")
-        git("-c", "user.name=t", "-c", "user.email=t@localhost", "commit", "-q", "-m", "x")
-        git("update-ref", "refs/remotes/origin/main", "HEAD")
-        sha = subprocess.run(["git", "-C", d, "rev-parse", "--short=7", "HEAD"], stdout=subprocess.PIPE,
-                             universal_newlines=True).stdout.strip()
-        self.assertEqual(repo_version({"deep_repo": {"clone": d}}), "2.4.0, main %s" % sha)
-        self.assertIsNone(repo_version({"deep_repo": {"clone": ""}}))
-        rc, out, err = super(QBase, self).team("--set", "deep_repo.clone=" + d, "todo", "add", "--text", "x")
-        self.assertEqual(rc, 0, err)
-        self.assertEqual(Todo(self.t.state).get("td-0001")["version"], "2.4.0, main %s" % sha)
 
 
 class TeamStackTest(QBase):
@@ -226,6 +118,8 @@ class TeamStackTest(QBase):
         self.assertEqual(self.team("--set", "team_stack.slots=3", "tstack")[1].count("свободен"), 3)
 
 
+
+
 class OverviewTest(QBase):
     def test_queues_md_shows_every_queue(self):
         self.team("stack", "add", "--title", "Импорт 3")
@@ -233,127 +127,65 @@ class OverviewTest(QBase):
         tr = Tracks(self.t.state, self.t.cfg)
         tr.add("Поиск")
         tr.car_add("tr-0001", "фильтры", size="M")
+        tr.add("todo")
+        tr.car_add("tr-0002", "хвост импорта")
         trains = Trains(self.t.state, self.t.cfg)
         trains.add("poisk", "Поиск", cars=["tr-0001:0"], slots="all-free")
         trains.set_state("poisk", "impl")
-        self.team("wishes", "add", "--title", "обложки", "--prio", "high")
-        self.team("think", "add", "--topic", "подсказки")
-        self.team("todo", "add", "--text", "maxQueryMs", "--kind", "perf", "--version", "2.4.0")
+        self.team("decide", "all", "--text", "делаем по мере нужды")
         rc, out, err = self.team("queues", "--md")
         self.assertEqual(rc, 0, err)
         self.assertIn("| Очередь | Открыто | Приоритет | Сверху | Команда |", out)
         self.assertIn("| Стек агентов | слоты 0/4, пост-стек 0/4, ждёт 1/10 | — | st-0001 Импорт 3 | `depot2 stack --md` |", out)
+        self.assertIn("| Мердж-очередь | 0 | — | — | `depot2 merge --md` |", out)  # right under the agents' stack
         self.assertIn("| Стек команды | слоты 0/2, ждёт 1/4 | — | tm-0001 лимиты | `depot2 tstack --md` |", out)
         self.assertIn("| Поезда | 1 (имплементация 1) | — | можно сейчас: tr-0001:0; poisk (имплементация) | "
                       "`depot2 trains --md` |", out)
-        self.assertIn("| Треки | 1 открыто из 1 | — | tr-0001 Поиск | `depot2 tracks --md` |", out)
+        self.assertIn("| Треки | 2 открыто из 2 | — | tr-0001 Поиск (1); tr-0002 todo (1) | `depot2 tracks --md` |", out)
+        self.assertIn("| Агенты | 0 в работе | — | — | `depot2 agents --md` |", out)
         self.assertIn("| Бюллетени | 0 | — | — |", out)
-        self.assertIn("| Мердж-очередь | 0 | — | — | `depot2 merge --md` |", out)  # right under the agents' stack
-        self.assertIn("| Хотелки | 1 | P8 1 | wl-0001 обложки |", out)
-        self.assertIn("| На подумать | 1 | P5 1 | th-0001 подсказки |", out)
-        self.assertIn("| Todo | 1 (перф 1) | P5 1 | td-0001 maxQueryMs |", out)
+        self.assertIn("| Решения | всего 1 | — | dec-000001 делаем по мере нужды | `depot2 decisions --md` |", out)
+        self.assertNotIn("Хотелки", out)
         self.assertEqual(self.team("queues")[1], out)
-        self.assertEqual([r["queue"] for r in json.loads(self.team("queues", "--json")[1])],
-                         ["Стек агентов", "Мердж-очередь", "Стек команды", "Поезда", "Треки", "Бюллетени", "Хотелки",
-                          "На подумать", "Todo", "Принципы"])
+        rows = json.loads(self.team("queues", "--json")[1])
+        self.assertEqual([r["queue"] for r in rows],
+                         ["Стек агентов", "Мердж-очередь", "Стек команды", "Поезда", "Треки", "Агенты", "Бюллетени",
+                          "Решения", "Принципы"])
+        self.assertEqual([r["key"] for r in rows], list(ROWS))
+        self.assertEqual(sorted(rows[0]), ["command", "head", "key", "means", "open", "priority", "queue"])
+        self.assertTrue(rows[1]["means"].startswith("PR, впущенные владельцем, с его словом дословно"))
+        self.assertIn("вагон уходит с доски прибывшим или списанным", rows[4]["means"])
+        self.assertEqual([r["priority"] for r in rows], [None] * 9)
 
 
-class PrioTest(QBase):
-
-    def test_todo_and_think_get_a_priority_sorted_the_most_important_first(self):
-        self.team("todo", "add", "--text", "первый", "--version", "v")
-        self.team("todo", "add", "--text", "второй", "--version", "v", "--prio", "later")
-        rc, out, err = self.team("todo", "add", "--text", "третий", "--version", "v", "--prio", "high", "--kind", "text")
-        self.assertEqual(rc, 0, err)
-        self.assertEqual([e["priority"] for e in Todo(self.t.state).entries()], [5, 2, 8])
-        self.assertIn("| № | Что | Дата | Версия | Где | Источник | Вид | Приоритет | Статус |", out)
-        self.assertRegex(out, r"\| 1 \| td-0003 третий \|.*\| текст \| P8 \| открыт \|")
-        self.assertRegex(out, r"\| 2 \| td-0001 первый \|.*\| P5 \| открыт \|")
-        self.assertRegex(out, r"\| 3 \| td-0002 второй \|.*\| P2 \| открыт \|")
-        out = self.team("todo", "set", "td-0002", "--priority", "8")[1].split("## Очередь todo")[1]
-        self.assertLess(out.index("td-0002"), out.index("td-0003"))  # both 8: the queue's own order
-        self.assertLess(out.index("td-0003"), out.index("td-0001"))
-        self.team("todo", "done", "td-0003", "--reason", "сделан")
-        rc, out, _ = self.team("todo", "--all")  # a closed one sorts after the open ones
-        self.assertLess(out.index("td-0001"), out.index("td-0003"))
-        with self.assertRaises(SystemExit):
-            self.team("todo", "set", "td-0001", "--prio", "urgent")
-        self.assertEqual(self.team("todo", "set", "td-0001", "--title", "x")[0], 0)
-        # to-think the same
-        self.team("think", "add", "--topic", "обложки")
-        rc, out, err = self.team("think", "add", "--topic", "подсказки", "--prio", "high")
-        self.assertEqual(rc, 0, err)
-        self.assertIn("| № | Тема | Дата | Вопросы | Поднял | Связано | Приоритет | Статус |", out)
-        self.assertIn("| 1 | th-0002 подсказки | %s | — | — | — | P8 | ждёт |" % Think(self.t.state).get("th-0002")["date"],
-                      out)
-        self.assertEqual(self.team("think", "set", "th-0001", "--prio", "later")[0], 0)
-        self.assertEqual(Think(self.t.state).get("th-0001")["priority"], 2)
-        rc, out, _ = self.team("queues", "--md")
-        self.assertIn("| На подумать | 2 | P8 1 · P2 1 | th-0002 подсказки; th-0001 обложки |", out)
-        self.assertIn("| Todo | 2 (баг 2) | P8 1 · P5 1 | td-0002 второй; td-0001 x |", out)
-        self.assertEqual([r["priority"] for r in json.loads(self.team("queues", "--json")[1])][-3:],
-                         [{"8": 1, "2": 1}, {"8": 1, "5": 1}, None])  # the principles have none
-
-
-class WishDoneTest(QBase):
-    def test_a_wish_is_done_not_dropped(self):
-        w = Wishes(self.t.state)
-        w.add("автоимпорт", date="2015-11-04")
-        w.add("обложки", date="2015-11-05")
-        with self.assertRaises(SystemExit):  # --reason is required
-            self.team("wishes", "done", "wl-0001")
-        rc, out, err = self.team("wishes", "done", "wl-0001", "--reason", "#205 слит")
-        self.assertEqual(rc, 0, err)
-        self.assertIn("wl-0001 → сделано", out)
-        e = Wishes(self.t.state).get("wl-0001")
-        self.assertEqual(e["status"], "done")
-        self.assertTrue(e["notes"][-1].endswith("#205 слит"))
-        self.assertNotIn("wl-0001", self.team("wishes")[1])          # off the open table
-        self.assertIn("| wl-0001 автоимпорт |", self.team("wishes", "--all")[1].replace("| 2 ", "| "))
-        self.assertIn("| сделано |", self.team("wishes", "--all")[1])
-        self.assertEqual(self.team("wishes", "done", "wl-0001", "--reason", "ещё раз")[0], 1)
-        self.team("wishes", "drop", "wl-0002", "--reason", "не в v1")
-        self.assertEqual(Wishes(self.t.state).get("wl-0002")["status"], "declined")  # drop stays its own
-        self.assertEqual(self.team("queues", "--json")[0], 0)
-
-
-class MigrateTest(QBase):
+class PriorityMigrateTest(QBase):
+    """Schema 3 → 4 read a todo's, a to-think entry's and a wish's priority from its word or its `prio: …` note; schema
+    6 then makes the open ones cars, with that priority."""
 
     def setUp(self):
-        super(MigrateTest, self).setUp()
-        td = Todo(self.t.state)
-        for text in ("один", "два", "три", "четыре", "пять"):
-            td.add(text, version="v")
-        th = Think(self.t.state)
-        th.add("подсказки")
-        th.add("обложки")
-        self.team("todo", "set", "td-0001", "--note", "prio: high — текст на проде")
-        self.team("todo", "set", "td-0002", "--note", "prio: later — по заголовку")
-        self.team("todo", "set", "td-0002", "--note", "prio: Normal — передумали")    # the newest wins
-        self.team("todo", "set", "td-0003", "--note", "см. td-0001; prio: high тут не в начале")
-        self.team("todo", "set", "td-0005", "--note", "prio: later — закрыт")
-        self.team("todo", "done", "td-0005", "--reason", "сделан")
-        self.team("think", "set", "th-0002", "--note", "prio: later — к релизу")
-        self.team("todo", "set", "td-0004", "--note", "prio: later — старая заметка")  # … the field wins
-        self.team("wishes", "add", "--title", "обложки")
-        self.team("wishes", "set", "wl-0001", "--note", "prio: normal — по вычитке")
-        self.team("stack", "add", "--title", "старый объект")
-        stk = Stack(self.t.state, self.t.cfg)
-        del stk.get("st-0001")["autostart"]
-        stk._save("test", "st-0001")
-        # the depot as schema 3 left it: the words, or no field at all (the todo and to-think entries from before it)
-        for name, words in (("todo", {"td-0004": "high"}), ("think", {}), ("wishes", {"wl-0001": "high"})):
+        super(PriorityMigrateTest, self).setUp()
+        note = "2015-11-05: prio: %s"
+        old_queue(self.t.state, "todo", [
+            entry("td-0001", "open", text="один", notes=[note % "high — текст на проде"]),
+            entry("td-0002", "open", text="два", notes=[note % "later — по заголовку", note % "Normal — передумали"]),
+            entry("td-0003", "open", text="три", notes=["2015-11-05: см. td-0001; prio: high тут не в начале"]),
+            entry("td-0004", "open", text="четыре", prio="high", notes=[note % "later — старая заметка"]),
+            entry("td-0005", "done", text="пять", notes=[note % "later — закрыт", "2015-11-05: сделан"])])
+        old_queue(self.t.state, "think", [entry("th-0001", "waiting", topic="подсказки"),
+                                          entry("th-0002", "waiting", topic="обложки", notes=[note % "later — к релизу"])])
+        old_queue(self.t.state, "wishes", [entry("wl-0001", "waiting", title="обложки", area="product", prio="high",
+                                                 notes=[note % "normal — по вычитке"])])
+        for name in ("todo", "think", "wishes"):  # the depot as schema 3 left them: the words, or no field at all
             d = read_json(self.t.state.path(name + ".json"))
             for e in d["entries"]:
                 e.pop("priority")
-                if e["id"] in words:
-                    e["prio"] = words[e["id"]]
             write_json(self.t.state.path(name + ".json"), d)
-        for f in ("stack.json",):
-            d = read_json(self.t.state.path(f))
-            for o in d["objects"]:
-                o.pop("priority")
-            write_json(self.t.state.path(f), d)
+        self.team("stack", "add", "--title", "старый объект")
+        d = read_json(self.t.state.path("stack.json"))
+        for o in d["objects"]:
+            o.pop("priority")
+            o.pop("autostart")
+        write_json(self.t.state.path("stack.json"), d)
         write_json(self.t.state.path("trains.json"), {"schema": 3, "trains": []})
 
     def files(self):
@@ -373,25 +205,214 @@ class MigrateTest(QBase):
         rc, out, err = self.team("queues", "migrate", "--dry-run")  # any command migrates the data first
         self.assertEqual(rc, 0, err)
         self.assertIn("миграция данных депо: схема 3 → 4", err)
+        self.assertIn("миграция данных депо: схема 5 → 6", err)
         self.assertIn("DRY RUN: перенёс бы 1 записей и объектов", out)
         self.assertIn("- stack: autostart = нет записан явно у 1 объектов: st-0001", out)
         rc, out, err = self.team("queues", "migrate")
         self.assertEqual(rc, 0, err)
         self.assertIn("перенесено: 1 записей и объектов", out)
-        td = Todo(self.t.state)
-        self.assertEqual({e["id"]: e["priority"] for e in td.entries()}, {
+        arch = read_json(self.t.state.path("todo-v5.json"))
+        self.assertEqual({e["id"]: e["priority"] for e in arch["entries"]}, {
             "td-0001": 8, "td-0002": 5, "td-0003": 5, "td-0004": 8, "td-0005": 2})
-        self.assertEqual([n[12:] for n in td.get("td-0002")["notes"]], ["prio: later — по заголовку",
+        self.assertEqual([n[12:] for n in arch["entries"][1]["notes"]], ["prio: later — по заголовку",
                                                                         "prio: Normal — передумали"])  # the notes stay
-        self.assertEqual(Think(self.t.state).get("th-0002")["priority"], 2)
-        self.assertEqual(Wishes(self.t.state).get("wl-0001")["priority"], 8)
+        tr = Tracks(self.t.state, self.t.cfg)
+        cars = {(c.get("from") or [None])[0]: c for t in tr.tracks() for c in t["cars"]}
+        self.assertEqual({k: c["priority"] for k, c in cars.items()}, {
+            "wl-0001": 8, "th-0001": 5, "th-0002": 2, "td-0001": 8, "td-0002": 5, "td-0003": 5, "td-0004": 8})
         self.assertIs(Stack(self.t.state, self.t.cfg).get("st-0001")["autostart"], False)
-        h = [h for h in td.history() if h["event"] == "migrate_priority"]
+        h = [h for h in read_jsonl(self.t.state.path("todo-history-v5.jsonl")) if h["event"] == "migrate_priority"]
         self.assertEqual([(x["prio"], x["from_notes"]) for x in h], [(
             {"td-0001": "high", "td-0002": "normal", "td-0003": None, "td-0004": "high", "td-0005": "later"},
             ["td-0001", "td-0002", "td-0005"])])
-        after = self.files()
+        snap = {n: slurp(os.path.join(self.t.dir, n)) for n in ("tracks.json", "todo-v5.json", "stack.json")}
         rc, out, _ = self.team("queues", "migrate")
         self.assertIn("перенесено: 0 записей и объектов", out)
         self.assertIn("нечего переносить: миграция уже прошла", out)
-        self.assertEqual(self.files(), after)
+        self.assertEqual({n: slurp(os.path.join(self.t.dir, n)) for n in snap}, snap)
+
+
+class QueuesToTracksTest(QBase):
+    """Schema 5 → 6: an open entry is a car on the track of its queue's name, a closed or a taken one stays in the
+    archive; an old ref still reads the archive."""
+
+    def setUp(self):
+        super(QueuesToTracksTest, self).setUp()
+        st = self.t.state
+        tr = Tracks(st, self.t.cfg)
+        tr.add("Поиск")
+        tr.car_add("tr-0001", "полка", src="wl-0002")  # a wish taken into a car, before
+        tr.add("to-think: о чём подумать")
+        tr.car_add("tr-0002", "уже на треке", n="2")
+        rows = [{"stage": "bogie", "from": None, "at": TS, "by": "wishes add", "why": None},
+                {"stage": "sketch", "from": "bogie", "at": TS, "by": "car stage", "why": "бриф пишется"}]
+        old_queue(st, "wishes", [
+            entry("wl-0001", "waiting", title="обложки видны сразу", words="обложки должны быть заметнее",
+                  area="product", priority=8, stage="sketch", stages=rows,
+                  asks=[{"n": 1, "q": "Какие обложки?", "at": TS, "by": "car ask", "answer": None, "answered": None}]),
+            entry("wl-0002", "taken", title="пустая полка", area="product", taken_to="tr-0001:0"),
+            entry("wl-0003", "declined", title="автоимпорт", area="tools", notes=["2015-11-05: не в v1"])])
+        old_queue(st, "think", [
+            entry("th-0001", "decided", topic="тёмная тема", decision="dec-000001"),
+            entry("th-0002", "waiting", topic="подсказки по мере нужды", questions=["Показывать сразу?"], by="Краски",
+                  related=["X1"]),
+            entry("th-0003", "in_round", topic="лимиты", round="2015-11-05-discuss")])
+        old_queue(st, "todo", [
+            entry("td-0001", "open", text="maxQueryMs не сбрасывается", where=["lib/search.ts:1029"],
+                  version="2.4.0, main 3c9e1d7", source="агент", kind="perf", links=["#12", "dec-000001"],
+                  notes=["2015-11-05: виден на больших выдачах"]),
+            entry("td-0002", "done", text="старый лог", kind="cleanup"),
+            entry("td-0003", "in_pr", text="повторный импорт", kind="bug", pr=195),
+            entry("td-0004", "open", title="напомнить", text="про повторный импорт", kind="reminder",
+                  trigger="после выкатки поиска", priority=2),
+            entry("td-0005", "wont", text="устарело", kind="text")])
+        at_schema(st, 5)
+
+    def snap(self):
+        return {f: slurp(self.t.state.path(f)) for f in sorted(os.listdir(self.t.dir)) if f.endswith((".json", ".jsonl"))}
+
+    def test_a_dry_run_says_what_goes_where_and_writes_nothing(self):
+        before = self.snap()
+        rc, out, err = self.team("migrate", "--dry-run")
+        self.assertEqual(rc, 0, err)
+        self.assertIn("миграция данных депо: схема 5 → 6 (очереди хотелок, «подумать» и todo → одноимённые треки", out)
+        self.assertIn("хотелки: записей 3 — открытые 1 → вагоны нового трека «wishes» (P8 1); закрытые и взятые (2) "
+                      "остаются в архиве wishes-v5.json", out)
+        self.assertIn("«подумать»: записей 3 — открытые 2 → вагоны tr-0002 «to-think: о чём подумать» (P5 2); закрытые "
+                      "и взятые (1) остаются в архиве think-v5.json", out)
+        self.assertIn("  первые: th-0002 → tr-0002:4, th-0003 → tr-0002:3", out)  # its own number 2 is taken
+        self.assertIn("todo: записей 5 — открытые 3 → вагоны нового трека «todo» (P5 2 · P2 1); закрытые и взятые (2) "
+                      "остаются в архиве todo-v5.json", out)
+        self.assertIn("  первые: td-0001 → новый трек:1, td-0003 → новый трек:3, td-0004 → новый трек:4", out)
+        self.assertEqual(self.snap(), before)
+        self.assertTrue(migrate.pending(self.t.state))
+
+    def test_open_entries_become_cars_the_rest_an_archive(self):
+        rc, out, err = self.team("tracks")  # any command migrates first
+        self.assertEqual(rc, 0, err)
+        self.assertIn("миграция данных депо: схема 5 → 6", err)
+        self.assertEqual((migrate.version(self.t.state), SCHEMA), (6, 6))
+        for name in ("wishes", "think", "todo"):
+            self.assertFalse(os.path.exists(self.t.state.path(name + ".json")), name)
+            self.assertFalse(os.path.exists(self.t.state.path(name + "-history.jsonl")), name)
+        tr = Tracks(self.t.state, self.t.cfg)
+        self.assertEqual([(t["id"], t["title"]) for t in tr.tracks()],
+                         [("tr-0001", "Поиск"), ("tr-0002", "to-think: о чём подумать"), ("tr-0003", "wishes"),
+                          ("tr-0004", "todo")])
+        self.assertEqual([c["n"] for c in tr.get("tr-0002")["cars"]], ["2", "4", "3"])
+        self.assertEqual([(c["n"], c["from"]) for c in tr.get("tr-0004")["cars"]],
+                         [("1", ["td-0001"]), ("3", ["td-0003"]), ("4", ["td-0004"])])
+        self.assertIn("перенесена сюда миграцией данных (схема 6)", tr.get("tr-0004")["notes"][0])
+        # a wish: its title, priority, date, stage and its history of stages, its open question
+        _, w = tr.car("tr-0003:1")
+        self.assertEqual((w["title"], w["priority"], w["added"], w["stage"], w["status"]),
+                         ("обложки видны сразу", 8, TS, "sketch", "waiting"))
+        self.assertEqual([r["stage"] for r in w["stages"]], ["bogie", "sketch"])
+        self.assertEqual(w["asks"][0]["q"], "Какие обложки?")
+        self.assertTrue(w["notes"][0].endswith("из wl-0001 — хотелка от 2015-11-04: обложки видны сразу; слова "
+                                               "владельца: «обложки должны быть заметнее»"))
+        # a todo: its text, kind, version, place, source and links in the note, its own notes after it
+        _, c = tr.car("tr-0004:1")
+        self.assertEqual((c["title"], c["stage"], c["stages"][0]["why"]),
+                         ("maxQueryMs не сбрасывается", "bogie", "из td-0001 (прежние очереди → треки)"))
+        self.assertTrue(c["notes"][0].endswith("из td-0001 — todo от 2015-11-04: maxQueryMs не сбрасывается (вид: перф; "
+                                               "версия: 2.4.0, main 3c9e1d7; где: lib/search.ts:1029; источник: агент) "
+                                               "(ссылки: #12, dec-000001)"))
+        self.assertEqual(c["notes"][1], "2015-11-05: виден на больших выдачах")
+        self.assertIn("(вид: баг; в PR #195)", tr.car("tr-0004:3")[1]["notes"][0])
+        _, r = tr.car("tr-0004:4")
+        self.assertEqual((r["title"], r["priority"]), ("напомнить", 2))
+        self.assertIn("напомнить: про повторный импорт (вид: напоминание; когда: после выкатки поиска)", r["notes"][0])
+        _, q = tr.car("tr-0002:4")
+        self.assertIn("подсказки по мере нужды; вопросы: 1) Показывать сразу? (поднял: Краски) (связано: X1)",
+                      q["notes"][0])
+        self.assertIn("лимиты (в раунде 2015-11-05-discuss)", tr.car("tr-0002:3")[1]["notes"][0])
+        # the archive: every entry as it was, a moved one with its car; the history of before, and one row more
+        arch = read_json(self.t.state.path("todo-v5.json"))
+        self.assertEqual([(e["id"], e["status"], e.get("moved_to")) for e in arch["entries"]],
+                         [("td-0001", "open", "tr-0004:1"), ("td-0002", "done", None), ("td-0003", "in_pr", "tr-0004:3"),
+                          ("td-0004", "open", "tr-0004:4"), ("td-0005", "wont", None)])
+        hist = read_jsonl(self.t.state.path("todo-history-v5.jsonl"))
+        self.assertEqual([h["event"] for h in hist], ["add"] * 5 + ["migrate"])
+        self.assertEqual(hist[-1]["moved"], {"td-0001": "tr-0004:1", "td-0003": "tr-0004:3", "td-0004": "tr-0004:4"})
+        row = [h for h in tr.history() if h["event"] == "migrate"][-1]
+        self.assertEqual((row["schema"], row["queues"]["think"]["track"], row["queues"]["wishes"]["moved"]),
+                         (6, "tr-0002", {"wl-0001": "tr-0003:1"}))
+        self.assertEqual([h["track"] for h in tr.history() if h["event"] == "add" and h.get("by")],
+                         ["tr-0003", "tr-0004"])
+        # an old ref reads the archive: where a car came from, and where an entry went
+        out = self.team("car", "show", "tr-0004:1")[1]
+        self.assertIn("Пришёл из: td-0001 — todo «maxQueryMs не сбрасывается» (перенесён в tr-0004:1).", out)
+        self.assertIn("Пришёл из: wl-0002 — хотелка «пустая полка» (взята).", self.team("car", "show", "tr-0001:0")[1])
+        j = json.loads(self.team("car", "show", "tr-0003:1", "--json")[1])
+        self.assertEqual((j["kind"], j["stage"], j["from"][0]["status_ru"]), ("car", "sketch", "перенесён в tr-0003:1"))
+        self.assertIn("1. Какие обложки?", self.team("car", "show", "tr-0003:1")[1])
+        # the board shows them as the cars they are; a new leftover is the next number of its track
+        self.assertIn("tr-0004:4", [i["ref"] for col in json.loads(self.team("board", "--json")[1])["columns"]
+                                    for i in col["items"]])
+        rc, out, err = self.team("tracks", "car", "add", "tr-0004", "--title", "ещё хвост", "--note", "где: lib/x.ts:9")
+        self.assertEqual(rc, 0, err)
+        self.assertIn("tr-0004:5 added", out)
+        self.assertRegex(tr.__class__(self.t.state, self.t.cfg).car("tr-0004:5")[1]["notes"][0],
+                         r"^\d{4}-\d\d-\d\d: где: lib/x.ts:9$")
+        # the commands of before are gone
+        for cmd in ("wishes", "wish", "think", "todo"):
+            with self.assertRaises(SystemExit):
+                self.team(cmd)
+        self.assertEqual(self.team("migrate")[1].strip(), "миграция данных депо: нечего переносить (схема 6)")
+
+    def test_a_run_cut_short_moves_nothing_twice(self):
+        keep = {f: slurp(self.t.state.path(f)) for f in ("wishes.json", "think.json", "todo.json",
+                                                          "todo-history.jsonl")}
+        self.assertEqual(self.team("tracks")[0], 0)
+        cars = slurp(self.t.state.path("tracks.json"))
+        for f, text in keep.items():  # the cars are written, the files of before are back: the run was cut short
+            write(self.t.dir, f, text)
+        at_schema(self.t.state, 5)
+        rc, out, err = self.team("migrate")
+        self.assertEqual(rc, 0, err)
+        self.assertIn("  из них 3 уже вагоны (прерванный прогон): оставлены", out)
+        self.assertEqual(read_json(self.t.state.path("tracks.json"))["tracks"], json.loads(cars)["tracks"])
+        self.assertFalse(os.path.exists(self.t.state.path("todo.json")))
+        self.assertEqual(read_json(self.t.state.path("todo-v5.json"))["entries"][0]["moved_to"], "tr-0004:1")
+
+    def test_one_track_of_the_name_is_taken_and_the_others_are_named(self):
+        tr = Tracks(self.t.state, self.t.cfg)
+        tr.add("todo: хвосты")
+        tr.add("TODO")
+        at_schema(self.t.state, 5)
+        rc, out, err = self.team("migrate", "--dry-run")
+        self.assertEqual(rc, 0, err)
+        self.assertIn("вагоны tr-0003 «todo: хвосты»", out)
+        self.assertIn("  ещё треки с этим именем, оставлены как есть: tr-0004", out)
+
+    def test_a_depot_without_them_has_nothing_to_move(self):
+        for name in ("wishes", "think", "todo"):
+            os.remove(self.t.state.path(name + ".json"))
+        rc, out, err = self.team("migrate")
+        self.assertEqual(rc, 0, err)
+        self.assertIn("очередей хотелок, «подумать» и todo нет: нечего переносить", out)
+        self.assertEqual(len(Tracks(self.t.state, self.t.cfg).tracks()), 2)
+        self.assertEqual(migrate.version(self.t.state), 6)
+
+
+class QueuesToTracksGitTest(QBase):
+    """The depot's git takes the archive and the removal of the files of before in one commit."""
+
+    def test_the_removal_is_committed(self):
+        t = TempState(git=True)
+        self.addCleanup(t.close)
+        old_queue(t.state, "todo", [entry("td-0001", "open", text="хвост", kind="bug")])
+        at_schema(t.state, 5)
+        t.state.git("add", "--", ".")
+        t.state.git("-c", "user.name=t", "-c", "user.email=t@localhost", "commit", "-q", "-m", "schema 5")
+        lines, n = migrate.run(t.state, t.cfg)
+        t.state.commit("team: migrate the depot to schema 6")
+        self.assertEqual(n, 1)
+        self.assertEqual(t.state.git("status", "--porcelain").stdout, "")
+        files = t.state.git("ls-files").stdout.split()
+        self.assertNotIn("todo.json", files)
+        self.assertNotIn("todo-history.jsonl", files)
+        self.assertIn("todo-v5.json", files)
+        self.assertIn("todo-history-v5.jsonl", files)
+        self.assertEqual(Tracks(t.state, t.cfg).car("tr-0001:1")[1]["title"], "хвост")

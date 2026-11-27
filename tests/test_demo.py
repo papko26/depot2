@@ -17,7 +17,7 @@ SCRIPT = os.path.join(ROOT, "examples", "demo", "make-demo.sh")
 MAIN = os.path.join(ROOT, "depot2", "__main__.py")
 CYRILLIC = re.compile("[\u0400-\u04ff]")
 VIEWS = ("board", "board --md", "tracks", "track tr-0001", "trains", "trains next", "stack", "stack --md", "tstack",
-         "ballots", "wishes", "think", "todo", "queues", "principles", "principles checks", "decisions", "agents",
+         "ballots", "queues", "principles", "principles checks", "decisions", "agents",
          "merge", "ledger", "show builder", "car show tr-0001:1", "priority tr-0001:1", "claims", "orders",
          "brainstorm list", "backup --status", "--help", "stack --help")
 
@@ -63,7 +63,7 @@ class DemoTest(unittest.TestCase):
     def test_the_tracks_and_the_trains(self):
         tracks = json.loads(self.depot("tracks", "--json"))
         titles = [t["title"] for t in tracks["tracks"]]
-        self.assertEqual(titles, ["Search", "Accounts"])
+        self.assertEqual(titles, ["Search", "Accounts", "todo"])
         trains = json.loads(self.depot("trains", "--json"))
         self.assertEqual(sorted(t["name"] for t in trains["trains"]), ["accounts", "search-v1"])
 
@@ -73,9 +73,10 @@ class DemoTest(unittest.TestCase):
         self.assertIn("Fix the flaky date test", self.depot("stack"))
 
     def test_the_queues_principles_and_decisions(self):
-        self.assertIn("Dark mode for the reader", self.depot("wishes"))
-        self.assertIn("Should search be offline-first?", self.depot("think"))
-        self.assertIn("debug level", self.depot("todo"))
+        self.assertIn("debug level", self.depot("track", "tr-0003"))
+        self.assertIn("Dark mode for the reader", self.depot("track", "tr-0002"))
+        self.assertIn("Should search be offline-first?", self.depot("car", "show", "tr-0001:0"))
+        self.assertIn("| Tracks | 3 open of 3 |", self.depot("queues", lang="en"))
         self.assertIn("The answer first", self.depot("principles"))
         self.assertIn("50 MB", self.depot("decisions"))
 

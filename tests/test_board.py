@@ -231,7 +231,8 @@ class BoardTest(GateBase):
         self.team("tracks", "add", "--title", "Поезд")
         self.team("tracks", "car", "add", "tr-0001", "--title", "вагон 0", "--brief", self.brief)
         self.team("tracks", "car", "add", "tr-0001", "--title", "вагон 1", "--after", "0")
-        self.team("wishes", "add", "--title", "Хочу импорт", "--words", "импорт бы")
+        self.team("tracks", "add", "--title", "хотелки")  # a wish is a bogie on a track of its own
+        self.team("tracks", "car", "add", "tr-0002", "--title", "Хочу импорт", "--note", "импорт бы")
         self.team("stack", "start", "st-0001")
         self.team("trains", "add", "--name", "poezd", "--title", "Поезд", "--car", "tr-0001:0", "--car", "tr-0001:1")
         self.team("trains", "state", "poezd", "impl", "--force", "--why", "вагон 1 — без брифа, его DoR держит его сам")
@@ -249,7 +250,7 @@ class BoardTest(GateBase):
                              r"скан: не сдано; шоты: не сдано \|")
         self.assertRegex(md, r"\| tr-0001:0 \| P5 \| вагон 0 \| poezd «Поезд» \| tr-0001 Поезд \| — \| на треке \| [^|]+ \| "
                              r"DoR пройдены \|")
-        self.assertRegex(md, r"\| wl-0001 \| P5 \| Хочу импорт \| — \| — \| — \| — \| [^|]+ \| — \|")
+        self.assertRegex(md, r"\| tr-0002:0 \| P5 \| Хочу импорт \| — \| tr-0002 хотелки \| — \| на треке \| [^|]+ \| — \|")
         self.assertNotIn("### Прибыл", md)
         data = json.loads(self.team("board", "--json")[1])
         self.assertEqual((data["v"], data["view"]), (1, "all"))
@@ -283,7 +284,7 @@ class BoardTest(GateBase):
                          (1, 10, ["st-0002"]))
         self.assertIn("Доска (`depot2 board`): тележка 3 · эскиз 1 · сборка 1; стек — её вид", self.team("stack")[1])
         for n in range(3):
-            self.team("wishes", "add", "--title", "ещё %d" % n, "--words", "w")
+            self.team("tracks", "car", "add", "tr-0002", "--title", "ещё %d" % n)
         md = self.team("board", "--limit", "2")[1]
         self.assertIn("… и ещё 4 (`depot2 board --limit 0`).", md)
 
@@ -298,17 +299,19 @@ class BoardTest(GateBase):
         tk = json.loads(self.team("tracks", "--json")[1])
         self.assertEqual(sorted(tk), ["tracks", "v"])
         self.assertEqual(json.loads(self.team("track", "tr-0001", "--json")[1])["id"], "tr-0001")
-        for ref in ("st-0001", "st-0002", "tr-0001:1", "wl-0001"):
+        for ref in ("st-0001", "st-0002", "tr-0001:1", "tr-0002:0"):
             j = json.loads(self.team("car", "show", ref, "--json")[1])
             for k in ("v", "ref", "kind", "car", "object", "track", "train", "title", "stage", "stage_ru", "moves", "stages",
                       "brief", "size", "branch", "pr", "where", "status", "asks", "project", "project_passed", "gate",
-                      "ci", "dod", "left", "taken_to"):
+                      "ci", "dod", "left", "from"):
                 self.assertIn(k, j, (ref, k))
         j = json.loads(self.team("car", "show", "tr-0001:1", "--json")[1])
         self.assertEqual((j["kind"], j["track"], j["train"], j["gate"]),
                          ("car", {"id": "tr-0001", "title": "Поезд"}, {"name": "poezd", "title": "Поезд", "state": "impl"},
                           None))
-        self.assertEqual(json.loads(self.team("car", "show", "wl-0001", "--json")[1])["kind"], "wish")
+        rc, _, err = self.team("car", "show", "wl-0001", "--json")  # an id of the queues of before is no car
+        self.assertEqual(rc, 1)
+        self.assertIn("вагон — это st-NNNN или tr-NNNN:N; не 'wl-0001'", err)
 
     def test_the_slots_who_is_in_each_and_who_comes_next(self):
         md = self.team("board")[1]

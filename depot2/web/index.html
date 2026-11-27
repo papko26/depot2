@@ -236,6 +236,14 @@ ol.acts { margin: 0; padding-left: 22px; font-size: 13px; } ol.acts li { overflo
 .qcol h3 { margin: 0; font-size: 15px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
 .qcol h3 .cnt { font-variant-numeric: tabular-nums; color: var(--muted); }
 .qcol .means { margin: 2px 0 4px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.overview { margin: 0 0 14px; } .overview h3 { margin: 0 0 4px; font-size: 15px; }
+.overview code { font-size: 11.5px; } .overview td:first-child { overflow-wrap: normal; min-width: 6em; }
+@media (max-width: 700px) {  /* a phone: a row is its name and count, then what is on top, then what it is */
+  .overview thead { display: none; }
+  .overview tr { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; border-top: 1px solid var(--line); padding: 4px 0; }
+  .overview tr td { border-top: 0; padding: 0; }
+  .overview td:nth-child(3), .overview td:nth-child(4) { grid-column: 1 / -1; }
+}
 .qlist { overflow-y: auto; min-height: 0; overscroll-behavior-y: contain; }
 .qcard { border: 1px solid var(--line); border-left: 3px solid var(--qc, var(--line)); border-radius: 6px; padding: 6px 8px; margin-top: 6px; background: var(--card); }
 .qcard.p-high { --qc: var(--warn); } .qcard.p-normal { --qc: var(--link); } .qcard.p-later { --qc: var(--muted); }
@@ -440,7 +448,7 @@ function translatePage() {
 }
 translatePage();
 const WHERE_RU = labels("where", ["slot", "post", "queue", "parked", "track", "merge"]);
-const KIND_RU = labels("kind", ["car", "stack", "left", "merge", "wish", "think"]);
+const KIND_RU = labels("kind", ["car", "stack", "left", "merge"]);
 const STATE_RU = labels("state", ["design", "impl", "merge", "arrived", "scrapped"]);
 const LIVE = ["design", "impl", "merge"];
 const BOARD_SHOWN = 15;
@@ -479,12 +487,12 @@ async function refresh() {
       pageStamp = meta.code.stamp;
     }
     const defs = meta.queues || [], decQ = ui.q;
-    const [board, tracks, trains, merge, merges, principles, decisions, agents, ...qs] = await Promise.all([
+    const [board, tracks, trains, merge, merges, principles, decisions, agents, overview, ...qs] = await Promise.all([
       get("/api/board" + (ui.all ? "?all=1" : "")), get("/api/tracks"), get("/api/trains"), get("/api/merge"),
       get("/api/merge/report?last=" + MERGES_SHOWN),
-      get("/api/principles" + (ui.all ? "?all=1" : "")), get(decUrl(decQ)), get("/api/agents?all=1"),
+      get("/api/principles" + (ui.all ? "?all=1" : "")), get(decUrl(decQ)), get("/api/agents?all=1"), get("/api/queues"),
       ...defs.map((d) => get("/api/queue/" + enc(d.name) + (ui.all ? "?all=1" : "")))]);
-    data = { board, tracks, trains, merge, merges, principles, decisions, agents, queues: Object.fromEntries(defs.map((d, i) => [d.name, qs[i]])) };
+    data = { board, tracks, trains, merge, merges, principles, decisions, agents, overview, queues: Object.fromEntries(defs.map((d, i) => [d.name, qs[i]])) };
     index();
     render();
     if (decQ !== ui.q) loadDecisions();  // typed into the search meanwhile
@@ -1430,7 +1438,7 @@ function refLink(ref) {
     return repo ? '<a href="https://github.com/' + esc(repo) + "/pull/" + esc(ref.slice(1)) + '" target="_blank" rel="noopener noreferrer">' + esc(ref) + "</a>" : esc(ref);
   }
   if (ref.startsWith("dec-")) return '<a href="#" data-dec-link="' + esc(ref) + '">' + esc(ref) + "</a>";
-  if (/^(?:tr-\d{4}:|st-|wl-|th-)/.test(ref)) return '<span class="rlink' + (ui.car === ref ? " sel" : "") + '" data-ref="' + esc(ref) + '" tabindex="0" role="button" title="' + esc(T("common.open_car")) + '">' + esc(ref) + "</span>";
+  if (/^(?:tr-\d{4}:|st-)/.test(ref)) return '<span class="rlink' + (ui.car === ref ? " sel" : "") + '" data-ref="' + esc(ref) + '" tabindex="0" role="button" title="' + esc(T("common.open_car")) + '">' + esc(ref) + "</span>";
   return esc(ref);  // a track, a todo, a team item, a principle, an order: no panel of their own
 }
 function linkRefs(t) {
@@ -1483,22 +1491,6 @@ function qItem(def, e) {
     open: def.open.length ? def.open.includes(e.status) : true, status: st[e.status] || e.status || "",
     date: e.date || e.added || e.created || first, meta: [] };
   switch (def.name) {
-    case "todo":
-      it.text = e.title && e.text && !String(e.text).startsWith(e.title) ? e.text : "";
-      if (e.status === "in_pr" && e.pr) it.status += " #" + e.pr;
-      it.meta = [kind(e.kind), e.source, (e.where || []).join(", "), e.version, e.trigger ? T("q.when", { v: e.trigger }) : ""];
-      break;
-    case "think":
-      Object.assign(it, { ref: e.id, title: e.topic, stage: e.stage });
-      if (e.status === "in_round" && e.round) it.status += " " + e.round;
-      if (e.status === "decided" && e.decision) it.status += " " + e.decision;
-      it.text = (e.questions || []).length ? T("q.questions", { n: e.questions.length, first: e.questions[0] }) : "";
-      it.meta = [e.by ? T("q.raised_by", { who: e.by }) : "", (e.related || []).join(", ")];
-      break;
-    case "wishes":
-      Object.assign(it, { ref: e.id, stage: e.stage, text: e.words ? T("common.quoted", { t: e.words }) : "" });
-      it.meta = [(L.area && L.area[e.area]) || e.area];
-      break;
     case "ballots":
       it.id = e.round;
       it.meta = [kind(e.kind), e.at_point ? T("q.stopped_at", { point: e.at_point }) : "",
@@ -1519,10 +1511,9 @@ function qItem(def, e) {
       it.meta = [e.initiator ? T("q.called_by", { who: who(e.initiator) }) : "", e.round, e.ran_in ? T("q.ran_in", { v: e.ran_in }) : ""];
       break;
   }
-  if (e.status === "taken" && e.taken_to) it.status += " → " + e.taken_to;
   it.id = it.id || "—";
   it.notes = [].concat(e.notes || []).map((n) => (typeof n === "string" ? n : (n && (n.text || n.note)) || JSON.stringify(n)));
-  it.links = [...new Set([e.taken_to || null, e.pr ? "#" + e.pr : null, ...[].concat(e.links || []).map(String)].filter(Boolean))];
+  it.links = [...new Set([e.pr ? "#" + e.pr : null, ...[].concat(e.links || []).map(String)].filter(Boolean))];
   it.from = [e.added ? T("q.added", { at: when(e.added) }) : "", e.source_ref ? T("q.source", { ref: e.source_ref }) : ""].filter(Boolean);
   it.fields = [[it.id, 40, 1], [e.id, 40, 1], [it.title, 20, 1], [it.text, 10, 1], [it.meta.filter(Boolean).join(" · "), 10, 1],
     [notesText(e.notes), 5, 0, T("find.in_notes")], [(e.questions || []).join(" · "), 5, 0, T("find.in_questions")], [e.text, 5, 0, T("find.in_text")]];
@@ -1535,9 +1526,7 @@ function qRows(name, raw) {
 }
 function qOrder(def, items) {
   return items.map((it, i) => [it, i]).sort((a, b) => (a[0].open === b[0].open ? 0 : a[0].open ? -1 : 1) ||
-    (b[0].prio || 0) - (a[0].prio || 0) ||
-    (def.name === "wishes" ? String(b[0].date || "").localeCompare(String(a[0].date || "")) || String(a[0].id).localeCompare(String(b[0].id)) : 0) ||
-    a[1] - b[1]).map((x) => x[0]);
+    (b[0].prio || 0) - (a[0].prio || 0) || a[1] - b[1]).map((x) => x[0]);
 }
 function qCard(def, it) {
   const key = "qx:" + def.name + ":" + it.id, full = !!ui.open[key], mt = it.meta.filter(Boolean);
@@ -1591,9 +1580,24 @@ function renderQueues() {
       '<div class="qlist" data-sk="q:' + esc(def.name) + '">' + h + "</div></section>";
   }
   find.n.queues = found;
-  return '<div class="summary"><span>' + T("q.open_line", { heads: heads.join(" · ") || "—" }) + "</span>" + foundLine(found) +
+  return renderOverview() + '<div class="summary"><span>' + T("q.open_line", { heads: heads.join(" · ") || "—" }) + "</span>" + foundLine(found) +
     "<span>" + (ui.all ? T("q.hint") : T("q.hint_closed")) + "</span></div>" +
     '<div class="qboard" data-sk="qboard">' + cols + "</div>";
+}
+// every queue the depot keeps, a row each (`depot2 queues --json`): its count, what is on top, what it is; a queue with
+// a tab of its own links to it
+const OVERVIEW_TAB = { stack: "board", merge: "merge", trains: "trains", tracks: "tracks", agents: "agents", decisions: "principles", principles: "principles" };
+function renderOverview() {
+  const rows = data.overview || [];
+  if (!rows.length) return "";
+  return '<section class="overview" aria-label="' + esc(T("q.overview_h")) + '"><h3>' + T("q.overview_h") + "</h3>" +
+    '<table class="hist"><thead><tr><th>' + T("q.col_queue") + "</th><th>" + T("q.col_open") + "</th><th>" + T("q.col_head") + "</th><th>" + T("q.col_means") + "</th></tr></thead><tbody>" +
+    rows.map((r) => {
+      const tab = OVERVIEW_TAB[r.key];
+      const name = tab ? '<a href="#' + esc(tab) + '" class="go" data-go="' + esc(tab) + '">' + esc(r.queue) + "</a>" : esc(r.queue);
+      return "<tr><td>" + name + "</td><td>" + esc(r.open) + "</td><td>" + ((r.head || []).length ? linkRefs(r.head.join("; ")) : "—") + "</td>" +
+        "<td>" + inline(r.means || "") + ' <code>depot2 ' + esc(r.command) + "</code></td></tr>";
+    }).join("") + "</tbody></table></section>";
 }
 
 function renderPrinciples() {
@@ -1739,12 +1743,12 @@ function md(src) {
 // --- the panel ----------------------------------------------------------------------------------------------
 const KNOWN = new Set(["id", "n", "title", "status", "stage", "stages", "brief", "size", "branch", "pr", "st", "after", "notes",
   "note", "added", "started", "finished", "est_mtok", "spent_mtok", "where", "ci", "dod", "depends_on", "words", "text",
-  "asks", "needs_project", "taken_to", "status_ru", "effort", "question", "questions", "topic",
+  "asks", "needs_project", "status_ru", "effort", "question", "questions", "topic",
   "returns", "claims", "claim_links", "kind", "repairs", "bug", "marks", "principles", "docs", "docs_need", "from",
   "moved_from", "priority"]);
 const SHOW_KNOWN = new Set(["v", "ref", "kind", "car", "object", "track", "train", "title", "stage", "stage_ru", "moves", "stages",
   "object_stages", "brief", "size", "branch", "pr", "where", "status", "asks", "project", "project_passed", "gate", "ci",
-  "dod", "left", "taken_to", "from", "records", "returns", "returns_log", "claims", "claim_links", "repair", "fixes", "principles",
+  "dod", "left", "from", "records", "returns", "returns_log", "claims", "claim_links", "repair", "fixes", "principles",
   "docs", "priority"]);
 function qaMarks(returns, claims, repair) {
   const m = [];
@@ -1811,7 +1815,7 @@ function otherFields(recs, j) {
 }
 function panelCar(j) {
   const rec = j.records || {};
-  const carRec = rec.car, obj = rec.object || rec.left, entry = rec.entry;
+  const carRec = rec.car, obj = rec.object || rec.left;
   const tc = trackCar(j.car);
   const it = idx.items.get(j.ref) || (j.car && idx.items.get(j.car)) || (j.object && idx.byObj.get(j.object));
   let h = "<h2>" + esc(j.title || j.ref) + "</h2>";
@@ -1841,7 +1845,7 @@ function panelCar(j) {
   h += "<h4>" + T("panel.waits_h") + "</h4>" + (w.length ? '<ul class="waits">' + w.map((x) => '<li class="' + (x.w ? "w" : x.g ? "g" : "") + '">' + (x.h || esc(x.t)) + "</li>").join("") + "</ul>"
     : '<p class="muted">' + T("panel.waits_none") + "</p>");
 
-  const r0 = carRec || obj || entry || {};
+  const r0 = carRec || obj || {};
   h += "<h4>" + T("panel.car") + "</h4>" + dl([
     [T("panel.car"), named(j.car || j.ref) + (j.object && j.object !== j.ref ? " · " + T("panel.object", { ref: named(j.object) }) : "")],
     [T("panel.track"), j.track ? named(j.track.id) + " " + esc(j.track.title) : null],
@@ -1859,7 +1863,6 @@ function panelCar(j) {
     [T("panel.after"), carRec && carRec.after && carRec.after.length ? esc(carRec.after.join(", ")) : (obj && obj.depends_on && obj.depends_on.length ? esc(obj.depends_on.join(", ")) : null)],
     ["CI", j.ci ? esc(j.ci.state + (j.ci.ts ? " (" + when(j.ci.ts) + ")" : "")) : null],
     [T("panel.dod"), j.dod && Object.keys(j.dod).length ? esc(Object.entries(j.dod).map(([k, v]) => k + ": " + (v && v.state !== undefined ? v.state : JSON.stringify(v))).join(" · ")) : null],
-    [T("panel.taken_to"), j.taken_to ? linked(j.taken_to) : null],
     [T("panel.agents"), agentLinks(j.car || j.ref)],
     [T("panel.added"), r0.added ? esc(when(r0.added)) : null],
     [T("panel.started"), r0.started ? esc(when(r0.started)) : null],
@@ -1876,16 +1879,8 @@ function panelCar(j) {
   if (qa.length) h += "<h4>" + T("qa.h") + "</h4>" + dl(qa);
   if (j.principles) h += "<h4>" + T("panel.marks_h") + "</h4>" + marksTable(j.principles);
 
-  const said = (title, xs) => (xs.length ? "<h4>" + title + "</h4>" + xs.map((x) => "<p>" + esc(x) + "</p>").join("") : "");
-  const str = (q) => (typeof q === "string" ? q : JSON.stringify(q));
-  if (entry) {
-    const qs = (entry.questions || []).map(str);
-    if (entry.question && !qs.includes(str(entry.question))) qs.unshift(str(entry.question));
-    h += said(T("panel.owner_words"), [].concat(entry.words || [])) + said(T("panel.topic"), [].concat(entry.topic || [])) +
-         said(T("panel.questions"), qs) + said(T("panel.text"), [].concat(entry.text || []));
-  }
   const notes = [];
-  const recs = [[T("common.car"), carRec], [T("panel.rec_object"), obj], [T("panel.rec_entry"), entry]];
+  const recs = [[T("common.car"), carRec], [T("panel.rec_object"), obj]];
   for (const [name, r] of recs) {
     if (!r) continue;
     if (r.note) notes.push(name + ": " + r.note);

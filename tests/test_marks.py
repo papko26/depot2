@@ -364,7 +364,6 @@ class MergeAddTest(DepotBase):
 class CheckCommandTest(DepotBase):
     def test_check_shows_reads_and_sets_by_hand(self):
         self.car_in_slot()
-        self.ok("wishes", "add", "--title", "хотелка", "--words", "хочу")
         out = self.ok("tracks", "car", "check", "tr-0001:0")
         self.assertIn("## Оценка tr-0001:0 по принципам", out)
         self.assertIn("Ворота (приоритет 1): не пройдены: нет строки — 5, 26.", out)
@@ -386,7 +385,7 @@ class CheckCommandTest(DepotBase):
                           (["tr-0001:0", "5"], "отметка — ок, не касается или нарушен"),
                           (["tr-0001:0", "5", "ок", "--from-pr"], "либо --from-pr"),
                           (["tr-0001:0", "--line", "x"], "--line и --pr — только с отметкой"),
-                          (["wl-0001"], "оценку по принципам ставят вагону трека или живому объекту стека"),
+                          (["wl-0001"], "вагон — это st-NNNN или tr-NNNN:N"),  # an id of the queues of before
                           (["tr-0001:9"], "tr-0001 has no car 9")):
             rc, _, err = self.team("tracks", "car", "check", *argv)
             self.assertEqual(rc, 1, argv)
@@ -482,7 +481,8 @@ class MigrateMarksTest(GateBase):
         o = Stack(self.t.state, self.t.cfg).get(oid)
         self.assertEqual(o["dod"], {"scan": {"state": "clean", "ts": "2015-11-18T10:00:00+02:00"}})
         row = [h for h in read_jsonl(self.t.state.path("tracks-history.jsonl")) if h["event"] == "migrate"]
-        self.assertEqual([(h["schema"], h.get("legacy_check")) for h in row], [(3, {oid: "ok"}), (4, None), (5, None)])
+        self.assertEqual([(h["schema"], h.get("legacy_check")) for h in row],
+                         [(3, {oid: "ok"}), (4, None), (5, None), (6, None)])
         snap = {f: slurp(self.t.state.path(f)) for f in before}
         self.assertEqual(migrate.run(self.t.state, self.t.cfg),
                          (["миграция данных депо: нечего переносить (схема %d)" % SCHEMA], 0))

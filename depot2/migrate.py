@@ -1,4 +1,4 @@
-"""The depot's data, brought to today's form once: the schema migrations (1 → 5), run before any command.
+"""The depot's data, brought to today's form once: the schema migrations (1 → 6), run before any command.
 
 Each step reads the data of one schema and writes the next, with a history row that keeps what it moved; a step that
 has nothing to move says so. The web view never migrates: it answers 503 until the next command does.
@@ -178,7 +178,9 @@ def run(state, cfg, dry_run=False, names=None):
         L += step_marks(state, dry_run, planned=v < 2)
     if v < 4:
         L += step_priority(state, dry_run, planned=dry_run and v < 2)
-    L += step_arrivals(state, cfg, dry_run, planned=dry_run and v < 4)
+    if v < 5:
+        L += step_arrivals(state, cfg, dry_run, planned=dry_run and v < 4)
+    L += step_queues(state, cfg, dry_run, planned=dry_run and v < 2)
     return ([t("migrate.dry_run")] + L if dry_run else L), 1
 
 
@@ -369,6 +371,214 @@ def step_arrivals(state, cfg, dry_run=False, planned=False):
         d = read_json(state.path(f))
         if d is not None:
             d["schema"] = 5
+            write_json(state.path(f), d)
+    for f in ("tracks-history.jsonl", "tracks.json", "trains.json"):
+        state.touch(state.path(f))
+    return L
+
+
+# --- schema 5 → 6: the queues of before become tracks ------------------------------------------------------------
+
+def title_head(title):
+    """A track's name as its title gives it: the part before the first colon, folded («todo: leftovers» is todo)."""
+    return i18n.fold((title or "").split(":", 1)[0])
+
+
+def _neg_date(d):
+    """Newest first: a sort key that reverses YYYY-MM-DD; no date sorts last."""
+    if not d:
+        return "~"
+    return "".join(chr(ord("9") - ord(ch) + ord("0")) if ch.isdigit() else ch for ch in d)
+
+
+def queue_order(name, entries):
+    """The open entries in the order their queue's table showed them: the most important first; the wishes then the
+    newest first, the others in the file's order."""
+    if name == "wishes":
+        return sorted(entries, key=lambda e: (-pri.of(e), _neg_date(e.get("date")), e["id"]))
+    return sorted(entries, key=lambda e: -pri.of(e))
+
+
+TODO_KIND = i18n.Labels("queues.kind", ("bug", "perf", "text", "cleanup", "reminder"))  # a todo's kind, in words
+
+
+def entry_text(name, e):
+    """What an entry said, on one line: its words, questions, version, place, source (the note of its car)."""
+    def one(x):
+        return " ".join(str(x or "").split())
+    if name == "wishes":
+        words, text = one(e.get("words")), one(e.get("text"))
+        out = one(e.get("title")) + (t("queues.wishes.take_words", words=words) if words else "") + (
+            "; %s" % text if text else "")
+    elif name == "think":
+        qs = [one(q) for q in e.get("questions") or [] if one(q)]
+        text = one(e.get("text"))
+        out = one(e.get("topic")) + (t("queues.think.take_questions", list="; ".join(
+            "%d) %s" % (i, q) for i, q in enumerate(qs, 1))) if qs else "") + ("; %s" % text if text else "")
+        bits = [t("migrate.bit_by", v=one(e["by"])) if e.get("by") else None,
+                t("migrate.bit_related", v=", ".join(e["related"])) if e.get("related") else None,
+                t("migrate.bit_round", v=e["round"]) if e.get("status") == "in_round" and e.get("round") else None]
+        out += "".join(" (%s)" % b for b in bits if b)
+    else:
+        title, text = one(e.get("title")), one(e.get("text"))
+        out = "%s: %s" % (title, text) if title and text and not text.startswith(title) else (text or title)
+        bits = [x for x in (t("queues.todo.bit_kind", v=TODO_KIND.get(e["kind"], e["kind"])) if e.get("kind") else None,
+                            t("queues.todo.bit_version", v=e["version"]) if e.get("version") else None,
+                            t("queues.todo.bit_where", v=", ".join(e["where"])) if e.get("where") else None,
+                            t("queues.todo.bit_source", v=e["source"]) if e.get("source") else None,
+                            t("queues.todo.bit_when", v=e["trigger"]) if e.get("trigger") else None,
+                            t("migrate.bit_in_pr", v=e["pr"]) if e.get("status") == "in_pr" and e.get("pr") else None)
+                if x]
+        out += " (%s)" % "; ".join(bits) if bits else ""
+    if e.get("links"):
+        out += " " + t("migrate.bit_links", v=", ".join(str(x) for x in e["links"]))
+    return out
+
+
+def entry_car(tr, trk, name, e, n, by):
+    """The car an open entry becomes on its track: its title, priority, date, notes, and — a wish's and a to-think
+    entry's — its stage, its history of stages and its open questions; `from` names the entry."""
+    from .queues import SOURCE_KIND, SOURCE_RU, _clip
+    head = e.get("title") or e.get("topic") or e.get("text") or e["id"]
+    note = "%s: %s" % (now_iso()[:10], t("queues.take_note", id=e["id"], kind=SOURCE_RU[SOURCE_KIND[e["id"][:2]]],
+                                          date=e.get("date") or (e.get("added") or "")[:10], text=entry_text(name, e)))
+    c = tr._new_car(trk, _clip(head, 100), n=n, by=by, src=e["id"], priority=pri.of(e), note=note)
+    c["notes"] += [x for x in e.get("notes") or [] if isinstance(x, str) and x.strip()]
+    c["added"] = e.get("added") or c["added"]
+    if e.get("stage") in stages.PLANNING and e.get("stages"):
+        c["stage"], c["stages"] = e["stage"], list(e["stages"])
+    else:
+        stages.start(c, "bogie", by, t("migrate.queue_why", id=e["id"]))
+    for k in ("asks", "needs_project"):
+        if e.get(k):
+            c[k] = e[k]
+    return c
+
+
+def queue_plan(state, cfg, by=None):
+    """What the step does, read only: [{name, path (the file it reads), data, track (or None: a new one), others
+    (more tracks of the name), cars [(entry, the car's name)], found {id: the car's ref of a run cut short}}]."""
+    from .queues import ARCHIVE, OLD_QUEUES
+    from .tracks import Tracks
+    tr = Tracks(state, cfg)
+    out = []
+    for name, prefix, track_name, _, open_ in OLD_QUEUES:
+        path = state.path(name + ".json")
+        if not os.path.exists(path):
+            path = state.path(ARCHIVE % name)
+        d = read_json(path)
+        if d is None:
+            continue
+        named = [trk for trk in tr.tracks() if title_head(trk["title"]) == i18n.fold(track_name)]
+        live = [trk for trk in named if not tr.done(trk)]
+        trk = (live or named or [None])[0]
+        opened = [e for e in d.get("entries") or [] if e.get("status") in open_]
+        ids, found = {e["id"] for e in opened}, {}
+        if trk is not None:  # an open entry a car names already: a run cut short wrote it
+            for c in trk["cars"]:
+                for src in c.get("from") or ():
+                    if src in ids:
+                        found.setdefault(src, "%s:%s" % (trk["id"], c["n"]))
+        rows = queue_order(name, [e for e in opened if e["id"] not in found])
+        taken = set(c["n"] for c in trk["cars"]) | set(p["n"] for p in trk.get("moved_out") or ()) if trk else set()
+        own = {}
+        for e in rows:  # an entry keeps its number as the car's name where the track has it free
+            n = str(int(e["id"].split("-", 1)[1]))
+            if n not in taken:
+                own[e["id"]] = n
+                taken.add(n)
+        nxt = max([int(x) for x in taken if x.isdigit()] or [0]) + 1
+        cars = []
+        for e in rows:
+            if e["id"] not in own:
+                own[e["id"]], nxt = str(nxt), nxt + 1
+            cars.append((e, own[e["id"]]))
+        out.append({"name": name, "prefix": prefix, "track_name": track_name, "path": path, "data": d,
+                    "track": trk, "others": [x for x in named if x is not trk], "cars": cars, "found": found,
+                    "entries": d.get("entries") or [], "open": open_})
+    return tr, out
+
+
+def step_queues(state, cfg, dry_run=False, planned=False):
+    """Schema 5 → 6: the queues of before (wishes, to-think, todo) become tracks of the same name (queues.py's head).
+    Each open entry is a car on its track — named by the entry's number where that is free, `from` the entry, its
+    text in the car's note; a closed or a taken one stays in the archive, which keeps every entry as it was and, on
+    a moved one, `moved_to`: its car. A track whose title (before a colon) is the name is used, else one is added.
+    planned: the steps before are not on the disk yet (a dry run): the tracks are read as they are."""
+    from .queues import ARCHIVE, ARCHIVE_HISTORY
+    by = t("migrate.queue_by")
+    L = [t("migrate.head_6")]
+    tr, plan_ = queue_plan(state, cfg)
+    if not plan_:
+        L.append(t("migrate.queues_none"))
+    moved_all, track_of, added = {}, {}, []
+    for p in plan_:
+        name, trk = p["name"], p["track"]
+        n_open = len(p["cars"]) + len(p["found"])
+        closed = [e for e in p["entries"] if e.get("status") not in p["open"]]
+        new = trk is None and bool(p["cars"])
+        if new and not dry_run:
+            trk = tr._new_track(p["track_name"])
+            trk["notes"].append("%s: %s" % (now_iso()[:10], t("migrate.queue_track_note", queue=QUEUE_WORDS[name],
+                                                                prefix=p["prefix"])))
+            tr._place(trk, None)
+            added.append(trk)
+        track_of[name] = trk["id"] if trk is not None else None
+        moved = dict(p["found"])
+        for e, n in p["cars"]:
+            if trk is None:  # a dry run's new track
+                moved[e["id"]] = "%s:%s" % (t("migrate.new_track"), n)
+                continue
+            c = entry_car(tr, trk, name, e, n, by)
+            if not dry_run:
+                tr._place_car(trk, c, None)
+            moved[e["id"]] = "%s:%s" % (trk["id"], n)
+        moved_all[name] = moved
+        where = (t("migrate.queue_new_track", name=p["track_name"]) if trk is None or new else
+                 t("migrate.queue_old_track", id=trk["id"], title=clip_title(trk["title"], 50)))
+        prio = pri.counts_cell(pri.counts([e for e, _ in p["cars"]]))
+        L.append(t("migrate.queue_line", queue=QUEUE_WORDS[name], total=len(p["entries"]), n=n_open, where=where,
+                   prio=prio if p["cars"] else "—", closed=len(closed), archive=ARCHIVE % name))
+        if p["found"]:
+            L.append("  " + t("migrate.queue_found", n=len(p["found"])))
+        if p["others"]:
+            L.append("  " + t("migrate.queue_others", ids=", ".join(x["id"] for x in p["others"])))
+        if dry_run and p["cars"]:
+            L.append("  " + t("migrate.queue_first", list=", ".join("%s → %s" % (e["id"], moved[e["id"]])
+                                                                    for e, _ in p["cars"][:3])))
+    if planned:
+        L.append(t("migrate.queues_planned"))
+    if dry_run:
+        return L
+    write_json(tr.path, tr.data)  # the cars first: a run cut short finds them by their `from`, and goes on
+    state.touch(tr.path)
+    for trk in added:
+        tr._hist("add", trk["id"], title=trk["title"], by=by, at=tr.data["tracks"].index(trk) + 1)
+    tr._hist("migrate", None, schema=6, **{"from": "schema 5", "queues": {
+        p["name"]: {"track": track_of[p["name"]], "moved": moved_all[p["name"]] or None,
+                    "archive": ARCHIVE % p["name"]} for p in plan_}})
+    for p in plan_:  # the archive: every entry as it was, a moved one with its car
+        name, d = p["name"], p["data"]
+        for e in d.get("entries") or []:
+            if e["id"] in moved_all[name]:
+                e["moved_to"] = moved_all[name][e["id"]]
+        arch, harch = state.path(ARCHIVE % name), state.path(ARCHIVE_HISTORY % name)
+        write_json(arch, d)
+        state.touch(arch)
+        hist = state.path(name + "-history.jsonl")
+        if not os.path.exists(harch):
+            write_new(harch, read_text(hist, ""))
+        append_jsonl(harch, {"ts": now_iso(), "event": "migrate", "entry": None, "schema": 6,
+                             "moved": moved_all[name] or None})
+        state.touch(harch)
+        for f in (state.path(name + ".json"), hist):  # the files of before go: the archive is theirs now
+            if os.path.exists(f):
+                os.remove(f)
+                state.touch(f)
+    for f in ("tracks.json", "trains.json"):  # the gate flips last
+        d = read_json(state.path(f))
+        if d is not None:
+            d["schema"] = 6
             write_json(state.path(f), d)
     for f in ("tracks-history.jsonl", "tracks.json", "trains.json"):
         state.touch(state.path(f))

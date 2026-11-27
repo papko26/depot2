@@ -33,11 +33,10 @@ MESSAGES = {
     "in.priority.later": r"later",
     "priority.is_track": ("{ref} is a track (a theme): a priority belongs to a train and its cars, not to a track; a "
                           "car is {ref}:N"),
-    "priority.bad_ref": ("a priority belongs to a train (its name), a car tr-NNNN:N, an object st-/tm-NNNN, a wish "
-                         "wl-, a to-think entry th-, a todo td-NNNN; not {ref}"),
+    "priority.bad_ref": ("a priority belongs to a train (its name), a car tr-NNNN:N or an object st-/tm-NNNN; "
+                         "not {ref}"),
     "priority.not_in_stack": "{ref} is not in the stack: a priority belongs to what stands in the stack",
     "priority.not_in_tstack": "{ref} is not in the team stack: a priority belongs to what stands in the stack",
-    "priority.not_in_queue": "no {ref} in the {queue} queue",
     "priority.label_train": "train {ref}",
     "priority.label_twin": "{car} (object {st})",
     "priority.set": "{label}: priority P{before} → P{n}",
@@ -112,13 +111,32 @@ MESSAGES = {
     "migrate.arr_line": "- {car} «{title}» (rolling since {at}) → arrived: {why}",
     "migrate.arr_left": ("stay «rolling» (merged after the last rollout, or the merge queue carries them, or the "
                          "object is in the stack): {n} — {refs}"),
+    "migrate.head_6": ("depot data migration: schema 5 → 6 (the queues of wishes, to-think and todo → tracks of "
+                       "those names: an open entry is a car there, the files of before an archive)"),
+    "migrate.queues_none": "no queues of wishes, to-think or todo: nothing to move",
+    "migrate.queue_line": ("{queue}: {total} entries — {n} open → cars of {where} ({prio}); {closed} closed or "
+                           "taken stay in the archive {archive}"),
+    "migrate.queue_new_track": "a new track «{name}»",
+    "migrate.queue_old_track": "{id} «{title}»",
+    "migrate.new_track": "the new track",
+    "migrate.queue_found": "{n} of them are cars already (a run cut short): kept",
+    "migrate.queue_others": "more tracks of that name, left as they are: {ids}",
+    "migrate.queue_first": "the first: {list}",
+    "migrate.queues_planned": "the tracks as they are on the disk now (the steps above are not written yet)",
+    "migrate.queue_by": "depot2 migrate (schema 6)",
+    "migrate.queue_why": "from {id} (the queues of before → tracks)",
+    "migrate.queue_track_note": ("the {queue} queue of before ({prefix}-NNNN), moved here by the data migration "
+                                 "(schema 6): a car's name is its entry's number"),
+    "migrate.bit_by": "raised by: {v}",
+    "migrate.bit_related": "related: {v}",
+    "migrate.bit_round": "in the round {v}",
+    "migrate.bit_in_pr": "in PR #{v}",
+    "migrate.bit_links": "(links: {v})",
     # --- the board (board.py) ---
     "board.kind.car": "car",
     "board.kind.stack": "stack object",
     "board.kind.left": "left the stack",
     "board.kind.merge": "PR in the merge queue",
-    "board.kind.wish": "wish",
-    "board.kind.think": "to think over",
     "board.where.slot": "slot",
     "board.where.post": "post-stack",
     "board.where.queue": "stack queue",
@@ -175,7 +193,6 @@ MESSAGES = {
                            "defect before the merge is a return to the build, «rework»: depot2 stack start from the "
                            "post-stack)"),
     "claims.of_and_bug": "--of {of} is not a car (st-NNNN, tr-NNNN:N, #PR), and --bug {bug}: one bug only",
-    "claims.not_rolled": "{of} is not a car that rolled out: a claim is for st-NNNN, tr-NNNN:N or #PR",
     "claims.of_needed": "--of: the culprit (st-NNNN, tr-NNNN:N, #PR) or a bug's id from BUGS.md",
     "claims.no_bug": "no bug {bug} in {path}",
     "claims.no_bugs_file": "no file {path} (repair.bugs)",
@@ -354,7 +371,7 @@ MESSAGES = {
                                 "word"),
     "cli.help.trains_next": ("what a free slot takes now: a repair out of turn, then the trains in «implementation» "
                              "by priority (their cars past the DoR), then the stack's autostart queue"),
-    "cli.help.car": ("one car (tr-NNNN:N, st-, wl-, th-): its stage, show, its open questions, the stage «project» "
+    "cli.help.car": ("one car (tr-NNNN:N or st-NNNN): its stage, show, its open questions, the stage «project» "
                      "required"),
     "cli.help.stage_by": "who (default: car stage), e.g. «owner»",
     "cli.help.answer_by": "whose answer, e.g. «owner»",
@@ -375,7 +392,6 @@ MESSAGES = {
                              "docs first); mergefix — acceptance, queued"),
     "cli.help.agents_by": "who starts it (default: orchestrator)",
     "cli.help.agents_stop_by": "who stops it (default: orchestrator)",
-    "cli.help.queue_done": "«done»: it came true (not drop); off the open table, in --all",
     "cli.help.principles_checks": "the three checks: the owner's words, «Check against the code», the check principles",
     "cli.help.merge_word": "the owner's words, verbatim (e.g. «merge»)",
     "cli.help.merge_force": "the DoD's principles (its PR's «Principles check»: priority 1 are gates)",
@@ -432,7 +448,7 @@ MESSAGES = {
                            "by hand (the roll-out has passed) — depot2 car stage {ref} arrived --why «rolled out with #N …»"),
     "stages.no_object": "no object {ref} in the stack",
     "stages.left_no_record": "{ref} left the stack with no record of the object",
-    "stages.bad_ref": "a car is st-NNNN, tr-NNNN:N, wl-NNNN or th-NNNN; not {ref!r}",
+    "stages.bad_ref": "a car is st-NNNN or tr-NNNN:N; not {ref!r}",
     "stages.label_object": "{car} (object {obj})",
     "stages.owned_queued": "the merge queue sets «queued»: depot2 merge add <PR> --word «the owner's words»",
     "stages.owned_back_to_brief": ("{oid} {where}: back to the brief — depot2 stack done {oid} --car back (a car) "
@@ -447,11 +463,6 @@ MESSAGES = {
     "stages.owned_car_acceptance": "acceptance — the post-stack: depot2 tracks car stack {ref}, then stack post",
     "stages.owned_car_rolling": "rolling — depot2 tracks car set {ref} --status merged",
     "stages.owned_car_scrapped": "scrapped — depot2 tracks car set {ref} --status dropped --note «…»",
-    "stages.owned_entry_scrapped": "scrapped — depot2 {name} drop {ref} --reason «…»",
-    "stages.owned_wish_arrived": "arrived — depot2 wishes done {ref} --reason «…»",
-    "stages.owned_wish_take": "a wish is not built by itself: it is taken into work — depot2 wish take {ref} --to st-…|tr-…:N",
-    "stages.owned_think_take": ("a to-think entry is not built by itself: it is taken into work — depot2 wish take {ref} "
-                                "--to st-…|tr-…:N"),
     "stages.owned_left": "{ref} left the stack: by hand only «rolling» → «arrived»",
     "stages.next_arrive_mq": "Next: the merge queue sets «arrived» when {id} #{pr} rolls out.",
     "stages.next_line": "Next: {hint}.",
@@ -491,12 +502,9 @@ MESSAGES = {
     "stages.show_none_row": "- (none)",
     "stages.note_car": "car: {note}",
     "stages.note_obj": "object: {note}",
-    "stages.note_entry": "entry: {note}",
     "stages.migrated_why": "migration: {why}",
     "stages.migrate_stack": "stages: the stack — recorded on {n} objects ({counts})",
     "stages.migrate_tracks": "stages: the tracks' cars — recorded on {n} ({counts})",
-    "stages.migrate_wishes": "stages: the wishes — recorded on {n} ({counts})",
-    "stages.migrate_think": "stages: to think over — recorded on {n} ({counts}); a question on {asked}",
 
     # --- the tracks (tracks.py) ---
     "tracks.car.waiting": "waiting",
@@ -872,65 +880,23 @@ MESSAGES = {
     "in.tstack.all": r"all",
     "tstack.all": "all",
     # --- the queues (queues.py) ---
-    "queues.why_entry": "an entry",
     "queues.take_note": "from {id} — {kind} of {date}: {text}",
-    "queues.take_new_only_car": "--n, --size and --title are for a new car: --to tr-NNNN; {to} is a car that exists already",
-    "queues.take_new_only_other": "--n, --size and --title are for a new car: --to tr-NNNN; {to} is not a track",
-    "queues.took_new": "{id} → {ref}: a new car «{title}» ({stage})",
-    "queues.took_car": "{id} → {ref}: into the car «{title}» (its note and from)",
-    "queues.took_car_prio": ("{id} → {ref}: into the car «{title}» (its note and from); the car's priority is its own, "
-                             "{cprio} ({id} had {eprio})"),
-    "queues.col.n": "#",
-    "queues.col.stage": "Stage",
-    "queues.col.date": "Date",
-    "queues.col.priority": "Priority",
-    "queues.col.status": "Status",
-    "queues.col.wish": "Wish",
-    "queues.col.words": "The owner's words",
-    "queues.col.area": "Area",
-    "queues.col.topic": "Topic",
-    "queues.col.questions": "Questions",
-    "queues.col.by": "Raised by",
-    "queues.col.related": "Related",
-    "queues.col.what": "What",
-    "queues.col.version": "Version",
-    "queues.col.where": "Where",
-    "queues.col.source": "Source",
-    "queues.col.kind": "Kind",
-    "queues.open_of": "Open: {n} of {total}.",
-    "queues.open_of_first": "Open: {n} of {total}; the first {limit} shown.",
-    "queues.stage_note": ("Stage: a wish and a «to think over» are bogies; a taken wish lives on in what took it "
-                          "(«bogie → …» is its stage now); the history — `depot2 car show ID`."),
-    "queues.area.product": "product",
-    "queues.area.tools": "tools",
-    "queues.area.infra": "infra",
-    "queues.area.release": "release",
-    "queues.area.site": "site",
-    "queues.wishes.title": "The wish queue",
     "queues.wishes.status.waiting": "waiting",
     "queues.wishes.status.taken": "taken",
     "queues.wishes.status.declined": "declined",
     "queues.wishes.status.done": "done",
-    "queues.wishes.kind": "wish",
-    "queues.wishes.why_taken": "taken → {to} (then — the stages of {to})",
     "queues.wishes.take_words": "; the owner's words: «{words}»",
-    "queues.think.title": "The to-think queue",
     "queues.think.status.waiting": "waiting",
     "queues.think.status.in_round": "in a round",
     "queues.think.status.decided": "decided",
     "queues.think.status.dropped": "dropped",
     "queues.think.status.taken": "taken",
-    "queues.think.kind": "«to think over»",
-    "queues.think.why_decided": "decided: the question is closed",
-    "queues.think.why_taken": "taken → {to} (then — the stages of {to})",
-    "queues.think.why_open": "to think over, with a question",
     "queues.think.take_questions": "; questions: {list}",
     "queues.kind.bug": "bug",
     "queues.kind.perf": "perf",
     "queues.kind.text": "text",
     "queues.kind.cleanup": "cleanup",
     "queues.kind.reminder": "reminder",
-    "queues.todo.title": "The todo queue",
     "queues.todo.status.open": "open",
     "queues.todo.status.in_pr": "in a PR",
     "queues.todo.status.done": "done",
@@ -948,13 +914,9 @@ MESSAGES = {
     "queues.source.tstack": "the team's stack",
     "queues.source_live": "in the stack",
     "queues.source_left": "left the stack",
+    "queues.source_moved": "moved to {to}",
     "queues.migrate_autostart": "stack: autostart = no written out for {n} objects{list}",
     "queues.migrate_nothing": "nothing to move: the migration ran already",
-    "queues.migrate_no_car": "{id} → {to} (no car of the track names it)",
-    "queues.migrate_many_cars": "{id} → {to} ({n} cars name it)",
-    "queues.migrate_from": "cars: where they came from (from) — written for {n}{list}",
-    "queues.migrate_moved": "taken into a track, not a car: {n} → the car that names them{moved}{left}",
-    "queues.migrate_left": "; no car found, left as they were: {list}",
     "queues.ov.tag_slot": " (slot)",
     "queues.ov.tag_post": " (post-stack)",
     "queues.ov.stack": "The agents' stack",
@@ -968,8 +930,33 @@ MESSAGES = {
     "queues.ov.tracks_count": "{n} open of {total}",
     "queues.ov.ballots": "Ballots",
     "queues.ov.at_point": " (at {point})",
-    "queues.ov.wishes": "Wishes",
-    "queues.ov.think": "To think over",
+    "queues.ov.agents": "Agents",
+    "queues.ov.agents_count": "{n} live",
+    "queues.ov.decisions": "Decisions",
+    "queues.ov.decisions_count": "{n} in all",
+    # what each queue of the overview is, in one line: what it holds, who writes into it, how a thing leaves it
+    "queues.means.stack": ("the executors' slots, the post-stack (PRs waiting only for the owner's merge) and the "
+                           "tasks waiting for a slot; written by `stack` and `tracks car stack`; an object leaves by "
+                           "`stack done`, or when the merge queue merges its PR"),
+    "queues.means.merge": ("the PRs the owner let in, with his word verbatim, in their order; written by `merge add` "
+                           "(the word), `merge move|resume|drop`; the one runner (`merge run`) merges them one at a "
+                           "time, and a merged one leaves for `merge report`"),
+    "queues.means.tstack": ("the team rounds' slots and queue; written by `tstack add|start`; an item leaves by "
+                            "`tstack done` or `tstack take` (a car)"),
+    "queues.means.trains": ("named runs of cars from any tracks, design → implementation → merge; written by `trains "
+                            "add|set|state|car`; `trains next` says what a free slot takes; a train leaves by `trains "
+                            "done|drop`"),
+    "queues.means.tracks": ("the themes and their cars — every piece of work, the todos and the things to think over "
+                            "too; written by `tracks add|car add|car set|car move`, the stack and the merge queue move "
+                            "the cars' stages; a car leaves the board arrived or scrapped, its track keeps it"),
+    "queues.means.agents": ("the executors' runs; written by `agents start` (its gates) and `agents attach`; a run "
+                            "leaves finished (its log says so, its spend booked on the car) or by `agents stop`"),
+    "queues.means.ballots": ("the team rounds' ballots waiting for the owner; written by `ballots add|point|at`; a "
+                             "ballot leaves by `ballots done|drop`"),
+    "queues.means.decisions": ("the owner's decisions, append-only; written by `decide` (and a lock the owner lifts); "
+                               "nothing leaves"),
+    "queues.means.principles": ("the project's design principles, rendered to its Markdown file; written by "
+                                "`principles add|set`; one leaves by `principles replace|drop` (in --all)"),
     "queues.ov.principles": "Principles",
     "queues.ov.principles_count": "{n} active",
     "queues.ov.heading": "## Queues ({ts})",
@@ -977,8 +964,8 @@ MESSAGES = {
     "queues.ov.priority_legend": ("Priority: the open ones by priority 1–10 (P10 is the most important; `depot2 priority "
                                   "ID N`); «On top» — by it too; for the principles «On top» is the principles of the "
                                   "third check (③, `depot2 principles checks`)."),
-    "queues.ov.stages": ("The cars' stages (the stack, the trains' open cars, wishes, «to think over»; without the "
-                         "arrived and the scrapped): {counts}; a car's history — `depot2 car show ID`."),
+    "queues.ov.stages": ("The cars' stages (the stack, the tracks' open cars; without the arrived and the scrapped): "
+                         "{counts}; a car's history — `depot2 car show ID`."),
     # --- a round's extras: brainstorms and orders (extras.py) ---
     "extras.brainstorm.approved": "approved, waiting to run",
     "extras.brainstorm.done": "done",
@@ -1800,9 +1787,6 @@ MESSAGES = {
 
     # === the web view ===
     # --- the server (webui.py) ---
-    "webui.queue.todo": "Todo",
-    "webui.queue.think": "To think over",
-    "webui.queue.wishes": "Wishes",
     "webui.queue.ballots": "Ballots",
     "webui.queue.tstack": "Team stack",
     "webui.queue.orders": "Measurement orders",
@@ -1810,7 +1794,7 @@ MESSAGES = {
     "webui.who_all": "all",
     "webui.bad_track": "a track is tr-NNNN, not {got}",
     "webui.bad_train": "a train is its name (search-v1), not {got}",
-    "webui.bad_ref": "a car is st-NNNN, tr-NNNN:N, wl-NNNN or th-NNNN; not {got}",
+    "webui.bad_ref": "a car is st-NNNN or tr-NNNN:N; not {got}",
     "webui.bad_limit": "limit is a number from 0, not {got}",
     "webui.bad_last": "last is a number from 1, not {got}",
     "webui.bad_queue": "a queue is one of {names}, not {got}",
@@ -1905,8 +1889,6 @@ MESSAGES = {
     "web.kind.stack": "stack object",
     "web.kind.left": "left the stack",
     "web.kind.merge": "PR in the merge queue",
-    "web.kind.wish": "wish",
-    "web.kind.think": "to think over",
     "web.state.design": "design",
     "web.state.impl": "implementation",
     "web.state.merge": "merge queue",
@@ -2093,9 +2075,6 @@ MESSAGES = {
     "web.dec.none": "no decisions yet",
     "web.dec.note": ("Newest on top. <code>depot2 decide</code> writes them; here they are only shown (<code>depot2 "
                      "decisions</code>)."),
-    "web.q.when": "when: {v}",
-    "web.q.questions": "questions {n}: {first}",
-    "web.q.raised_by": "raised by: {who}",
     "web.q.stopped_at": "stopped at {point}",
     "web.q.points_left": "points left {n}: {points}",
     "web.q.no_points_left": "no points left",
@@ -2117,6 +2096,11 @@ MESSAGES = {
     "web.q.closed_n": "closed {n}",
     "web.q.total": "· all {n}",
     "web.q.open_line": "open: {heads}",
+    "web.q.overview_h": "Every queue",
+    "web.q.col_queue": "Queue",
+    "web.q.col_open": "Open",
+    "web.q.col_head": "On top",
+    "web.q.col_means": "What it is",
     "web.q.hint": ("trains, tracks, the agents' stack and the merge queue are on their own tabs; the "
                    "<code>depot2</code> commands edit the queues, here they are only shown"),
     "web.q.hint_closed": ("trains, tracks, the agents' stack and the merge queue are on their own tabs; the "
@@ -2203,18 +2187,12 @@ MESSAGES = {
     "web.panel.branch": "Branch",
     "web.panel.after": "After",
     "web.panel.dod": "Handed in (DoD)",
-    "web.panel.taken_to": "Taken to",
     "web.panel.agents": "Agents",
     "web.panel.added": "Added",
     "web.panel.started": "Started",
     "web.panel.finished": "Finished",
     "web.panel.marks_h": "Marks by the principles",
-    "web.panel.owner_words": "The owner's words",
-    "web.panel.topic": "Topic",
-    "web.panel.questions": "Questions",
-    "web.panel.text": "Text",
     "web.panel.rec_object": "object",
-    "web.panel.rec_entry": "entry",
     "web.panel.notes_h": "Notes",
     "web.panel.hist_h": "Stage history",
     "web.panel.obj_hist_h": "History of the object {object}",

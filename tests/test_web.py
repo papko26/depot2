@@ -110,7 +110,8 @@ class WebBase(GateBase):
         self.team("tracks", "car", "add", "tr-0001", "--title", "вагон 0", "--brief", self.web_brief)
         self.team("tracks", "car", "add", "tr-0001", "--title", "вагон 1", "--after", "0")
         self.team("trains", "add", "--name", "search", "--title", "Поиск-поезд", "--car", "tr-0001:0", "--car", "tr-0001:1")
-        self.team("wishes", "add", "--title", "Хочу поиск", "--words", "поиск бы")
+        self.team("tracks", "add", "--title", "хотелки")  # a wish is a bogie on a track of its own
+        self.team("tracks", "car", "add", "tr-0002", "--title", "Хочу поиск", "--note", "поиск бы")
         self.team("stack", "start", "st-0001")
         self.sets = ["orders.results_dir=" + self.t.cfg["orders"]["results_dir"],
                      "brainstorm.topics_dir=" + self.t.cfg["brainstorm"]["topics_dir"]] + ALL[1::2]
@@ -225,8 +226,8 @@ class WebTest(WebBase):
                  ("/api/train/search", ["train", "search", "--json"]), ("/api/tracks", ["tracks", "--json"]),
                  ("/api/track/tr-0001", ["track", "tr-0001", "--json"]), ("/api/stack", ["stack", "--json"]),
                  ("/api/merge", ["merge", "--json"]), ("/api/principles", ["principles", "--json"]),
-                 ("/api/principles?all=1", ["principles", "--all", "--json"])]
-        for ref in ("st-0001", "st-0002", "tr-0001:0", "tr-0001:1", "wl-0001"):
+                 ("/api/principles?all=1", ["principles", "--all", "--json"]), ("/api/queues", ["queues", "--json"])]
+        for ref in ("st-0001", "st-0002", "tr-0001:0", "tr-0001:1", "tr-0002:0"):
             pairs.append(("/api/car/" + ref.replace(":", "%3A"), ["car", "show", ref, "--json"]))
         self.team("principles", "add", "--section", "основа", "--title", "Проба", "--text", "тело", "--check", "yes",
                   "--sub", "**Третья проверка.** рамка", "--sub", "пункт")
@@ -255,12 +256,10 @@ class WebTest(WebBase):
         self.assertIsNone(car["records"]["car"])
 
     def fill_queues(self):
-        """One of every queue, open and closed: todo, think, ballots, the team stack, orders, brainstorms (and the wish)."""
+        """One of every queue, open and closed: ballots, the team stack, orders, brainstorms, decisions."""
         from depot2.extras import Brainstorms, Orders
         from depot2.stack import Ballots
-        for argv in (("todo", "add", "--text", "хвост", "--prio", "high"), ("todo", "add", "--text", "сделан"),
-                     ("todo", "done", "td-0002", "--reason", "готово"), ("think", "add", "--topic", "Подумать о поиске"),
-                     ("tstack", "add", "--kind", "discuss", "--title", "Обсудить поиск"),
+        for argv in (("tstack", "add", "--kind", "discuss", "--title", "Обсудить поиск"),
                      ("decide", "all", "--text", "Первое: вагон tr-0001:0 и #301"),
                      ("decide", "all", "--text", "Второе: поиск по dec-000001")):
             rc, _, err = self.team(*argv)
@@ -279,8 +278,7 @@ class WebTest(WebBase):
                  ("/api/decisions?q=%D0%9F%D0%9E%D0%98%D0%A1%D0%9A&limit=1", ["decisions", "--grep", "ПОИСК", "--limit", "1", "--json"]),
                  ("/api/decisions?limit=0", ["decisions", "--limit", "0", "--json"]),
                  ("/api/queue/tstack", ["tstack", "--json"])]
-        for name, argv in (("todo", ["todo"]), ("think", ["think"]), ("wishes", ["wishes"]), ("ballots", ["ballots"]),
-                           ("orders", ["orders"]), ("brainstorms", ["brainstorm", "list"])):
+        for name, argv in (("ballots", ["ballots"]), ("orders", ["orders"]), ("brainstorms", ["brainstorm", "list"])):
             pairs += [("/api/queue/" + name, argv + ["--json"]), ("/api/queue/%s?all=1" % name, argv + ["--all", "--json"])]
         for path, argv in pairs:
             code, got = self.web.json(path)
@@ -293,20 +291,21 @@ class WebTest(WebBase):
         self.assertEqual((d["decisions"][1]["links"]["cars"], d["decisions"][1]["links"]["prs"]), (["tr-0001:0"], [301]))
         _, d = self.web.json("/api/decisions?q=%D0%BF%D0%BE%D0%B8%D1%81%D0%BA")
         self.assertEqual(([r["id"] for r in d["decisions"]], d["found"], d["total"], d["grep"]), (["dec-000002"], 1, 2, "поиск"))
-        self.assertEqual([e["id"] for e in self.web.json("/api/queue/todo")[1]], ["td-0001"])
-        self.assertEqual([e["id"] for e in self.web.json("/api/queue/todo?all=1")[1]], ["td-0001", "td-0002"])
+        for gone in ("todo", "think", "wishes"):  # the queues of before are tracks now
+            self.assertEqual(self.web.json("/api/queue/" + gone)[0], 404, gone)
         self.assertEqual([e["round"] for e in self.web.json("/api/queue/ballots")[1]], ["2015-11-19-discuss"])
         self.assertEqual([e["id"] for e in self.web.json("/api/queue/orders")[1]], ["ord-0001"])
         self.assertEqual(self.web.json("/api/queue/tstack")[1]["queue"][0]["title"], "Обсудить поиск")
         _, m = self.web.json("/api/meta")
         self.assertEqual([q["name"] for q in m["queues"]], [n for n, _, _ in webui.QUEUES])
-        self.assertEqual([q["name"] for q in m["queues"]], ["todo", "think", "wishes", "ballots", "tstack", "orders", "brainstorms"])
+        self.assertEqual([q["name"] for q in m["queues"]], ["ballots", "tstack", "orders", "brainstorms"])
         q = {x["name"]: x for x in m["queues"]}
-        self.assertEqual((q["todo"]["title"], q["todo"]["command"], q["todo"]["open"]), ("Todo", "depot2 todo", ["open", "in_pr"]))
+        self.assertEqual((q["ballots"]["title"], q["ballots"]["command"], q["ballots"]["open"]),
+                         ("Бюллетени", "depot2 ballots", ["waiting", "presenting"]))
         self.assertEqual((q["brainstorms"]["command"], q["orders"]["open"], q["tstack"]["open"]),
                          ("depot2 brainstorm list", ["queued", "done"], []))
-        self.assertEqual((q["todo"]["status_ru"]["wont"], q["ballots"]["status_ru"]["presenting"], q["todo"]["labels"]["kind"]["bug"],
-                          q["tstack"]["labels"]["who"]["all"], m["priority"]["max"]), ("не будем", "показываю", "баг", "все", 10))
+        self.assertEqual((q["ballots"]["status_ru"]["presenting"], q["tstack"]["labels"]["who"]["all"], m["priority"]["max"]),
+                         ("показываю", "все", 10))
         for name in q:  # every queue's open statuses have their names
             self.assertTrue(set(q[name]["open"]) <= set(q[name]["status_ru"]), name)
 
@@ -379,27 +378,25 @@ class WebTest(WebBase):
                 self.assertEqual(got, json.loads(out), path)
         self.assertEqual(got["agents"][1]["booked"]["mtok"], 0.1525)
 
-    def test_a_car_from_a_queue_and_where_the_entry_went(self):
+    def test_a_car_from_a_queue_of_before_and_where_the_entry_went(self):
+        from test_queues import at_schema, entry, old_queue
         html = self.web.get("/")[2].decode("utf-8")
-        for label in ('[T("panel.from"), ', '[T("panel.taken_to"), j.taken_to ? linked(j.taken_to)', 'e.status === "taken" && e.taken_to',
-                      '"Пришёл из"', '"Взят в"'):
+        for label in ('[T("panel.from"), ', '"Пришёл из"', 'esc(j.status_ru || j.status)', 'esc(p.e.status_ru || p.e.status)'):
             self.assertIn(label, html)
-        rc, out, err = self.team("wishes", "add", "--title", "из очереди в трек", "--area", "tools")
+        self.assertNotIn("taken_to", html)
+        old_queue(self.t.state, "wishes", [entry("wl-0001", "waiting", title="из очереди в трек", area="tools")])
+        at_schema(self.t.state, 5)
+        self.assertEqual(self.web.json("/api/tracks")[0], 503)  # the view waits for the migration, writes nothing
+        rc, out, err = self.team("tracks")
         self.assertEqual(rc, 0, err)
-        wid = out.split()[0]
-        rc, out, err = self.team("wishes", "take", wid, "--to", "tr-0001")
-        self.assertEqual(rc, 0, err)
-        ref = out.split()[2].rstrip(":")
-        _, car = self.web.json("/api/car/" + ref.replace(":", "%3A"))
-        self.assertEqual([(x["ref"], x["kind_ru"], x["title"]) for x in car["from"]], [(wid, "хотелка", "из очереди в трек")])
-        _, entry = self.web.json("/api/car/" + wid)
-        self.assertEqual(entry["taken_to"], ref)
-        self.assertEqual((car["status"], car["status_ru"], entry["status"], entry["status_ru"]),
-                         ("waiting", "ждёт", "taken", "взята"))
-        for part in ('esc(j.status_ru || j.status)', 'esc(p.e.status_ru || p.e.status)',
-                     'said(T("panel.owner_words"), [].concat(entry.words || []))', 'said(T("panel.questions"), qs)',
-                     'said(T("panel.text"), [].concat(entry.text || []))', '"Слова владельца"', '"Вопросы"', '"Текст"'):
-            self.assertIn(part, html)
+        self.assertIn("схема 5 → 6", err)
+        _, car = self.web.json("/api/car/tr-0003%3A1")
+        self.assertEqual([(x["ref"], x["kind_ru"], x["title"], x["status_ru"]) for x in car["from"]],
+                         [("wl-0001", "хотелка", "из очереди в трек", "перенесён в tr-0003:1")])
+        self.assertEqual((car["kind"], car["status"], car["status_ru"]), ("car", "waiting", "ждёт"))
+        code, j = self.web.json("/api/car/wl-0001")  # an id of the queues of before is no car
+        self.assertEqual(code, 404)
+        self.assertIn("вагон — это st-NNNN или tr-NNNN:N", j["error"])
         _, meta = self.web.json("/api/meta")
         self.assertEqual(next(q for q in meta["queues"] if q["name"] == "ballots")["labels"]["kind"]["discuss"],
                          "обсуждение с командой")
@@ -543,8 +540,8 @@ class WebTest(WebBase):
         paths = ["/", "/api/meta", "/api/board", "/api/board?all=1", "/api/board?view=stack", "/api/trains",
                  "/api/train/search", "/api/tracks", "/api/track/tr-0001", "/api/stack", "/api/merge", "/api/merge/report",
                  "/api/merge/report?last=5", "/api/car/st-0001", "/api/car/tr-0001%3A1",
-                 "/api/car/wl-0001", "/api/brief/st-0001", "/api/doc?path=design/sketch.md", "/api/decisions",
-                 "/api/decisions?q=x&limit=1", "/api/agents", "/api/agents?all=1"] + ["/api/queue/%s%s" % (n, a) for n, _, _ in webui.QUEUES for a in ("", "?all=1")]
+                 "/api/car/tr-0002%3A0", "/api/brief/st-0001", "/api/doc?path=design/sketch.md", "/api/decisions",
+                 "/api/decisions?q=x&limit=1", "/api/agents", "/api/agents?all=1", "/api/queues"] + ["/api/queue/%s%s" % (n, a) for n, _, _ in webui.QUEUES for a in ("", "?all=1")]
         with mock.patch.object(subprocess, "Popen", no_popen), mock.patch.object(os, "system", no_popen):
             for p in paths:
                 self.assertEqual(self.web.get(p)[0], 200, p)
@@ -588,7 +585,7 @@ class WebTest(WebBase):
         write_json(self.t.state.path("trains.json"), old)
         before = tree_hash(self.t.dir)
         for path in ("/api/board", "/api/tracks", "/api/trains", "/api/stack", "/api/car/st-0001", "/api/decisions",
-                     "/api/queue/todo"):
+                     "/api/queue/ballots", "/api/queues"):
             code, j = self.web.json(path)
             self.assertEqual(code, 503, path)
             self.assertTrue(j["migrate"] and j["retry"], path)

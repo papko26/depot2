@@ -101,7 +101,7 @@ def canon(car):
 
 
 def where(car):
-    """(kind, record) for a car's own fields: car | stack | left; (None, None) for a wish or a to-think entry."""
+    """(kind, record) for a car's own fields: car | stack | left; (None, None) when it has none."""
     if car.car is not None:
         return "car", car.car
     if car.obj is not None:
@@ -163,8 +163,6 @@ def add(state, cfg, of, bug=None, title=None, brief=None, why=None, size=None, b
         culprit = resolve(state, cfg, of, stk, tr, what="culprit")
     elif bug:
         raise ClaimError(t("claims.of_and_bug", of=of, bug=bug))
-    elif of.startswith(("wl-", "th-")):
-        raise ClaimError(t("claims.not_rolled", of=of))
     else:
         bug = of
     if not (culprit or bug):

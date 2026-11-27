@@ -1,9 +1,8 @@
 """Every car has a stage, `stage`, and the history of its moves, `stages: [{stage, from, at, by, why}]`: an agents'
-stack object (st-), a track's car (tr-NNNN:N), a wish (wl-) and a to-think entry (th-). A todo entry is not a car,
-nor is a team stack item.
+stack object (st-) and a track's car (tr-NNNN:N). A team stack item is not a car.
 
 A car and its stack object are one car: a move of one is a move of the other. The commands that move a car move its
-stage (the stack, the tracks, the merge queue, the wishes, the to-think); `car stage` makes only the moves no other
+stage (the stack, the tracks, the merge queue); `car stage` makes only the moves no other
 command makes (the planning stages, the build ⇄ the docs in a slot, and in-transit → arrived by hand), and it names
 the command for the rest. A move a command makes off the route (MOVES) is recorded with `off_route` and said, never
 refused: the old commands keep working.
@@ -253,18 +252,17 @@ def arrive_hint(ref):
 # --- one car, by its id ------------------------------------------------------------------------------
 
 class Car(object):
-    """What a ref names: a stack object (live, or one that left), a track's car, a wish, a to-think entry;
-    and its twin (a car's live stack object, an object's car)."""
+    """What a ref names: a stack object (live, or one that left) or a track's car; and its twin (a car's live stack
+    object, an object's car)."""
 
     def __init__(self, state, cfg, ref, stack=None, tracks=None):
-        from .queues import Think, Wishes
         from .stack import Stack
         from .tracks import RE_CAR, Tracks
         self.state, self.cfg, self.ref = state, cfg, ref
         self.stack = stack or Stack(state, cfg)
         self.tracks = tracks or Tracks(state, cfg)
         self.tracks._stack = self.stack
-        self.obj = self.left = self.track = self.car = self.entry = self.queue = None
+        self.obj = self.left = self.track = self.car = None
         if ref.startswith("st-"):
             if not self.stack._known(ref):
                 raise StageError(i18n.t("stages.no_object", ref=ref))
@@ -281,12 +279,6 @@ class Car(object):
             self.track, self.car = self.tracks.car(ref)
             if self.car.get("st") and self.stack._dep_open(self.car["st"]):
                 self.obj = self.stack.get(self.car["st"])
-        elif ref.startswith("wl-"):
-            self.queue = Wishes(state)
-            self.entry = self.queue.get(ref)
-        elif ref.startswith("th-"):
-            self.queue = Think(state)
-            self.entry = self.queue.get(ref)
         else:
             raise StageError(i18n.t("stages.bad_ref", ref=ref))
 
@@ -301,7 +293,7 @@ class Car(object):
         return self.ref
 
     def rec(self):
-        for r in (self.car, self.obj, self.entry, self.left):
+        for r in (self.car, self.obj, self.left):
             if r is not None:
                 return r
 
@@ -310,13 +302,10 @@ class Car(object):
             return self.tracks.stage_of(self.car)
         if self.obj is not None:
             return self.stack.stage_of(self.obj)
-        if self.entry is not None:
-            return self.queue.stage_of(self.entry)
         return self.stack.left_stage(self.ref)
 
     def title(self):
-        r = self.rec()
-        return r.get("title") or r.get("topic") or ""
+        return self.rec().get("title") or ""
 
     def owned(self, stage):
         """The command that makes this move, when one does (`car stage` refuses it and names it)."""
@@ -339,17 +328,6 @@ class Car(object):
                     "acceptance": i18n.t("stages.owned_car_acceptance", ref=ref),
                     "rolling": i18n.t("stages.owned_car_rolling", ref=ref),
                     "scrapped": i18n.t("stages.owned_car_scrapped", ref=ref)}.get(stage)
-        if self.entry is not None:
-            name = "wishes" if self.ref.startswith("wl-") else "think"
-            if stage == "scrapped":
-                return i18n.t("stages.owned_entry_scrapped", name=name, ref=self.ref)
-            if stage == "arrived" and name == "wishes":
-                return i18n.t("stages.owned_wish_arrived", ref=self.ref)
-            if stage not in PLANNING:
-                if name == "wishes":
-                    return i18n.t("stages.owned_wish_take", ref=self.ref)
-                return i18n.t("stages.owned_think_take", ref=self.ref)
-            return None
         if stage != "arrived":  # an object that left the stack
             return i18n.t("stages.owned_left", ref=self.ref)
         return None
@@ -390,8 +368,6 @@ class Car(object):
             rows.append(self.tracks.car_stage(self.car_ref, stage, by, why, forced=force))
         if self.obj is not None:
             rows.append(self.stack.set_stage(self.obj["id"], stage, by, why, forced=force))
-        if self.entry is not None:
-            rows.append(self.queue.set_stage(self.ref, stage, by, why, forced=force))
         if self.left is not None:
             rows.append(self.stack.set_stage(self.ref, stage, by, why, forced=force))
         return cur, [r for r in rows if r]
@@ -403,8 +379,6 @@ class Car(object):
             return "car"
         if self.obj is not None:
             return "stack"
-        if self.entry is not None:
-            return "wish" if self.ref.startswith("wl-") else "think"
         return "left"
 
     def recs(self):
@@ -412,9 +386,9 @@ class Car(object):
         return [r for r in (self.car, self.obj) if r is not None] or [self.rec()]
 
     def primary(self):
-        """Where a car's own records live (its questions, `needs_project`): the track's car, else the object, else
-        the wish or the to-think entry; an object that left the stack has none."""
-        for r in (self.car, self.obj, self.entry):
+        """Where a car's own records live (its questions, `needs_project`): the track's car, else the object; an
+        object that left the stack has none."""
+        for r in (self.car, self.obj):
             if r is not None:
                 return r
         raise StageError(i18n.t("stages.left_no_asks", ref=self.ref))
@@ -422,10 +396,8 @@ class Car(object):
     def _save_rec(self, event, **fields):
         if self.car is not None:
             self.tracks._save(event, self.track["id"], car=self.car["n"], **fields)
-        elif self.obj is not None:
-            self.stack._save(event, self.obj["id"], **fields)
         else:
-            self.queue._save(event, self.ref, **fields)
+            self.stack._save(event, self.obj["id"], **fields)
 
     def ask(self, text, by="car ask"):
         """An open question: the DoR waits for its answer."""
@@ -470,10 +442,10 @@ class Car(object):
 
     def gate(self):
         """The next gate, as it stands: the DoR for a planning stage, the DoD for the build (by what the agent
-        handed in to its stack object); None where no gate is next (a wish, a to-think entry, past the build)."""
+        handed in to its stack object); None where no gate is next (an object that left the stack, past the build)."""
         from . import gates
         s = self.stage()
-        if self.entry is not None or self.left is not None:
+        if self.left is not None:
             return None
         if s in ("sketch", "project"):
             return {"name": "DoR", "to": "build", "items": list(gates.dor_items(self.cfg)),
@@ -488,13 +460,13 @@ class Car(object):
 
     def docs(self):
         from . import gates
-        if self.entry is not None or self.left is not None:
+        if self.left is not None:
             return None
         return gates.docs_state(self.recs(), self.stage(), ref=self.car_ref or self.ref)
 
     def verdict(self):
         """The verdict on its marks by the principles (marks.py): a track's car's, else its live stack object's; None
-        for a wish, a to-think entry or an object that left the stack."""
+        for an object that left the stack."""
         from . import marks
         rec = self.car if self.car is not None else self.obj
         if rec is None:
@@ -557,9 +529,6 @@ class Car(object):
             if self.car.get("from"):
                 from .queues import source_line
                 L.append(i18n.t("stages.show_came_from", sources="; ".join(source_line(x) for x in self.sources())))
-        if self.entry is not None and self.entry.get("taken_to"):
-            L.append("%s → %s: %s." % (self.queue.STATUS_RU["taken"].capitalize(), self.entry["taken_to"],
-                                       ru(stage_of_ref(self.state, self.cfg, self.entry["taken_to"]))))
         if self.left is not None:
             L.append(i18n.t("stages.show_left"))
         L.append(i18n.t("stages.show_route", allowed=allowed(self.stage())))
@@ -587,13 +556,11 @@ class Car(object):
         if r is self.car and r is not None:
             from .tracks import CAR_RU
             return CAR_RU.get(s, s)
-        if r is self.entry and r is not None and self.queue is not None:
-            return self.queue.STATUS_RU.get(s, s)
         return s
 
     def notes(self):
         out = []
-        for key, r in (("stages.note_car", self.car), ("stages.note_obj", self.obj), ("stages.note_entry", self.entry)):
+        for key, r in (("stages.note_car", self.car), ("stages.note_obj", self.obj)):
             if not r:
                 continue
             if r.get("note"):
@@ -630,33 +597,16 @@ class Car(object):
                "docs": self.docs(),
                "gate": self.gate(), "ci": o.get("ci"), "dod": o.get("dod") or {},
                "principles": self._verdict_json(),
-               "left": self.left is not None, "taken_to": (self.entry or {}).get("taken_to"), "from": self.sources(),
-               "records": {"car": self.car, "object": self.obj, "left": self.left, "entry": self.entry}}
+               "left": self.left is not None, "from": self.sources(),
+               "records": {"car": self.car, "object": self.obj, "left": self.left}}
         from .claims import car_json
         out.update(car_json(self))
         return out
 
 
-def stage_of_ref(state, cfg, ref, ctx=None):
-    """The live stage of what a wish was taken to (st-, tr-NNNN:N); None for a track or a team item. ctx: a
-    dict that keeps the stack and the tracks read once for a table's rows."""
-    from .stack import Stack
-    from .tracks import Tracks
-    if not (ref.startswith("st-") or ":" in ref):
-        return None
-    if ctx is not None and "stack" not in ctx:
-        ctx["stack"] = Stack(state, cfg)
-        ctx["tracks"] = Tracks(state, cfg)
-    try:
-        return Car(state, cfg, ref, **(ctx or {})).stage()
-    except (StageError, ValueError):
-        return None
-
-
-# --- the one-shot move of today's queues onto the stages (`queues migrate`) ---------------------------------
+# --- the one-shot move of the stack and the tracks onto the stages (`queues migrate`) ----------------------------
 
 def migrate(state, cfg, dry_run=False):
-    from .queues import Think, Wishes
     from .stack import Stack
     from .tracks import Tracks
     by = "queues migrate"
@@ -691,35 +641,12 @@ def migrate(state, cfg, dry_run=False):
     lines, n = returns_migrate(state, cfg, stk, tr, dry_run=dry_run)
     L += lines
     changed += n
-    for q in (Wishes(state), Think(state)):
-        moved, asked = {}, []
-        for e in q.entries():
-            if not e.get("stage"):
-                s, why = q.stage_default_why(e)
-                start(e, s, by, i18n.t("stages.migrated_why", why=why))
-                moved[e["id"]] = s
-            if q.NAME == "think" and not e.get("question"):
-                e["question"] = question_of(e)
-                asked.append(e["id"])
-        if (moved or asked) and not dry_run:
-            q._save("migrate_stage", None, entries=moved, question=asked or None)
-        cell = counts_cell(counts(moved.values()))
-        L.append(i18n.t("stages.migrate_think", n=len(moved), counts=cell, asked=len(asked)) if q.NAME == "think"
-                 else i18n.t("stages.migrate_wishes", n=len(moved), counts=cell))
-        changed += len(moved) + len(asked)
     return L, changed
 
 
-def question_of(e):
-    """A to-think bogie's question: its first question, else its topic."""
-    qs = [q for q in e.get("questions") or [] if (q or "").strip()]
-    return (qs[0] if qs else e.get("topic") or "").strip()
-
-
 def summary(state, cfg):
-    """{stage: n} over the live cars: the stack's objects, the tracks' cars (a car with a
-    live object counts once), the open wishes and to-think entries; the terminal stages left out."""
-    from .queues import Think, Wishes
+    """{stage: n} over the live cars: the stack's objects and the tracks' cars (a car with a live object counts
+    once); the terminal stages left out."""
     from .stack import Stack
     from .tracks import Tracks
     stk = Stack(state, cfg)
@@ -732,6 +659,4 @@ def summary(state, cfg):
             if c.get("st") in live:
                 continue
             out.append(tr.stage_of(c))
-    for q in (Wishes(state), Think(state)):
-        out += [q.stage_of(e) for e in q.entries(open_only=True)]
     return counts(s for s in out if s not in TERMINAL)
