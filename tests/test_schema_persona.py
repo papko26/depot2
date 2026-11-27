@@ -17,8 +17,11 @@ class SchemaTest(unittest.TestCase):
         self.t.close()
 
     def good(self):
-        return {"points": [{"id": "B49", "position": "agree", "stake": 2, "comment": "да"}],
-                "main_point": "главное", "inner_thought": "мысль"}
+        return {
+            "points": [{"id": "B49", "position": "agree", "stake": 2, "comment": "да"}],
+            "main_point": "главное",
+            "inner_thought": "мысль",
+        }
 
     def test_valid_answer(self):
         s = schema.round1("ballot", ["B49", "B50"], self.cfg)
@@ -68,8 +71,10 @@ class SchemaTest(unittest.TestCase):
 
     def test_schema_is_the_same_for_every_character(self):
         # The schema becomes a tool definition, which is part of the cached prefix.
-        self.assertEqual(schema.round2(["B49"], self.cfg, ["builder", "painter"]),
-                         schema.round2(["B49"], self.cfg, ["builder", "painter"]))
+        self.assertEqual(
+            schema.round2(["B49"], self.cfg, ["builder", "painter"]),
+            schema.round2(["B49"], self.cfg, ["builder", "painter"]),
+        )
 
 
 class PortraitTest(unittest.TestCase):

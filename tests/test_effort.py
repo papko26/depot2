@@ -1,4 +1,3 @@
-
 import json
 import os
 import subprocess
@@ -28,12 +27,21 @@ def walk(d, path=""):
 class CalibrationTest(unittest.TestCase):
     def test_the_defaults(self):
         self.assertEqual(config.DEFAULTS["usage"]["mtok_per_pct"], 10.0)
-        self.assertEqual(config.DEFAULTS["usage"]["usd_per_mtok"], 2.5)   # the CLI's ≈$ per MTok
+        self.assertEqual(config.DEFAULTS["usage"]["usd_per_mtok"], 2.5)  # the CLI's ≈$ per MTok
         # every cap on the spend is MTok; no $ key is left in the config
         self.assertEqual([k for k, _ in walk(config.DEFAULTS) if "usd" in k and k != "usage.usd_per_mtok"], [])
         caps = {"{}.{}".format(*k): config.DEFAULTS[k[0]][k[1]] for k in config.MTOK_KEYS}
-        self.assertEqual(caps, {"free.budget_mtok_r1": 0.16, "free.budget_mtok_r2": 0.2, "reflect.budget_mtok": 0.28,
-                                "round.budget_mtok": 1.8, "solo.budget_mtok": None, "lock.budget_mtok": 0.6})
+        self.assertEqual(
+            caps,
+            {
+                "free.budget_mtok_r1": 0.16,
+                "free.budget_mtok_r2": 0.2,
+                "reflect.budget_mtok": 0.28,
+                "round.budget_mtok": 1.8,
+                "solo.budget_mtok": None,
+                "lock.budget_mtok": 0.6,
+            },
+        )
 
     def test_the_format(self):
         cfg = config.load("/nonexistent")
@@ -48,9 +56,15 @@ class CalibrationTest(unittest.TestCase):
         self.assertEqual(effort.from_usd(6, cfg), 2.4)
 
     def test_a_bad_calibration_is_refused(self):
-        for bad in ("usage.usd_per_mtok=0", 'usage.usd_per_mtok="x"', "usage.mtok_per_pct=-1",
-                    "round.budget_mtok=0", 'free.budget_mtok_r1="a lot"', "round.stop_at_utilization=0",
-                    "round.stop_at_utilization=930"):
+        for bad in (
+            "usage.usd_per_mtok=0",
+            'usage.usd_per_mtok="x"',
+            "usage.mtok_per_pct=-1",
+            "round.budget_mtok=0",
+            'free.budget_mtok_r1="a lot"',
+            "round.stop_at_utilization=0",
+            "round.stop_at_utilization=930",
+        ):
             with self.assertRaises(ValueError, msg=bad):
                 config.load("/nonexistent", [bad], warn=None)
         self.assertIsNone(config.load("/nonexistent", ["solo.budget_mtok=null"])["solo"]["budget_mtok"])
@@ -77,24 +91,42 @@ class OldDollarKeysTest(unittest.TestCase):
         return config.load(self.t.dir, list(sets), warn=warned.append), warned
 
     def test_each_old_key_converted_once_with_a_warning(self):
-        cfg, warned = self.load({"free": {"budget_usd_r1": 1.0, "budget_usd_r2": 1.5, "max_tool_turns_r1": 10},
-                                 "round": {"budget_usd": 6}, "reflect": {"budget_usd": 0.7},
-                                 "lock": {"budget_usd": 0.5}, "solo": {"budget_usd": None}})
-        self.assertEqual((cfg["free"]["budget_mtok_r1"], cfg["free"]["budget_mtok_r2"], cfg["round"]["budget_mtok"],
-                          cfg["reflect"]["budget_mtok"], cfg["lock"]["budget_mtok"], cfg["solo"]["budget_mtok"]),
-                         (0.4, 0.6, 2.4, 0.28, 0.2, None))
+        cfg, warned = self.load(
+            {
+                "free": {"budget_usd_r1": 1.0, "budget_usd_r2": 1.5, "max_tool_turns_r1": 10},
+                "round": {"budget_usd": 6},
+                "reflect": {"budget_usd": 0.7},
+                "lock": {"budget_usd": 0.5},
+                "solo": {"budget_usd": None},
+            }
+        )
+        self.assertEqual(
+            (
+                cfg["free"]["budget_mtok_r1"],
+                cfg["free"]["budget_mtok_r2"],
+                cfg["round"]["budget_mtok"],
+                cfg["reflect"]["budget_mtok"],
+                cfg["lock"]["budget_mtok"],
+                cfg["solo"]["budget_mtok"],
+            ),
+            (0.4, 0.6, 2.4, 0.28, 0.2, None),
+        )
         self.assertEqual(cfg["free"]["max_tool_turns_r1"], 10)
         self.assertEqual([k for k, _ in walk(cfg) if k.endswith("_usd") or "budget_usd" in k], [])
         self.assertEqual(len(warned), 6)
-        self.assertIn("config.json: round.budget_usd is deprecated (the limits are in MTok now); read as "
-                      "round.budget_mtok = 2.4: 0.24%UW (2.4 MTok) (6 / usage.usd_per_mtok 2.5); rename it", warned[3])
+        self.assertIn(
+            "config.json: round.budget_usd is deprecated (the limits are in MTok now); read as "
+            "round.budget_mtok = 2.4: 0.24%UW (2.4 MTok) (6 / usage.usd_per_mtok 2.5); rename it",
+            warned[3],
+        )
         self.assertIn("solo.budget_usd is deprecated; read as solo.budget_mtok = null; rename it", warned[4])
 
     def test_the_mtok_key_wins_and_the_rate_is_the_effective_one(self):
         cfg, warned = self.load({"round": {"budget_usd": 6, "budget_mtok": 3}})
         self.assertEqual(cfg["round"]["budget_mtok"], 3)
-        self.assertIn("round.budget_usd is deprecated and round.budget_mtok is set too; round.budget_usd ignored",
-                      warned[0])
+        self.assertIn(
+            "round.budget_usd is deprecated and round.budget_mtok is set too; round.budget_usd ignored", warned[0]
+        )
         # a later layer wins either way: --set's new key over the file's old one, and its old one over the file's new
         cfg, _ = self.load({"round": {"budget_usd": 6}}, ["round.budget_mtok=5"])
         self.assertEqual(cfg["round"]["budget_mtok"], 5)
@@ -108,8 +140,7 @@ class OldDollarKeysTest(unittest.TestCase):
     def test_the_cli_reads_them_and_says_so(self):
         with open(os.path.join(self.t.dir, "config.json"), "w") as f:
             json.dump({"round": {"budget_usd": 6}, "free": {"budget_usd_r1": 1.0}}, f)
-        p = subprocess.run([sys.executable, TEAM, "--state", self.t.dir, "config"], capture_output=True,
-                           text=True)
+        p = subprocess.run([sys.executable, TEAM, "--state", self.t.dir, "config"], capture_output=True, text=True)
         self.assertEqual(p.returncode, 0, p.stderr)
         cfg = json.loads(p.stdout)
         self.assertEqual((cfg["round"]["budget_mtok"], cfg["free"]["budget_mtok_r1"]), (2.4, 0.4))
@@ -133,16 +164,20 @@ class SpendTest(unittest.TestCase):
 
     def test_a_costs_file_from_before_the_mtok(self):
         self.assertEqual(effort.costs_mtok({"mtok": 1.5, "total_usd": 99}, self.cfg), 1.5)
-        old = {"total_usd": 0.5, "tokens": {"input": 0, "cache_write": 0, "cache_read": 1000000, "output": 0},
-               "items": [{"usage": {"cache_read": 1000000}, "cost_usd": 0.3}, {"usage": {}, "cost_usd": 0.2}]}
+        old = {
+            "total_usd": 0.5,
+            "tokens": {"input": 0, "cache_write": 0, "cache_read": 1000000, "output": 0},
+            "items": [{"usage": {"cache_read": 1000000}, "cost_usd": 0.3}, {"usage": {}, "cost_usd": 0.2}],
+        }
         self.assertAlmostEqual(effort.costs_mtok(old, self.cfg), 0.1 + 0.08)  # its calls: tokens, else ≈$
         del old["items"]
         self.assertAlmostEqual(effort.costs_mtok(old, self.cfg), 0.1)  # its tokens
         self.assertAlmostEqual(effort.costs_mtok({"total_usd": 0.5, "tokens": 1234}, self.cfg), 0.2)  # a reflection's
 
     def test_the_cli_gets_the_cap_in_its_own_dollars(self):
-        spec = CallSpec("r/builder-r1", "m", None, "/s", "u", {}, budget_mtok=0.16,
-                        budget_usd=effort.to_usd(0.16, self.cfg))
+        spec = CallSpec(
+            "r/builder-r1", "m", None, "/s", "u", {}, budget_mtok=0.16, budget_usd=effort.to_usd(0.16, self.cfg)
+        )
         argv = build_argv(spec, "claude")
         self.assertEqual(argv[argv.index("--max-budget-usd") + 1], "0.40")
 
@@ -152,10 +187,24 @@ class SpendTest(unittest.TestCase):
             sys_path = os.path.join(d.dir, "system.md")
             with open(sys_path, "w") as f:
                 f.write("rules")
-            sch = {"type": "object", "properties": {"x": {"type": "integer"}}, "required": ["x"],
-                   "additionalProperties": False}
-            spec = CallSpec("t/builder-r1", "fake-model-1", None, sys_path, "hi", sch, budget_mtok=0.16,
-                            budget_usd=0.4, timeout_s=20, cwd=d.dir)
+            sch = {
+                "type": "object",
+                "properties": {"x": {"type": "integer"}},
+                "required": ["x"],
+                "additionalProperties": False,
+            }
+            spec = CallSpec(
+                "t/builder-r1",
+                "fake-model-1",
+                None,
+                sys_path,
+                "hi",
+                sch,
+                budget_mtok=0.16,
+                budget_usd=0.4,
+                timeout_s=20,
+                cwd=d.dir,
+            )
             os.environ["FAKE_STRUCTURED"] = json.dumps({"x": 1})
             res = run_call(spec, executor_bin=FAKE)
             self.assertEqual((res["utilization"], res["week_utilization"]), (0.25, 0.25))
@@ -183,8 +232,10 @@ class GuardTest(unittest.TestCase):
         g.check(0.5)  # 0.5 + 0.5 = the cap: allowed
         with self.assertRaises(RoundStop) as cm:
             g.check(0.6)
-        self.assertEqual(str(cm.exception), "cap: 0.05%UW (0.5 MTok) spent + 0.06%UW (0.6 MTok) for this call "
-                                            "> 0.1%UW (1 MTok) per round")
+        self.assertEqual(
+            str(cm.exception),
+            "cap: 0.05%UW (0.5 MTok) spent + 0.06%UW (0.6 MTok) for this call > 0.1%UW (1 MTok) per round",
+        )
 
     def test_the_fuse_is_a_share_of_the_window_at_the_same_calibration(self):
         g = Guard(config.load("/nonexistent", ["round.budget_mtok=10"]))
@@ -193,8 +244,11 @@ class GuardTest(unittest.TestCase):
         g.check(0.2)  # 89.9 + 0.068 + 0.02 < 90
         with self.assertRaises(RoundStop) as cm:
             g.check(0.95)  # 89.9 + 0.068 + 0.095 ≥ 90: the call is refused before it runs
-        self.assertIn("fuse: the window 89.9%UW + 0.068%UW (0.68 MTok) since + 0.095%UW (0.95 MTok) for this "
-                      "call ≈ 90.06%UW ≥ the stop at 90%UW", str(cm.exception))
+        self.assertIn(
+            "fuse: the window 89.9%UW + 0.068%UW (0.68 MTok) since + 0.095%UW (0.95 MTok) for this "
+            "call ≈ 90.06%UW ≥ the stop at 90%UW",
+            str(cm.exception),
+        )
         # a new calibration moves the same MTok: at 27.2 MTok per 1 % the call fits
         g.cfg = config.load("/nonexistent", ["round.budget_mtok=10", "usage.mtok_per_pct=27.2"])
         g.check(0.95)
@@ -210,6 +264,7 @@ class RoundInMtokTest(unittest.TestCase):
         self.t = TempState()
         self.input = os.path.join(self.t.dir, "q.md")
         from helpers import BALLOT
+
         with open(self.input, "w") as f:
             f.write(BALLOT)
 
@@ -241,16 +296,36 @@ class RoundInMtokTest(unittest.TestCase):
         rid = "2015-11-03-discuss-solo-keeper"
         rdir = os.path.join(self.t.state.rounds_dir(), rid)
         os.makedirs(os.path.join(rdir, "answers"))
-        write_json(os.path.join(rdir, "round.json"), {
-            "id": rid, "kind": "discuss", "status": "done", "created": "2015-11-03T10:00:00Z", "only": "keeper",
-            "points": [], "finals": {}, "balances_before": dict.fromkeys(characters.IDS, 5),
-            "balances_after": dict.fromkeys(characters.IDS, 5),
-            "settings": {"effort": "xhigh", "round": {"budget_usd": 0.9, "max_calls": 2}}})
-        write_json(os.path.join(rdir, "costs.json"), {
-            "calls": 1, "total_usd": 1.36, "unknown_cost_calls": 0, "duration_s": 30.0, "turns": 3, "tool_turns": 1,
-            "tokens": {"input": 0, "cache_read": 0, "cache_write": 0, "output": 0, "total": 0},
-            "utilization": {"before": 0.5, "after": 0.51}, "by_model": {"model-a": {"calls": 1, "usd": 1.36}},
-            "items": [{"call": rid + "/keeper-r1", "cost_usd": 1.36, "usage": {}}]})
+        write_json(
+            os.path.join(rdir, "round.json"),
+            {
+                "id": rid,
+                "kind": "discuss",
+                "status": "done",
+                "created": "2015-11-03T10:00:00Z",
+                "only": "keeper",
+                "points": [],
+                "finals": {},
+                "balances_before": dict.fromkeys(characters.IDS, 5),
+                "balances_after": dict.fromkeys(characters.IDS, 5),
+                "settings": {"effort": "xhigh", "round": {"budget_usd": 0.9, "max_calls": 2}},
+            },
+        )
+        write_json(
+            os.path.join(rdir, "costs.json"),
+            {
+                "calls": 1,
+                "total_usd": 1.36,
+                "unknown_cost_calls": 0,
+                "duration_s": 30.0,
+                "turns": 3,
+                "tool_turns": 1,
+                "tokens": {"input": 0, "cache_read": 0, "cache_write": 0, "output": 0, "total": 0},
+                "utilization": {"before": 0.5, "after": 0.51},
+                "by_model": {"model-a": {"calls": 1, "usd": 1.36}},
+                "items": [{"call": rid + "/keeper-r1", "cost_usd": 1.36, "usage": {}}],
+            },
+        )
         rep = render(self.t.state, rid, self.t.cfg)
         self.assertIn("Капы — на одного: 0.036%UW (0.36 MTok), 2 вызова.", rep)  # its ≈$0.90 / 2.5
         self.assertIn("Расход 0.054%UW (0.54 MTok)", rep)  # its ≈$1.36 / 2.5, no tokens
@@ -268,15 +343,24 @@ class ReflectionInMtokTest(unittest.TestCase):
     def test_the_cap_the_costs_and_the_lines(self):
         from depot2.ledger import Ledger
         from depot2.reflect import reflect
+
         Ledger(self.t.state).payout("keeper", 1, "x")
         specs, lines = [], []
 
         def runner(spec):
             specs.append(spec)
-            return {"call": spec.call_id, "model": spec.model, "effort": spec.effort, "duration_s": 0.1,
-                    "cost_usd": 0.3, "usage": {"input": 0, "cache_write": 10000, "cache_read": 200000, "output": 3000},
-                    "status": "ok", "reason": None, "utilization": None,
-                    "structured": {"portrait": "Я Копилка.", "what_changed": "учла", "inner_thought": "хм"}}
+            return {
+                "call": spec.call_id,
+                "model": spec.model,
+                "effort": spec.effort,
+                "duration_s": 0.1,
+                "cost_usd": 0.3,
+                "usage": {"input": 0, "cache_write": 10000, "cache_read": 200000, "output": 3000},
+                "status": "ok",
+                "reason": None,
+                "utilization": None,
+                "structured": {"portrait": "Я Копилка.", "what_changed": "учла", "inner_thought": "хм"},
+            }
 
         reflect(self.t.state, self.t.cfg, dry_run=True, out=lines.append)
         self.assertIn("no tools, cap 0.028%UW (0.28 MTok) each", "\n".join(lines))
@@ -296,7 +380,9 @@ class TeamStackCliTest(unittest.TestCase):
     team = CliTest.team
 
     def test_the_round_and_the_dry_run(self):
-        self.team("seed", "--specs", os.path.join(self.dir, "brief.md"), "--ledger", os.path.join(self.dir, "seed.json"))
+        self.team(
+            "seed", "--specs", os.path.join(self.dir, "brief.md"), "--ledger", os.path.join(self.dir, "seed.json")
+        )
         q = os.path.join(self.dir, "q.md")
         out = self.team("round", "--kind", "ballot", "--input", q, "--dry-run").stdout
         self.assertIn("  round 1: 5 calls, up to 4 tool turns each, cap 0.016%UW (0.16 MTok), 900s", out)
@@ -304,8 +390,11 @@ class TeamStackCliTest(unittest.TestCase):
         self.assertNotIn("$", out.replace("--max-budget-usd", ""))
         out = self.team("--set", "round.budget_mtok=2.4", "round", "--kind", "ballot", "--input", q).stdout
         self.assertNotIn("$", out)
-        self.assertRegex(out, r"round [0-9-]+ballot: 10 calls, 0 tool turns, 10530 tokens, \d+s, "
-                              r"0.00047%UW \(0.0047 MTok\)")
+        self.assertRegex(
+            out,
+            r"round [0-9-]+ballot: 10 calls, 0 tool turns, 10530 tokens, \d+s, "
+            r"0.00047%UW \(0.0047 MTok\)",
+        )
 
 
 if __name__ == "__main__":

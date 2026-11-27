@@ -21,8 +21,12 @@ def main():
         with open(log, "a") as f:
             f.write(json.dumps({"argv": argv, "cwd": os.getcwd()}) + "\n")
     if argv[0] == "generated":
-        out = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"], stdout=subprocess.PIPE,
-                             text=True, check=True).stdout.split()
+        out = subprocess.run(
+            ["git", "ls-files", "--cached", "--others", "--exclude-standard"],
+            stdout=subprocess.PIPE,
+            text=True,
+            check=True,
+        ).stdout.split()
         files = sorted(f for f in out if f != "docs/GENERATED.md")
         with open("docs/GENERATED.md", "w") as f:
             f.write("files: %d\n\n%s\n" % (len(files), "\n".join(files)))  # noqa: UP031
@@ -39,8 +43,9 @@ def main():
         if os.environ.get("FAKE_GEN_GOLDEN_FAIL"):
             sys.stderr.write("primary-ci: the job failed\n")
             return 1
-        rows = subprocess.run(["git", "show", argv[1] + ":ranking.txt"], stdout=subprocess.PIPE,
-                              text=True, check=True).stdout.split()
+        rows = subprocess.run(
+            ["git", "show", argv[1] + ":ranking.txt"], stdout=subprocess.PIPE, text=True, check=True
+        ).stdout.split()
         os.makedirs(os.path.join(argv[2], "golden"), exist_ok=True)
         with open(os.path.join(argv[2], "golden", "ranking.golden.json"), "w") as f:
             f.write("golden of {}\n".format(" ".join(sorted(rows))))

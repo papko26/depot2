@@ -41,9 +41,24 @@ class CallFailed(RuntimeError):
 class CallSpec:
     """One capped call: what the executor runs and within which limits."""
 
-    def __init__(self, call_id, model, effort, system_path, user, schema, tools=(),
-                 max_tool_turns=0, budget_usd=1.0, timeout_s=300, cwd=None, add_dirs=(),
-                 deny=(), raw_path=None, budget_mtok=None) -> None:
+    def __init__(
+        self,
+        call_id,
+        model,
+        effort,
+        system_path,
+        user,
+        schema,
+        tools=(),
+        max_tool_turns=0,
+        budget_usd=1.0,
+        timeout_s=300,
+        cwd=None,
+        add_dirs=(),
+        deny=(),
+        raw_path=None,
+        budget_mtok=None,
+    ) -> None:
         self.call_id = call_id
         self.model = model
         self.effort = effort
@@ -93,12 +108,26 @@ def describe(res, cfg):
     u = res.get("usage") or {}
     util = res.get("utilization")
     mtok = res.get("mtok") if res.get("mtok") is not None else effort.call_mtok(res, cfg)
-    return ("%-30s %-16s %-6s %6.1fs  %s%s  %s%d tok (in %d, cache r %d w %d, out %d)  turns %s, "  # noqa: UP031
-            "tool turns %d%s  %s%s" % (
-                res.get("call"), res.get("model"), res.get("effort") or "-", res.get("duration_s") or 0,
-                "≈" if res.get("usage_from_stream") or effort.by_cost_only(res) else "", effort.fmt(mtok, cfg),
-                "≈" if res.get("usage_from_stream") else "", total_tokens(u),
-                u.get("input", 0), u.get("cache_read", 0), u.get("cache_write", 0), u.get("output", 0),
-                res.get("num_turns"), res.get("tool_turns", 0),
-                ("  window %.0f%%" % (util * 100)) if util is not None else "",
-                res.get("status"), (": " + res["reason"]) if res.get("reason") else ""))
+    return (
+        "%-30s %-16s %-6s %6.1fs  %s%s  %s%d tok (in %d, cache r %d w %d, out %d)  turns %s, "  # noqa: UP031
+        "tool turns %d%s  %s%s"
+        % (
+            res.get("call"),
+            res.get("model"),
+            res.get("effort") or "-",
+            res.get("duration_s") or 0,
+            "≈" if res.get("usage_from_stream") or effort.by_cost_only(res) else "",
+            effort.fmt(mtok, cfg),
+            "≈" if res.get("usage_from_stream") else "",
+            total_tokens(u),
+            u.get("input", 0),
+            u.get("cache_read", 0),
+            u.get("cache_write", 0),
+            u.get("output", 0),
+            res.get("num_turns"),
+            res.get("tool_turns", 0),
+            ("  window %.0f%%" % (util * 100)) if util is not None else "",
+            res.get("status"),
+            (": " + res["reason"]) if res.get("reason") else "",
+        )
+    )

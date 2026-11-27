@@ -175,10 +175,13 @@ class State:
                     break
                 except OSError:
                     if time.time() >= deadline:
-                        raise LockBusy("another depot2 has held {} for over {:g} s, nothing was written: run the "  # noqa: B904
-                                       "command again in a moment (a write of the merge runner or the backup's snapshot "
-                                       "holds it for about a second, a team round for its whole run)".format(
-                                           self.path(".lock"), LOCK_WAIT_S if wait_s is None else wait_s))
+                        raise LockBusy(  # noqa: B904
+                            "another depot2 has held {} for over {:g} s, nothing was written: run the "
+                            "command again in a moment (a write of the merge runner or the backup's snapshot "
+                            "holds it for about a second, a team round for its whole run)".format(
+                                self.path(".lock"), LOCK_WAIT_S if wait_s is None else wait_s
+                            )
+                        )
                     time.sleep(0.2)
             yield
         finally:
@@ -188,8 +191,7 @@ class State:
         return os.path.isdir(self.path(".git"))
 
     def git(self, *args, check=True):
-        return subprocess.run(["git", "-C", self.root, *list(args)], check=check,
-                              capture_output=True, text=True)
+        return subprocess.run(["git", "-C", self.root, *list(args)], check=check, capture_output=True, text=True)
 
     def init_git(self):
         os.makedirs(self.root, exist_ok=True)
@@ -212,8 +214,7 @@ class State:
         if not staged:
             self.touched.clear()
             return None
-        self.git("-c", "user.name=depot2", "-c", "user.email=depot2@localhost",
-                 "commit", "-q", "-m", message)
+        self.git("-c", "user.name=depot2", "-c", "user.email=depot2@localhost", "commit", "-q", "-m", message)
         left = self.git("status", "--porcelain", "--", *rel).stdout.strip()
         if left:
             raise WriteCheckError(f"state commit left changes: {left}")

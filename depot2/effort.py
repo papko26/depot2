@@ -14,8 +14,12 @@ import re
 from .i18n import t
 
 WEIGHTS = {"input": 1.0, "cache_write": 1.25, "cache_read": 0.1, "output": 5.0}
-API_KEYS = {"input_tokens": "input", "cache_creation_input_tokens": "cache_write",
-            "cache_read_input_tokens": "cache_read", "output_tokens": "output"}
+API_KEYS = {
+    "input_tokens": "input",
+    "cache_creation_input_tokens": "cache_write",
+    "cache_read_input_tokens": "cache_read",
+    "output_tokens": "output",
+}
 
 
 class EffortError(ValueError):

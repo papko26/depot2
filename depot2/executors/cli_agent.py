@@ -29,49 +29,73 @@ from ..store import read_json
 from . import CallFailed, FatalError
 
 ARG_MAX = 80
-ARG_KEYS = ("description", "file_path", "notebook_path", "pattern", "path", "url", "query", "skill", "command",
-            "subagent_type", "action")
+ARG_KEYS = (
+    "description",
+    "file_path",
+    "notebook_path",
+    "pattern",
+    "path",
+    "url",
+    "query",
+    "skill",
+    "command",
+    "subagent_type",
+    "action",
+)
 NO_ARG = ("SubagentHandback", "SendMessage")
 RE_AGENT_ID = re.compile(r"^(?:agent-)?([A-Za-z0-9_-]{4,64})$")
 
 
 def _error(msg):
     from ..agents import AgentError
+
     return AgentError(msg)
 
 
 FATAL_TEXT = re.compile(
     r"not logged in|/login|usage limit|rate.?limit|quota|credit balance|billing|overloaded|"
     r"authenticat|unauthori[sz]ed|invalid api key|issue with the selected model",
-    re.IGNORECASE)
+    re.IGNORECASE,
+)
 
 STRIP_ENV_PREFIXES = ("CLAUDE_CODE_",)
 STRIP_ENV = ("CLAUDECODE", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")
 
 
 def child_env():
-    """The caller's environment minus any parent-session and API-key variables.
-
-
-    """
-    return {k: v for k, v in os.environ.items()
-            if not k.startswith(STRIP_ENV_PREFIXES) and k not in STRIP_ENV}
+    """The caller's environment minus any parent-session and API-key variables."""
+    return {k: v for k, v in os.environ.items() if not k.startswith(STRIP_ENV_PREFIXES) and k not in STRIP_ENV}
 
 
 def build_argv(spec, executor_bin):
-    argv = [executor_bin, "-p",
-            "--safe-mode", "--restricted", "--strict-mcp-config", "--disable-slash-commands",
-            "--no-session-persistence",
-            "--output-format", "stream-json", "--verbose",
-            "--permission-prompts", "none"]
+    argv = [
+        executor_bin,
+        "-p",
+        "--safe-mode",
+        "--restricted",
+        "--strict-mcp-config",
+        "--disable-slash-commands",
+        "--no-session-persistence",
+        "--output-format",
+        "stream-json",
+        "--verbose",
+        "--permission-prompts",
+        "none",
+    ]
     if spec.model:
         argv += ["--model", spec.model]
     if spec.effort:
         argv += ["--effort", spec.effort]
-    argv += ["--system-prompt-file", spec.system_path,
-            "--json-schema", json.dumps(spec.schema, ensure_ascii=False, separators=(",", ":")),
-            "--max-budget-usd", f"{spec.budget_usd:.2f}",
-            "--tools", ",".join(spec.tools)]
+    argv += [
+        "--system-prompt-file",
+        spec.system_path,
+        "--json-schema",
+        json.dumps(spec.schema, ensure_ascii=False, separators=(",", ":")),
+        "--max-budget-usd",
+        f"{spec.budget_usd:.2f}",
+        "--tools",
+        ",".join(spec.tools),
+    ]
     if spec.tools:
         # Variadic options go last.
         if spec.add_dirs:
@@ -141,9 +165,15 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
     raw = open(spec.raw_path, "w", encoding="utf-8") if spec.raw_path else None  # noqa: SIM115
     try:
         try:
-            proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE, cwd=spec.cwd, env=child_env(),
-                                    start_new_session=True)
+            proc = subprocess.Popen(
+                argv,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                cwd=spec.cwd,
+                env=child_env(),
+                start_new_session=True,
+            )
         except OSError as e:
             raise FatalError(f"cannot start {executor_bin}: {e}")  # noqa: B904
 
@@ -203,8 +233,11 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
                 msg = ev.get("message") or {}
                 if msg.get("usage"):
                     msg_usage[msg.get("id") or ev.get("uuid")] = msg["usage"]
-                uses = [b for b in (msg.get("content") or [])
-                        if b.get("type") == "tool_use" and b.get("name") != "StructuredOutput"]
+                uses = [
+                    b
+                    for b in (msg.get("content") or [])
+                    if b.get("type") == "tool_use" and b.get("name") != "StructuredOutput"
+                ]
                 if uses:
                     tool_calls += len(uses)
                     mid = msg.get("id") or ev.get("uuid")
@@ -232,16 +265,24 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
 
     stderr = b"".join(err_chunks).decode("utf-8", "replace")
     out = {
-        "call": spec.call_id, "model": spec.model, "effort": spec.effort,
+        "call": spec.call_id,
+        "model": spec.model,
+        "effort": spec.effort,
         "duration_s": round(time.monotonic() - t0, 1),
         "cost_usd": (result or {}).get("total_cost_usd"),
         "usage": _usage(result) if result else _usage({"usage": _sum_usage(msg_usage.values())}),
         "usage_from_stream": result is None,
         "num_turns": (result or {}).get("num_turns"),
-        "tool_turns": len(tool_msgs), "tool_calls": tool_calls,
+        "tool_turns": len(tool_msgs),
+        "tool_calls": tool_calls,
         "models": sorted(((result or {}).get("modelUsage") or {}).keys()),
-        "rate_limit": rate, "utilization": max_utilization(rate), "week_utilization": week_utilization(rate),
-        "exit_code": proc.returncode, "status": "ok", "reason": None, "structured": None,
+        "rate_limit": rate,
+        "utilization": max_utilization(rate),
+        "week_utilization": week_utilization(rate),
+        "exit_code": proc.returncode,
+        "status": "ok",
+        "reason": None,
+        "structured": None,
     }
 
     def fail(cls, reason):
@@ -262,10 +303,13 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
         sub = result.get("subtype") or ""
         text = str(result.get("result") or "") + " " + " ".join(map(str, result.get("errors") or []))
         if sub == "error_max_budget_usd":
-            fail(CallFailed, "budget cap {} reached (--max-budget-usd {:.2f})".format(f"{spec.budget_mtok:.4g} MTok" if spec.budget_mtok is not None else "of the call",
-                    spec.budget_usd))
-        if result.get("api_error_status") or result.get("terminal_reason") == "api_error" \
-                or FATAL_TEXT.search(text):
+            fail(
+                CallFailed,
+                "budget cap {} reached (--max-budget-usd {:.2f})".format(
+                    f"{spec.budget_mtok:.4g} MTok" if spec.budget_mtok is not None else "of the call", spec.budget_usd
+                ),
+            )
+        if result.get("api_error_status") or result.get("terminal_reason") == "api_error" or FATAL_TEXT.search(text):
             fail(FatalError, "API error {}: {}".format(result.get("api_error_status"), text.strip()[:300]))
         if sub.startswith("error_max"):
             fail(CallFailed, f"{sub}: {text.strip()[:200]}")
@@ -282,8 +326,8 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
     return out
 
 
-
 # --- the transcript ------------------------------------------------------------------------------------------------
+
 
 class _TranscriptCacheEntry(TypedDict):
     key: tuple[int, int, tuple[int, int] | None, int]
@@ -302,7 +346,7 @@ def _short(text, n=ARG_MAX):
     home = os.path.expanduser("~")
     if home and home != "~":
         t = t.replace(home + "/", "~/")
-    return t if len(t) <= n else t[:n - 1] + "…"
+    return t if len(t) <= n else t[: n - 1] + "…"
 
 
 def action_arg(name, inp):
@@ -334,15 +378,22 @@ def parse_ts(text):
 
 
 def meta_path(transcript):
-    return transcript[:-len(".jsonl")] + ".meta.json" if transcript.endswith(".jsonl") else transcript + ".meta.json"
+    return transcript[: -len(".jsonl")] + ".meta.json" if transcript.endswith(".jsonl") else transcript + ".meta.json"
 
 
 def _acc(tail):
     """What a reading sums as it goes: the message ids seen (the spend once per message), the tool calls seen, the
     tokens by kind, the last `tail` actions, the first and last times.
     """
-    return {"seen": set(), "tok": dict.fromkeys(effort.WEIGHTS, 0), "acts": collections.deque(maxlen=tail),
-            "calls": set(), "n_calls": 0, "first": None, "last": None}
+    return {
+        "seen": set(),
+        "tok": dict.fromkeys(effort.WEIGHTS, 0),
+        "acts": collections.deque(maxlen=tail),
+        "calls": set(),
+        "n_calls": 0,
+        "first": None,
+        "last": None,
+    }
 
 
 def _take(acc, line):
@@ -377,7 +428,9 @@ def _take(acc, line):
             continue
         acc["calls"].add(bid)
         acc["n_calls"] += 1
-        acc["acts"].append({"at": ts, "name": str(b.get("name") or "?"), "arg": action_arg(b.get("name"), b.get("input"))})
+        acc["acts"].append(
+            {"at": ts, "name": str(b.get("name") or "?"), "arg": action_arg(b.get("name"), b.get("input"))}
+        )
 
 
 def read_transcript(path, tail=10):
@@ -423,10 +476,18 @@ def read_transcript(path, tail=10):
     off += whole + len(rest)
     meta = read_json(mp) if mkey is not None else None
     meta = meta if isinstance(meta, dict) else {}
-    out = {"turns": len(acc["seen"]), "mtok": round(effort.weighted_mtok(acc["tok"]), 4), "first_at": acc["first"],
-           "last_at": acc["last"], "actions": list(acc["acts"]), "actions_n": acc["n_calls"],
-           "finished": meta.get("finished") is True, "stopped_by_user": meta.get("stoppedByUser") is True,
-           "model": meta.get("model"), "effort": meta.get("effort")}
+    out = {
+        "turns": len(acc["seen"]),
+        "mtok": round(effort.weighted_mtok(acc["tok"]), 4),
+        "first_at": acc["first"],
+        "last_at": acc["last"],
+        "actions": list(acc["acts"]),
+        "actions_n": acc["n_calls"],
+        "finished": meta.get("finished") is True,
+        "stopped_by_user": meta.get("stoppedByUser") is True,
+        "model": meta.get("model"),
+        "effort": meta.get("effort"),
+    }
     _CACHE[path] = {"key": key, "ino": st.st_ino, "tail": tail, "off": off, "acc": acc, "out": out}
     return out
 
@@ -440,17 +501,23 @@ def find_transcript(cfg, agent_id):
         raise _error("agents.projects is not set: the dir the runner keeps its runs' logs in (or --transcript PATH)")
     root = os.path.expanduser(cfg["agents"]["projects"])
     name = f"agent-{m.group(1)}.jsonl"
-    found = sorted(set(glob.glob(os.path.join(root, "*", "*", "subagents", name)) +
-                       glob.glob(os.path.join(root, "*", "*", "subagents", "**", name), recursive=True)))
+    found = sorted(
+        set(
+            glob.glob(os.path.join(root, "*", "*", "subagents", name))
+            + glob.glob(os.path.join(root, "*", "*", "subagents", "**", name), recursive=True)
+        )
+    )
     if not found:
         raise _error(f"no transcript {name} under {root}/*/*/subagents/ (yet?): --transcript PATH")
     if len(found) > 1:
-        raise _error("%d transcripts named %s: %s; say which with --transcript PATH"  # noqa: UP031
-                         % (len(found), name, ", ".join(_tilde(p) for p in found)))
+        raise _error(
+            "%d transcripts named %s: %s; say which with --transcript PATH"  # noqa: UP031
+            % (len(found), name, ", ".join(_tilde(p) for p in found))
+        )
     return found[0]
 
 
 def _tilde(path):
     home = os.path.expanduser("~")
     path = os.path.abspath(os.path.expanduser(path))
-    return "~" + path[len(home):] if home not in ("", "~", "/") and path.startswith(home + "/") else path
+    return "~" + path[len(home) :] if home not in ("", "~", "/") and path.startswith(home + "/") else path

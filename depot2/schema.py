@@ -9,7 +9,11 @@ POSITIONS = ("agree", "disagree", "none")
 VERDICTS = ("on_track", "drifting", "off_course")
 
 _TYPES = {
-    "object": dict, "array": list, "string": str, "boolean": bool, "null": type(None),
+    "object": dict,
+    "array": list,
+    "string": str,
+    "boolean": bool,
+    "null": type(None),
 }
 
 
@@ -69,30 +73,47 @@ def _str(max_len):
 
 
 def _obj(props, required=None):
-    return {"type": "object", "properties": props,
-            "required": list(required if required is not None else props),
-            "additionalProperties": False}
+    return {
+        "type": "object",
+        "properties": props,
+        "required": list(required if required is not None else props),
+        "additionalProperties": False,
+    }
 
 
 def _position_item(point_ids, comment_max):
-    return _obj({
-        "id": {"type": "string", "enum": list(point_ids)},
-        "position": {"type": "string", "enum": list(POSITIONS)},
-        "stake": {"type": "integer", "minimum": 0},
-        "comment": _str(comment_max),
-    })
+    return _obj(
+        {
+            "id": {"type": "string", "enum": list(point_ids)},
+            "position": {"type": "string", "enum": list(POSITIONS)},
+            "stake": {"type": "integer", "minimum": 0},
+            "comment": _str(comment_max),
+        }
+    )
 
 
 def _order():
-    return _obj({"command": _str(300), "seeds": _str(120), "hardware": _str(40), "threshold": _str(300),
-                  "forecast": _str(300), "why": _str(300)})
+    return _obj(
+        {
+            "command": _str(300),
+            "seeds": _str(120),
+            "hardware": _str(40),
+            "threshold": _str(300),
+            "forecast": _str(300),
+            "why": _str(300),
+        }
+    )
 
 
 def _proposal(cfg):
     """An optional proposal of the team's own brainstorm: a topic, why now, the questions."""
-    return _obj({"topic": _str(200), "why": _str(500),
-                 "questions": {"type": "array", "maxItems": int(cfg["brainstorm"]["questions_max"]),
-                               "items": _str(400)}})
+    return _obj(
+        {
+            "topic": _str(200),
+            "why": _str(500),
+            "questions": {"type": "array", "maxItems": int(cfg["brainstorm"]["questions_max"]), "items": _str(400)},
+        }
+    )
 
 
 OPTIONAL = ("brainstorm_proposal", "order")
@@ -103,16 +124,25 @@ def round1(kind, point_ids, cfg, solo=False):
     r = cfg["round"]
     props = {}
     if point_ids:
-        props["points"] = {"type": "array", "items": _position_item(point_ids, r["comment_max_chars"]),
-                           "maxItems": len(point_ids)}
+        props["points"] = {
+            "type": "array",
+            "items": _position_item(point_ids, r["comment_max_chars"]),
+            "maxItems": len(point_ids),
+        }
     props["main_point"] = _str(300)
     props["inner_thought"] = _str(300)
     if kind in ("review", "discuss", "brainstorm"):
-        props["proposals"] = {"type": "array", "maxItems": r["proposals_max"], "items": _obj({
-            "title": _str(120),
-            "question": _str(700),
-            "stake": {"type": "integer", "minimum": 0},
-        })}
+        props["proposals"] = {
+            "type": "array",
+            "maxItems": r["proposals_max"],
+            "items": _obj(
+                {
+                    "title": _str(120),
+                    "question": _str(700),
+                    "stake": {"type": "integer", "minimum": 0},
+                }
+            ),
+        }
     if kind == "review":
         props["verdict"] = {"type": "string", "enum": list(VERDICTS)}
     if not solo:
@@ -125,21 +155,36 @@ def round2(point_ids, cfg, char_ids, proposal_ids=()):
     """proposal_ids: the brainstorm proposals of round 1; each character votes on every one."""
     r = cfg["round"]
     props = {
-        "points": {"type": "array", "items": _position_item(point_ids, r["comment_max_chars"]),
-                   "maxItems": max(1, len(point_ids))},
-        "rebuttals": {"type": "array", "maxItems": r["rebuttals_max"], "items": _obj({
-            "to": {"type": "string", "enum": list(char_ids)},
-            "point": {"type": "string", "enum": list(point_ids)},
-            "text": _str(400),
-        })},
+        "points": {
+            "type": "array",
+            "items": _position_item(point_ids, r["comment_max_chars"]),
+            "maxItems": max(1, len(point_ids)),
+        },
+        "rebuttals": {
+            "type": "array",
+            "maxItems": r["rebuttals_max"],
+            "items": _obj(
+                {
+                    "to": {"type": "string", "enum": list(char_ids)},
+                    "point": {"type": "string", "enum": list(point_ids)},
+                    "text": _str(400),
+                }
+            ),
+        },
         "inner_thought": _str(300),
     }
     if proposal_ids:
-        props["brainstorm_votes"] = {"type": "array", "maxItems": len(proposal_ids), "items": _obj({
-            "proposal": {"type": "string", "enum": list(proposal_ids)},
-            "vote": {"type": "string", "enum": ["yes", "no"]},
-            "line": _str(200),
-        })}
+        props["brainstorm_votes"] = {
+            "type": "array",
+            "maxItems": len(proposal_ids),
+            "items": _obj(
+                {
+                    "proposal": {"type": "string", "enum": list(proposal_ids)},
+                    "vote": {"type": "string", "enum": ["yes", "no"]},
+                    "line": _str(200),
+                }
+            ),
+        }
     props["order"] = _order()
     return _obj(props, [k for k in props if k not in OPTIONAL])
 
@@ -148,17 +193,23 @@ def lock_pass(object_ids):
     """Round 3, the lock pass: an optional lock on one stack object. The ids are the stack's, the
     same for every character; the code still checks the object and the rest.
     """
-    return _obj({
-        "lock": _obj({"object": {"type": "string", "enum": list(object_ids)}, "condition": _str(300),
-                      "why": _str(300)}),
-        "inner_thought": _str(300),
-    }, ["inner_thought"])
+    return _obj(
+        {
+            "lock": _obj(
+                {"object": {"type": "string", "enum": list(object_ids)}, "condition": _str(300), "why": _str(300)}
+            ),
+            "inner_thought": _str(300),
+        },
+        ["inner_thought"],
+    )
 
 
 def reflection(cfg):
-    return _obj({
-        "portrait": _str(cfg["reflect"]["portrait_max_chars"]),
-        "summary_en": _str(cfg["reflect"]["summary_en_max_chars"]),
-        "what_changed": _str(400),
-        "inner_thought": _str(300),
-    })
+    return _obj(
+        {
+            "portrait": _str(cfg["reflect"]["portrait_max_chars"]),
+            "summary_en": _str(cfg["reflect"]["summary_en_max_chars"]),
+            "what_changed": _str(400),
+            "inner_thought": _str(300),
+        }
+    )

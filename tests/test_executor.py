@@ -17,8 +17,12 @@ class RunnerTest(unittest.TestCase):
         self.sys_path = os.path.join(self.dir, "system.md")
         with open(self.sys_path, "w") as f:
             f.write("rules")
-        self.schema = {"type": "object", "properties": {"x": {"type": "integer"}},
-                       "required": ["x"], "additionalProperties": False}
+        self.schema = {
+            "type": "object",
+            "properties": {"x": {"type": "integer"}},
+            "required": ["x"],
+            "additionalProperties": False,
+        }
         os.environ["FAKE_STRUCTURED"] = json.dumps({"x": 1})
 
     def tearDown(self):
@@ -26,9 +30,17 @@ class RunnerTest(unittest.TestCase):
             os.environ.pop(k, None)
 
     def spec(self, **kw):
-        base = {"call_id": "t/builder-r1", "model": "fake-model-1", "effort": "low",
-                    "system_path": self.sys_path, "user": "hello", "schema": self.schema,
-                    "timeout_s": 20, "cwd": self.dir, "raw_path": os.path.join(self.dir, "raw.jsonl")}
+        base = {
+            "call_id": "t/builder-r1",
+            "model": "fake-model-1",
+            "effort": "low",
+            "system_path": self.sys_path,
+            "user": "hello",
+            "schema": self.schema,
+            "timeout_s": 20,
+            "cwd": self.dir,
+            "raw_path": os.path.join(self.dir, "raw.jsonl"),
+        }
         base.update(kw)
         return CallSpec(**base)
 
@@ -109,8 +121,14 @@ class RunnerTest(unittest.TestCase):
         self.run_fake("ok")
         got = json.loads(slurp(argv_out))
         argv = got["argv"]
-        for flag in ("-p", "--safe-mode", "--restricted", "--strict-mcp-config", "--no-session-persistence",
-                     "--disable-slash-commands"):
+        for flag in (
+            "-p",
+            "--safe-mode",
+            "--restricted",
+            "--strict-mcp-config",
+            "--no-session-persistence",
+            "--disable-slash-commands",
+        ):
             self.assertIn(flag, argv)
         self.assertEqual(argv[argv.index("--output-format") + 1], "stream-json")
         self.assertEqual(argv[argv.index("--tools") + 1], "")
@@ -121,8 +139,10 @@ class RunnerTest(unittest.TestCase):
         self.assertNotIn("ANTHROPIC_API_KEY", got["env"])
 
     def test_paid_pass_flags(self):
-        argv = build_argv(self.spec(tools=["Read", "Grep", "Glob"], max_tool_turns=6,
-                                    add_dirs=["/repo"], deny=["Read(//proc/**)"]), "claude")
+        argv = build_argv(
+            self.spec(tools=["Read", "Grep", "Glob"], max_tool_turns=6, add_dirs=["/repo"], deny=["Read(//proc/**)"]),
+            "claude",
+        )
         self.assertEqual(argv[argv.index("--tools") + 1], "Read,Grep,Glob")
         self.assertEqual(argv[-4:], ["--add-dir", "/repo", "--disallowedTools", "Read(//proc/**)"])
 

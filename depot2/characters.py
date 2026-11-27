@@ -1,4 +1,3 @@
-
 """The team of the rounds: its characters, their names and the grammatical gender they speak in.
 
 The team is optional. The config's `characters` null (the default) is no team: the rounds, the tokens, the reflection
@@ -128,7 +127,7 @@ def extract_specs(brief_text):
     if len(starts) < len(CHARACTERS):
         raise ValueError("the spec file has %d character items, expected %d" % (len(starts), len(CHARACTERS)))  # noqa: UP031
     specs = {}
-    for n, i in enumerate(starts[:len(CHARACTERS)]):
+    for n, i in enumerate(starts[: len(CHARACTERS)]):
         end = starts[n + 1] if n + 1 < len(starts) else len(lines)
         # The list ends at the next heading.
         for j in range(i + 1, end):

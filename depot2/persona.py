@@ -60,8 +60,7 @@ class Persona:
         v = self.versions()
         return v[-1]["version"] if v else 0
 
-    def replace_portrait(self, text, source, cap, call_id=None, note=None, summary_en=None,
-                         summary_cap=1500):
+    def replace_portrait(self, text, source, cap, call_id=None, note=None, summary_en=None, summary_cap=1500):
         """Store a new portrait version, keep every old one, and verify all of it.
 
         Returns the index record. Over-long text is cut at the last paragraph or sentence end
@@ -77,8 +76,10 @@ class Persona:
         if versions:
             # The current file must still be the newest recorded version before we move on.
             if sha256_text(old) != versions[-1]["sha256"]:
-                raise WriteCheckError("%s: portrait.md differs from v%04d; refusing to replace"  # noqa: UP031
-                                      % (self.cid, versions[-1]["version"]))
+                raise WriteCheckError(
+                    "%s: portrait.md differs from v%04d; refusing to replace"  # noqa: UP031
+                    % (self.cid, versions[-1]["version"])
+                )
         elif old:
             raise WriteCheckError(f"{self.cid}: portrait.md exists without an index")
         n = (versions[-1]["version"] if versions else 0) + 1
@@ -94,10 +95,16 @@ class Persona:
         atomic_write(self.portrait_path, text)
         self.state.touch(self.portrait_path)
         digest = sha256_text(text)
-        rec = {"version": n, "sha256": digest, "chars": len(text), "ts": now_iso(),
-               "source": source, "path": os.path.relpath(hist, self.dir),
-               "previous": versions[-1]["version"] if versions else None,
-               "truncated": truncated}
+        rec = {
+            "version": n,
+            "sha256": digest,
+            "chars": len(text),
+            "ts": now_iso(),
+            "source": source,
+            "path": os.path.relpath(hist, self.dir),
+            "previous": versions[-1]["version"] if versions else None,
+            "truncated": truncated,
+        }
         if call_id:
             rec["call"] = call_id
         if note:
@@ -152,12 +159,14 @@ class Persona:
     def gender(self):
         """'f' or 'm' from meta.json; the seeding default only when the state has none."""
         from . import characters
+
         g = self.meta().get("gender")
         return g if g in characters.GENDERS else characters.BY_ID[self.cid]["default_gender"]
 
     def set_gender(self, gender):
         """Write the gender to meta.json and its line to spec.md (replacing any older one)."""
         from . import characters
+
         characters.check_gender(gender)
         keep = [l for l in self.spec().rstrip("\n").split("\n") if not characters.is_spec_gender_line(l)]  # noqa: E741
         while keep and not keep[-1].strip():
@@ -199,4 +208,5 @@ def cut_text(text, cap):
 def genders(state):
     """{cid: 'f' | 'm'} as the state says."""
     from . import characters
+
     return {cid: Persona(state, cid).gender() for cid in characters.IDS}

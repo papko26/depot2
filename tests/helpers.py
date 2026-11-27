@@ -30,8 +30,12 @@ BRIEF_TEXT = "# бриф\n\n## Сверка с кодом\n\n## Проверка
 
 NO_NET = tempfile.mkdtemp(prefix="team-test-gh-")
 with open(os.path.join(NO_NET, "gh"), "w") as _f:
-    _f.write('#!/bin/sh\nif [ -n "$FAKE_GH_STATE" ]; then exec {} -S {} "$@"; fi\n'
-             'echo "gh: the tests reach no GitHub (no FAKE_GH_STATE)" >&2\nexit 4\n'.format(sys.executable, os.path.join(HERE, "fake_gh.py")))
+    _f.write(
+        '#!/bin/sh\nif [ -n "$FAKE_GH_STATE" ]; then exec {} -S {} "$@"; fi\n'
+        'echo "gh: the tests reach no GitHub (no FAKE_GH_STATE)" >&2\nexit 4\n'.format(
+            sys.executable, os.path.join(HERE, "fake_gh.py")
+        )
+    )
 os.chmod(os.path.join(NO_NET, "gh"), 0o755)
 os.environ["PATH"] = NO_NET + os.pathsep + os.environ.get("PATH", "")
 
