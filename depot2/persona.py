@@ -13,8 +13,18 @@ The CODE replaces a portrait; the model only proposes the text.
 
 import os
 
-from .store import (WriteCheckError, append_jsonl, atomic_write, now_iso, read_json,
-                    read_jsonl, read_text, sha256_text, write_json, write_new)
+from .store import (
+    WriteCheckError,
+    append_jsonl,
+    atomic_write,
+    now_iso,
+    read_json,
+    read_jsonl,
+    read_text,
+    sha256_text,
+    write_json,
+    write_new,
+)
 
 
 class Persona:

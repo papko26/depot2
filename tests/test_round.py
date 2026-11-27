@@ -9,8 +9,8 @@ from depot2 import characters, schema
 from depot2.bundle import parse_points
 from depot2.executors import CallFailed, FatalError
 from depot2.ledger import Ledger, LedgerError
-from depot2.reflect import changes_since, reflect
 from depot2.persona import Persona
+from depot2.reflect import changes_since, reflect
 from depot2.report import order_points, render
 from depot2.round import RoundAborted, run_round, trim_to
 from depot2.store import append_jsonl, write_json

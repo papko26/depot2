@@ -6,11 +6,19 @@ has nothing to move says so. The web view never migrates: it answers 503 until t
 
 import os
 
-from . import i18n
+from . import i18n, stages
 from . import priority as pri
-from . import stages
 from .i18n import t
-from .store import append_jsonl, atomic_write, now_iso, read_json, read_jsonl, read_text, write_json, write_new
+from .store import (
+    append_jsonl,
+    atomic_write,
+    now_iso,
+    read_json,
+    read_jsonl,
+    read_text,
+    write_json,
+    write_new,
+)
 from .tracks import CAR_BUSY, CAR_DONE, SCHEMA
 
 ARCHIVE_HISTORY = "trains-history-v1.jsonl"

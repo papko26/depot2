@@ -4,7 +4,14 @@ import unittest
 
 from helpers import TempState
 
-from depot2.ledger import AUTO_REASON, Decisions, Ledger, LedgerError, OverdraftError, Pending
+from depot2.ledger import (
+    AUTO_REASON,
+    Decisions,
+    Ledger,
+    LedgerError,
+    OverdraftError,
+    Pending,
+)
 from depot2.store import WriteCheckError, append_jsonl
 
 

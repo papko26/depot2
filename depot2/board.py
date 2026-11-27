@@ -6,9 +6,7 @@ entries. Each row: the car, what it is, its train, its size, where it is, how lo
 next gate as it stands (gates.py). The build and the acceptance have soft limits (`stack.slots`, `stack.post_max`).
 """
 
-from . import gates
-from . import i18n
-from . import stages
+from . import gates, i18n, stages
 from .i18n import t
 from .stack import Stack, _cell, age_ru
 from .store import now_iso

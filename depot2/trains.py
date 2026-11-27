@@ -12,15 +12,23 @@ trains-history.jsonl every change
 import datetime
 import re
 
-from . import gates
-from . import i18n
+from . import effort as eff
+from . import gates, i18n, stages
 from . import priority as pri
-from . import stages
 from .stack import _cell
 from .store import append_jsonl, now_iso, read_json, write_json
-from .tracks import (CAR_DONE, CAR_RU, RE_CAR, SCHEMA, Tracks, counts_text, effort_of, effort_text, post_line,
-                     stage_legend)
-from . import effort as eff
+from .tracks import (
+    CAR_DONE,
+    CAR_RU,
+    RE_CAR,
+    SCHEMA,
+    Tracks,
+    counts_text,
+    effort_of,
+    effort_text,
+    post_line,
+    stage_legend,
+)
 
 STATES = ("design", "impl", "merge", "arrived", "scrapped")
 LIVE = ("design", "impl", "merge")

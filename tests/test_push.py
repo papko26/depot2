@@ -515,6 +515,7 @@ class RawGateTest(unittest.TestCase):
 
     def test_a_round_commits_the_marker_never_the_stream(self):
         from test_round import FakeRunner
+
         from depot2.executors import FatalError
         from depot2.round import RoundAborted, run_round
         inp = os.path.join(self.tmp, "q.md")

@@ -5,9 +5,9 @@ import sys
 import unittest
 
 from helpers import HERE
+from test_merge import MergeBase
 
 from depot2 import merge, mergeauto
-from test_merge import MergeBase
 
 FAKE_GEN = os.path.join(HERE, "fake_gen.py")
 MAP0 = "files: 3\n\na.txt\nb.txt\nc.txt\n"

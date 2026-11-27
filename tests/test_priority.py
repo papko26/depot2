@@ -14,7 +14,6 @@ from depot2.tracks import SCHEMA, Tracks
 from depot2.tstack import TeamStack
 
 
-
 class PBase(TracksBase):
     def ok(self, *argv):
         rc, out, err = self.team(*argv)
@@ -25,6 +24,7 @@ class PBase(TracksBase):
         """A refusal: the tool's error (exit 1), or the parser's (exit 2, a bad --priority); its words."""
         import contextlib
         import io
+
         from depot2 import cli as team
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):

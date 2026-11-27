@@ -21,7 +21,15 @@ from .ledger import AUTO_REASON, Ledger
 from .persona import Persona
 from .persona import genders as personas_genders
 from .report import render as render_report
-from .store import atomic_write, now_iso, read_json, sha256_text, today, write_json, write_new
+from .store import (
+    atomic_write,
+    now_iso,
+    read_json,
+    sha256_text,
+    today,
+    write_json,
+    write_new,
+)
 
 
 class RoundStop(RuntimeError):

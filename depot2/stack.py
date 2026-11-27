@@ -12,13 +12,11 @@ ballots.json        the ballot queue: the rounds' points waiting for the owner, 
 import datetime
 import os
 
-from . import characters
-from . import i18n
-from .i18n import is_word, t
-from . import effort
+from . import characters, effort, i18n, stages
 from . import priority as pri
-from . import stages
+from .i18n import is_word, t
 from .store import append_jsonl, now_iso, read_json, read_jsonl, write_json
+
 
 # What a lock means; the README and the report say the same. The orchestrator honours it.
 def lock_means():

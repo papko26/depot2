@@ -12,7 +12,6 @@ from helpers import BRIEF_TEXT, GATES_ALL
 from test_extras import Base
 from test_merge import MergeBase
 
-
 from depot2 import gates, marks, stages
 from depot2.stack import Stack, StackError
 from depot2.tracks import Tracks

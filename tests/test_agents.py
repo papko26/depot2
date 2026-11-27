@@ -11,7 +11,13 @@ from helpers import BRIEF_TEXT, GATES_ALL
 from test_extras import Base
 
 from depot2 import effort
-from depot2.agents import Agents, AgentError, parse_usage, read_transcript, find_transcript
+from depot2.agents import (
+    AgentError,
+    Agents,
+    find_transcript,
+    parse_usage,
+    read_transcript,
+)
 from depot2.executors import cli_agent
 from depot2.executors.cli_agent import action_arg
 from depot2.stack import Stack

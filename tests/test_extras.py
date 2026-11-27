@@ -10,8 +10,8 @@ import unittest
 from helpers import BALLOT, TempState, slurp
 from test_round import FakeRunner, ans
 
-from depot2 import cli as team
 from depot2 import characters, extras, schema
+from depot2 import cli as team
 from depot2.executors import CallFailed, FatalError
 from depot2.ledger import Ledger, LedgerError
 from depot2.reflect import changes_since

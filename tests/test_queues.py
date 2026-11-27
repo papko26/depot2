@@ -14,6 +14,7 @@ from depot2.tracks import Tracks
 from depot2.trains import Trains
 from depot2.tstack import TeamStack
 
+
 def write(d, name, text):
     path = os.path.join(d, name)
     with open(path, "w", encoding="utf-8") as f:

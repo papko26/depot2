@@ -17,7 +17,6 @@ import helpers
 from helpers import HERE
 from test_board import ALL, GateBase
 
-
 from depot2 import board as board_mod
 from depot2 import characters, i18n, webui
 from depot2 import principles as principles_mod

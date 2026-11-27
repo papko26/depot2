@@ -9,11 +9,14 @@ import os
 import re
 import sys
 
-from . import characters, config  # noqa: E402
-from . import i18n  # noqa: E402
-from .i18n import t  # noqa: E402
+from . import (  # noqa: E402
+    characters,
+    config,
+    i18n,  # noqa: E402
+)
 from . import priority as pri  # noqa: E402
 from .executors import FatalError  # noqa: E402
+from .i18n import t  # noqa: E402
 from .ledger import Decisions, Ledger, LedgerError, Pending  # noqa: E402
 from .persona import Persona  # noqa: E402
 from .store import LockBusy, State  # noqa: E402
@@ -46,8 +49,8 @@ def cmd_round(state, cfg, a):
         print("FATAL: %s" % e, file=sys.stderr)
         return 2
     if r and a.item:
-        from .tstack import TeamStack
         from . import effort
+        from .tstack import TeamStack
         o = TeamStack(state, cfg).record_round(a.item, r["id"], r["costs"])
         print("%s: round %s, %s" % (a.item, r["id"], effort.fmt(o["spent_mtok"], cfg)))
         state.commit("team: tstack %s ← round %s" % (a.item, r["id"]))
@@ -198,6 +201,7 @@ def cmd_orders(state, cfg, a):
 def cmd_order(state, cfg, a):
     """`order done ord-NNNN --result F…` (the orchestrator ran it) / `order settle ord-NNNN moved|burn|refund`."""
     import shutil
+
     from .extras import Orders
     log = Orders(state)
     o = log.get(a.id)
@@ -2035,7 +2039,8 @@ def build_parser():
     p.add_argument("--verbose", action="store_true", help="log every request to stderr")
     p.set_defaults(fn=cmd_web, mutates=False)
 
-    from .queues import AREAS, KINDS as TODO_KINDS
+    from .queues import AREAS
+    from .queues import KINDS as TODO_KINDS
     for name, aliases, hlp in (("wishes", ["wish"], "the owner's wishes not scheduled yet (wishes.json)"),
                                ("think", [], "open questions for a brainstorm, a round or the owner (think.json)"),
                                ("todo", [], "leftovers and reminders (todo.json): date, version, place")):

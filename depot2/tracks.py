@@ -14,10 +14,8 @@ import os
 import re
 
 from . import effort as eff
-from . import gates
-from . import i18n
+from . import gates, i18n, stages
 from . import priority as pri
-from . import stages
 from .stack import Stack, _cell
 from .store import append_jsonl, now_iso, read_json, write_json
 

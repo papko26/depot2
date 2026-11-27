@@ -15,7 +15,6 @@ from depot2.tracks import Tracks
 from depot2.trains import TrainError, Trains, check_name, parse_slots
 
 
-
 class ModelTest(TracksBase):
     def setUp(self):
         super().setUp()
@@ -175,6 +174,7 @@ class ModelTest(TracksBase):
     def test_the_cli_traps_name_the_way_through(self):
         import contextlib
         import io
+
         from depot2 import cli as team
 
         def refused(*argv):  # argparse's refusal: exit 2 and its line on stderr

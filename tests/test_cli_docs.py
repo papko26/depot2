@@ -6,6 +6,7 @@ import re
 import unittest
 
 import helpers  # noqa: F401
+
 from depot2 import cli as team
 
 README = os.path.join(os.path.dirname(helpers.HERE), "README.md")

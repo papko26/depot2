@@ -24,8 +24,8 @@ import time
 from typing import TypedDict
 
 from .. import effort
-from . import CallFailed, FatalError
 from ..store import read_json
+from . import CallFailed, FatalError
 
 ARG_MAX = 80
 ARG_KEYS = ("description", "file_path", "notebook_path", "pattern", "path", "url", "query", "skill", "command",

@@ -11,9 +11,8 @@ import os
 import re
 import subprocess
 
-from . import i18n
+from . import i18n, stages
 from . import priority as pri
-from . import stages
 from .i18n import t
 from .stack import _cell
 from .store import append_jsonl, now_iso, read_json, read_jsonl, today, write_json

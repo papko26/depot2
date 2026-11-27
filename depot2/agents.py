@@ -13,10 +13,7 @@ import datetime
 import os
 import re
 
-from . import effort, executors
-from . import gates
-from . import i18n
-from . import stages
+from . import effort, executors, gates, i18n, stages
 from .i18n import t
 from .store import append_jsonl, now_iso, read_json, write_json
 

@@ -12,8 +12,16 @@ from test_board import GateBase
 from test_extras import Base
 
 from depot2 import bundle, gates
-from depot2.principles import (Principles, banner_line, diff_lines, owner_words, parse, render_text, strip_banner,
-                                  today_headings)
+from depot2.principles import (
+    Principles,
+    banner_line,
+    diff_lines,
+    owner_words,
+    parse,
+    render_text,
+    strip_banner,
+    today_headings,
+)
 from depot2.stack import Stack
 from depot2.store import read_json, write_json
 from depot2.tracks import Tracks
