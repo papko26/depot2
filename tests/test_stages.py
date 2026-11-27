@@ -382,7 +382,8 @@ class MergeStagesTest(MergeBase):
         self.team("stack", "set", "st-0001", "--pr", "301")
         self.team("stack", "post", "st-0001")
         self.team("merge", "add", "301", "--word", "мердж")
-        car = lambda: Tracks(self.t.state, self.t.cfg).car("tr-0001:1")[1]
+        def car():
+            return Tracks(self.t.state, self.t.cfg).car("tr-0001:1")[1]
         self.assertEqual(car()["stage"], "queued")
         rc, out, err = self.team("merge", "drop", "301", "--reason", "чинить")
         self.assertEqual(rc, 0, err)

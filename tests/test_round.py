@@ -205,11 +205,11 @@ class RoundTest(unittest.TestCase):
         self.assertIsNone(out)
         self.assertEqual(runner.calls, [])
         self.assertFalse(os.path.exists(self.t.state.rounds_dir()))
-        self.assertTrue(any("identical for every character" in l for l in lines))
+        self.assertTrue(any("identical for every character" in l for l in lines))  # noqa: E741
         self.assertIn("every pass reads the same --add-dir list (round 1 and round 2):", lines)
         self.assertIn("  --add-dir <a snapshot of origin/main>", lines)
-        self.assertTrue(any("then at once returned (auto_refund)" in l for l in lines))
-        self.assertFalse(any("paid" in l or "level" in l for l in lines))
+        self.assertTrue(any("then at once returned (auto_refund)" in l for l in lines))  # noqa: E741
+        self.assertFalse(any("paid" in l or "level" in l for l in lines))  # noqa: E741
 
     def test_thoughts_are_kept(self):
         self.play({("chronicler", "r1"): ans(thought="каталог сверяют раз в год")})
@@ -405,7 +405,7 @@ class StakeReportTest(unittest.TestCase):
     def test_a_tampered_ledger_does_not_match(self):
         r = self.mixed()
         led = Ledger(self.t.state)
-        txs = [json.loads(l) for l in slurp(led.path).splitlines()]
+        txs = [json.loads(l) for l in slurp(led.path).splitlines()]  # noqa: E741
         back = next(t for t in txs if t["type"] == "auto_refund" and t["character"] == "chronicler")
         back["amount"] = 1
         with open(led.path, "w") as f:
@@ -517,7 +517,8 @@ class OldRoundTest(unittest.TestCase):
 
     def test_refund_auto_returns_the_open_stakes(self):
         calls = []
-        gate = lambda: [cid for cid in characters.IDS if changes_since(self.t.state, cid) != ([], [])]
+        def gate():
+            return [cid for cid in characters.IDS if changes_since(self.t.state, cid) != ([], [])]
         txs = self.led.auto_refund_round(self.RID)
         self.assertEqual([(t["type"], t["ref"], t["amount"]) for t in txs],
                          [("auto_refund", "tx-000009", 2), ("auto_refund", "tx-000010", 1)])
@@ -615,8 +616,8 @@ class ReflectionGateTest(unittest.TestCase):
         Ledger(self.t.state).payout("keeper", 1, "x")
         lines = []
         reflect(self.t.state, self.t.cfg, dry_run=True, runner=None, out=lines.append)
-        self.assertTrue(any("DRY RUN" in l for l in lines))
-        self.assertTrue(any("Копилка" in l for l in lines))
+        self.assertTrue(any("DRY RUN" in l for l in lines))  # noqa: E741
+        self.assertTrue(any("Копилка" in l for l in lines))  # noqa: E741
 
 
 if __name__ == "__main__":

@@ -232,7 +232,7 @@ class RoundInMtokTest(unittest.TestCase):
         rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
         self.assertEqual(rj["settings"]["usage"], {"mtok_per_pct": 10.0, "usd_per_mtok": 2.5})
         self.assertAlmostEqual(rj["mtok"], 0.04)
-        self.assertEqual([l for l in lines if "$" in l], [])
+        self.assertEqual([l for l in lines if "$" in l], [])  # noqa: E741
         self.assertIn("0.004%UW (0.04 MTok); window 10% → 10%", lines[-1])
         self.assertIn("0.0004%UW (0.004 MTok)", lines[0])
         self.assertNotIn("$", r["report"])
@@ -286,7 +286,7 @@ class ReflectionInMtokTest(unittest.TestCase):
         costs = json.loads(slurp(os.path.join(d, os.listdir(d)[0], "costs.json")))
         self.assertAlmostEqual(costs["mtok"], 0.0125 + 0.02 + 0.015)  # its tokens, not its ≈$0.30
         self.assertEqual(costs["total_usd"], 0.3)
-        self.assertEqual([l for l in lines if "$" in l], [])
+        self.assertEqual([l for l in lines if "$" in l], [])  # noqa: E741
         self.assertIn("reflect: 1 calls, 213000 tokens, 0.0047%UW (0.048 MTok)", lines)
 
 

@@ -159,7 +159,7 @@ class Persona:
         """Write the gender to meta.json and its line to spec.md (replacing any older one)."""
         from . import characters
         characters.check_gender(gender)
-        keep = [l for l in self.spec().rstrip("\n").split("\n") if not characters.is_spec_gender_line(l)]
+        keep = [l for l in self.spec().rstrip("\n").split("\n") if not characters.is_spec_gender_line(l)]  # noqa: E741
         while keep and not keep[-1].strip():
             keep.pop()
         line = characters.spec_gender_line(gender)

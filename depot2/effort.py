@@ -156,7 +156,7 @@ def _small(x, nd):
     """nd decimals; below 0.1, two significant digits, so a call's cap never prints as 0."""
     a = abs(x)
     if 0 < a < 0.1:
-        nd = max(nd, min(8, 1 - int(math.floor(math.log10(a)))))
+        nd = max(nd, min(8, 1 - math.floor(math.log10(a))))
     return _num(x, nd)
 
 

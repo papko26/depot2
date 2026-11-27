@@ -1272,9 +1272,11 @@ class PartsTest(unittest.TestCase):
         return {"databaseId": 1, "status": state, "conclusion": concl}
 
     def test_classify(self):
-        job = lambda **kw: dict({"name": "j", "status": "completed", "conclusion": "success", "runner_name": "r",
-                                 "steps": [1], "created_at": "2025-11-11T23:59:00Z"}, **kw)
-        c = lambda runs, jobs: merge.classify(runs, lambda rid: jobs, self.NOW, 15)[:2]
+        def job(**kw):
+            return dict({"name": "j", "status": "completed", "conclusion": "success", "runner_name": "r",
+                                         "steps": [1], "created_at": "2025-11-11T23:59:00Z"}, **kw)
+        def c(runs, jobs):
+            return merge.classify(runs, lambda rid: jobs, self.NOW, 15)[:2]
         self.assertEqual(c([], [])[0], "none")
         self.assertEqual(c([self.run_("completed", "success")], [job()])[0], "green")
         self.assertEqual(c([self.run_("in_progress")], [job(status="in_progress", conclusion=None)])[0], "pending")

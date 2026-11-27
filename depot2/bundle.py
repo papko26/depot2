@@ -115,7 +115,7 @@ def check_unique(points):
 
 def _heading_points(text):
     lines = text.splitlines()
-    heads = [(i, HEADING.match(l)) for i, l in enumerate(lines)]
+    heads = [(i, HEADING.match(l)) for i, l in enumerate(lines)]  # noqa: E741
     heads = [(i, m) for i, m in heads if m]
     points = []
     for n, (i, m) in enumerate(heads):
@@ -130,7 +130,7 @@ def _heading_points(text):
         fields = {}
         current = None
         loose = []
-        for l in body:
+        for l in body:  # noqa: E741
             if l.lstrip().startswith(("|", "---")):
                 current = None  # a table or a rule ends the field
                 continue

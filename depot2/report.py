@@ -518,7 +518,7 @@ def _owner_what(e):
 
 def _indent(text):
     """Continuation lines stay inside their list item."""
-    return "\n  ".join(l.rstrip() for l in (text or "").strip().splitlines() if l.strip())
+    return "\n  ".join(l.rstrip() for l in (text or "").strip().splitlines() if l.strip())  # noqa: E741
 
 
 def _cell(text):

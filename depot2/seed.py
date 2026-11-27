@@ -109,7 +109,7 @@ def vote_lines(text, cid):
         m = VOTE_HEAD.match(lines[0])
         if not m:
             continue
-        for l in lines[1:]:
+        for l in lines[1:]:  # noqa: E741
             if l.startswith(name + ":"):
                 rest = l[len(name) + 1:].strip()
                 if rest and rest not in ("—", "-"):
@@ -122,7 +122,7 @@ def mention_lines(text, cid, line_max=500, section_max=1500):
     draft keeps each character's own view under a heading of its name)."""
     out = []
     section_left = 0
-    for l in text.splitlines():
+    for l in text.splitlines():  # noqa: E741
         s = l.strip()
         named = any(n in s for n in names_of(cid))
         if s.startswith("#"):
@@ -163,7 +163,7 @@ def material(cid, ballot_dir, review_dir, cap):
     out = []
     for title, lines, part_cap in parts:
         body, used, cut = [], 0, 0
-        for l in lines:
+        for l in lines:  # noqa: E741
             if used + len(l) + 1 > part_cap:
                 cut += 1
                 continue

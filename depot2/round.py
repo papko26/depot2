@@ -92,7 +92,8 @@ class Guard:
 
     def check(self, call_cap):
         """call_cap: the next call's cap, MTok."""
-        f = lambda x: effort.fmt(x, self.cfg)
+        def f(x):
+            return effort.fmt(x, self.cfg)
         if self.stopped:
             raise RoundStop(self.stopped)
         if self.calls >= self.max_calls:
@@ -861,7 +862,8 @@ def _print_resume_plan(out, state, cfg, rec, cast, stk):
     rdir = os.path.join(state.rounds_dir(), rec["id"])
     saved = saved_answers(rdir)
     old = read_json(os.path.join(rdir, "costs.json")) or {}
-    names = lambda ids: ", ".join(characters.name(c) for c in ids)
+    def names(ids):
+        return ", ".join(characters.name(c) for c in ids)
     out("DRY RUN: no model calls, nothing written.")
     out("RESUME round {} ({}), aborted {}: {}".format(rec["id"], rec["kind"], rec.get("finished") or "?",
                                                   (rec.get("reason") or "—")[:200]))

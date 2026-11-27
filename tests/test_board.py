@@ -506,7 +506,8 @@ class MergePlaceTest(MergeBase):
         rc, out, err = self.team("merge", "add", "303", "--word", "303 — сначала фикс", "--at", "1")
         self.assertEqual(rc, 0, err)
         self.assertIn("PR #303 (feat-c) is in the merge queue, place 1", out)
-        order = lambda: [e["pr"] for e in self.q().entries(open_only=True)]
+        def order():
+            return [e["pr"] for e in self.q().entries(open_only=True)]
         self.assertEqual(order(), [303, 301, 302])
         rc, out, _ = self.team("merge", "move", "302", "--at", "2")
         self.assertEqual(rc, 0)
