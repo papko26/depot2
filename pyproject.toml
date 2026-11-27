@@ -7,7 +7,7 @@ name = "depot2"
 version = "0.1.0"
 description = "A planning and merge depot for a team that works through outside runners"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 license = {text = "Apache-2.0"}
 authors = [{name = "papko26"}, {name = "dice cafe"}]
 classifiers = [

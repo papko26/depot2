@@ -10,7 +10,7 @@ queue that merges the finished pull requests one at a time.
 
 It grew inside one project and was cut out of it: everything that was that project's own (its checks, its deploy,
 its paths and machines, its team) now comes from a project config and from plugins, and the depot itself knows
-nothing about what it plans. Python 3.8+, the standard library only.
+nothing about what it plans. Python 3.11+, the standard library only.
 
 **Status: extracted, not released.** The command line, the reports, the web view and the round prompts speak English
 by default; Russian is the second language (`language` in the config, or `$DEPOT2_LANG`; see [Languages](#languages)).

@@ -13,7 +13,7 @@ lint:  ## Check Python files with Ruff
 	uv run --locked ruff check .
 
 typecheck:  ## Check package types with mypy
-	uv run --locked mypy --python-version 3.8 -p depot2
+	uv run --locked mypy --python-version 3.11 -p depot2
 
 test:  ## Run the test suite
 	uv run --locked python -m unittest discover -s tests
