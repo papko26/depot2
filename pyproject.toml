@@ -50,7 +50,7 @@ extend-select = [
     "PTH203", # os-path-getatime
     "PTH205", # os-path-getctime
     "PTH210", # invalid-pathlib-with-suffix
-    "Q003",   # avoidable-escaped-quote
+    "Q",      # flake8-quotes
     "RSE102", # unnecessary-paren-on-raise-exception
 ]
 ignore = [

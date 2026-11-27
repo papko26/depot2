@@ -151,7 +151,7 @@ class WebTest(WebBase):
         self.assertEqual([msgs["sort." + k] for k in ("own", "match", "prio", "new", "old", "stage", "group")],
                          ["обычный порядок", "по совпадению", "по приоритету", "сначала новые", "сначала старые", "по этапу",
                           "по треку и поезду"])
-        self.assertNotRegex(html, r'fetch\([^)]*method')  # nothing but GET
+        self.assertNotRegex(html, r"fetch\([^)]*method")  # nothing but GET
         self.assertIn('id="code"', html)  # the code that serves the page, in its header
         self.assertIn('"/api/tracks"', html)
         self.assertNotRegex(html, r"https?://(?!github\.com/)[a-z]")  # nothing from outside: no CDN, no font
@@ -392,7 +392,7 @@ class WebTest(WebBase):
         self.assertEqual(entry["taken_to"], ref)
         self.assertEqual((car["status"], car["status_ru"], entry["status"], entry["status_ru"]),
                          ("waiting", "ждёт", "taken", "взята"))
-        for part in ('esc(j.status_ru || j.status)', 'esc(p.e.status_ru || p.e.status)',
+        for part in ("esc(j.status_ru || j.status)", "esc(p.e.status_ru || p.e.status)",
                      'said(T("panel.owner_words"), [].concat(entry.words || []))', 'said(T("panel.questions"), qs)',
                      'said(T("panel.text"), [].concat(entry.text || []))', '"Слова владельца"', '"Вопросы"', '"Текст"'):
             self.assertIn(part, html)
@@ -464,8 +464,8 @@ class WebTest(WebBase):
         html = self.web.get("/")[2].decode("utf-8")
         for part in ('id="view-merge"', '"/api/merge/report?last=" + MERGES_SHOWN', "const MERGES_SHOWN = 10;", "function renderMerge()",
                      'T("mq.todo", { pr: esc(e.pr) })', 'if (j.runner_pid) return T("mq.runner_rides");', 'lines.map((x) => "<li>" + hl(x)',
-                     'data-go="merge" data-mq="', 'if (go.dataset.mq) showEntry(go.dataset.mq);', '.mcard[data-ref]',
-                     'if (it.merge && !mqRef.has(it.merge)) mqRef.set(it.merge, it.ref);', '(x.h || esc(x.t))'):
+                     'data-go="merge" data-mq="', "if (go.dataset.mq) showEntry(go.dataset.mq);", ".mcard[data-ref]",
+                     "if (it.merge && !mqRef.has(it.merge)) mqRef.set(it.merge, it.ref);", "(x.h || esc(x.t))"):
             self.assertIn(part, html)
         self.assertNotIn("runner_pid +", html)  # the runner's pid is never shown, only whether it rides
         msgs = page_messages(html)
