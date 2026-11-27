@@ -17,7 +17,7 @@ import depot2
 from depot2 import config, i18n
 
 ROOT = os.path.dirname(helpers.HERE)
-PKG = os.path.join(ROOT, "depot2")
+PKG = str(Path(ROOT, "depot2"))
 CYRILLIC = re.compile("[Ѐ-ӿ]")
 # t("key"), i18n.t("key"), rx("in.key"), is_word(x, "in.key"), matches(x, "key"), forms("key"), message("key")
 RE_KEY = re.compile(
@@ -63,7 +63,7 @@ class CatalogTest(unittest.TestCase):
     def test_every_key_the_code_names_is_in_the_catalog(self):
         en = i18n.catalog("en")
         missing = []
-        for path in glob.glob(os.path.join(PKG, "**", "*.py"), recursive=True):
+        for path in glob.glob(str(Path(PKG, "**", "*.py")), recursive=True):
             if os.sep + "catalogs" + os.sep in path:
                 continue
             with Path(path).open(encoding="utf-8") as f:
@@ -92,9 +92,9 @@ class CatalogTest(unittest.TestCase):
     def test_no_russian_outside_the_russian_catalog(self):
         """The code, its comments and the web page are English; Russian lives in depot2/catalogs/ru.py alone."""
         bad = []
-        paths = [*glob.glob(os.path.join(PKG, "**", "*.py"), recursive=True), os.path.join(PKG, "web", "index.html")]
+        paths = [*glob.glob(str(Path(PKG, "**", "*.py")), recursive=True), str(Path(PKG, "web", "index.html"))]
         for path in sorted(paths):
-            if os.path.abspath(path) == os.path.join(PKG, "catalogs", "ru.py"):
+            if os.path.abspath(path) == str(Path(PKG, "catalogs", "ru.py")):
                 continue
             with Path(path).open(encoding="utf-8") as f:
                 for n, line in enumerate(f, 1):

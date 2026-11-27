@@ -67,7 +67,7 @@ class StackStagesTest(Base):
         return Stack(self.t.state, self.t.cfg)
 
     def test_the_commands_move_an_objects_stage(self):
-        brief = os.path.join(self.t.dir, "brief.md")
+        brief = str(Path(self.t.dir, "brief.md"))
         with Path(brief).open("w") as f:
             f.write("# бриф\n")
         self.assertEqual(self.team("stack", "add", "--title", "Импорт", "--brief", brief)[0], 0)
@@ -161,7 +161,7 @@ class StackStagesTest(Base):
 class TrainStagesTest(Base):
     def setUp(self):
         super().setUp()
-        self.brief = os.path.join(self.t.dir, "brief.md")
+        self.brief = str(Path(self.t.dir, "brief.md"))
         with Path(self.brief).open("w") as f:
             f.write("# бриф\n")
         self.team("tracks", "add", "--title", "Поезд")
@@ -292,7 +292,7 @@ class MigrateStagesTest(Base):
 
     def setUp(self):
         super().setUp()
-        brief = os.path.join(self.t.dir, "brief.md")
+        brief = str(Path(self.t.dir, "brief.md"))
         with Path(brief).open("w") as f:
             f.write("# бриф\n")
         s = Stack(self.t.state, self.t.cfg)

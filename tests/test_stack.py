@@ -1,5 +1,4 @@
 import json
-import os
 from pathlib import Path
 
 from helpers import slurp
@@ -363,7 +362,7 @@ class LockPassTest(Base):
         )
         self.assertIn("lock pass stopped", r["fatal"])
         self.assertEqual([c[0] for c in runner.calls if c[1] == "r3"], ["builder", "painter"])
-        rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
+        rj = json.loads(slurp(str(Path(r["dir"], "round.json"))))
         self.assertEqual(rj["status"], "done")
         self.assertEqual([x["character"] for x in rj["locks"]["placed"]], ["builder"])
 
@@ -397,7 +396,7 @@ class BallotsTest(Base):
         e = bq.get(r["id"])
         self.assertEqual((e["status"], e["kind"], e["title"]), ("waiting", "ballot", "Бюллетень"))
         self.assertEqual(e["points_left"], ["B50", "B49", "X1", "X2"])
-        self.assertEqual(e["report"], os.path.join(r["dir"], "report.md"))
+        self.assertEqual(e["report"], str(Path(r["dir"], "report.md")))
         # The next round's bundle shows it to the characters.
         r2_, runner = self.play({})
         system = slurp(runner.calls[0][3].system_path)

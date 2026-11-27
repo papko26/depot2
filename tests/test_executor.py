@@ -15,7 +15,7 @@ from depot2.executors.cli_agent import build_argv, run_call
 class RunnerTest(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp(prefix="team-cli-")
-        self.sys_path = os.path.join(self.dir, "system.md")
+        self.sys_path = str(Path(self.dir, "system.md"))
         with Path(self.sys_path).open("w") as f:
             f.write("rules")
         self.schema = {
@@ -40,7 +40,7 @@ class RunnerTest(unittest.TestCase):
             "schema": self.schema,
             "timeout_s": 20,
             "cwd": self.dir,
-            "raw_path": os.path.join(self.dir, "raw.jsonl"),
+            "raw_path": str(Path(self.dir, "raw.jsonl")),
         }
         base.update(kw)
         return CallSpec(**base)
@@ -115,7 +115,7 @@ class RunnerTest(unittest.TestCase):
         self.assertIn("schema", str(cm.exception))
 
     def test_flags_and_environment(self):
-        argv_out = os.path.join(self.dir, "argv.json")
+        argv_out = str(Path(self.dir, "argv.json"))
         os.environ["FAKE_ARGV"] = argv_out
         os.environ["CLAUDE_CODE_SESSION_ID"] = "parent-session"
         os.environ["ANTHROPIC_API_KEY"] = "must-not-leak"

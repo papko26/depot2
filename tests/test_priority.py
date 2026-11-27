@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 from helpers import slurp
 from test_tracks import PAST, TracksBase
@@ -350,7 +351,7 @@ class MigrateTest(PBase):
         p = subprocess.run(
             [
                 sys.executable,
-                os.path.join(os.path.dirname(here), "depot2"),
+                str(Path(os.path.dirname(here), "depot2")),
                 "--state",
                 state_dir,
                 "--set",

@@ -10,7 +10,7 @@ import helpers
 
 from depot2 import cli as team
 
-README = os.path.join(os.path.dirname(helpers.HERE), "README.md")
+README = str(Path(os.path.dirname(helpers.HERE), "README.md"))
 WORD = re.compile(r"^[a-z][a-z-]*(\|[a-z][a-z-]*)*$")
 
 

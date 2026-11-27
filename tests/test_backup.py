@@ -24,9 +24,9 @@ from helpers import HERE, TempState
 from depot2 import backup
 from depot2.store import write_json
 
-TEAM = os.path.join(os.path.dirname(HERE), "depot2", "__main__.py")
-FAKE_RCLONE = os.path.join(HERE, "fake_rclone.py")
-FAKE_PASS = os.path.join(HERE, "fake_pass.py")
+TEAM = str(Path(os.path.dirname(HERE), "depot2", "__main__.py"))
+FAKE_RCLONE = str(Path(HERE, "fake_rclone.py"))
+FAKE_PASS = str(Path(HERE, "fake_pass.py"))
 PW = "example/depot2-backup/crypt-password"
 SALT = "example/depot2-backup/crypt-salt"
 ALLOWED = {"obscure", "lsjson", "copyto", "cryptcheck", "deletefile"}
@@ -49,11 +49,11 @@ class BackupBase(unittest.TestCase):
         self.t.state.commit("test: seed")
         self.root = self.t.dir
         self.tmp = tempfile.mkdtemp(prefix="team-backup-test-")
-        self.cloud = os.path.join(self.tmp, "cloud")
-        self.tmpdir = os.path.join(self.tmp, "tmp")
+        self.cloud = str(Path(self.tmp, "cloud"))
+        self.tmpdir = str(Path(self.tmp, "tmp"))
         Path(self.tmpdir).mkdir(parents=True)
-        self.rlog = os.path.join(self.tmp, "rclone.jsonl")
-        self.plog = os.path.join(self.tmp, "pass.jsonl")
+        self.rlog = str(Path(self.tmp, "rclone.jsonl"))
+        self.plog = str(Path(self.tmp, "pass.jsonl"))
         self.keys = {PW: "pw-" + secrets.token_hex(16), SALT: "salt-" + secrets.token_hex(16)}
         self.env = dict(os.environ)
         self.env.pop("DEPOT2_BACKUP", None)  # helpers turns the check off for every other test
@@ -135,7 +135,7 @@ class BackupBase(unittest.TestCase):
         return Path(p).stat().st_mtime if os.path.exists(p) else None
 
     def folder(self):
-        d = os.path.join(self.cloud, "depot2-backup")
+        d = str(Path(self.cloud, "depot2-backup"))
         return sorted(os.listdir(d)) if os.path.isdir(d) else []
 
     def assert_no_secret(self):
@@ -400,7 +400,7 @@ class RetentionTest(BackupBase):
         self.assertEqual(backup.plan_retention(["team-other-20150801T000000Z.tar.gz"], "h", 14), ([], []))
 
     def test_deletes_only_our_old_names_inside_the_folder(self):
-        d = os.path.join(self.cloud, "depot2-backup")
+        d = str(Path(self.cloud, "depot2-backup"))
         Path(d).mkdir(parents=True)
         ours = ["team-testhost-201508%02dT030000Z.tar.gz" % x for x in (1, 20)]  # noqa: UP031
         ours += ["team-testhost-201509%02dT030000Z.tar.gz" % x for x in (1, 2, 30)]  # noqa: UP031
@@ -410,7 +410,7 @@ class RetentionTest(BackupBase):
         for n in ours + foreign:
             with Path(d, n).open("w") as f:
                 f.write(n)
-        outside = os.path.join(self.cloud, "spare-1")
+        outside = str(Path(self.cloud, "spare-1"))
         Path(outside).mkdir(parents=True)
         with Path(outside, "team-testhost-20150801T030000Z.tar.gz").open("w") as f:
             f.write("not ours")
@@ -436,8 +436,8 @@ class RetentionTest(BackupBase):
 )
 class RealRcloneTest(BackupBase):
     def test_env_crypt_over_a_local_folder(self):
-        drive = os.path.join(self.tmp, "drive") + "/"
-        conf = os.path.join(self.tmp, "empty-rclone.conf")
+        drive = str(Path(self.tmp, "drive")) + "/"
+        conf = str(Path(self.tmp, "empty-rclone.conf"))
         Path(conf).open("w").close()
         self.env["RCLONE_CONFIG"] = conf
         self.sets = [
@@ -448,7 +448,7 @@ class RealRcloneTest(BackupBase):
         ]
         self.team("backup", "--drive", "--now")
         name = self.stamp()["archive"]
-        raw = os.listdir(os.path.join(drive, "depot2-backup"))
+        raw = os.listdir(Path(drive, "depot2-backup"))
         self.assertEqual(len(raw), 1)
         self.assertNotEqual(raw[0], name)  # the name is encrypted too
         with Path(drive, "depot2-backup", raw[0]).open("rb") as f:

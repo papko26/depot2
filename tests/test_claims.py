@@ -4,7 +4,6 @@ by `queues migrate`, `repair add` (a repair car out of turn: the head of the que
 """
 
 import json
-import os
 import unittest
 from pathlib import Path
 
@@ -29,10 +28,10 @@ BUGS = """# Баги
 class ClaimBase(Base):
     def setUp(self):
         super().setUp()
-        self.brief = os.path.join(self.t.dir, "brief.md")
+        self.brief = str(Path(self.t.dir, "brief.md"))
         with Path(self.brief).open("w") as f:
             f.write(BRIEF_TEXT)
-        self.bugs = os.path.join(self.t.dir, "BUGS.md")
+        self.bugs = str(Path(self.t.dir, "BUGS.md"))
         with Path(self.bugs).open("w") as f:
             f.write(BUGS)
 
@@ -317,7 +316,7 @@ class ReportTest(ClaimBase):
         self.assertEqual(rc, 1)
         self.assertIn("--since — дата YYYY-MM-DD", err)
         self.assertEqual(claims.read_bugs({"repair": {"bugs": self.bugs}})["t1_q2"]["status"], "новый")
-        self.assertEqual(claims.read_bugs({"repair": {"bugs": os.path.join(self.t.dir, "нет.md")}}), {})
+        self.assertEqual(claims.read_bugs({"repair": {"bugs": str(Path(self.t.dir, "нет.md"))}}), {})
 
 
 if __name__ == "__main__":

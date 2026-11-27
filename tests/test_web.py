@@ -90,18 +90,18 @@ class WebBase(GateBase):
         self.scratch = tempfile.mkdtemp(prefix="team-web-scratch-")
         for d in ("briefs", "design", "notes", "drafts"):
             Path(self.scratch, d).mkdir(parents=True)
-        self.web_brief = os.path.join(self.scratch, "briefs", "search.md")
+        self.web_brief = str(Path(self.scratch, "briefs", "search.md"))
         with Path(self.web_brief).open("w", encoding="utf-8") as f:
             f.write("# Поиск\n\n- **жирный** и `код`\n\n<script>alert(1)</script>\n")
         with Path(self.scratch, "design", "sketch.md").open("w", encoding="utf-8") as f:
             f.write("# Эскиз\n")
-        self.secret = os.path.join(self.scratch, "notes", "secret.md")
+        self.secret = str(Path(self.scratch, "notes", "secret.md"))
         with Path(self.secret).open("w") as f:
             f.write("private\n")
-        os.symlink(self.secret, os.path.join(self.scratch, "briefs", "out.md"))
+        os.symlink(self.secret, Path(self.scratch, "briefs", "out.md"))
         self.team("stack", "add", "--title", "Поиск", "--brief", self.web_brief, "--size", "M")
         self.team("stack", "add", "--title", "Мысль")
-        self.team("stack", "add", "--title", "Наружу", "--brief", os.path.join(self.scratch, "briefs", "out.md"))
+        self.team("stack", "add", "--title", "Наружу", "--brief", str(Path(self.scratch, "briefs", "out.md")))
         self.team("tracks", "add", "--title", "Поезд")
         self.team("tracks", "car", "add", "tr-0001", "--title", "вагон 0", "--brief", self.web_brief)
         self.team("tracks", "car", "add", "tr-0001", "--title", "вагон 1", "--after", "0")
@@ -115,7 +115,7 @@ class WebBase(GateBase):
             "brainstorm.topics_dir=" + self.t.cfg["brainstorm"]["topics_dir"],
             *ALL[1::2],
         ]
-        self.dirs = (os.path.join(self.scratch, "briefs"), os.path.join(self.scratch, "design"))
+        self.dirs = (str(Path(self.scratch, "briefs")), str(Path(self.scratch, "design")))
         self.web = Served(self.t.state, self.sets, read_dirs=self.dirs, doc_base=self.scratch, docs_base=self.scratch)
 
     def tearDown(self):
@@ -490,10 +490,10 @@ class WebTest(WebBase):
         self.assertEqual(next(tn["cars"] for tn in trains["trains"] if tn["name"] == "search")[1]["ref"], "tr-0001:5")
 
     def test_the_agents_are_their_json_command_and_never_booked_here(self):
-        fx = os.path.join(HERE, "transcripts", "-work-depot", "sess-0001", "subagents")
+        fx = str(Path(HERE, "transcripts", "-work-depot", "sess-0001", "subagents"))
         live, done = (os.path.join(self.scratch, n + ".jsonl") for n in ("live", "done"))
-        shutil.copy(os.path.join(fx, "agent-b1e2d3c4f5a6b7c80.jsonl"), live)
-        shutil.copy(os.path.join(fx, "agent-a0f1c2d3e4b5a6978.jsonl"), done)
+        shutil.copy(Path(fx, "agent-b1e2d3c4f5a6b7c80.jsonl"), live)
+        shutil.copy(Path(fx, "agent-a0f1c2d3e4b5a6978.jsonl"), done)
         for ref, aid, path in (("tr-0001:0", "b1e2d3c4f5a6b7c80", live), ("tr-0001:1", "a0f1c2d3e4b5a6978", done)):
             rc, out, err = self.team(
                 "agents", "start", ref, "--role", "sketch", "--usage", "0.5", "--force", "--why", "проба"
@@ -501,9 +501,7 @@ class WebTest(WebBase):
             self.assertEqual(rc, 0, err)
             rc, _, err = self.team("agents", "attach", out.splitlines()[0], aid, "--transcript", path)
             self.assertEqual(rc, 0, err)
-        shutil.copy(
-            os.path.join(fx, "agent-a0f1c2d3e4b5a6978.meta.json"), done[: -len(".jsonl")] + ".meta.json"
-        )  # done now
+        shutil.copy(Path(fx, "agent-a0f1c2d3e4b5a6978.meta.json"), done[: -len(".jsonl")] + ".meta.json")  # done now
         before = tree_hash(self.t.dir)
         code, got = self.web.json("/api/agents?all=1")
         self.assertEqual(code, 200, got)
@@ -836,7 +834,7 @@ class WebTest(WebBase):
         self.assertEqual(tree_hash(self.t.dir), before)
 
     def test_a_state_read_mid_write(self):
-        p = os.path.join(self.t.dir, "stack.json")
+        p = str(Path(self.t.dir, "stack.json"))
         with Path(p).open(encoding="utf-8") as f:
             good = f.read()
         with Path(p).open("w", encoding="utf-8") as f:
@@ -895,18 +893,16 @@ class ReexecTest(unittest.TestCase):
     def test_a_code_change_re_executes_the_server_on_its_socket(self):
         tmp = tempfile.mkdtemp(prefix="team-web-reexec-")
         try:
-            code = os.path.join(tmp, "code")
+            code = str(Path(tmp, "code"))
             Path(code).mkdir(parents=True)
             src = os.path.dirname(HERE)
-            shutil.copytree(
-                os.path.join(src, "depot2"), os.path.join(code, "depot2"), ignore=shutil.ignore_patterns("__pycache__")
-            )
-            state = os.path.join(tmp, "state")
+            shutil.copytree(Path(src, "depot2"), Path(code, "depot2"), ignore=shutil.ignore_patterns("__pycache__"))
+            state = str(Path(tmp, "state"))
             Path(state).mkdir(parents=True)
             env = dict(os.environ, DEPOT2_BACKUP="off", DEPOT2_FSYNC="0")
             env.pop(webui.FD_ENV, None)
             p = subprocess.Popen(
-                [sys.executable, os.path.join(code, "depot2", "__main__.py"), "--state", state, "web", "--port", "0"],
+                [sys.executable, str(Path(code, "depot2", "__main__.py")), "--state", state, "web", "--port", "0"],
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE,
                 env=env,
@@ -1113,7 +1109,7 @@ class WebHostsTest(WebBase):
         self.assertEqual(self.served("web=mybox.local").srv.names, [])  # not an object: no names, no crash
 
     def test_the_names_are_read_from_the_config_at_the_start(self):
-        path = os.path.join(self.t.dir, "config.json")
+        path = str(Path(self.t.dir, "config.json"))
         self.assertFalse(os.path.exists(path))
         with Path(path).open("w", encoding="utf-8") as f:
             json.dump({"web": {"hosts": ["mybox.local"]}}, f)
@@ -1134,7 +1130,7 @@ class WebCliTest(unittest.TestCase):
             p = subprocess.Popen(
                 [
                     sys.executable,
-                    os.path.join(os.path.dirname(HERE), "depot2", "__main__.py"),
+                    str(Path(os.path.dirname(HERE), "depot2", "__main__.py")),
                     "--state",
                     d,
                     "web",
@@ -1169,7 +1165,7 @@ class WebCliTest(unittest.TestCase):
             p = subprocess.Popen(
                 [
                     sys.executable,
-                    os.path.join(os.path.dirname(HERE), "depot2", "__main__.py"),
+                    str(Path(os.path.dirname(HERE), "depot2", "__main__.py")),
                     "--state",
                     d,
                     "--set",

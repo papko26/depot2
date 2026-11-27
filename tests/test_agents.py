@@ -26,7 +26,7 @@ from depot2.store import read_json, read_jsonl
 from depot2.tracks import Tracks
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-FIXTURES = os.path.join(HERE, "transcripts")
+FIXTURES = str(Path(HERE, "transcripts"))
 DONE = "a0f1c2d3e4b5a6978"  # finished: 4 turns (one message logged twice), 0.1525 MTok
 LIVE = "b1e2d3c4f5a6b7c80"  # still running: 2 turns, 0.0265 MTok
 SUB = os.path.join("-work-depot", "sess-0001", "subagents")
@@ -38,9 +38,9 @@ class AgentsBase(Base):
         super().setUp()
         self.t.cfg["stack"].update(slots=2, queue_max=10)
         self.projects = tempfile.mkdtemp(prefix="team-agents-")
-        shutil.copytree(os.path.join(FIXTURES, "-work-depot"), os.path.join(self.projects, "-work-depot"))
+        shutil.copytree(Path(FIXTURES, "-work-depot"), Path(self.projects, "-work-depot"))
         self.t.cfg["agents"]["projects"] = self.projects
-        self.brief = os.path.join(self.t.dir, "brief.md")
+        self.brief = str(Path(self.t.dir, "brief.md"))
         with Path(self.brief).open("w") as f:
             f.write(BRIEF_TEXT)
         tr = Tracks(self.t.state, self.t.cfg)
@@ -269,7 +269,7 @@ class TranscriptTest(AgentsBase):
             live["actions"], [{"at": "2015-11-20T11:02:00.000Z", "name": "Edit", "arg": "/work/app/main.py"}]
         )
         self.assertNotIn("NEVER SHOWN", json.dumps(live))
-        self.assertIsNone(read_transcript(os.path.join(self.projects, "none.jsonl")))
+        self.assertIsNone(read_transcript(str(Path(self.projects, "none.jsonl"))))
         self.assertEqual(action_arg("Bash", {"command": "git status"}), "git status")  # no description: the command
         self.assertEqual(len(action_arg("Bash", {"description": "x" * 200})), 80)
         ags = self.agents()
@@ -283,7 +283,7 @@ class TranscriptTest(AgentsBase):
     def test_a_grown_transcript_is_read_on_from_where_it_stopped(self):
         with Path(self.path(DONE)).open("rb") as f:
             lines = f.read().splitlines(keepends=True)
-        path = os.path.join(self.projects, "growing.jsonl")
+        path = str(Path(self.projects, "growing.jsonl"))
         seeks = []
         real_open = open
 
@@ -344,7 +344,7 @@ class TranscriptTest(AgentsBase):
         rc, _, err = self.team("agents", "attach", "ag-0001", LIVE)  # the same link again: nothing changes
         self.assertEqual(rc, 0, err)
         # a transcript given by its path
-        other = os.path.join(self.projects, "elsewhere.jsonl")
+        other = str(Path(self.projects, "elsewhere.jsonl"))
         shutil.copy(self.path(DONE), other)
         rc, out, err = self.team("agents", "attach", "ag-0002", "c0ffee0000000001", "--transcript", other)
         self.assertEqual(rc, 0, err)

@@ -19,8 +19,8 @@ from helpers import BALLOT, HERE, TempState, slurp
 
 from depot2 import backup, push
 
-TEAM = os.path.join(os.path.dirname(HERE), "depot2", "__main__.py")
-FAKE_SCAN = os.path.join(HERE, "fake_scan.py")
+TEAM = str(Path(os.path.dirname(HERE), "depot2", "__main__.py"))
+FAKE_SCAN = str(Path(HERE, "fake_scan.py"))
 HIT = "zz-private-word-zz"
 FORCE = ("--force", "-f", "--force-with-lease", "--mirror", "--delete", "-d", "--tags", "--all", "--prune")
 
@@ -40,9 +40,9 @@ class PushBase(unittest.TestCase):
         self.t.state.commit("test: seed")
         self.root = self.t.state.root
         self.tmp = tempfile.mkdtemp(prefix="team-push-test-")
-        self.bare = os.path.join(self.tmp, "remote.git")
+        self.bare = str(Path(self.tmp, "remote.git"))
         git(self.tmp, "init", "-q", "--bare", self.bare)
-        self.slog = os.path.join(self.tmp, "scan.jsonl")
+        self.slog = str(Path(self.tmp, "scan.jsonl"))
         self.env = dict(os.environ)
         self.env.pop("DEPOT2_BACKUP", None)  # helpers turns the check off for every other test
         self.env.update(FAKE_SCAN_LOG=self.slog, FAKE_SCAN_HIT=HIT)
@@ -259,7 +259,7 @@ class FailureTest(PushBase):
     def test_a_failed_push_warns_until_one_succeeds(self):
         self.spawns = True
         self.first_push()
-        git(self.root, "remote", "set-url", "backup", os.path.join(self.tmp, "missing.git"))
+        git(self.root, "remote", "set-url", "backup", str(Path(self.tmp, "missing.git")))
         self.commits(10)
         self.team("ledger")
         self.wait_for(lambda: (self.stamp().get("last_error") or {}).get("reason"))
@@ -298,7 +298,7 @@ class FailureTest(PushBase):
         self.spawns = True
         self.first_push()
         git(self.bare, "tag", "keep-me", self.head())
-        other = os.path.join(self.tmp, "other")
+        other = str(Path(self.tmp, "other"))
         git(self.tmp, "clone", "-q", self.bare, other)
         with Path(other, "theirs.txt").open("w") as f:
             f.write("a commit made elsewhere\n")
@@ -435,7 +435,7 @@ class ScanTest(PushBase):
 
     def test_a_missing_scan_blocks_the_push(self):
         self.add_remote()
-        p = self.team("--set", "backup.git.scan=" + os.path.join(self.tmp, "no-scan.sh"), "backup", "--push", ok=False)
+        p = self.team("--set", "backup.git.scan=" + str(Path(self.tmp, "no-scan.sh")), "backup", "--push", ok=False)
         self.assertIn("нет скана", p.stdout)
         self.assertIsNone(self.remote_head())
 
@@ -468,9 +468,9 @@ class RawGateTest(unittest.TestCase):
         self.t = TempState(git=True)
         self.t.state.commit("test: seed")
         self.tmp = tempfile.mkdtemp(prefix="team-raw-test-")
-        self.q = os.path.join(self.tmp, "quarantine")
+        self.q = str(Path(self.tmp, "quarantine"))
         self.t.cfg["backup"]["git"].update(scan=FAKE_SCAN, quarantine=self.q)
-        self.slog = os.path.join(self.tmp, "scan.jsonl")
+        self.slog = str(Path(self.tmp, "scan.jsonl"))
         self.env = {k: os.environ.get(k) for k in ("DEPOT2_RAW_SCAN", "FAKE_SCAN_HIT", "FAKE_SCAN_LOG")}
         os.environ.pop("DEPOT2_RAW_SCAN", None)  # helpers turns the gate off for every other test
         os.environ.update(FAKE_SCAN_HIT=HIT, FAKE_SCAN_LOG=self.slog)
@@ -509,7 +509,7 @@ class RawGateTest(unittest.TestCase):
         lines = []
         q = push.gate_raw(self.t.state, self.t.cfg, p, lines.append)
         self.assertEqual(q["file"], os.path.join("rounds", "r", "raw", "chronicler-r1.jsonl"))
-        self.assertEqual(q["to"], os.path.join(self.q, "rounds", "r", "raw", "chronicler-r1.jsonl"))
+        self.assertEqual(q["to"], str(Path(self.q, "rounds", "r", "raw", "chronicler-r1.jsonl")))
         self.assertIn(HIT, slurp(q["to"]))
         marker = json.loads(slurp(p))
         self.assertEqual(
@@ -529,7 +529,7 @@ class RawGateTest(unittest.TestCase):
         self.assertTrue(push.quarantine_line(self.t.cfg["backup"]["git"]).startswith(f"quarantine: empty in {self.q} "))
 
     def test_no_scan_means_not_clean(self):
-        self.t.cfg["backup"]["git"]["scan"] = os.path.join(self.tmp, "no-such-scan.sh")
+        self.t.cfg["backup"]["git"]["scan"] = str(Path(self.tmp, "no-such-scan.sh"))
         q = push.gate_raw(self.t.state, self.t.cfg, self.raw("painter-r1.jsonl", "{}\n"), lambda *a: None)
         self.assertIn("нет скана", q["why"])
         self.assertTrue(os.path.isfile(q["to"]))
@@ -546,7 +546,7 @@ class RawGateTest(unittest.TestCase):
         from depot2.executors import FatalError
         from depot2.round import RoundAborted, run_round
 
-        inp = os.path.join(self.tmp, "q.md")
+        inp = str(Path(self.tmp, "q.md"))
         with Path(inp).open("w") as f:
             f.write(BALLOT)
         inner = FakeRunner(self.t.state, {("chronicler", "r1"): FatalError("API error 400: the message was refused")})

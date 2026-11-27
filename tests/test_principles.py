@@ -27,8 +27,8 @@ from depot2.stack import Stack
 from depot2.store import read_json, write_json
 from depot2.tracks import Tracks
 
-FIXTURE = os.path.join(HERE, "principles-handwritten.md")  # written by hand, before the depot
-FIXTURE_RENDERED = os.path.join(HERE, "principles-rendered.md")  # rendered by an older depot
+FIXTURE = str(Path(HERE, "principles-handwritten.md"))  # written by hand, before the depot
+FIXTURE_RENDERED = str(Path(HERE, "principles-rendered.md"))  # rendered by an older depot
 GATES_DAY = "2015-11-18"  # the rule's day GatesTest sets (gates.checks_since; the config's default is null)
 NEW_HEADS = ["## Приоритет 1 — ворота", "## Приоритет 2 — балл вагона"]
 BANNER = banner_line()  # the run's language: helpers.py sets ru
@@ -87,7 +87,7 @@ class PBase(Base):
 
 class ImportTest(PBase):
     def round_trip(self, src):
-        path = os.path.join(self.files, "PRINCIPLES.md")
+        path = str(Path(self.files, "PRINCIPLES.md"))
         shutil.copy(src, path)
         Path(path).chmod(0o644)
         original = "\n".join(strip_banner(slurp(path))) + "\n"  # a file rendered before carries the banner already
@@ -98,7 +98,7 @@ class ImportTest(PBase):
             "sections' headings in today's words" % len(original.splitlines()),
             out,
         )
-        self.assertFalse(os.path.exists(os.path.join(self.t.dir, "principles.json")))  # the dry run wrote nothing
+        self.assertFalse(os.path.exists(Path(self.t.dir, "principles.json")))  # the dry run wrote nothing
         self.assertEqual(strip_banner(slurp(path)), original.splitlines())
         self.assertTrue(writable(path))
         self.ok("principles", "import", path)
@@ -150,11 +150,11 @@ class ImportTest(PBase):
         self.assertEqual(p.target(), path)
         # a second import of the same file is refused, the depot as it was
         Path(path).chmod(0o644)
-        before = slurp(os.path.join(self.t.dir, "principles.json"))
+        before = slurp(str(Path(self.t.dir, "principles.json")))
         rc, _, err = self.team("principles", "import", path)
         self.assertEqual(rc, 1)
         self.assertIn("was imported already", err)
-        self.assertEqual(slurp(os.path.join(self.t.dir, "principles.json")), before)
+        self.assertEqual(slurp(str(Path(self.t.dir, "principles.json"))), before)
         # … and another copy of it too: its numbers are in the depot
         other = write(self.files, "again.md", original)
         rc, _, err = self.team("principles", "import", other)
@@ -252,7 +252,7 @@ class ImportTest(PBase):
             rc, _, err = self.team("principles", "import", path)
             self.assertEqual(rc, 1, text)
             self.assertIn(why, err)
-            self.assertFalse(os.path.exists(os.path.join(self.t.dir, "principles.json")))
+            self.assertFalse(os.path.exists(Path(self.t.dir, "principles.json")))
             self.assertTrue(writable(path))
         # a render that would part from the file (no space after the bold title) is refused the same way
         path = write(self.files, "bad.md", SAMPLE.replace("**Первый.** Владелец", "**Первый.**Владелец"))
@@ -271,7 +271,7 @@ class QueueTest(PBase):
         from depot2 import config
 
         before = slurp(self.path)
-        live, config.DEFAULT_STATE = config.DEFAULT_STATE, os.path.join(self.files, "team")  # the target in its tree
+        live, config.DEFAULT_STATE = config.DEFAULT_STATE, str(Path(self.files, "team"))  # the target in its tree
         try:
             out = self.ok("principles", "set", "pc-0001", "--text", "Тело на копии.")
             self.assertIn(
@@ -283,7 +283,7 @@ class QueueTest(PBase):
             self.assertIn("not rendered", self.ok("principles", "render"))
             self.ok("principles", "set", "pc-0001", "--title", "Первый на копии")
             self.assertEqual(slurp(self.path), before)
-            out = os.path.join(self.files, "elsewhere.md")
+            out = str(Path(self.files, "elsewhere.md"))
             self.ok("principles", "render", "--out", out)
             self.assertIn("Тело на копии.", slurp(out))
             config.DEFAULT_STATE = self.t.dir  # the live depot itself renders it (its drift checked again)
@@ -401,7 +401,7 @@ class QueueTest(PBase):
         self.assertFalse(writable(self.path))
         self.assertIn("already as the depot has it", self.ok("principles", "render"))
         # elsewhere, and to stdout
-        other = os.path.join(self.files, "copy.md")
+        other = str(Path(self.files, "copy.md"))
         self.ok("principles", "render", "--out", other)
         self.assertEqual(slurp(other), slurp(self.path))
         self.assertTrue(writable(other))  # only the depot's own file is kept read-only
@@ -793,7 +793,7 @@ class BundleTest(PBase):
     def test_the_round_bundle_carries_the_principles(self):
         b = bundle.build("discuss", self.t.cfg, self.input, state=self.t.state)
         self.assertNotIn("Принципы", b.text(10**6))  # none in the depot yet: nothing, nothing said cut
-        path = os.path.join(self.files, "PRINCIPLES.md")
+        path = str(Path(self.files, "PRINCIPLES.md"))
         shutil.copy(FIXTURE, path)
         Path(path).chmod(0o644)
         self.ok("principles", "import", path)
@@ -817,9 +817,7 @@ class BundleTest(PBase):
         # a round builds its bundle with the state
         self.t.cfg["bundle"]["principles_max_chars"] = 24000
         r, _ = self.play({})
-        self.assertIn(
-            "## Принципы дизайна и три проверки (depot2 principles)", slurp(os.path.join(r["dir"], "bundle.md"))
-        )
+        self.assertIn("## Принципы дизайна и три проверки (depot2 principles)", slurp(str(Path(r["dir"], "bundle.md"))))
 
 
 class BriefTextTest(unittest.TestCase):

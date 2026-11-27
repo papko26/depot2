@@ -1,6 +1,7 @@
 import json
 import os
 import unittest
+from pathlib import Path
 
 from helpers import slurp
 from test_cli import CliTest
@@ -38,7 +39,7 @@ class SoloRoundTest(Base):
         self.assertIn("Это сольный раунд: владелец спрашивает только тебя.", spec1.user)
         self.assertNotIn("brainstorm_proposal", spec1.user)
         self.assertTrue(r["id"].endswith("-ballot-solo-keeper"))
-        rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
+        rj = json.loads(slurp(str(Path(r["dir"], "round.json"))))
         self.assertEqual(rj["only"], "keeper")
         # the caps scaled to one: max(1.8 / 5, 0.16 + 0.6) MTok, two calls
         self.assertEqual((rj["settings"]["round"]["budget_mtok"], rj["settings"]["round"]["max_calls"]), (0.76, 2))
@@ -106,13 +107,13 @@ class SoloRoundTest(Base):
         rid = os.listdir(self.t.state.rounds_dir())[0]
         r, runner = self.play({("keeper", "r3"): lock()}, kind=None, input_path=None, resume=rid)
         self.assertEqual([(c[0], c[1]) for c in runner.calls], [("keeper", "r1"), ("keeper", "r3")])
-        rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
+        rj = json.loads(slurp(str(Path(r["dir"], "round.json"))))
         self.assertEqual((rj["only"], rj["status"], rj["calls"], rj["locks"]["calls"]), ("keeper", "done", 3, 1))
 
     def test_no_stack_no_lock_pass_and_the_budget(self):
         r, runner = self.play({("counter", "r1"): ans()}, only="counter")
         self.assertEqual([(c[0], c[1]) for c in runner.calls], [("counter", "r1")])
-        rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
+        rj = json.loads(slurp(str(Path(r["dir"], "round.json"))))
         # max(1.8 / 5, 0.16): one call, round 1 only
         self.assertEqual((rj["settings"]["round"]["budget_mtok"], rj["settings"]["round"]["max_calls"]), (0.36, 1))
         self.assertIsNone(rj["brainstorm"])
@@ -163,7 +164,7 @@ class SoloRoundTest(Base):
         self.assertEqual([c[1] for c in runner.calls], ["r1"] * 5 + ["r2"] * 5)
         self.assertIn("brainstorm_proposal", runner.calls[0][3].schema["properties"])
         self.assertNotIn("сольный", r["report"])
-        self.assertNotIn("only", json.loads(slurp(os.path.join(r["dir"], "round.json"))))
+        self.assertNotIn("only", json.loads(slurp(str(Path(r["dir"], "round.json")))))
 
 
 class SoloCliTest(unittest.TestCase):
@@ -172,10 +173,8 @@ class SoloCliTest(unittest.TestCase):
     team = CliTest.team
 
     def test_a_team_stack_item_runs_a_solo_round(self):
-        self.team(
-            "seed", "--specs", os.path.join(self.dir, "brief.md"), "--ledger", os.path.join(self.dir, "seed.json")
-        )
-        q = os.path.join(self.dir, "q.md")
+        self.team("seed", "--specs", str(Path(self.dir, "brief.md")), "--ledger", str(Path(self.dir, "seed.json")))
+        q = str(Path(self.dir, "q.md"))
         out = self.team("tstack", "add", "--kind", "ballot", "--input", q, "--who", "Копилка").stdout
         self.assertIn("tm-0001 added to the team queue (1/4)", out)
         out = self.team("tstack", "start", "tm-0001").stdout
@@ -188,7 +187,7 @@ class SoloCliTest(unittest.TestCase):
         self.assertIn("SOLO round: only Копилка", out)
         out = self.team("round", "--kind", "ballot", "--input", q, "--item", "tm-0001").stdout
         self.assertIn("# Команда: бюллетень, сольный раунд (Копилка)", out)
-        rid = next(d for d in os.listdir(os.path.join(self.state, "rounds")) if d.endswith("-solo-keeper"))
+        rid = next(d for d in os.listdir(Path(self.state, "rounds")) if d.endswith("-solo-keeper"))
         item = json.loads(self.team("tstack", "--json").stdout)["in_slots"][0]
         self.assertEqual((item["id"], item["round"]), ("tm-0001", rid))
         self.assertGreater(item["cost_usd"], 0)  # the CLI's ≈$, kept as data

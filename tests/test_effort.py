@@ -185,7 +185,7 @@ class SpendTest(unittest.TestCase):
     def test_the_fake_cli_week_window_and_the_budget_message(self):
         d = TempState()
         try:
-            sys_path = os.path.join(d.dir, "system.md")
+            sys_path = str(Path(d.dir, "system.md"))
             with Path(sys_path).open("w") as f:
                 f.write("rules")
             sch = {
@@ -263,7 +263,7 @@ class GuardTest(unittest.TestCase):
 class RoundInMtokTest(unittest.TestCase):
     def setUp(self):
         self.t = TempState()
-        self.input = os.path.join(self.t.dir, "q.md")
+        self.input = str(Path(self.t.dir, "q.md"))
         from helpers import BALLOT
 
         with Path(self.input).open("w") as f:
@@ -280,12 +280,12 @@ class RoundInMtokTest(unittest.TestCase):
         r2 = next(c[3] for c in runner.calls if c[1] == "r2")
         self.assertEqual((r1.budget_mtok, r1.budget_usd), (0.16, 0.4))
         self.assertEqual((r2.budget_mtok, r2.budget_usd), (0.2, 0.5))
-        costs = json.loads(slurp(os.path.join(r["dir"], "costs.json")))
+        costs = json.loads(slurp(str(Path(r["dir"], "costs.json"))))
         self.assertAlmostEqual(costs["mtok"], 0.04)  # 10 calls x ≈$0.01 / 2.5, no tokens
         self.assertEqual(costs["mtok_from_cost_calls"], 10)
         self.assertAlmostEqual(costs["total_usd"], 0.1)
         self.assertAlmostEqual(costs["by_model"]["model-a"]["mtok"], 0.04)
-        rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
+        rj = json.loads(slurp(str(Path(r["dir"], "round.json"))))
         self.assertEqual(rj["settings"]["usage"], {"mtok_per_pct": 10.0, "usd_per_mtok": 2.5})
         self.assertAlmostEqual(rj["mtok"], 0.04)
         self.assertEqual([l for l in lines if "$" in l], [])  # noqa: E741
@@ -298,7 +298,7 @@ class RoundInMtokTest(unittest.TestCase):
         rdir = os.path.join(self.t.state.rounds_dir(), rid)
         Path(rdir, "answers").mkdir(parents=True)
         write_json(
-            os.path.join(rdir, "round.json"),
+            str(Path(rdir, "round.json")),
             {
                 "id": rid,
                 "kind": "discuss",
@@ -313,7 +313,7 @@ class RoundInMtokTest(unittest.TestCase):
             },
         )
         write_json(
-            os.path.join(rdir, "costs.json"),
+            str(Path(rdir, "costs.json")),
             {
                 "calls": 1,
                 "total_usd": 1.36,
@@ -367,7 +367,7 @@ class ReflectionInMtokTest(unittest.TestCase):
         self.assertIn("no tools, cap 0.028%UW (0.28 MTok) each", "\n".join(lines))
         reflect(self.t.state, self.t.cfg, runner=runner, out=lines.append)
         self.assertEqual((specs[0].budget_mtok, specs[0].budget_usd), (0.28, 0.7))
-        d = os.path.join(self.t.dir, "reflections")
+        d = str(Path(self.t.dir, "reflections"))
         costs = json.loads(slurp(os.path.join(d, os.listdir(d)[0], "costs.json")))
         self.assertAlmostEqual(costs["mtok"], 0.0125 + 0.02 + 0.015)  # its tokens, not its ≈$0.30
         self.assertEqual(costs["total_usd"], 0.3)
@@ -381,10 +381,8 @@ class TeamStackCliTest(unittest.TestCase):
     team = CliTest.team
 
     def test_the_round_and_the_dry_run(self):
-        self.team(
-            "seed", "--specs", os.path.join(self.dir, "brief.md"), "--ledger", os.path.join(self.dir, "seed.json")
-        )
-        q = os.path.join(self.dir, "q.md")
+        self.team("seed", "--specs", str(Path(self.dir, "brief.md")), "--ledger", str(Path(self.dir, "seed.json")))
+        q = str(Path(self.dir, "q.md"))
         out = self.team("round", "--kind", "ballot", "--input", q, "--dry-run").stdout
         self.assertIn("  round 1: 5 calls, up to 4 tool turns each, cap 0.016%UW (0.16 MTok), 900s", out)
         self.assertIn("round caps: 0.18%UW (1.8 MTok), 16 calls", out)

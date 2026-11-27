@@ -1,5 +1,4 @@
 import json
-import os
 import unittest
 from pathlib import Path
 
@@ -200,7 +199,7 @@ class WriteCheckTest(unittest.TestCase):
     def test_append_rejects_newlines_in_records(self):
         t = TempState()
         try:
-            path = os.path.join(t.dir, "y.jsonl")
+            path = str(Path(t.dir, "y.jsonl"))
             append_jsonl(path, {"text": "a\nb"})  # json escapes \n, so this is one line
             with Path(path).open() as f:
                 self.assertEqual(len(f.read().splitlines()), 1)

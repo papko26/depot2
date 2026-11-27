@@ -235,7 +235,7 @@ class TeamStackTest(QBase):
             ts.start("tm-0004")
         # the agents' stack is a different file: untouched
         self.assertEqual(Stack(self.t.state, self.t.cfg).objects(), [])
-        self.assertTrue(os.path.exists(os.path.join(self.t.dir, "team-stack.json")))
+        self.assertTrue(os.path.exists(Path(self.t.dir, "team-stack.json")))
         self.assertEqual(
             ts.command(ts.get("tm-0001")),
             f"depot2 round --kind discuss --input {topic} --only keeper --item tm-0001 --dry-run",

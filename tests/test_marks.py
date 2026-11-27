@@ -258,13 +258,13 @@ class DepotBase(GateBase):
     def setUp(self):
         super().setUp()
         self.files = tempfile.mkdtemp(prefix="team-marks-")
-        path = os.path.join(self.files, "PRINCIPLES.md")
+        path = str(Path(self.files, "PRINCIPLES.md"))
         with Path(path).open("w", encoding="utf-8") as f:
             f.write(PFILE)
         self.ok("principles", "import", path)
         for pc in ("pc-0005", "pc-0026", "pc-0011", "pc-0004", "pc-0005a"):
             self.ok("principles", "set", pc, "--check", "yes")
-        self.gh = os.path.join(self.files, "gh.json")
+        self.gh = str(Path(self.files, "gh.json"))
         self.prs({})
         self.env0 = os.environ.get("FAKE_GH_STATE")
         os.environ["FAKE_GH_STATE"] = self.gh
@@ -396,7 +396,7 @@ class PostTest(DepotBase):
         for pc in ("pc-0005", "pc-0026", "pc-0011", "pc-0004", "pc-0005a"):
             self.ok("principles", "set", pc, "--check", "no")
         self.car_in_slot()
-        os.environ["FAKE_GH_STATE"] = os.path.join(self.files, "none.json")  # a gh call would fail: no such file
+        os.environ["FAKE_GH_STATE"] = str(Path(self.files, "none.json"))  # a gh call would fail: no such file
         rc, out, err = self.team("stack", "post", "st-0001", *self.handed("st-0001"))
         self.assertEqual(rc, 0, err)
         self.assertNotIn("marks", self.car())
@@ -537,7 +537,7 @@ class ViewsTest(DepotBase):
 
         page = webui.page_html(
             slurp(
-                os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "depot2", "web", "index.html")
+                str(Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "depot2", "web", "index.html"))
             ),
             "ru",
         )

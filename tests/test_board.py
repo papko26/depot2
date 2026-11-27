@@ -24,7 +24,7 @@ class GateBase(Base):
     def setUp(self):
         super().setUp()
         self.t.cfg["gates"] = json.loads(json.dumps(GATES_ALL))
-        self.brief = os.path.join(self.t.dir, "brief.md")
+        self.brief = str(Path(self.t.dir, "brief.md"))
         with Path(self.brief).open("w") as f:
             f.write(BRIEF_TEXT)
 
@@ -73,7 +73,7 @@ class DorTest(GateBase):
         )
 
     def test_the_items_brief_questions_project_after(self):
-        missing = os.path.join(self.t.dir, "нет.md")
+        missing = str(Path(self.t.dir, "нет.md"))
         self.team("stack", "add", "--title", "Бриф пропал", "--brief", missing)
         self.team("stack", "add", "--title", "Парсер", "--brief", self.brief, "--size", "L")
         self.team("stack", "add", "--title", "После", "--brief", self.brief, "--depends", "st-0002")
@@ -529,7 +529,7 @@ class DocsTest(GateBase):
 
     def setUp(self):
         super().setUp()
-        self.docs_brief = os.path.join(self.t.dir, "docs-brief.md")
+        self.docs_brief = str(Path(self.t.dir, "docs-brief.md"))
         with Path(self.docs_brief).open("w") as f:
             f.write(BRIEF_TEXT + "\n## Тесты\n- **Документация:** нужна\n")
         self.team("tracks", "add", "--title", "Каталог")

@@ -62,9 +62,9 @@ class Base(unittest.TestCase):
     def setUp(self):
         self.t = TempState(self.balances)
         self.out = tempfile.mkdtemp(prefix="team-extras-")
-        self.t.cfg["brainstorm"]["topics_dir"] = os.path.join(self.out, "topics")
-        self.t.cfg["orders"]["results_dir"] = os.path.join(self.out, "orders")
-        self.input = os.path.join(self.t.dir, "q.md")
+        self.t.cfg["brainstorm"]["topics_dir"] = str(Path(self.out, "topics"))
+        self.t.cfg["orders"]["results_dir"] = str(Path(self.out, "orders"))
+        self.input = str(Path(self.t.dir, "q.md"))
         with Path(self.input).open("w") as f:
             f.write(BALLOT)
         self.snaps = []
@@ -121,7 +121,7 @@ class StandingQuestionsTest(Base):
         return []
 
     def test_x1_x2_in_every_kind(self):
-        topic = os.path.join(self.t.dir, "topic.md")
+        topic = str(Path(self.t.dir, "topic.md"))
         with Path(topic).open("w") as f:
             f.write(TOPIC)
         runs = [
@@ -132,7 +132,7 @@ class StandingQuestionsTest(Base):
         ]
         for kind, kw in runs:
             r, runner = self.play({}, kind, **kw)
-            rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
+            rj = json.loads(slurp(str(Path(r["dir"], "round.json"))))
             self.assertEqual([p["id"] for p in rj["points"]][-2:], ["X1", "X2"], kind)
             self.assertEqual(rj["points"][-1]["source"], "standing")
             spec = runner.calls[0][3]
@@ -268,9 +268,9 @@ class BrainstormTest(Base):
         rep = r["report"]
         self.assertTrue(rep.startswith("# Команда: мозговой штурм команды (созвал Счетовод), {}".format(r["id"])))
         self.assertIn("штурм bs-0001, одобрен в раунде", rep)
-        self.assertIn("Тема мозгового штурма команды", slurp(os.path.join(r["dir"], "bundle.md")))
+        self.assertIn("Тема мозгового штурма команды", slurp(str(Path(r["dir"], "bundle.md"))))
         self.assertEqual(
-            [p["id"] for p in json.loads(slurp(os.path.join(r["dir"], "round.json")))["points"]],
+            [p["id"] for p in json.loads(slurp(str(Path(r["dir"], "round.json"))))["points"]],
             ["Q1", "Q2", "Q3", "X1", "X2"],
         )
         self.assertIn("- Рекомендую: — (открытый вопрос)", rep)
@@ -391,7 +391,7 @@ class OrdersTest(Base):
                 ("counter", "r1"): dict(ans(), order=order()),
             }
         )
-        res = os.path.join(self.out, "run.json")
+        res = str(Path(self.out, "run.json"))
         with Path(res).open("w") as f:
             f.write('{"p90": 6.2}\n')
         rc, out, err = self.team("order", "settle", "ord-0001", "moved", "--reason", "рано")  # noqa: RUF059
@@ -400,7 +400,7 @@ class OrdersTest(Base):
         for oid in ("ord-0001", "ord-0002", "ord-0003"):
             rc, _out, err = self.team("order", "done", oid, "--result", res, "--note", "nice 10, CPU")
             self.assertEqual(rc, 0, err)
-        dest = os.path.join(self.t.cfg["orders"]["results_dir"], "ord-0001", "run.json")
+        dest = str(Path(self.t.cfg["orders"]["results_dir"], "ord-0001", "run.json"))
         self.assertEqual(slurp(dest), '{"p90": 6.2}\n')
         self.assertEqual(self.team("order", "done", "ord-0001", "--result", res)[0], 1)  # done already
         # The owner settles: moved = the price back + 1, refund = the price back, burn = nothing.
@@ -426,14 +426,14 @@ class OrdersTest(Base):
         self.assertIn("«Сейчас» сходится с журналом", rep)
         # The next round's bundle lists the results once.
         r2_, _runner = self.play({})
-        bundle = slurp(os.path.join(r2_["dir"], "bundle.md"))
+        bundle = slurp(str(Path(r2_["dir"], "bundle.md")))
         self.assertIn("## Результаты заказов (замеры и прогоны)", bundle)
         self.assertIn("### ord-0001: Строитель, раунд {}".format(r["id"]), bundle)
         self.assertIn("- прогноз автора до прогона: 6 мс", bundle)
         self.assertIn(f"- результат: {dest}", bundle)
         self.assertIn("- результаты в пакете этого раунда: ord-0001, ord-0002, ord-0003.", r2_["report"])
         r3, _ = self.play({})
-        self.assertNotIn("Результаты заказов", slurp(os.path.join(r3["dir"], "bundle.md")))
+        self.assertNotIn("Результаты заказов", slurp(str(Path(r3["dir"], "bundle.md"))))
 
     def test_the_prompts_tell_the_terms(self):
         _, runner = self.play({})

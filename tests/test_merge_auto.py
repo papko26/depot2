@@ -9,14 +9,14 @@ from test_merge import MergeBase
 
 from depot2 import merge, mergeauto
 
-FAKE_GEN = os.path.join(HERE, "fake_gen.py")
+FAKE_GEN = str(Path(HERE, "fake_gen.py"))
 MAP0 = "files: 3\n\na.txt\nb.txt\nc.txt\n"
 
 
 class AutoBase(MergeBase):
     def setUp(self):
         super().setUp()
-        self.genlog = os.path.join(self.tmp, "gen.jsonl")
+        self.genlog = str(Path(self.tmp, "gen.jsonl"))
         os.environ["FAKE_GEN_LOG"] = self.genlog
         self.sets += [
             "merge.auto.generated.cmd=" + json.dumps([sys.executable, FAKE_GEN, "generated"]),
@@ -82,7 +82,7 @@ class AdditionsTest(AutoBase):
         self.pr(301, "feat-a", {"README.md": self.BASE.replace("intro", "outro, said the branch")})
         self.main_commit({"README.md": self.BASE.replace("intro", "intro, said main")})
         self.team("merge", "add", "301", "--word", "мердж")
-        wt = os.path.join(self.wt, "feat-a")
+        wt = str(Path(self.wt, "feat-a"))
         head = self.g(wt, "rev-parse", "HEAD")
         rc, out, _ = self.team("merge", "run")
         self.assertEqual(rc, 1)
@@ -203,7 +203,7 @@ class TrialTest(AutoBase):
         self.three()
         self.ci(feat_a=["in_progress", "in_progress", "in_progress", "success"])
         feat_b0 = self.bare_head("refs/heads/feat-b")
-        scans = os.path.join(self.tmp, "scan.jsonl")
+        scans = str(Path(self.tmp, "scan.jsonl"))
         os.environ["FAKE_SCAN_LOG"] = scans
         rc, out, err = self.team("merge", "run", "--once")
         self.assertEqual(rc, 0, out + err)
@@ -332,7 +332,7 @@ class NetworkTest(AutoBase):
         self.pr(301, "feat-a", {"a.txt": "A\n"})
         self.main_commit({"c.txt": "C\n"})
         self.team("merge", "add", "301", "--word", "мердж")
-        fail = os.path.join(self.tmp, "git-fail")
+        fail = str(Path(self.tmp, "git-fail"))
         with Path(fail).open("w") as f:
             f.write(
                 "push 2 unable to access 'https://github.com/x/y/': Connection timed out after 300001 milliseconds\n"
@@ -359,7 +359,7 @@ class NetworkTest(AutoBase):
         self.pr(301, "feat-a", {"a.txt": "A\n"})
         self.main_commit({"c.txt": "C\n"})
         self.team("merge", "add", "301", "--word", "мердж")
-        fail = os.path.join(self.tmp, "git-fail")
+        fail = str(Path(self.tmp, "git-fail"))
         with Path(fail).open("w") as f:
             f.write("push 1 Authentication failed for 'https://github.com/x/y/'\n")
         os.environ["FAKE_GIT_FAIL"] = fail

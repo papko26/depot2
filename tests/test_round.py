@@ -70,7 +70,7 @@ class FakeRunner:
 class RoundTest(unittest.TestCase):
     def setUp(self):
         self.t = TempState({"builder": 4, "painter": 5, "counter": 5, "chronicler": 10, "keeper": 1})
-        self.input = os.path.join(self.t.dir, "q.md")
+        self.input = str(Path(self.t.dir, "q.md"))
         with Path(self.input).open("w") as f:
             f.write(BALLOT)
 
@@ -138,7 +138,7 @@ class RoundTest(unittest.TestCase):
         self.assertTrue(all(e["reason"].startswith("auto: stakes come back when the round ends") for e in backs))
         self.assertEqual(led.balances(), before)
         self.assertEqual(led.open_stakes(), [])
-        rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
+        rj = json.loads(slurp(str(Path(r["dir"], "round.json"))))
         self.assertEqual(rj["auto_refunds"], [e["id"] for e in backs])
         self.assertEqual(rj["balances_after"], before)
         self.assertEqual(rj["ledger_seq"], backs[-1]["seq"])
@@ -253,7 +253,7 @@ class RoundTest(unittest.TestCase):
 class ResumeTest(unittest.TestCase):
     def setUp(self):
         self.t = TempState({"builder": 4, "painter": 5, "counter": 5, "chronicler": 10, "keeper": 1})
-        self.input = os.path.join(self.t.dir, "q.md")
+        self.input = str(Path(self.t.dir, "q.md"))
         with Path(self.input).open("w") as f:
             f.write(BALLOT)
 
@@ -294,7 +294,7 @@ class ResumeTest(unittest.TestCase):
         calls = [(c[0], c[1]) for c in runner.calls]
         self.assertEqual([c for c in calls if c[1] == "r1"], [(c, "r1") for c in characters.IDS if c != "builder"])
         self.assertEqual(len([c for c in calls if c[1] == "r2"]), 5)
-        rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
+        rj = json.loads(slurp(str(Path(r["dir"], "round.json"))))
         self.assertEqual(rj["status"], "done")
         self.assertNotIn("reason", rj)
         self.assertEqual(len(rj["resumed"]), 1)
@@ -321,11 +321,11 @@ class ResumeTest(unittest.TestCase):
             {("builder", "r1"): ans([("B49", "agree", 2, "x")]), ("painter", "r2"): FatalError("API error 500")}
         )
         rdir = os.path.join(self.t.state.rounds_dir(), rid)
-        asked = slurp(os.path.join(rdir, "prompts", "painter-r2.user.md"))
+        asked = slurp(str(Path(rdir, "prompts", "painter-r2.user.md")))
         r, runner, _ = self.resume(rid)
         self.assertEqual([(c[0], c[1]) for c in runner.calls], [(c, "r2") for c in characters.IDS if c != "builder"])
         self.assertEqual(runner.calls[0][3].user, asked)  # the same bundle, the same round-1 table
-        rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
+        rj = json.loads(slurp(str(Path(r["dir"], "round.json"))))
         self.assertEqual(rj["status"], "done")
         self.assertEqual(sorted(rj["resumed"][0]["kept"]), sorted([f"{c}-r1" for c in characters.IDS] + ["builder-r2"]))
 
@@ -338,7 +338,7 @@ class ResumeTest(unittest.TestCase):
             [(c[0], c[1]) for c in runner.calls if c[1] == "r1"],
             [("counter", "r1"), ("chronicler", "r1"), ("keeper", "r1")],
         )
-        rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
+        rj = json.loads(slurp(str(Path(r["dir"], "round.json"))))
         self.assertEqual([len(x["kept"]) for x in rj["resumed"]], [1, 2])
 
     def test_the_dry_run_says_what_stays_and_what_is_called(self):
@@ -371,7 +371,7 @@ class ResumeTest(unittest.TestCase):
 class StakeReportTest(unittest.TestCase):
     def setUp(self):
         self.t = TempState({"builder": 4, "painter": 5, "counter": 5, "chronicler": 10, "keeper": 1})
-        self.input = os.path.join(self.t.dir, "q.md")
+        self.input = str(Path(self.t.dir, "q.md"))
         with Path(self.input).open("w") as f:
             f.write(BALLOT)
 
@@ -494,7 +494,7 @@ class StakeReportTest(unittest.TestCase):
 
     def test_report_round_rebuilds_the_report_without_a_model(self):
         r = self.mixed()
-        path = os.path.join(r["dir"], "report.md")
+        path = str(Path(r["dir"], "report.md"))
         self.assertEqual(slurp(path), r["report"])
         Path(path).unlink()
         self.assertEqual(render(self.t.state, r["id"]), r["report"])  # reads files and the ledger only
@@ -533,7 +533,7 @@ class OldRoundTest(unittest.TestCase):
         rdir = os.path.join(self.t.state.rounds_dir(), self.RID)
         Path(rdir, "answers").mkdir(parents=True)
         write_json(
-            os.path.join(rdir, "round.json"),
+            str(Path(rdir, "round.json")),
             {
                 "id": self.RID,
                 "kind": "ballot",
@@ -585,7 +585,7 @@ class OldRoundTest(unittest.TestCase):
             },
         )
         write_json(
-            os.path.join(rdir, "costs.json"),
+            str(Path(rdir, "costs.json")),
             {
                 "calls": 2,
                 "total_usd": 0.5,
@@ -602,8 +602,8 @@ class OldRoundTest(unittest.TestCase):
                 ],
             },
         )
-        write_json(os.path.join(rdir, "answers", "builder-r1.json"), {"main_point": "до чтения"})
-        write_json(os.path.join(rdir, "answers", "builder-deep.json"), {"main_point": "после чтения"})
+        write_json(str(Path(rdir, "answers", "builder-r1.json")), {"main_point": "до чтения"})
+        write_json(str(Path(rdir, "answers", "builder-deep.json")), {"main_point": "после чтения"})
 
     def tearDown(self):
         self.t.close()
@@ -718,7 +718,7 @@ class ReflectionGateTest(unittest.TestCase):
             calls.append(spec.call_id.split("/")[1])
             return self.fake(spec)
 
-        path = os.path.join(self.t.dir, "q.md")
+        path = str(Path(self.t.dir, "q.md"))
         with Path(path).open("w") as f:
             f.write(BALLOT)
         script = {(cid, "r1"): ans([("B49", "agree", 2, "важно")]) for cid in characters.IDS}
@@ -812,7 +812,7 @@ class ReviewRoundTest(unittest.TestCase):
         self.assertIn("**1. N1. Время поиска #108 (ставка токенов: 7)**", rep)
         self.assertIn("- Рекомендую: — (предложение: Строитель)", rep)
         self.assertLess(rep.index("N1. Время"), rep.index("N2. Фильтры"))
-        bundle = slurp(os.path.join(r["dir"], "bundle.md"))
+        bundle = slurp(str(Path(r["dir"], "bundle.md")))
         self.assertIn("#123 Login fix", bundle)
         self.assertNotIn("#100 old", bundle)  # merged before the last review
         self.assertIn("тело PR обрезано", bundle)
@@ -841,7 +841,7 @@ TOPIC = """# Тема: всё хранение — в каталоге
 class DiscussRoundTest(unittest.TestCase):
     def setUp(self):
         self.t = TempState({"builder": 6, "painter": 6, "counter": 6, "chronicler": 6, "keeper": 6})
-        self.input = os.path.join(self.t.dir, "topic.md")
+        self.input = str(Path(self.t.dir, "topic.md"))
         with Path(self.input).open("w") as f:
             f.write(TOPIC)
 
@@ -880,7 +880,7 @@ class DiscussRoundTest(unittest.TestCase):
         self.assertIn("- Строитель: после тестов", rep)
         self.assertIn("- Рекомендую: — (открытый вопрос)", rep)
         self.assertIn("N1. Миграция старого импорта", rep)
-        self.assertIn("Тема обсуждения", slurp(os.path.join(r["dir"], "bundle.md")))
+        self.assertIn("Тема обсуждения", slurp(str(Path(r["dir"], "bundle.md"))))
         led = Ledger(self.t.state)
         self.assertEqual(led.open_stakes(), [])  # a discussion returns its stakes too
         self.assertEqual(len(led.auto_refunds(r["id"])), 3)
@@ -890,7 +890,7 @@ class DiscussRoundTest(unittest.TestCase):
 class SnapshotAndCostTest(unittest.TestCase):
     def setUp(self):
         self.t = TempState()
-        self.input = os.path.join(self.t.dir, "q.md")
+        self.input = str(Path(self.t.dir, "q.md"))
         with Path(self.input).open("w") as f:
             f.write(BALLOT)
         self.snap_dirs = []
@@ -920,7 +920,7 @@ class SnapshotAndCostTest(unittest.TestCase):
 
         extra = [tempfile.mkdtemp(prefix="team-read-test-") for _ in range(2)]
         self.addCleanup(lambda: [Path(d).rmdir() for d in extra])
-        self.t.cfg["read_dirs"] = [*extra, os.path.join(self.t.dir, "no-such-dir")]
+        self.t.cfg["read_dirs"] = [*extra, str(Path(self.t.dir, "no-such-dir"))]
         runner = FakeRunner(self.t.state, {})
         r = run_round(
             self.t.state, self.t.cfg, "ballot", self.input, runner=runner, out=lambda *a: None, snapshot=self.snapshot
@@ -931,7 +931,7 @@ class SnapshotAndCostTest(unittest.TestCase):
             self.assertEqual(spec.add_dirs, want, (cid, stage))
             self.assertEqual(spec.deny, self.t.cfg["deny_read"], (cid, stage))
             self.assertIn("Доступно: {}.".format(", ".join(want)), spec.user, (cid, stage))  # the task says so
-        self.assertEqual(json.loads(slurp(os.path.join(r["dir"], "round.json")))["readable"], want)
+        self.assertEqual(json.loads(slurp(str(Path(r["dir"], "round.json"))))["readable"], want)
         self.assertIn("Проходы читали origin/main " + "a" * 40, r["report"])
 
     def test_a_killed_call_marks_the_cost_approximate(self):
@@ -999,7 +999,7 @@ class OnePrReviewTest(unittest.TestCase):
         )
         self.assertEqual(len(self.gh_calls), 1)  # no merged/open lists for a one-PR review
         self.assertTrue(r["id"].endswith("-review-pr125"))
-        bundle = slurp(os.path.join(r["dir"], "bundle.md"))
+        bundle = slurp(str(Path(r["dir"], "bundle.md")))
         self.assertIn("app/importer/run.py (+9 -0)", bundle)
         self.assertIn("the importer", bundle)
         self.assertEqual(wanted, ["b" * 40])  # every pass reads the PR's head, not origin/main
@@ -1029,7 +1029,7 @@ class GenderTest(unittest.TestCase):
         self.t = TempState()
         for cid in characters.IDS:
             Persona(self.t.state, cid).set_gender(characters.BY_ID[cid]["default_gender"])
-        self.input = os.path.join(self.t.dir, "q.md")
+        self.input = str(Path(self.t.dir, "q.md"))
         with Path(self.input).open("w") as f:
             f.write(BALLOT)
 

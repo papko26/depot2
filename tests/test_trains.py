@@ -74,7 +74,7 @@ class ModelTest(TracksBase):
 
     def test_the_states_and_their_gates(self):
         self.t.cfg["gates"] = {"dor": ["brief", "after"], "dod": []}
-        brief = os.path.join(self.out, "brief.md")
+        brief = str(Path(self.out, "brief.md"))
         with Path(brief).open("w", encoding="utf-8") as f:
             f.write(BRIEF_TEXT)
         tr = self.trains()
@@ -120,7 +120,7 @@ class ModelTest(TracksBase):
         self.trains().set_state("export", "design")
         with self.assertRaises(TrainError):
             self.trains().set_state("export", "impl", force=True, now=PAST)  # --force needs --why
-        self.tracks().car_set("tr-0001:0", brief=os.path.join(self.out, "nope.md"))
+        self.tracks().car_set("tr-0001:0", brief=str(Path(self.out, "nope.md")))
         lines = self.trains().set_state("export", "impl", force=True, why="бриф на словах", now=FUTURE)
         self.assertIn("ворота с --force", lines[-1])
         row = self.trains().get("export")["states"][-1]

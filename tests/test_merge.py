@@ -18,11 +18,11 @@ from depot2.stack import Stack
 from depot2.tracks import Tracks
 from depot2.trains import Trains
 
-FAKE_GH = os.path.join(HERE, "fake_gh.py")
-FAKE_GIT = os.path.join(HERE, "fake_git.sh")
-FAKE_SCAN = os.path.join(HERE, "fake_scan.py")
+FAKE_GH = str(Path(HERE, "fake_gh.py"))
+FAKE_GIT = str(Path(HERE, "fake_git.sh"))
+FAKE_SCAN = str(Path(HERE, "fake_scan.py"))
 SMOKE_OK = '{"check": "home page", "ok": true}'
-EXAMPLE_PLUGIN = os.path.join(os.path.dirname(HERE), "examples", "plugins", "example_checks.py")
+EXAMPLE_PLUGIN = str(Path(os.path.dirname(HERE), "examples", "plugins", "example_checks.py"))
 
 
 def sh(cwd, *argv, check=True):
@@ -66,20 +66,20 @@ class MergeBase(unittest.TestCase):
         self.tmp = tempfile.mkdtemp(prefix="team-merge-test-")
         self.git_bin = shutil.which("git")
         self.env0 = dict(os.environ)
-        b = os.path.join(self.tmp, "bin")
+        b = str(Path(self.tmp, "bin"))
         Path(b).mkdir(parents=True)
         with Path(b, "gh").open("w") as f:
             f.write(f'#!/bin/sh\nexec {sys.executable} -S {FAKE_GH} "$@"\n')
         Path(b, "gh").chmod(0o755)
-        os.symlink(FAKE_GIT, os.path.join(b, "git"))
-        self.bare = os.path.join(self.tmp, "origin.git")
-        self.seed = os.path.join(self.tmp, "seed")
-        self.clone = os.path.join(self.tmp, "clone")
-        self.wt = os.path.join(self.tmp, "wt")
-        self.ghstate = os.path.join(self.tmp, "gh.json")
-        self.ghlog = os.path.join(self.tmp, "gh.jsonl")
-        self.gitlog = os.path.join(self.tmp, "git.jsonl")
-        self.marker = os.path.join(self.tmp, "after-resolve.txt")
+        os.symlink(FAKE_GIT, Path(b, "git"))
+        self.bare = str(Path(self.tmp, "origin.git"))
+        self.seed = str(Path(self.tmp, "seed"))
+        self.clone = str(Path(self.tmp, "clone"))
+        self.wt = str(Path(self.tmp, "wt"))
+        self.ghstate = str(Path(self.tmp, "gh.json"))
+        self.ghlog = str(Path(self.tmp, "gh.jsonl"))
+        self.gitlog = str(Path(self.tmp, "git.jsonl"))
+        self.marker = str(Path(self.tmp, "after-resolve.txt"))
         os.environ.update(
             GIT_AUTHOR_NAME="t",
             GIT_AUTHOR_EMAIL="t@localhost",
@@ -105,7 +105,7 @@ class MergeBase(unittest.TestCase):
             FAKE_GIT_LOG=self.gitlog,
         )
         os.environ.pop("FAKE_SCAN_RESULT", None)
-        self.clock = FakeClock(os.path.join(self.tmp, "now"))
+        self.clock = FakeClock(str(Path(self.tmp, "now")))
         os.environ["FAKE_GH_NOW"] = self.clock.path
         self.real_clock = (merge.CLOCK, merge.SLEEP)
         merge.CLOCK, merge.SLEEP = self.clock.time, self.clock.sleep
@@ -250,7 +250,7 @@ class AddTest(MergeBase):
             (e["id"], e["word"], e["branch"], e["st"], e["status"]),
             ("mq-0001", "301 — мердж", "feat-a", "st-0001", "waiting"),
         )
-        self.assertEqual(e["worktree"], os.path.join(self.wt, "feat-a"))
+        self.assertEqual(e["worktree"], str(Path(self.wt, "feat-a")))
         o = Stack(self.t.state, self.t.cfg).get("st-0001")
         self.assertEqual(o["status"], "в мердж-очереди (mq-0001)")
         self.assertIn("added on the owner's word: «301 — мердж»", e["log"][0])
@@ -426,7 +426,7 @@ class EnsureTest(unittest.TestCase):
         self.assertEqual(
             argv[1:],
             [
-                os.path.join(os.path.dirname(HERE), "depot2", "__main__.py"),
+                str(Path(os.path.dirname(HERE), "depot2", "__main__.py")),
                 "--state",
                 self.t.dir,
                 "--set",
@@ -510,7 +510,7 @@ class OrderTest(MergeBase):
         m301 = gh["prs"]["301"]["mergeCommit"]["oid"]
         # 302 rode first: main was in it already, so no push; 301 got main + 302 (pushed), 303 main + 302 + 301
         self.assertEqual(
-            [p["cwd"] for p in self.pushes()], [os.path.join(self.wt, "feat-a"), os.path.join(self.wt, "feat-c")]
+            [p["cwd"] for p in self.pushes()], [str(Path(self.wt, "feat-a")), str(Path(self.wt, "feat-c"))]
         )
         self.g(self.tmp, "--git-dir", self.bare, "merge-base", "--is-ancestor", m302, "refs/heads/feat-a")
         self.g(self.tmp, "--git-dir", self.bare, "merge-base", "--is-ancestor", m301, "refs/heads/feat-c")
@@ -993,7 +993,7 @@ class ConflictTest(MergeBase):
         self.theirs = self.bare_head("refs/heads/main:a.txt")
         self.team("merge", "add", "301", "--word", "мердж")
         self.team("merge", "add", "302", "--word", "мердж")
-        self.wt_a = os.path.join(self.wt, "feat-a")
+        self.wt_a = str(Path(self.wt, "feat-a"))
 
     def test_a_conflict_with_no_prepared_resolution_stops(self):
         head = self.g(self.wt_a, "rev-parse", "HEAD")
@@ -1006,7 +1006,7 @@ class ConflictTest(MergeBase):
         self.assertEqual(self.g(self.wt_a, "rev-parse", "HEAD"), head)  # the merge was aborted
         self.assertEqual(self.g(self.wt_a, "status", "--porcelain"), "")
         self.assertFalse(
-            os.path.exists(os.path.join(self.wt_a, ".git"))
+            os.path.exists(Path(self.wt_a, ".git"))
             and os.path.exists(self.g(self.wt_a, "rev-parse", "--git-path", "MERGE_HEAD"))
         )
         self.assertEqual(self.pushes(), [])
@@ -1015,7 +1015,7 @@ class ConflictTest(MergeBase):
         self.assertFalse(os.path.exists(self.marker))
 
     def test_a_prepared_resolution_by_the_blobs_is_applied(self):
-        f = os.path.join(self.tmp, "a.resolved")
+        f = str(Path(self.tmp, "a.resolved"))
         with Path(f).open("w") as fh:
             fh.write("<<<<<<< ours\nbranch\n=======\nmain\n>>>>>>> theirs\n")
         rc, _, err = self.team(
@@ -1060,7 +1060,7 @@ class ConflictTest(MergeBase):
         self.assertFalse(os.path.exists(self.t.state.path(merge.RES_DIR, f"{self.ours}-{self.theirs}")))
 
     def test_a_resolutions_path_is_the_repos(self):
-        f = os.path.join(self.tmp, "ci.resolved")
+        f = str(Path(self.tmp, "ci.resolved"))
         with Path(f).open("w") as fh:
             fh.write("on: push\n")
         res = merge.Resolutions(self.t.state)
@@ -1074,7 +1074,7 @@ class ConflictTest(MergeBase):
         self.assertTrue(res.add(".github/workflows/ci.yml", self.ours, self.theirs, f, replace=True)[1])
 
     def test_a_check_failing_after_the_resolution_stops(self):
-        f = os.path.join(self.tmp, "a.resolved")
+        f = str(Path(self.tmp, "a.resolved"))
         with Path(f).open("w") as fh:
             fh.write("branch and main\n")
         self.team("merge", "resolve", "add", "a.txt", "--ours", self.ours, "--theirs", self.theirs, "--from", f)
@@ -1097,7 +1097,7 @@ class AheadTest(MergeBase):
         rc, out, _ = self.team("merge", "run")
         self.assertEqual(rc, 1)
         self.assertIn("STOP: the private scan of feat-a is not CLEAN: no push", out)
-        wt = os.path.join(self.wt, "feat-a")
+        wt = str(Path(self.wt, "feat-a"))
         local = self.g(wt, "rev-parse", "HEAD")
         self.assertNotEqual(local, self.bare_head("refs/heads/feat-a"))  # merged here, never pushed
         self.g(wt, "merge-base", "--is-ancestor", "origin/main", "HEAD")
@@ -1118,7 +1118,7 @@ class AheadTest(MergeBase):
         self.pr(301, "feat-a", {"a.txt": "A\n"})
         self.main_commit({"c.txt": "C\n"})
         self.team("merge", "add", "301", "--word", "мердж")
-        wt = os.path.join(self.wt, "feat-a")
+        wt = str(Path(self.wt, "feat-a"))
         self.g(wt, "fetch", "-q", "origin")
         self.g(wt, "merge", "-q", "--no-ff", "origin/main", "-m", "merged by hand, not pushed")
         local = self.g(wt, "rev-parse", "HEAD")
@@ -1324,10 +1324,10 @@ class WorktreeTest(MergeBase):
     def test_after_the_merge_a_clean_worktree_goes_a_dirty_one_stays_with_the_reason(self):
         self.pr(301, "feat-a", {"a.txt": "A\n"}, title="Чистая")
         self.pr(302, "feat-b", {"b.txt": "B\n"}, title="Грязная")
-        nm = os.path.join(self.tmp, "nm")
+        nm = str(Path(self.tmp, "nm"))
         Path(nm).mkdir(parents=True)
         self.write(nm, {"pkg.js": "x\n"})
-        os.symlink(nm, os.path.join(self.wt_of("feat-a"), "node_modules"))
+        os.symlink(nm, Path(self.wt_of("feat-a"), "node_modules"))
         with Path(self.clone, ".git", "info", "exclude").open("a") as f:
             f.write("*.log\n")
         self.write(self.wt_of("feat-a"), {"build.log": "ignored\n" * 2000})  # ignored: no hindrance
@@ -1339,7 +1339,7 @@ class WorktreeTest(MergeBase):
         self.assertEqual([e["status"] for e in self.q().entries()], ["merged", "merged"])
         # feat-a: gone; what its link points at and the branch stay
         self.assertFalse(os.path.lexists(self.wt_of("feat-a")))
-        self.assertTrue(os.path.exists(os.path.join(nm, "pkg.js")))
+        self.assertTrue(os.path.exists(Path(nm, "pkg.js")))
         self.assertEqual(self.g(self.clone, "rev-parse", "refs/heads/feat-a"), self.entry(301)["head"])
         self.assertNotIn(self.wt_of("feat-a"), self.g(self.clone, "worktree", "list"))
         w = self.entry(301)["wt"]
@@ -1348,7 +1348,7 @@ class WorktreeTest(MergeBase):
         self.assertIn("рабочая копия {} удалена: освобождено ".format(self.wt_of("feat-a")), out)
         self.assertIn("(ветка feat-a осталась)", out)
         # feat-b: as it was, the reason in the runner's output, the entry's log and its `wt`
-        self.assertTrue(os.path.exists(os.path.join(self.wt_of("feat-b"), "notes.txt")))
+        self.assertTrue(os.path.exists(Path(self.wt_of("feat-b"), "notes.txt")))
         w = self.entry(302)["wt"]
         self.assertFalse(w["removed"])
         self.assertEqual(w["reason"], "грязная: ?? notes.txt")

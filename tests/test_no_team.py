@@ -6,6 +6,7 @@ configured»; and nothing it prints is Russian.
 import os
 import re
 import unittest
+from pathlib import Path
 
 import helpers
 from test_merge import MergeBase
@@ -24,7 +25,7 @@ class NoTeamTest(MergeBase):
         characters.configure(None)  # the seeding of TempState below finds no team
         super().setUp()
         os.environ[i18n.ENV] = "en"
-        write_json(os.path.join(self.t.dir, "config.json"), {"characters": None})
+        write_json(str(Path(self.t.dir, "config.json")), {"characters": None})
         self.t.state.commit("test: no team")
         self.t.cfg = config.load(self.t.dir)
         self.t.cfg["deep_repo"]["clone"] = ""

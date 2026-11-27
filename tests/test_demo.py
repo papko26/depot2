@@ -10,12 +10,13 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import helpers
 
 ROOT = os.path.dirname(helpers.HERE)
-SCRIPT = os.path.join(ROOT, "examples", "demo", "make-demo.sh")
-MAIN = os.path.join(ROOT, "depot2", "__main__.py")
+SCRIPT = str(Path(ROOT, "examples", "demo", "make-demo.sh"))
+MAIN = str(Path(ROOT, "depot2", "__main__.py"))
 CYRILLIC = re.compile("[\u0400-\u04ff]")
 VIEWS = (
     "board",
@@ -54,7 +55,7 @@ class DemoTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.tmp = tempfile.mkdtemp(prefix="depot2-demo-test-")
-        cls.state = os.path.join(cls.tmp, "demo")
+        cls.state = str(Path(cls.tmp, "demo"))
         p = subprocess.run(["sh", SCRIPT, cls.state], capture_output=True, text=True)
         if p.returncode != 0:
             raise AssertionError(f"make-demo.sh failed: {p.stdout} {p.stderr}")
