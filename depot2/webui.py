@@ -50,10 +50,15 @@ RE_TRACK = re.compile(r"^tr-\d{4}$")
 RE_TRAIN = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 MAX_DOC = 2 * 1024 * 1024
 # the queues of the Queues tab: (name, the catalog key of its title, the command that edits it)
-QUEUES = (("todo", "webui.queue.todo", "todo"), ("think", "webui.queue.think", "think"),
-          ("wishes", "webui.queue.wishes", "wishes"), ("ballots", "webui.queue.ballots", "ballots"),
-          ("tstack", "webui.queue.tstack", "tstack"), ("orders", "webui.queue.orders", "orders"),
-          ("brainstorms", "webui.queue.brainstorms", "brainstorm list"))
+QUEUES = (
+    ("todo", "webui.queue.todo", "todo"),
+    ("think", "webui.queue.think", "think"),
+    ("wishes", "webui.queue.wishes", "wishes"),
+    ("ballots", "webui.queue.ballots", "ballots"),
+    ("tstack", "webui.queue.tstack", "tstack"),
+    ("orders", "webui.queue.orders", "orders"),
+    ("brainstorms", "webui.queue.brainstorms", "brainstorm list"),
+)
 RE_MESSAGES = re.compile(r'(<script type="application/json" id="messages">)(.*?)(</script>)', re.DOTALL)
 RE_LANG = re.compile(r'<html lang="[^"]*">')
 
@@ -72,8 +77,10 @@ def _flag(q, key):
 
 # --- the data: the `--json` functions --------------------------------------------------------------------
 
+
 def board(state, cfg, q):
     from .board import VIEWS, Board
+
     view = (q.get("view") or ["all"])[-1]
     if view not in VIEWS:
         raise NotFound("view: {}".format(", ".join(VIEWS)))
@@ -82,11 +89,13 @@ def board(state, cfg, q):
 
 def tracks(state, cfg):
     from .tracks import Tracks
+
     return Tracks(state, cfg).to_json()
 
 
 def track(state, cfg, tid):
     from .tracks import TrackError, Tracks
+
     if not RE_TRACK.match(tid):
         raise NotFound(i18n.t("webui.bad_track", got=repr(tid)))
     tr = Tracks(state, cfg)
@@ -99,11 +108,13 @@ def track(state, cfg, tid):
 
 def trains(state, cfg):
     from .trains import Trains
+
     return Trains(state, cfg).to_json()
 
 
 def train(state, cfg, name):
     from .trains import TrainError, Trains
+
     if not RE_TRAIN.match(name):
         raise NotFound(i18n.t("webui.bad_train", got=repr(name)))
     tr = Trains(state, cfg)
@@ -118,6 +129,7 @@ def car_of(state, cfg, ref):
     from . import stages
     from .stack import StackError
     from .tracks import TrackError
+
     if not RE_REF.match(ref):
         raise NotFound(i18n.t("webui.bad_ref", got=repr(ref)))
     try:
@@ -132,17 +144,20 @@ def car(state, cfg, ref):
 
 def stack(state, cfg):
     from .stack import Stack
+
     return Stack(state, cfg).to_json()
 
 
 def merge_queue(state, cfg):
     from . import merge
+
     return merge.to_json(state)
 
 
 def merge_report(state, cfg, q):
     """`merge report --json [--last N]`: the last merges (?last=N, 1 when not given, as the command)."""
     from . import merge
+
     last = (q.get("last") or [""])[-1].strip()
     if last and not (last.isdigit() and int(last) >= 1):
         raise NotFound(i18n.t("webui.bad_last", got=repr(last)))
@@ -151,16 +166,19 @@ def merge_report(state, cfg, q):
 
 def agents(state, cfg, q):
     from .agents import Agents
+
     return Agents(state, cfg).to_json(include_all=_flag(q, "all"))
 
 
 def principles(state, cfg, q):
     from .principles import Principles
+
     return Principles(state, cfg).to_json(open_only=not _flag(q, "all"))
 
 
 def decisions(state, cfg, q):
     from . import decisions as dec
+
     limit = (q.get("limit") or [""])[-1].strip()
     if limit and not limit.isdigit():
         raise NotFound(i18n.t("webui.bad_limit", got=repr(limit)))
@@ -172,10 +190,12 @@ def queue(state, cfg, name, q):
     from . import extras, queues
     from .stack import Ballots
     from .tstack import TeamStack
+
     all_ = _flag(q, "all")
     if name in ("todo", "think", "wishes"):
         return getattr(queues, {"todo": "Todo", "think": "Think", "wishes": "Wishes"}[name])(state, cfg).to_json(
-            open_only=not all_)
+            open_only=not all_
+        )
     if name == "ballots":
         return Ballots(state).entries(open_only=not all_)
     if name == "tstack":
@@ -196,17 +216,28 @@ def queue_meta():
     """
     from . import characters, extras, prompts, queues, tstack
     from .stack import BALLOT_RU
+
     who = dict({"all": i18n.t("webui.who_all")}, **{c: characters.name(c) for c in characters.IDS})
-    q = {"todo": (queues.Todo.OPEN, queues.Todo.STATUS_RU, {"kind": queues.KIND_RU}),
-         "think": (queues.Think.OPEN, queues.Think.STATUS_RU, {}),
-         "wishes": (queues.Wishes.OPEN, queues.Wishes.STATUS_RU, {"area": queues.AREA_RU}),
-         "ballots": (("waiting", "presenting"), BALLOT_RU, {"kind": dict(prompts.KIND_RU.items())}),
-         "tstack": ((), {}, {"kind": tstack.KIND_RU, "who": who}),
-         "orders": (extras.Orders.OPEN, extras.Orders.STATUS_RU, {"who": who}),
-         "brainstorms": (extras.Brainstorms.OPEN, extras.Brainstorms.STATUS_RU, {"who": who})}
-    return [{"name": n, "title": i18n.t(title), "command": f"depot2 {c}", "open": list(q[n][0]),
-             "status_ru": plain(q[n][1]), "labels": {k: plain(v) for k, v in q[n][2].items()}}
-            for n, title, c in QUEUES]
+    q = {
+        "todo": (queues.Todo.OPEN, queues.Todo.STATUS_RU, {"kind": queues.KIND_RU}),
+        "think": (queues.Think.OPEN, queues.Think.STATUS_RU, {}),
+        "wishes": (queues.Wishes.OPEN, queues.Wishes.STATUS_RU, {"area": queues.AREA_RU}),
+        "ballots": (("waiting", "presenting"), BALLOT_RU, {"kind": dict(prompts.KIND_RU.items())}),
+        "tstack": ((), {}, {"kind": tstack.KIND_RU, "who": who}),
+        "orders": (extras.Orders.OPEN, extras.Orders.STATUS_RU, {"who": who}),
+        "brainstorms": (extras.Brainstorms.OPEN, extras.Brainstorms.STATUS_RU, {"who": who}),
+    }
+    return [
+        {
+            "name": n,
+            "title": i18n.t(title),
+            "command": f"depot2 {c}",
+            "open": list(q[n][0]),
+            "status_ru": plain(q[n][1]),
+            "labels": {k: plain(v) for k, v in q[n][2].items()},
+        }
+        for n, title, c in QUEUES
+    ]
 
 
 def merge_meta():
@@ -214,34 +245,49 @@ def merge_meta():
     the names of the steps, the statuses and the smoke's verdicts, as `merge --md` writes them.
     """
     from . import merge
-    return {"means": merge.means(cap=True), "steps": list(merge.STEPS), "step_ru": plain(merge.STEP_RU),
-            "status_ru": plain(merge.STATUS_RU), "smoke_ru": plain(merge.SMOKE_RU)}
+
+    return {
+        "means": merge.means(cap=True),
+        "steps": list(merge.STEPS),
+        "step_ru": plain(merge.STEP_RU),
+        "status_ru": plain(merge.STATUS_RU),
+        "smoke_ru": plain(merge.SMOKE_RU),
+    }
 
 
 def meta(state, cfg, code=None):
     from . import priority as pri
     from . import stages, tracks
-    return {"v": 1, "name": NAME, "repo": cfg.get("repo"), "refresh_s": REFRESH_S, "code": code,
-            "stages": [{"stage": s, "ru": stages.ru(s), "means": stages.STAGE_MEANS.get(s, "")}
-                       for s in stages.STAGES],
-            "route": [s for s in stages.STAGES if s != "scrapped"],
-            "moves": {s: list(m) for s, m in stages.MOVES.items()},
-            "queues": queue_meta(),
-            "merge": merge_meta(),
-            # a car's status words as tracks.py writes its cells: the page reads a cell that starts with `waiting`
-            # as a car with blockers, one that is `ready` alone as a car a free slot could take
-            "car_status": plain(tracks.CAR_RU),
-            "priority": {"min": pri.MIN, "max": pri.MAX, "default": pri.DEFAULT, "means": pri.means()}}
+
+    return {
+        "v": 1,
+        "name": NAME,
+        "repo": cfg.get("repo"),
+        "refresh_s": REFRESH_S,
+        "code": code,
+        "stages": [{"stage": s, "ru": stages.ru(s), "means": stages.STAGE_MEANS.get(s, "")} for s in stages.STAGES],
+        "route": [s for s in stages.STAGES if s != "scrapped"],
+        "moves": {s: list(m) for s, m in stages.MOVES.items()},
+        "queues": queue_meta(),
+        "merge": merge_meta(),
+        # a car's status words as tracks.py writes its cells: the page reads a cell that starts with `waiting`
+        # as a car with blockers, one that is `ready` alone as a car a free slot could take
+        "car_status": plain(tracks.CAR_RU),
+        "priority": {"min": pri.MIN, "max": pri.MAX, "default": pri.DEFAULT, "means": pri.means()},
+    }
 
 
 # --- the code it runs: what it is, whether it changed -----------------------------------------------------------
 
+
 def code_files(root=CODE_ROOT):
     """The files the server's code is: depot2/*.py, depot2/executors/*.py and depot2/web/* (sorted)."""
     out = []
-    for sub, keep in (("depot2", lambda n: n.endswith(".py")), (os.path.join("depot2", "executors"),
-                                                                 lambda n: n.endswith(".py")),
-                      (os.path.join("depot2", "web"), lambda n: True)):
+    for sub, keep in (
+        ("depot2", lambda n: n.endswith(".py")),
+        (os.path.join("depot2", "executors"), lambda n: n.endswith(".py")),
+        (os.path.join("depot2", "web"), lambda n: True),
+    ):
         d = os.path.join(root, sub)
         if os.path.isdir(d):
             out += [os.path.join(d, n) for n in sorted(os.listdir(d)) if keep(n) and os.path.isfile(os.path.join(d, n))]
@@ -262,9 +308,12 @@ def code_stamp(root=CODE_ROOT):
 
 def code_commit(root=CODE_ROOT):
     """{commit, date, dirty} of the git checkout the code is in, or None outside git."""
+
     def git(*args):
-        return subprocess.run(["git", "-C", root, *list(args)], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                              text=True, timeout=5)
+        return subprocess.run(
+            ["git", "-C", root, *list(args)], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, text=True, timeout=5
+        )
+
     try:
         r = git("log", "-1", "--format=%h %cI")
         if r.returncode != 0 or not r.stdout.strip():
@@ -304,6 +353,7 @@ def reexec(srv):
 
 # --- the files: only .md under the read dirs ---------------------------------------------------------------
 
+
 def inside(real, dirs):
     for d in dirs:
         rd = os.path.realpath(os.path.expanduser(d))
@@ -330,7 +380,14 @@ def url_doc(rel, dirs, base=DOC_BASE):
     """`/api/doc?path=`: a relative path under web.docs.base; never absolute, never `..`, and the real path inside
     the read dirs (web.docs.dirs).
     """
-    if not base or not isinstance(rel, str) or not rel or rel.startswith(("/", "~", "\\")) or "\\" in rel or "\0" in rel:
+    if (
+        not base
+        or not isinstance(rel, str)
+        or not rel
+        or rel.startswith(("/", "~", "\\"))
+        or "\\" in rel
+        or "\0" in rel
+    ):
         return None
     parts = rel.split("/")
     if any(x in ("", ".", "..") for x in parts) or not rel.endswith(".md"):
@@ -349,14 +406,18 @@ def read_md(real):
 
 def csp_for(html):
     """The page's Content-Security-Policy: its own inline script and style by their hashes, nothing else."""
+
     def hashes(tag):
         out = []
         for m in re.finditer(rf"<{tag}>(.*?)</{tag}>", html, re.DOTALL):
             h = base64.b64encode(hashlib.sha256(m.group(1).encode("utf-8")).digest()).decode()
             out.append(f"'sha256-{h}'")
         return " ".join(out) or "'none'"
-    return ("default-src 'none'; script-src {}; style-src {}; connect-src 'self'; img-src data:; "
-            "base-uri 'none'; form-action 'none'; frame-ancestors 'none'".format(hashes("script"), hashes("style")))
+
+    return (
+        "default-src 'none'; script-src {}; style-src {}; connect-src 'self'; img-src data:; "
+        "base-uri 'none'; form-action 'none'; frame-ancestors 'none'".format(hashes("script"), hashes("style"))
+    )
 
 
 def page_html(html, lang=None):
@@ -371,6 +432,7 @@ def page_html(html, lang=None):
 
 
 # --- the names it answers to -------------------------------------------------------------------------------------
+
 
 def extra_hosts(value):
     """The config's `web.hosts` → (the names to let in besides OWN_NAMES, lower case, in the list's order; what was
@@ -395,6 +457,7 @@ def extra_hosts(value):
 
 
 # --- the server ------------------------------------------------------------------------------------------------
+
 
 class Handler(http.server.BaseHTTPRequestHandler):
     server_version = NAME
@@ -484,8 +547,19 @@ class Handler(http.server.BaseHTTPRequestHandler):
 class Server(http.server.ThreadingHTTPServer):
     daemon_threads = True
 
-    def __init__(self, state, sets=None, port=PORT, host=HOST, read_dirs=READ_DIRS, doc_base=DOC_BASE,
-                 docs_base=DOCS_BASE, verbose=False, code_root=CODE_ROOT, follow_code=True) -> None:
+    def __init__(
+        self,
+        state,
+        sets=None,
+        port=PORT,
+        host=HOST,
+        read_dirs=READ_DIRS,
+        doc_base=DOC_BASE,
+        docs_base=DOCS_BASE,
+        verbose=False,
+        code_root=CODE_ROOT,
+        follow_code=True,
+    ) -> None:
         if host not in LOOPBACK:  # no flag opens it: there is no authorization yet
             raise ValueError("{} web listens on loopback only ({}), not {!r}".format(NAME, ", ".join(LOOPBACK), host))
         if host == "::1":
@@ -539,6 +613,7 @@ class Server(http.server.ThreadingHTTPServer):
 
     def cfg(self):
         from . import config
+
         return config.load(self.state.root, self.sets)
 
     # --- the code it runs ---
@@ -582,8 +657,13 @@ class Server(http.server.ThreadingHTTPServer):
             self._answering_lock.wait_for(lambda: self._answering == 0, timeout)
 
     def code_info(self):
-        return dict(self.commit or {"commit": None, "date": None, "dirty": None}, stamp=self.stamp,
-                    started=self.started, pid=os.getpid(), broken=self.broken)
+        return dict(
+            self.commit or {"commit": None, "date": None, "dirty": None},
+            stamp=self.stamp,
+            started=self.started,
+            pid=os.getpid(),
+            broken=self.broken,
+        )
 
     def code_line(self):
         c = self.commit
@@ -596,11 +676,18 @@ class Server(http.server.ThreadingHTTPServer):
         st = self.state
         parts = name.split("/", 1)
         head, rest = parts[0], (parts[1] if len(parts) > 1 else None)
-        simple = {"board": lambda c: board(st, c, q), "tracks": lambda c: tracks(st, c),
-                  "trains": lambda c: trains(st, c), "stack": lambda c: stack(st, c),
-                  "merge": lambda c: merge_queue(st, c), "meta": lambda c: meta(st, c, self.code_info()),
-                  "doc": lambda c: self.doc(q), "principles": lambda c: principles(st, c, q),
-                  "decisions": lambda c: decisions(st, c, q), "agents": lambda c: agents(st, c, q)}
+        simple = {
+            "board": lambda c: board(st, c, q),
+            "tracks": lambda c: tracks(st, c),
+            "trains": lambda c: trains(st, c),
+            "stack": lambda c: stack(st, c),
+            "merge": lambda c: merge_queue(st, c),
+            "meta": lambda c: meta(st, c, self.code_info()),
+            "doc": lambda c: self.doc(q),
+            "principles": lambda c: principles(st, c, q),
+            "decisions": lambda c: decisions(st, c, q),
+            "agents": lambda c: agents(st, c, q),
+        }
         if rest is None and head in simple:
             return simple[head]
         if rest and head == "track":
@@ -622,9 +709,13 @@ class Server(http.server.ThreadingHTTPServer):
         if fn is None:
             return 404, {"error": i18n.t("webui.no_api", name=name)}
         from . import migrate
+
         if name.split("/", 1)[0] not in ("meta", "doc") and migrate.pending(self.state):
-            return 503, {"error": i18n.t("webui.migrate_pending", old=migrate.version(self.state), new=migrate.SCHEMA),
-                         "retry": True, "migrate": True}
+            return 503, {
+                "error": i18n.t("webui.migrate_pending", old=migrate.version(self.state), new=migrate.SCHEMA),
+                "retry": True,
+                "migrate": True,
+            }
         last = None
         for attempt in range(2):
             try:

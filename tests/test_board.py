@@ -39,38 +39,52 @@ class DorTest(GateBase):
         self.team("stack", "add", "--title", "Без брифа", "--stage", "эскиз")
         rc, out, err = self.team("stack", "start", "st-0001")
         self.assertEqual(rc, 1)
-        self.assertIn("ворота: st-0001 → «сборка» не пройдены: DoR (вход в сборку) — нет брифа. Пройти всё равно — "
-                      "только с причиной: depot2 stack start st-0001 --force --why «…»", err)
+        self.assertIn(
+            "ворота: st-0001 → «сборка» не пройдены: DoR (вход в сборку) — нет брифа. Пройти всё равно — "
+            "только с причиной: depot2 stack start st-0001 --force --why «…»",
+            err,
+        )
         self.assertEqual(self.stk().get("st-0001")["where"], "queue")  # nothing moved
         rc, _, err = self.team("stack", "start", "st-0001", "--force")
         self.assertEqual(rc, 1)
         self.assertIn("--force — только с причиной: --why «…» (не пройдено: DoR (вход в сборку) — нет брифа)", err)
         rc, out, err = self.team("stack", "start", "st-0001", "--force", "--why", "владелец: срочно, бриф в PR")
         self.assertEqual(rc, 0, err)
-        self.assertIn("st-0001: ворота пройдены с --force (владелец: срочно, бриф в PR): DoR (вход в сборку) — нет брифа",
-                      out)
+        self.assertIn(
+            "st-0001: ворота пройдены с --force (владелец: срочно, бриф в PR): DoR (вход в сборку) — нет брифа", out
+        )
         row = self.stk().get("st-0001")["stages"][-1]
-        self.assertEqual((row["from"], row["stage"], row["forced"], row["why"], row["gates"]),
-                         ("sketch", "build", True, "владелец: срочно, бриф в PR", {"DoR": ["нет брифа"]}))
+        self.assertEqual(
+            (row["from"], row["stage"], row["forced"], row["why"], row["gates"]),
+            ("sketch", "build", True, "владелец: срочно, бриф в PR", {"DoR": ["нет брифа"]}),
+        )
         h = self.stk().history()[-1]
         self.assertEqual((h["event"], h["forced"], h["gates"]), ("start", True, {"DoR": ["нет брифа"]}))
         show = self.team("car", "show", "st-0001")[1]
-        self.assertIn("эскиз → сборка (владелец: срочно, бриф в PR; stack start) [--force, ворота: DoR (вход в сборку) — "
-                      "нет брифа]", show)
+        self.assertIn(
+            "эскиз → сборка (владелец: срочно, бриф в PR; stack start) [--force, ворота: DoR (вход в сборку) — "
+            "нет брифа]",
+            show,
+        )
         board = self.team("board")[1]
-        self.assertRegex(board, r"\| st-0001 \| P5 \| Без брифа \| — \| — \| — \| слот \| [^|]+ \| DoD: [^|]+ · ⚑ --force \|")
+        self.assertRegex(
+            board, r"\| st-0001 \| P5 \| Без брифа \| — \| — \| — \| слот \| [^|]+ \| DoD: [^|]+ · ⚑ --force \|"
+        )
 
     def test_the_items_brief_questions_project_after(self):
         missing = os.path.join(self.t.dir, "нет.md")
         self.team("stack", "add", "--title", "Бриф пропал", "--brief", missing)
         self.team("stack", "add", "--title", "Парсер", "--brief", self.brief, "--size", "L")
         self.team("stack", "add", "--title", "После", "--brief", self.brief, "--depends", "st-0002")
+
         def un(oid):
             s = self.stk()
             return gates.dor_unmet(s, None, obj=s.get(oid))
+
         self.assertEqual(un("st-0001"), [f"бриф не найден: {missing}"])
-        self.assertEqual(un("st-0002"), ["проект обязателен (размер L), этапа «проект» не было (depot2 car stage … "
-                                         "project)"])
+        self.assertEqual(
+            un("st-0002"), ["проект обязателен (размер L), этапа «проект» не было (depot2 car stage … project)"]
+        )
         self.assertEqual(un("st-0003"), ["st-0003 depends on st-0002, not done yet"])
         # an open question holds it; its answer lets it go
         rc, out, err = self.team("car", "ask", "st-0003", "Импорт — до или после обложек?")
@@ -84,7 +98,9 @@ class DorTest(GateBase):
         q = self.stk().get("st-0003")["asks"][0]
         self.assertEqual((q["answer"], q["answered_by"]), ("после", "владелец"))
         self.team("car", "needs-project", "st-0001", "--why", "app/parser")
-        self.assertIn("проект обязателен (app/parser)", " ".join(gates.dor_unmet(self.stk(), None, obj=self.stk().get("st-0001"))))
+        self.assertIn(
+            "проект обязателен (app/parser)", " ".join(gates.dor_unmet(self.stk(), None, obj=self.stk().get("st-0001")))
+        )
         self.team("car", "needs-project", "st-0001", "--off")
         self.assertFalse(self.stk().get("st-0001").get("needs_project"))
         self.assertEqual(self.team("car", "stage", "st-0002", "проект")[0], 0)
@@ -100,8 +116,12 @@ class DorTest(GateBase):
         s.start(o["id"], force=True, why="старый объект")
         s.park(o["id"], "ждёт поезда")
         self.assertEqual(self.team("stack", "start", o["id"])[0], 0)  # build → build: no DoR
-        self.assertEqual(self.team("stack", "post", o["id"], "--ci", "green", "--heavy", "green", "--scan", "clean",
-                                   "--shots", "n/a")[0], 0)
+        self.assertEqual(
+            self.team(
+                "stack", "post", o["id"], "--ci", "green", "--heavy", "green", "--scan", "clean", "--shots", "n/a"
+            )[0],
+            0,
+        )
         rc, _, err = self.team("stack", "start", o["id"], "--reason", "доработать")
         self.assertEqual(rc, 0, err)
 
@@ -113,28 +133,48 @@ class DodTest(GateBase):
         self.team("stack", "set", "st-0001", "--pr", "301")
         rc, _, err = self.team("stack", "post", "st-0001")
         self.assertEqual(rc, 1)
-        self.assertIn("ворота: st-0001 → «приёмка» не пройдены: DoD (вход в приёмку) — CI: не сдано, Heavy: не сдано, "
-                      "скан: не сдано, шоты: не сдано. Пройти", err)  # no principles in the depot: nothing to check
+        self.assertIn(
+            "ворота: st-0001 → «приёмка» не пройдены: DoD (вход в приёмку) — CI: не сдано, Heavy: не сдано, "
+            "скан: не сдано, шоты: не сдано. Пройти",
+            err,
+        )  # no principles in the depot: nothing to check
         self.team("stack", "set", "st-0001", "--ci", "red", "--heavy", "local")
         rc, _, err = self.team("stack", "post", "st-0001", "--scan", "CLEAN", "--shots", "n/a")
         self.assertEqual(rc, 1)
-        self.assertIn("DoD (вход в приёмку) — CI: красный, Heavy: local.", err)  # a red CI stays: the post does not hide it
-        rc, _out, err = self.team("stack", "post", "st-0001", "--ci", "green", "--heavy", "green (412/412)", "--scan",
-                                 "CLEAN", "--shots", "n/a")  # a refused post wrote nothing
+        self.assertIn(
+            "DoD (вход в приёмку) — CI: красный, Heavy: local.", err
+        )  # a red CI stays: the post does not hide it
+        rc, _out, err = self.team(
+            "stack",
+            "post",
+            "st-0001",
+            "--ci",
+            "green",
+            "--heavy",
+            "green (412/412)",
+            "--scan",
+            "CLEAN",
+            "--shots",
+            "n/a",
+        )  # a refused post wrote nothing
         self.assertEqual(rc, 0, err)
         o = self.stk().get("st-0001")
         self.assertEqual(o["where"], "post")
-        self.assertEqual({k: v["state"] for k, v in o["dod"].items()},
-                         {"heavy": "green (412/412)", "scan": "CLEAN", "shots": "n/a"})
+        self.assertEqual(
+            {k: v["state"] for k, v in o["dod"].items()}, {"heavy": "green (412/412)", "scan": "CLEAN", "shots": "n/a"}
+        )
         self.assertEqual(o["stages"][-1]["stage"], "acceptance")
         self.assertNotIn("forced", o["stages"][-1])
-        self.assertEqual(gates.dod_cells(self.t.cfg, o, principles=marks.evaluate({}, [])),
-                         "CI зелёный · Heavy green (412/412) · скан CLEAN · шоты n/a · принципы: не нужны (третья "
-                         "проверка пуста)")
+        self.assertEqual(
+            gates.dod_cells(self.t.cfg, o, principles=marks.evaluate({}, [])),
+            "CI зелёный · Heavy green (412/412) · скан CLEAN · шоты n/a · принципы: не нужны (третья проверка пуста)",
+        )
 
     def test_dod_forced_and_the_words(self):
-        self.assertEqual([gates.verdict(w) for w in ("green", "CLEAN", "n/a", "не нужны", "red", "local", "", "да")],
-                         ["ok", "ok", "na", "na", "bad", "other", None, "ok"])
+        self.assertEqual(
+            [gates.verdict(w) for w in ("green", "CLEAN", "n/a", "не нужны", "red", "local", "", "да")],
+            ["ok", "ok", "na", "na", "bad", "other", None, "ok"],
+        )
         s = self.stk()
         o = s.add("x", brief=self.brief, pr=302)
         s.start(o["id"])
@@ -142,8 +182,9 @@ class DodTest(GateBase):
             s.post(o["id"])
         s.post(o["id"], force=True, why="полный прогон недоступен, владелец: ставь", dod={"scan": "clean"})
         row = s.get(o["id"])["stages"][-1]
-        self.assertEqual(row["gates"], {"DoD": ["CI: не сдано", "Heavy: не сдано", "шоты: не сдано",
-                                                "принципы: не проверены"]})  # a post with no verdict: not checked
+        self.assertEqual(
+            row["gates"], {"DoD": ["CI: не сдано", "Heavy: не сдано", "шоты: не сдано", "принципы: не проверены"]}
+        )  # a post with no verdict: not checked
         self.assertIsNone(s.get(o["id"])["ci"])
         self.assertTrue(row["forced"])
 
@@ -169,14 +210,39 @@ class LimitTest(GateBase):
         self.assertEqual(lim, {"what": "слоты", "key": "stack.slots", "used": 2, "max": 1, "over": True})
         # the post-stack's places
         for oid, pr in (("st-0001", "301"), ("st-0002", "302")):
-            self.team(*([*sets, "stack", "set", oid, "--pr", pr, "--ci", "green", "--heavy", "green", "--scan", "clean", "--shots", "n/a"]))
+            self.team(
+                *(
+                    [
+                        *sets,
+                        "stack",
+                        "set",
+                        oid,
+                        "--pr",
+                        pr,
+                        "--ci",
+                        "green",
+                        "--heavy",
+                        "green",
+                        "--scan",
+                        "clean",
+                        "--shots",
+                        "n/a",
+                    ]
+                )
+            )
         self.assertEqual(self.team(*([*sets, "stack", "post", "st-0001"]))[0], 0)
         rc, _, err = self.team(*([*sets, "stack", "post", "st-0002"]))
         self.assertIn("пост-стек полон (1/1): st-0002 stays in its slot", err)
         self.assertEqual(self.team(*([*sets, "stack", "post", "st-0002", "--force", "--why", "оба ждут слова"]))[0], 0)
-        self.assertEqual(self.stk().get("st-0002")["stages"][-1]["gates"],
-                         {"limit": ["пост-стек полон (1/1): st-0002 stays in its slot; the owner merges one first "
-                                    "(stack done), or one goes back for work (stack start)"]})
+        self.assertEqual(
+            self.stk().get("st-0002")["stages"][-1]["gates"],
+            {
+                "limit": [
+                    "пост-стек полон (1/1): st-0002 stays in its slot; the owner merges one first "
+                    "(stack done), or one goes back for work (stack start)"
+                ]
+            },
+        )
 
 
 class TrainGateTest(GateBase):
@@ -185,25 +251,52 @@ class TrainGateTest(GateBase):
         self.team("tracks", "add", "--title", "Импорт")
         self.team("tracks", "car", "add", "tr-0001", "--title", "парсер", "--size", "M")
         self.team("tracks", "car", "add", "tr-0001", "--title", "экран", "--size", "M", "--brief", self.brief)
-        self.team("trains", "add", "--name", "imports", "--title", "Импорт", "--car", "tr-0001:0", "--car", "tr-0001:1",
-                  "--slots", "max 2")
+        self.team(
+            "trains",
+            "add",
+            "--name",
+            "imports",
+            "--title",
+            "Импорт",
+            "--car",
+            "tr-0001:0",
+            "--car",
+            "tr-0001:1",
+            "--slots",
+            "max 2",
+        )
         self.team("trains", "state", "imports", "impl", "--force", "--why", "парсер — по DoR в слоте")
 
     def test_car_stack_start_is_gated_before_anything_is_written_and_next_holds_it_back(self):
         nx = json.loads(self.team("trains", "next", "--json")[1])
         self.assertEqual([p["car"] for p in nx["picks"]], ["tr-0001:1"])  # car 0 has no brief: its DoR holds it
-        self.assertEqual(nx["gated"], [{"car": "tr-0001:0", "train": "imports", "id": None, "dor": ["нет брифа"],
-                                        "command": "depot2 tracks car stack tr-0001:0 --start"}])
-        self.assertIn("Ждут ворот DoR (слот их сам не возьмёт): tr-0001:0 «парсер» — нет брифа "
-                      "(`depot2 tracks car stack tr-0001:0 --start`, или с --force --why «…»).",
-                      self.team("trains", "next")[1])
-        before = (open(self.t.state.path("stack.json")).read() if os.path.exists(self.t.state.path("stack.json"))  # noqa: SIM115
-                  else None)
+        self.assertEqual(
+            nx["gated"],
+            [
+                {
+                    "car": "tr-0001:0",
+                    "train": "imports",
+                    "id": None,
+                    "dor": ["нет брифа"],
+                    "command": "depot2 tracks car stack tr-0001:0 --start",
+                }
+            ],
+        )
+        self.assertIn(
+            "Ждут ворот DoR (слот их сам не возьмёт): tr-0001:0 «парсер» — нет брифа "
+            "(`depot2 tracks car stack tr-0001:0 --start`, или с --force --why «…»).",
+            self.team("trains", "next")[1],
+        )
+        before = (
+            open(self.t.state.path("stack.json")).read() if os.path.exists(self.t.state.path("stack.json")) else None  # noqa: SIM115
+        )
         rc, _, err = self.team("tracks", "car", "stack", "tr-0001:0", "--start")
         self.assertEqual(rc, 1)
         self.assertIn("ворота: tr-0001:0 → «сборка» не пройдены: DoR (вход в сборку) — нет брифа", err)
-        self.assertEqual(open(self.t.state.path("stack.json")).read() if os.path.exists(self.t.state.path("stack.json"))  # noqa: SIM115
-                         else None, before)
+        self.assertEqual(
+            open(self.t.state.path("stack.json")).read() if os.path.exists(self.t.state.path("stack.json")) else None,  # noqa: SIM115
+            before,
+        )
         rc, out, err = self.team("tracks", "car", "stack", "tr-0001:0", "--start", "--force", "--why", "бриф в голове")
         self.assertEqual(rc, 0, err)
         self.assertIn("tr-0001:0: ворота пройдены с --force (бриф в голове): DoR (вход в сборку) — нет брифа", out)
@@ -212,8 +305,10 @@ class TrainGateTest(GateBase):
         self.assertEqual((o["stages"][-1]["forced"], o["stages"][-1]["gates"]), (True, {"DoR": ["нет брифа"]}))
         j = json.loads(self.team("car", "show", "tr-0001:0", "--json")[1])
         self.assertEqual(j["stages"][-1]["forced"], True)
-        self.assertEqual((j["v"], j["kind"], j["car"], j["object"], j["stage"], j["where"]),
-                         (1, "car", "tr-0001:0", o["id"], "build", "slot"))
+        self.assertEqual(
+            (j["v"], j["kind"], j["car"], j["object"], j["stage"], j["where"]),
+            (1, "car", "tr-0001:0", o["id"], "build", "slot"),
+        )
         self.assertEqual(j["gate"]["name"], "DoD")
 
 
@@ -239,30 +334,71 @@ class BoardTest(GateBase):
         self.assertIn("| сборка | 1 | слоты 1/4 |", md)
         self.assertIn("| приёмка | 0 | пост-стек 0/4 | — |", md)
         self.assertIn("### Сборка — 1 · слоты 1/4", md)
-        self.assertRegex(md, r"\| st-0001 \| P5 \| Импорт \| — \| — \| M \| слот \| [^|]+ \| DoD: CI: не сдано; Heavy: не сдано; "
-                             r"скан: не сдано; шоты: не сдано \|")
-        self.assertRegex(md, r"\| tr-0001:0 \| P5 \| вагон 0 \| poezd «Поезд» \| tr-0001 Поезд \| — \| на треке \| [^|]+ \| "
-                             r"DoR пройдены \|")
+        self.assertRegex(
+            md,
+            r"\| st-0001 \| P5 \| Импорт \| — \| — \| M \| слот \| [^|]+ \| DoD: CI: не сдано; Heavy: не сдано; "
+            r"скан: не сдано; шоты: не сдано \|",
+        )
+        self.assertRegex(
+            md,
+            r"\| tr-0001:0 \| P5 \| вагон 0 \| poezd «Поезд» \| tr-0001 Поезд \| — \| на треке \| [^|]+ \| "
+            r"DoR пройдены \|",
+        )
         self.assertRegex(md, r"\| wl-0001 \| P5 \| Хочу импорт \| — \| — \| — \| — \| [^|]+ \| — \|")
         self.assertNotIn("### Прибыл", md)
         data = json.loads(self.team("board", "--json")[1])
         self.assertEqual((data["v"], data["view"]), (1, "all"))
         self.assertEqual([c["stage"] for c in data["columns"]], list(stages.STAGES[:8]))
-        self.assertEqual(data["summary"], {"bogie": 3, "sketch": 1, "project": 0, "build": 1, "docs": 0, "acceptance": 0,
-                                           "queued": 0, "rolling": 0})
+        self.assertEqual(
+            data["summary"],
+            {"bogie": 3, "sketch": 1, "project": 0, "build": 1, "docs": 0, "acceptance": 0, "queued": 0, "rolling": 0},
+        )
         it = data["columns"][3]["items"][0]
-        self.assertEqual(sorted(it), sorted(["ref", "kind", "object", "car", "track", "track_title", "train", "train_title",
-                                             "train_state", "title", "size", "stage", "stage_ru", "since", "forced",
-                                             "where", "pr", "branch", "brief", "moves", "merge", "gate", "returns",
-                                             "claims", "repair", "principles", "docs", "priority"]))
+        self.assertEqual(
+            sorted(it),
+            sorted(
+                [
+                    "ref",
+                    "kind",
+                    "object",
+                    "car",
+                    "track",
+                    "track_title",
+                    "train",
+                    "train_title",
+                    "train_state",
+                    "title",
+                    "size",
+                    "stage",
+                    "stage_ru",
+                    "since",
+                    "forced",
+                    "where",
+                    "pr",
+                    "branch",
+                    "brief",
+                    "moves",
+                    "merge",
+                    "gate",
+                    "returns",
+                    "claims",
+                    "repair",
+                    "principles",
+                    "docs",
+                    "priority",
+                ]
+            ),
+        )
         self.assertIsNone(it["principles"])
-        self.assertEqual((it["ref"], it["kind"], it["where"], it["moves"]),
-                         ("st-0001", "stack", "slot", ["acceptance", "docs", "queued", "arrived", "project", "sketch",
-                                                       "scrapped"]))
+        self.assertEqual(
+            (it["ref"], it["kind"], it["where"], it["moves"]),
+            ("st-0001", "stack", "slot", ["acceptance", "docs", "queued", "arrived", "project", "sketch", "scrapped"]),
+        )
         # a car that arrived shows with --all only
         self.team("stack", "done", "st-0001", "--reason", "сдан, без PR")
-        self.assertNotIn("st-0001", [i["ref"] for c in json.loads(self.team("board", "--json")[1])["columns"]
-                                     for i in c["items"]])
+        self.assertNotIn(
+            "st-0001", [i["ref"] for c in json.loads(self.team("board", "--json")[1])["columns"] for i in c["items"]]
+        )
         full = json.loads(self.team("board", "--json", "--all")[1])
         arrived = next(c for c in full["columns"] if c["stage"] == "arrived")
         self.assertEqual([(i["ref"], i["kind"]) for i in arrived["items"]], [("st-0001", "left")])
@@ -273,8 +409,9 @@ class BoardTest(GateBase):
         j = json.loads(self.team("board", "--view", "stack", "--json")[1])
         self.assertEqual([c["stage"] for c in j["columns"]], ["build", "docs", "acceptance", "queued"])
         self.assertEqual([i["ref"] for i in j["columns"][0]["items"]], ["st-0001"])
-        self.assertEqual((j["queue"]["count"], j["queue"]["max"], [i["ref"] for i in j["queue"]["items"]]),
-                         (1, 10, ["st-0002"]))
+        self.assertEqual(
+            (j["queue"]["count"], j["queue"]["max"], [i["ref"] for i in j["queue"]["items"]]), (1, 10, ["st-0002"])
+        )
         self.assertIn("Доска (`depot2 board`): тележка 3 · эскиз 1 · сборка 1; стек — её вид", self.team("stack")[1])
         for n in range(3):
             self.team("wishes", "add", "--title", "ещё %d" % n, "--words", "w")  # noqa: UP031
@@ -294,14 +431,40 @@ class BoardTest(GateBase):
         self.assertEqual(json.loads(self.team("track", "tr-0001", "--json")[1])["id"], "tr-0001")
         for ref in ("st-0001", "st-0002", "tr-0001:1", "wl-0001"):
             j = json.loads(self.team("car", "show", ref, "--json")[1])
-            for k in ("v", "ref", "kind", "car", "object", "track", "train", "title", "stage", "stage_ru", "moves", "stages",
-                      "brief", "size", "branch", "pr", "where", "status", "asks", "project", "project_passed", "gate",
-                      "ci", "dod", "left", "taken_to"):
+            for k in (
+                "v",
+                "ref",
+                "kind",
+                "car",
+                "object",
+                "track",
+                "train",
+                "title",
+                "stage",
+                "stage_ru",
+                "moves",
+                "stages",
+                "brief",
+                "size",
+                "branch",
+                "pr",
+                "where",
+                "status",
+                "asks",
+                "project",
+                "project_passed",
+                "gate",
+                "ci",
+                "dod",
+                "left",
+                "taken_to",
+            ):
                 self.assertIn(k, j, (ref, k))
         j = json.loads(self.team("car", "show", "tr-0001:1", "--json")[1])
-        self.assertEqual((j["kind"], j["track"], j["train"], j["gate"]),
-                         ("car", {"id": "tr-0001", "title": "Поезд"}, {"name": "poezd", "title": "Поезд", "state": "impl"},
-                          None))
+        self.assertEqual(
+            (j["kind"], j["track"], j["train"], j["gate"]),
+            ("car", {"id": "tr-0001", "title": "Поезд"}, {"name": "poezd", "title": "Поезд", "state": "impl"}, None),
+        )
         self.assertEqual(json.loads(self.team("car", "show", "wl-0001", "--json")[1])["kind"], "wish")
 
     def test_the_slots_who_is_in_each_and_who_comes_next(self):
@@ -309,19 +472,28 @@ class BoardTest(GateBase):
         self.assertLess(md.index("### Слоты — 1/4 (свободно 3)"), md.index("| Этап | Вагонов |"))
         self.assertRegex(md, r"\| 1 \| st-0001 \| Импорт \| — \| — \| [^|]+ \| DoD: CI: не сдано;")
         self.assertIn("| 4 | свободен | — | — | — | — | — |", md)
-        self.assertIn("Дальше (`depot2 trains next`): сейчас (свободный слот берёт) — tr-0001:0 (поезд poezd). ждут слова "
-                      "владельца — st-0002 (ждёт слова владельца (автозапуск — нет)).", md)
+        self.assertIn(
+            "Дальше (`depot2 trains next`): сейчас (свободный слот берёт) — tr-0001:0 (поезд poezd). ждут слова "
+            "владельца — st-0002 (ждёт слова владельца (автозапуск — нет)).",
+            md,
+        )
         sl = json.loads(self.team("board", "--json")[1])["slots"]
         self.assertEqual((sl["used"], sl["max"], sl["free"]), (1, 4, 3))
         self.assertEqual([c["ref"] for c in sl["cells"]], ["st-0001", None, None, None])
         c = sl["cells"][0]
         self.assertEqual((c["n"], c["kind"], c["stage"], c["gate"]["name"]), (1, "stack", "build", "DoD"))
         self.assertTrue(c["in_slot"])
-        self.assertEqual([(e["state"], e["ref"], e["command"]) for e in sl["next"]],
-                         [("now", "tr-0001:0", "depot2 tracks car stack tr-0001:0 --start"),
-                          ("owner", "st-0002", "depot2 stack start st-0002")])
-        self.assertEqual(sorted(sl["next"][0]), ["command", "object", "priority", "ref", "state", "state_ru", "title", "track",
-                                                 "train", "why"])
+        self.assertEqual(
+            [(e["state"], e["ref"], e["command"]) for e in sl["next"]],
+            [
+                ("now", "tr-0001:0", "depot2 tracks car stack tr-0001:0 --start"),
+                ("owner", "st-0002", "depot2 stack start st-0002"),
+            ],
+        )
+        self.assertEqual(
+            sorted(sl["next"][0]),
+            ["command", "object", "priority", "ref", "state", "state_ru", "title", "track", "train", "why"],
+        )
         self.assertEqual((sl["next"][0]["track"], sl["next"][0]["train"]), ("tr-0001", "poezd"))
         for _ in range(3):  # every slot busy: the train's car waits for a freed one
             self.team("stack", "add", "--title", "x", "--brief", self.brief)
@@ -340,13 +512,14 @@ class RouteTest(GateBase):
             self.assertEqual(self.team("car", "stage", "st-0001", stage)[0], rc, stage)
         self.assertEqual(self.team("car", "stage", "st-0001", "эскиз", "--why", "бриф переписать")[0], 0)
         o = self.stk().get("st-0001")
-        self.assertEqual([(r["from"], r["stage"]) for r in o["stages"]],
-                         [(None, "bogie"), ("bogie", "sketch"), ("sketch", "project"), ("project", "sketch")])
+        self.assertEqual(
+            [(r["from"], r["stage"]) for r in o["stages"]],
+            [(None, "bogie"), ("bogie", "sketch"), ("sketch", "project"), ("project", "sketch")],
+        )
         self.assertEqual(o["stages"][-1]["why"], "бриф переписать")
 
 
 class DocsTest(GateBase):
-
     HANDED = ["--ci", "green", "--heavy", "n/a", "--scan", "CLEAN", "--shots", "n/a"]  # noqa: RUF012
 
     def setUp(self):
@@ -381,17 +554,22 @@ class DocsTest(GateBase):
         self.assertEqual([gates.brief_docs(p) for p in (self.docs_brief, self.brief, None)], [True, None, None])
 
     def test_the_sketch_line_gates_the_way_into_the_acceptance(self):
-        self.assertRegex(self.team("stack", "--md")[1],
-                         r"\| С1 \| слот \| st-0001 [^\n]* \| сборка \(нужна документация\) \|")
-        self.assertRegex(self.team("track", "tr-0001")[1],
-                         r"\| 0 \| P5 \| доки \|[^\n]* \| сборка \(нужна документация\) \|")
+        self.assertRegex(
+            self.team("stack", "--md")[1], r"\| С1 \| слот \| st-0001 [^\n]* \| сборка \(нужна документация\) \|"
+        )
+        self.assertRegex(
+            self.team("track", "tr-0001")[1], r"\| 0 \| P5 \| доки \|[^\n]* \| сборка \(нужна документация\) \|"
+        )
         rc, out, _ = self.team("car", "show", "tr-0001:0")
         self.assertIn("Документация нужна (эскиз: «Документация: нужна»): не сделана.", out)
         self.assertIn("Отсюда по маршруту: приёмка, документация, на путях, прибыл, проект, эскиз, списан.", out)
         rc, _, err = self.team("stack", "post", "st-0001", *self.HANDED)
         self.assertEqual(rc, 1)
-        self.assertIn("ворота: st-0001 → «приёмка» не пройдены: DoD (вход в приёмку) — документация: не сделана (нужна — "
-                      "эскиз: «Документация: нужна»; depot2 car stage tr-0001:0 docs). Пройти всё равно", err)
+        self.assertIn(
+            "ворота: st-0001 → «приёмка» не пройдены: DoD (вход в приёмку) — документация: не сделана (нужна — "
+            "эскиз: «Документация: нужна»; depot2 car stage tr-0001:0 docs). Пройти всё равно",
+            err,
+        )
         self.assertEqual(self.stk().get("st-0001")["where"], "slot")  # a refused post wrote nothing
         # the car with no line goes straight from the build, as before
         rc, _, err = self.team("stack", "post", "st-0002", *self.HANDED)
@@ -401,8 +579,10 @@ class DocsTest(GateBase):
         rc, out, err = self.team("car", "stage", "tr-0001:0", "документация")
         self.assertEqual(rc, 0, err)
         self.assertIn("tr-0001:0 (объект st-0001): сборка → документация", out)
-        self.assertEqual((self.car()["stage"], self.stk().get("st-0001")["stage"], self.stk().get("st-0001")["where"]),
-                         ("docs", "docs", "slot"))
+        self.assertEqual(
+            (self.car()["stage"], self.stk().get("st-0001")["stage"], self.stk().get("st-0001")["where"]),
+            ("docs", "docs", "slot"),
+        )
         self.assertRegex(self.team("stack", "--md")[1], r"\| С1 \| слот \| st-0001 [^\n]* \| документация \|")
         # back to the build needs a reason, and it is car stage's own too (no stack start: the object is in its slot)
         rc, _, err = self.team("car", "stage", "tr-0001:0", "build")
@@ -414,11 +594,14 @@ class DocsTest(GateBase):
         self.team("car", "stage", "st-0001", "docs")
         rc, out, err = self.team("stack", "post", "st-0001", *self.HANDED)
         self.assertEqual(rc, 0, err)
-        self.assertEqual((rows_of(self.car())[-1], rows_of(self.stk().get("st-0001"))[-1]),
-                         (("docs", "acceptance"), ("docs", "acceptance")))
+        self.assertEqual(
+            (rows_of(self.car())[-1], rows_of(self.stk().get("st-0001"))[-1]),
+            (("docs", "acceptance"), ("docs", "acceptance")),
+        )
         self.assertNotIn("forced", self.car()["stages"][-1])
-        self.assertIn("Документация нужна (эскиз: «Документация: нужна»): этап пройден.",
-                      self.team("car", "show", "tr-0001:0")[1])
+        self.assertIn(
+            "Документация нужна (эскиз: «Документация: нужна»): этап пройден.", self.team("car", "show", "tr-0001:0")[1]
+        )
         data = json.loads(self.team("board", "--json")[1])
         it = next(i for c in data["columns"] for i in c["items"] if i["ref"] == "tr-0001:0")
         self.assertEqual((it["stage"], it["docs"]["state"], it["gate"]), ("acceptance", "passed", None))
@@ -430,23 +613,43 @@ class DocsTest(GateBase):
         self.assertIsNone(json.loads(self.team("car", "show", "tr-0001:0", "--json")[1])["docs"]["need"])
         self.assertEqual(self.team("stack", "post", "st-0001", *self.HANDED)[0], 0)  # the flag beats the sketch's line
         self.team("tracks", "car", "set", "tr-0001:1", "--docs", "yes")
-        self.assertEqual(self.team("tracks", "car", "set", "tr-0001:1", "--docs", "maybe")[2].strip(),
-                         "error: --docs is yes or no, got 'maybe'")
+        self.assertEqual(
+            self.team("tracks", "car", "set", "tr-0001:1", "--docs", "maybe")[2].strip(),
+            "error: --docs is yes or no, got 'maybe'",
+        )
         rc, _, err = self.team("stack", "post", "st-0002", *self.HANDED)
         self.assertEqual(rc, 1)
-        self.assertIn("документация: не сделана (нужна — флаг вагона (tracks car set --docs yes); depot2 car stage "
-                      "tr-0001:1 docs)", err)
+        self.assertIn(
+            "документация: не сделана (нужна — флаг вагона (tracks car set --docs yes); depot2 car stage "
+            "tr-0001:1 docs)",
+            err,
+        )
         rc, _out, err = self.team("stack", "post", "st-0002", *[*self.HANDED, "--force", "--why", "доки едут отдельно"])
         self.assertEqual(rc, 0, err)
         row = self.stk().get("st-0002")["stages"][-1]
-        self.assertEqual((row["from"], row["stage"], row["forced"], row["gates"]),
-                         ("build", "acceptance", True, {"DoD": ["документация: не сделана (нужна — флаг вагона (tracks "
-                                                                "car set --docs yes); depot2 car stage tr-0001:1 docs)"]}))
-        self.assertIn("Документация нужна (флаг вагона (tracks car set --docs yes)): этапа не было.",
-                      self.team("car", "show", "tr-0001:1")[1])
+        self.assertEqual(
+            (row["from"], row["stage"], row["forced"], row["gates"]),
+            (
+                "build",
+                "acceptance",
+                True,
+                {
+                    "DoD": [
+                        "документация: не сделана (нужна — флаг вагона (tracks "
+                        "car set --docs yes); depot2 car stage tr-0001:1 docs)"
+                    ]
+                },
+            ),
+        )
+        self.assertIn(
+            "Документация нужна (флаг вагона (tracks car set --docs yes)): этапа не было.",
+            self.team("car", "show", "tr-0001:1")[1],
+        )
         js = json.loads(self.team("track", "tr-0001", "--json")[1])
-        self.assertEqual([(c["docs"], c["docs_need"]) for c in js["cars"]],
-                         [(False, None), (True, "флаг вагона (tracks car set --docs yes)")])
+        self.assertEqual(
+            [(c["docs"], c["docs_need"]) for c in js["cars"]],
+            [(False, None), (True, "флаг вагона (tracks car set --docs yes)")],
+        )
 
     def test_docs_hold_the_slot_and_a_car_out_of_a_slot_does_not_go(self):
         self.team("tracks", "car", "add", "tr-0001", "--title", "в очереди", "--brief", self.docs_brief)
@@ -454,8 +657,11 @@ class DocsTest(GateBase):
         self.team("car", "stage", "tr-0001:2", "build", "--force", "--why", "в работе, но не в слоте")
         rc, _, err = self.team("car", "stage", "tr-0001:2", "docs")
         self.assertEqual(rc, 1)
-        self.assertIn("tr-0001:2: «документация» держит слот сборки, а st-0003 не в слоте; сначала в слот: depot2 "
-                      "tracks car stack tr-0001:2 --start", err)
+        self.assertIn(
+            "tr-0001:2: «документация» держит слот сборки, а st-0003 не в слоте; сначала в слот: depot2 "
+            "tracks car stack tr-0001:2 --start",
+            err,
+        )
         self.team("car", "stage", "tr-0001:0", "docs")
         self.assertEqual([o["id"] for o in self.stk().in_slots()], ["st-0001", "st-0002"])
         # a status set by hand keeps the docs (pr, running)
@@ -472,25 +678,42 @@ class DocsTest(GateBase):
         data = json.loads(self.team("board", "--json")[1])
         self.assertEqual([c["stage"] for c in data["columns"]][3:6], ["build", "docs", "acceptance"])
         col = next(c for c in data["columns"] if c["stage"] == "docs")
-        self.assertEqual((col["ru"], col["means"], col["count"], col["limit"]),
-                         ("документация", "доки к изменению: README, справка, карты модулей", 1, None))
+        self.assertEqual(
+            (col["ru"], col["means"], col["count"], col["limit"]),
+            ("документация", "доки к изменению: README, справка, карты модулей", 1, None),
+        )
         it = col["items"][0]
-        self.assertEqual((it["ref"], it["where"], it["docs"]["done"], it["gate"]["name"], it["moves"]),
-                         ("tr-0001:0", "slot", True, "DoD", ["acceptance", "queued", "build", "scrapped"]))
+        self.assertEqual(
+            (it["ref"], it["where"], it["docs"]["done"], it["gate"]["name"], it["moves"]),
+            ("tr-0001:0", "slot", True, "DoD", ["acceptance", "queued", "build", "scrapped"]),
+        )
         self.assertNotIn("документация", "; ".join(it["gate"]["unmet"]))
         build = next(c for c in data["columns"] if c["stage"] == "build")
         self.assertEqual([(i["ref"], i["docs"]) for i in build["items"]], [("tr-0001:1", None)])
         self.assertEqual(data["summary"]["docs"], 1)
-        self.assertEqual([c["stage"] for c in json.loads(self.team("board", "--view", "stack", "--json")[1])["columns"]],
-                         ["build", "docs", "acceptance", "queued"])
+        self.assertEqual(
+            [c["stage"] for c in json.loads(self.team("board", "--view", "stack", "--json")[1])["columns"]],
+            ["build", "docs", "acceptance", "queued"],
+        )
         self.assertEqual(data["slots"]["cells"][0]["stage"], "docs")
         j = json.loads(self.team("car", "show", "tr-0001:0", "--json")[1])
-        self.assertEqual((j["stage"], j["docs"]), ("docs", {"need": "эскиз: «Документация: нужна»", "state": "now",
-                                                            "word": "этап идёт", "done": True,
-                                                            "cmd": "depot2 car stage tr-0001:0 docs"}))
+        self.assertEqual(
+            (j["stage"], j["docs"]),
+            (
+                "docs",
+                {
+                    "need": "эскиз: «Документация: нужна»",
+                    "state": "now",
+                    "word": "этап идёт",
+                    "done": True,
+                    "cmd": "depot2 car stage tr-0001:0 docs",
+                },
+            ),
+        )
         self.assertIn("документация: этап идёт", j["gate"]["handed"])
-        self.assertIn("Документация нужна (эскиз: «Документация: нужна»): этап идёт.",
-                      self.team("car", "show", "tr-0001:0")[1])
+        self.assertIn(
+            "Документация нужна (эскиз: «Документация: нужна»): этап идёт.", self.team("car", "show", "tr-0001:0")[1]
+        )
 
 
 def rows_of(rec):
@@ -506,8 +729,10 @@ class MergePlaceTest(MergeBase):
         rc, out, err = self.team("merge", "add", "303", "--word", "303 — сначала фикс", "--at", "1")
         self.assertEqual(rc, 0, err)
         self.assertIn("PR #303 (feat-c) is in the merge queue, place 1", out)
+
         def order():
             return [e["pr"] for e in self.q().entries(open_only=True)]
+
         self.assertEqual(order(), [303, 301, 302])
         rc, out, _ = self.team("merge", "move", "302", "--at", "2")
         self.assertEqual(rc, 0)
@@ -541,8 +766,9 @@ class MergePlaceTest(MergeBase):
         e = self.entry(301)
         self.assertEqual((e["status"], e["handoff"]["reason"]), ("merged", "main красный: нестабильный тест"))
         self.assertEqual(stages.entry_stage(e), "rolling")
-        self.assertIn("выкатка — со следующим мерджем (main красный: нестабильный тест)",
-                      self.team("merge", "--all")[1])
+        self.assertIn(
+            "выкатка — со следующим мерджем (main красный: нестабильный тест)", self.team("merge", "--all")[1]
+        )
         board = json.loads(self.team("board", "--json")[1])
         rolling = next(c for c in board["columns"] if c["stage"] == "rolling")
         self.assertEqual([i["ref"] for i in rolling["items"]], ["st-0001"])
