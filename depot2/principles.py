@@ -11,7 +11,6 @@ A section is stored by its code; an older depot's codes (Russian words) are read
 the aliases in.principles.section.<code>) and written as them from then on.
 """
 
-
 import contextlib
 import os
 import re
@@ -69,11 +68,12 @@ LINKS = re.compile(r"\b(?:dec-\d{6}|(?:wl|th|td|st|tm)-\d{4}|tr-\d{4}(?::\w+)?)\
 TIGHT = ",.:;!?)"  # a text that starts with one of these follows the bold title with no space
 
 
-
 def checks_frame():
     """The first two checks: (title, text)."""
-    return ((t("principles.check1_title"), t("principles.check1_text")),
-            (t("principles.check2_title"), t("principles.check2_text")))
+    return (
+        (t("principles.check1_title"), t("principles.check1_text")),
+        (t("principles.check2_title"), t("principles.check2_text")),
+    )
 
 
 FRAME = re.compile(r"(?i)^\*\*[^*]*{}".format(rx("in.principles.frame")))
@@ -104,8 +104,10 @@ class Principles(Queue):
     # --- reading ---------------------------------------------------------------------------------
 
     def ordered(self, open_only=True):
-        return sorted(self.entries(open_only), key=lambda e: (SECTION_RANK.get(e.get("section"), 9),
-                                                             e.get("order") or 0, e.get("n") or 0))
+        return sorted(
+            self.entries(open_only),
+            key=lambda e: (SECTION_RANK.get(e.get("section"), 9), e.get("order") or 0, e.get("n") or 0),
+        )
 
     def target(self):
         """The PRINCIPLES.md the depot renders: the file `principles import` read (None before the import)."""
@@ -115,8 +117,16 @@ class Principles(Queue):
         return [e for e in self.ordered(True) if e.get("check")]
 
     def check_list(self):
-        return [{"id": e["id"], "label": label(e), "title": e.get("title") or _clip(e.get("text"), 70),
-                 "section": e["section"], "priority": priority(e)} for e in self.checked()]
+        return [
+            {
+                "id": e["id"],
+                "label": label(e),
+                "title": e.get("title") or _clip(e.get("text"), 70),
+                "section": e["section"],
+                "priority": priority(e),
+            }
+            for e in self.checked()
+        ]
 
     def headline(self, e):
         return "{}. {}".format(label(e), e.get("title") or _clip(e.get("text"), 70))
@@ -151,9 +161,22 @@ class Principles(Queue):
         eid = pc_id(n, suffix)
         if any(x["id"] == eid for x in self.data["entries"]):
             raise QueueError(f"{eid} is there already (a number is never reused)")
-        e = {"id": eid, "n": n, "suffix": suffix or "", "added": now_iso(), "status": "active", "by": None,
-             "replaces": [], "reason": None, "words": [], "subs": [], "links": [], "notes": [], "check": False,
-             "gap": 0}
+        e = {
+            "id": eid,
+            "n": n,
+            "suffix": suffix or "",
+            "added": now_iso(),
+            "status": "active",
+            "by": None,
+            "replaces": [],
+            "reason": None,
+            "words": [],
+            "subs": [],
+            "links": [],
+            "notes": [],
+            "check": False,
+            "gap": 0,
+        }
         e.update({k: v for k, v in fields.items() if v is not None})
         self.check(e)
         self.data["entries"].append(e)
@@ -171,11 +194,23 @@ class Principles(Queue):
         section = section_key(section)
         last = self.last_in(section)
         date = date or today()
-        e = self._make(self.data.get("next") or 1, "", {
-            "section": section, "title": title, "text": text or "", "date": date, "words": [word(w, date) for w in words or ()],
-            "subs": list(subs or ()), "links": list(links or ()), "check": bool(check),
-            "order": float(order) if order is not None else ((last["order"] if last else 0) + 1),
-            "gap": last["gap"] if last else 1}, "principles add")
+        e = self._make(
+            self.data.get("next") or 1,
+            "",
+            {
+                "section": section,
+                "title": title,
+                "text": text or "",
+                "date": date,
+                "words": [word(w, date) for w in words or ()],
+                "subs": list(subs or ()),
+                "links": list(links or ()),
+                "check": bool(check),
+                "order": float(order) if order is not None else ((last["order"] if last else 0) + 1),
+                "gap": last["gap"] if last else 1,
+            },
+            "principles add",
+        )
         e["order"] = _num(e["order"])
         self._save("add", e["id"], entry_data=e)
         return e
@@ -273,7 +308,9 @@ class Principles(Queue):
         if any(ln.startswith("## ") for ln in lines):
             raise QueueError("the head cannot hold a section («## …»): the sections come from the principles")
         if any(RE_BANNER.match(ln) for ln in lines):
-            raise QueueError("the banner «{}» is the render's own: leave it out of --text".format(t("principles.banner_words")))
+            raise QueueError(
+                "the banner «{}» is the render's own: leave it out of --text".format(t("principles.banner_words"))
+            )
         old = self.head()
         title = old[0] if old and old[0].startswith("# ") else default_head()[0]
         if lines[0].startswith("# "):
@@ -315,8 +352,14 @@ class Principles(Queue):
             made.append(self._make(n, suffix, it, "principles import"))
         self.data["head"] = head
         self.data["file"] = path
-        self._save("import", None, file=path, sha256=sha256_text(text), entries=[e["id"] for e in made],
-                   check=[e["id"] for e in made if e["check"]])
+        self._save(
+            "import",
+            None,
+            file=path,
+            sha256=sha256_text(text),
+            entries=[e["id"] for e in made],
+            check=[e["id"] for e in made if e["check"]],
+        )
         return head, made
 
     # --- the render --------------------------------------------------------------------------------
@@ -332,10 +375,14 @@ class Principles(Queue):
 
     def live_target(self):
         from .config import DEFAULT_STATE
+
         live = os.path.realpath(os.path.expanduser(DEFAULT_STATE))
         t = self.target()
-        return bool(t) and os.path.realpath(self.state.root) != live and \
-            os.path.realpath(t).startswith(os.path.dirname(live) + os.sep)
+        return (
+            bool(t)
+            and os.path.realpath(self.state.root) != live
+            and os.path.realpath(t).startswith(os.path.dirname(live) + os.sep)
+        )
 
     def write(self, out=None):
         """Render into `out`, else into the target; the target is read-only between renders (the render takes the
@@ -370,39 +417,74 @@ class Principles(Queue):
             if len(words) > 1:
                 w += " (+%d)" % (len(words) - 1)  # noqa: UP031
             st = STATUS_RU[e["status"]] + (" → {}".format(e["by"]) if e.get("by") else "")
-            L.append("| {} | {} | {} | {} | {} | {} |".format(*tuple(_cell(x) for x in (
-                "{} · {}{}".format(e["id"], self.headline(e), f" · ③ {CHECK_MARK[priority(e)]}" if e.get("check") else ""),
-                SECTION_TITLE.get(e["section"], e["section"]), e.get("date") or "—", w,
-                str(len(e.get("subs") or [])) if e.get("subs") else "—", st))))
+            L.append(
+                "| {} | {} | {} | {} | {} | {} |".format(
+                    *tuple(
+                        _cell(x)
+                        for x in (
+                            "{} · {}{}".format(
+                                e["id"], self.headline(e), f" · ③ {CHECK_MARK[priority(e)]}" if e.get("check") else ""
+                            ),
+                            SECTION_TITLE.get(e["section"], e["section"]),
+                            e.get("date") or "—",
+                            w,
+                            str(len(e.get("subs") or [])) if e.get("subs") else "—",
+                            st,
+                        )
+                    )
+                )
+            )
         if not rows:
             L.append(t("principles.md_empty"))
         L.append("")
-        L.append(t("principles.md_footer", n=len(self.entries(True)), of=len(self.data["entries"]),
-                   first=t("principles.md_first", n=limit) if limit and len(rows) > limit else "",
-                   file=self.target() or t("principles.md_no_file")))
+        L.append(
+            t(
+                "principles.md_footer",
+                n=len(self.entries(True)),
+                of=len(self.data["entries"]),
+                first=t("principles.md_first", n=limit) if limit and len(rows) > limit else "",
+                file=self.target() or t("principles.md_no_file"),
+            )
+        )
         return "\n".join(L) + "\n"
 
     def to_json(self, open_only=True):
         rows = self.ordered(open_only)
         sections = []
         for key, title in SECTIONS:
-            items = [dict(e, label=label(e), status_ru=STATUS_RU[e["status"]], lines=render_item(e), priority=priority(e))
-                     for e in rows if e["section"] == key]
+            items = [
+                dict(e, label=label(e), status_ru=STATUS_RU[e["status"]], lines=render_item(e), priority=priority(e))
+                for e in rows
+                if e["section"] == key
+            ]
             sections.append({"key": key, "title": title, "count": len(items), "items": items})
         counts = dict.fromkeys(STATUS_RU, 0)
         for e in self.data["entries"]:
             counts[e["status"]] = counts.get(e["status"], 0) + 1
-        return {"v": 1, "generated": now_iso(), "all": not open_only, "file": self.target(),
-                "sections": sections, "counts": counts, "checks": [e["id"] for e in self.checked()]}
+        return {
+            "v": 1,
+            "generated": now_iso(),
+            "all": not open_only,
+            "file": self.target(),
+            "sections": sections,
+            "counts": counts,
+            "checks": [e["id"] for e in self.checked()],
+        }
 
     def show(self, eid):
         e = self.get(eid)
         L = [t("principles.show_heading", id=e["id"], label=label(e), status=STATUS_RU[e["status"]]), ""]
         L += render_item(e)
         L.append("")
-        L.append(t("principles.show_fields", section=SECTION_TITLE.get(e["section"], e["section"]),
-                   order=e.get("order"), date=e.get("date") or "—",
-                   check=t("principles.show_check", mark=CHECK_MARK[priority(e)]) if e.get("check") else ""))
+        L.append(
+            t(
+                "principles.show_fields",
+                section=SECTION_TITLE.get(e["section"], e["section"]),
+                order=e.get("order"),
+                date=e.get("date") or "—",
+                check=t("principles.show_check", mark=CHECK_MARK[priority(e)]) if e.get("check") else "",
+            )
+        )
         if e.get("words"):
             L.append(t("principles.show_words"))
             L += ["  - {}: «{}»".format(w.get("date") or "—", w["text"]) for w in e["words"]]
@@ -418,15 +500,31 @@ class Principles(Queue):
         """
         out = [{"n": i, "title": title, "text": x} for i, (title, x) in enumerate(checks_frame(), 1)]
         third = self.check_list()
-        pri = [{"priority": n, "title": SECTION_TITLE["core" if n == 1 else "mechanics"], "means": PRIORITY_MEANS[n],
-                "labels": [p["label"] for p in third if p["priority"] == n]} for n in (1, 2)]
+        pri = [
+            {
+                "priority": n,
+                "title": SECTION_TITLE["core" if n == 1 else "mechanics"],
+                "means": PRIORITY_MEANS[n],
+                "labels": [p["label"] for p in third if p["priority"] == n],
+            }
+            for n in (1, 2)
+        ]
         from .marks import format_line, section
-        out.append({"n": 3, "title": section(), "text": t("principles.check3_text", format=format_line()),
-                    "principles": third, "priorities": pri})
+
+        out.append(
+            {
+                "n": 3,
+                "title": section(),
+                "text": t("principles.check3_text", format=format_line()),
+                "principles": third,
+                "priorities": pri,
+            }
+        )
         return out
 
     def checks_md(self):
         from .marks import format_line, section
+
         L = [t("principles.checks_heading"), "", t("principles.checks_intro"), ""]
         cs = self.checks()
         for c in cs[:2]:
@@ -436,8 +534,9 @@ class Principles(Queue):
         for pr in third["priorities"]:
             ps = [p for p in third["principles"] if p["priority"] == pr["priority"]]
             L.append("   - **{}** — {}:".format(pr["title"], pr["means"]))
-            L += ["     - {}. {} ({})".format(p["label"], p["title"], p["id"]) for p in ps] or \
-                [t("principles.checks_none")]
+            L += ["     - {}. {} ({})".format(p["label"], p["title"], p["id"]) for p in ps] or [
+                t("principles.checks_none")
+            ]
         L.append("")
         L.append(t("principles.checks_where", section=section()))
         return "\n".join(L) + "\n"
@@ -445,12 +544,18 @@ class Principles(Queue):
     def round_line(self):
         """The bundle's line about the three checks."""
         pri = self.checks()[2]["priorities"]
-        third = "; ".join("{}: {}".format(p["title"].lower(), ", ".join(p["labels"]) or t("principles.round_none"))
-                          for p in pri) if any(p["labels"] for p in pri) else t("principles.round_no_checks")
+        third = (
+            "; ".join(
+                "{}: {}".format(p["title"].lower(), ", ".join(p["labels"]) or t("principles.round_none")) for p in pri
+            )
+            if any(p["labels"] for p in pri)
+            else t("principles.round_no_checks")
+        )
         return t("principles.round_line", third=third)
 
 
 # --- the file: parse and render ----------------------------------------------------------------------
+
 
 def pc_id(n, suffix=""):
     return "pc-%04d%s" % (int(n), suffix or "")  # noqa: UP031
@@ -543,8 +648,12 @@ def diff_lines(want, got):
         a = want[i] if i < len(want) else None
         b = got[i] if i < len(got) else None
         if a != b:
-            return t("principles.diff_line", n=i + 1, was=f"«{_clip(a, 90)}»" if a is not None else
-                     t("principles.diff_eof"), got=f"«{_clip(b, 90)}»" if b is not None else t("principles.diff_eof"))
+            return t(
+                "principles.diff_line",
+                n=i + 1,
+                was=f"«{_clip(a, 90)}»" if a is not None else t("principles.diff_eof"),
+                got=f"«{_clip(b, 90)}»" if b is not None else t("principles.diff_eof"),
+            )
     return None
 
 
@@ -574,7 +683,7 @@ def owner_words(line, default_date):
     masked = _mask(line)
     for m in QUOTE.finditer(line):
         start = _stretch_start(masked, m.start())
-        clause = line[start:m.start()]
+        clause = line[start : m.start()]
         if not clause.rstrip(" *").endswith(":"):
             continue
         if not (OWNER.search(clause) or DATE.search(clause)):
@@ -641,20 +750,35 @@ def _item(m, section, order, ref):
     if rest.startswith("**"):
         close = rest.find("**", 2)
         if close > 2:
-            title, text = rest[2:close], rest[close + 2:]
+            title, text = rest[2:close], rest[close + 2 :]
             text = text.removeprefix(" ")
     d = DATE.search(title + " " + text)
-    return {"n": n, "suffix": suffix, "section": section, "order": order, "title": title, "text": text,
-            "date": d.group(1) if d else None, "subs": [], "gap": 0, "source_ref": ref}
+    return {
+        "n": n,
+        "suffix": suffix,
+        "section": section,
+        "order": order,
+        "title": title,
+        "text": text,
+        "date": d.group(1) if d else None,
+        "subs": [],
+        "gap": 0,
+        "source_ref": ref,
+    }
 
 
 def render_item(e):
-    words = [w for w in e.get("words") or [] if "«{}»".format(w["text"]) not in
-             " ".join([e.get("title") or "", e.get("text") or "", *list(e.get("subs") or [])])]
+    words = [
+        w
+        for w in e.get("words") or []
+        if "«{}»".format(w["text"])
+        not in " ".join([e.get("title") or "", e.get("text") or "", *list(e.get("subs") or [])])
+    ]
     text = e.get("text") or ""
     if words:  # the owner's words the text does not quote: in a bracket after the title
-        said = t("principles.owner_said",
-                 words="; ".join("{}: «{}»".format(w.get("date") or "—", w["text"]) for w in words))
+        said = t(
+            "principles.owner_said", words="; ".join("{}: «{}»".format(w.get("date") or "—", w["text"]) for w in words)
+        )
         text = said + ("." if text else "") + (" " + text if text else "")
     line = f"{label(e)}. "
     if e.get("title"):
