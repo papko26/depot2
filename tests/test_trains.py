@@ -179,7 +179,7 @@ class ModelTest(TracksBase):
 
         def refused(*argv):  # argparse's refusal: exit 2 and its line on stderr
             err = io.StringIO()
-            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
+            with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):  # noqa: SIM117
                 with self.assertRaises(SystemExit) as cm:
                     team.main(["--state", self.t.dir, *list(argv)])
             return cm.exception.code, err.getvalue()
@@ -493,8 +493,8 @@ class MigrateTest(TracksBase):
         self.assertEqual([(h["event"], h["schema"]) for h in hist[-4:]], [("migrate", 2), ("migrate", 3),
                                                                           ("migrate", 4), ("migrate", 5)])
         self.assertEqual(hist[-4]["planning"]["tr-0004"]["status"], "paused")
-        self.assertEqual(open(self.t.state.path(migrate.ARCHIVE_TRAINS), "rb").read(), before["trains.json"])
-        self.assertEqual(open(self.t.state.path(migrate.ARCHIVE_HISTORY), "rb").read(), before["trains-history.jsonl"])
+        self.assertEqual(open(self.t.state.path(migrate.ARCHIVE_TRAINS), "rb").read(), before["trains.json"])  # noqa: SIM115
+        self.assertEqual(open(self.t.state.path(migrate.ARCHIVE_HISTORY), "rb").read(), before["trains-history.jsonl"])  # noqa: SIM115
         self.assertEqual([h["train"] for h in Trains(self.t.state, self.t.cfg).history()], ["akkaunty", "chitatelskiy"])
         # a second run changes nothing
         snap = files_of(self.t.dir)

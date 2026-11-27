@@ -11,6 +11,7 @@
   goes to `backup.git.quarantine`, outside the depot, and a marker takes its place.
 """
 
+import contextlib
 import json
 import os
 import re
@@ -199,7 +200,7 @@ def due(state, st, g, n, now):
     if n < int(g["every_commits"]) or _needs_person(st):
         return False
     sp = state.path(backup.DIR, SPAWNED)
-    if os.path.exists(sp) and now - os.path.getmtime(sp) < wait_min(g, st) * 60:
+    if os.path.exists(sp) and now - os.path.getmtime(sp) < wait_min(g, st) * 60:  # noqa: SIM103
         return False  # one start per window; a push still going holds its lock anyway
     return True
 
@@ -238,10 +239,8 @@ def run_group(argv, env, timeout, cwd=None):
         out, err = p.communicate(timeout=timeout)
         return p.returncode, out, err
     except subprocess.TimeoutExpired:
-        try:
+        with contextlib.suppress(OSError):
             os.killpg(p.pid, signal.SIGKILL)
-        except OSError:
-            pass
         p.communicate()
         return None, "", ""
 

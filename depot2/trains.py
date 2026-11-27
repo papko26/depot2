@@ -9,6 +9,7 @@ trains.json          {"schema": 5, "next": n, "trains": [...]}
 trains-history.jsonl every change
 """
 
+import contextlib
 import datetime
 import re
 
@@ -585,10 +586,8 @@ class Trains:
     def _of_train(self, tn, ref):
         """A car's ref in a train's list: as given, or a moved car's old ref read as its new one."""
         if ref not in tn["cars"] and RE_CAR.match(ref or ""):
-            try:
+            with contextlib.suppress(ValueError):
                 ref = self.tracks.canon(ref)
-            except ValueError:
-                pass
         if ref not in tn["cars"]:
             raise TrainError("{} has no car {}".format(tn["name"], ref))
         return ref

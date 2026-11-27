@@ -12,6 +12,7 @@ the aliases in.principles.section.<code>) and written as them from then on.
 """
 
 
+import contextlib
 import os
 import re
 import stat
@@ -530,10 +531,8 @@ def today_headings(lines):
     out = []
     for line in lines:
         if line.startswith("## "):
-            try:
+            with contextlib.suppress(QueueError):
                 line = "## " + SECTION_TITLE[section_key(line[3:])]
-            except QueueError:
-                pass
         out.append(line)
     return out
 

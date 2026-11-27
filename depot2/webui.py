@@ -451,7 +451,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
         self.close_connection = True
 
     def send_page(self):
-        try:
+        try:  # noqa: SIM105
             self.server.cfg()  # the run's language as the config says it now
         except Exception:
             pass  # a config that does not load: the page still comes (in the language of the start), its API says why

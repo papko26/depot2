@@ -197,12 +197,12 @@ class TrainGateTest(GateBase):
         self.assertIn("Ждут ворот DoR (слот их сам не возьмёт): tr-0001:0 «парсер» — нет брифа "
                       "(`depot2 tracks car stack tr-0001:0 --start`, или с --force --why «…»).",
                       self.team("trains", "next")[1])
-        before = (open(self.t.state.path("stack.json")).read() if os.path.exists(self.t.state.path("stack.json"))
+        before = (open(self.t.state.path("stack.json")).read() if os.path.exists(self.t.state.path("stack.json"))  # noqa: SIM115
                   else None)
         rc, _, err = self.team("tracks", "car", "stack", "tr-0001:0", "--start")
         self.assertEqual(rc, 1)
         self.assertIn("ворота: tr-0001:0 → «сборка» не пройдены: DoR (вход в сборку) — нет брифа", err)
-        self.assertEqual(open(self.t.state.path("stack.json")).read() if os.path.exists(self.t.state.path("stack.json"))
+        self.assertEqual(open(self.t.state.path("stack.json")).read() if os.path.exists(self.t.state.path("stack.json"))  # noqa: SIM115
                          else None, before)
         rc, out, err = self.team("tracks", "car", "stack", "tr-0001:0", "--start", "--force", "--why", "бриф в голове")
         self.assertEqual(rc, 0, err)

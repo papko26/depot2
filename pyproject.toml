@@ -33,7 +33,7 @@ dev = [
 ]
 
 [tool.ruff.lint]
-select = ["B", "C4", "E4", "E7", "E9", "F", "FA", "FURB", "G", "I", "PIE", "RET", "RUF", "TC", "UP"]
+select = ["B", "C4", "E4", "E7", "E9", "F", "FA", "FURB", "G", "I", "PIE", "RET", "RUF", "SIM", "TC", "UP"]
 extend-select = [
     "D204", # incorrect-blank-line-after-class
     "D208", # over-indentation
@@ -48,7 +48,6 @@ extend-select = [
     "PTH210", # invalid-pathlib-with-suffix
     "Q",      # flake8-quotes
     "RSE102", # unnecessary-paren-on-raise-exception
-    "SIM102", # collapsible-if
 ]
 ignore = [
     "E402",   # module-import-not-at-top-of-file

@@ -17,6 +17,7 @@ what went, what stayed and why, the space freed (the disk its files took, symlin
 one line into merge-history.jsonl.
 """
 
+import contextlib
 import os
 
 from .i18n import t
@@ -29,10 +30,8 @@ def tree_bytes(path):
     total = 0
     for root, dirs, files in os.walk(path, followlinks=False):
         for name in dirs + files:
-            try:
+            with contextlib.suppress(OSError):
                 total += os.lstat(os.path.join(root, name)).st_blocks * 512
-            except OSError:
-                pass
     return total
 
 

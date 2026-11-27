@@ -567,7 +567,7 @@ def due(state, st, b, now):
     if st.get("source") and st["source"] != state.root:
         return False  # a copied state dir: its archives would carry this host's name
     sp = state.path(DIR, SPAWNED)
-    if os.path.exists(sp) and now - os.path.getmtime(sp) < float(b["retry_min"]) * 60:
+    if os.path.exists(sp) and now - os.path.getmtime(sp) < float(b["retry_min"]) * 60:  # noqa: SIM103
         return False  # one start per retry window; a run still going holds its lock anyway
     return True
 

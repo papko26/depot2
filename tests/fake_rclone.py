@@ -111,7 +111,7 @@ def main():
             if include and n != include:
                 continue
             r = os.path.join(folder, n)
-            if not os.path.exists(r) or open(r, "rb").read() != open(os.path.join(src, n), "rb").read():
+            if not os.path.exists(r) or open(r, "rb").read() != open(os.path.join(src, n), "rb").read():  # noqa: SIM115
                 bad += 1
         return 1 if bad else 0
     if cmd == "deletefile":

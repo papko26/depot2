@@ -11,6 +11,7 @@ This module is the only place that knows the runner's flags and log format; drop
 """
 
 import collections
+import contextlib
 import datetime
 import glob
 import json
@@ -88,10 +89,8 @@ def _kill(proc):
     try:
         proc.wait(timeout=3)
     except subprocess.TimeoutExpired:
-        try:
+        with contextlib.suppress(ProcessLookupError, PermissionError):
             os.killpg(proc.pid, signal.SIGKILL)
-        except (ProcessLookupError, PermissionError):
-            pass
         proc.wait(timeout=5)
 
 
@@ -139,7 +138,7 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
         raise FatalError("executor_bin is not set: the runner's command (config executor_bin)")
     argv = build_argv(spec, executor_bin)
     t0 = time.monotonic()
-    raw = open(spec.raw_path, "w", encoding="utf-8") if spec.raw_path else None
+    raw = open(spec.raw_path, "w", encoding="utf-8") if spec.raw_path else None  # noqa: SIM115
     try:
         try:
             proc = subprocess.Popen(argv, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
