@@ -459,7 +459,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def do_GET(self):
         if not self.server.authorize(self):
-            return
+            return None
         if self.server.code_changed():  # new code on disk: this request goes to it, after a re-exec
             return self.send_restart()
         u = urllib.parse.urlsplit(self.path)

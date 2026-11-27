@@ -1537,7 +1537,7 @@ class Rider(TrialsMixin, WorktreesMixin):
     # --- step 6: the plugins' after_merge lines ---
     def step_usage(self, e):
         if not self.m.get("usage"):
-            return None
+            return
         u = {}
         try:
             got = hooks.call_all(self.cfg, "after_merge", self.cfg, e)
@@ -1545,13 +1545,13 @@ class Rider(TrialsMixin, WorktreesMixin):
             got = []
             u["error"] = "%s: %s" % (type(ex).__name__, clip(ex, 160))
         if not got and not u.get("error"):
-            return None
+            return
         u["lines"] = [str(g.get("line")) for g in got if isinstance(g, dict) and g.get("line")]
         u["plugins"] = [g for g in got if isinstance(g, dict)]
         u["ts"] = stamp(self.clock())
         self.update(e["id"], "usage", usage=u, say="after the merge: %s%s" % (
             "; ".join(u["lines"]) or "nothing", " (%s)" % u["error"] if u.get("error") else ""))
-        return None
+        return
 
     # --- the dry run ---
     def plan(self):

@@ -56,4 +56,4 @@ def after_merge(cfg, entry):
 
 def round_context(cfg, kind):
     """Nothing extra for a team round in this example; a project could add its glossary here."""
-    return None
+    return
