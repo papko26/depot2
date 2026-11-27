@@ -12,6 +12,7 @@ only a language with grammatical gender, Russian, reads it), `spec_marker` (how 
 
 import copy
 import re
+from typing import Dict, List, Union
 
 from . import i18n
 from .i18n import t
@@ -19,9 +20,11 @@ from .i18n import t
 GENDERS = ("f", "m")
 RE_ID = re.compile(r"^[a-z][a-z0-9_]{1,31}$")
 
-CHARACTERS = []
-IDS = []
-BY_ID = {}
+Character = Dict[str, Union[str, List[str]]]
+
+CHARACTERS: List[Character] = []
+IDS: List[str] = []
+BY_ID: Dict[str, Character] = {}
 
 
 class NoTeam(ValueError):

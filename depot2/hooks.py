@@ -23,9 +23,11 @@ Plugins run in the depot's process with its rights: they are the project's code,
 import importlib
 import importlib.util
 import os
+from types import ModuleType
+from typing import Dict
 
 HOOKS = ("smoke_verdict", "after_merge", "snapshot_test", "round_context")
-_cache = {}
+_cache: Dict[str, ModuleType] = {}
 
 
 class HookError(RuntimeError):

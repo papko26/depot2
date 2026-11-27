@@ -10,6 +10,7 @@ Every entry can be taken into a car (`take`: a new car on a track, an existing c
 import os
 import re
 import subprocess
+from typing import Dict, Optional, Tuple, Union
 
 from . import i18n
 from . import priority as pri
@@ -37,17 +38,17 @@ class Text(object):
 
 
 class Queue(object):
-    NAME = None        # the file's name: <NAME>.json, <NAME>-history.jsonl
-    PREFIX = None      # the id's prefix
-    TITLE = None       # the table's heading (a Text)
-    STATUS_RU = {}     # status -> its word (an i18n.Labels)
-    OPEN = ()          # the statuses of an open entry
-    ALSO_FROM = {}     # a status that a closed entry may still take, -> from which closed ones (to_status)
-    FIELDS = ()        # the fields `set` may change (lists: LIST_FIELDS append)
-    LIST_FIELDS = ("links", "notes")
-    STAGES = False     # a wish and a to-think entry are cars with stages (stages.py); a todo is not
-    STATUS_STAGE = {}  # a status move -> the stage it means (to_status)
-    KIND_RU = None     # what an entry is, in a word (a Text): a car's note says where it came from
+    NAME: Optional[str] = None  # the file's name: <NAME>.json, <NAME>-history.jsonl
+    PREFIX: Optional[str] = None  # the id's prefix
+    TITLE: Optional[Text] = None  # the table's heading (a Text)
+    STATUS_RU: Union[Dict[str, str], i18n.Labels] = {}  # status -> its word (an i18n.Labels)
+    OPEN: Tuple[str, ...] = ()  # the statuses of an open entry
+    ALSO_FROM: Dict[str, Tuple[str, ...]] = {}  # target status -> closed statuses allowed to move there
+    FIELDS: Tuple[str, ...] = ()  # the fields `set` may change (lists: LIST_FIELDS append)
+    LIST_FIELDS: Tuple[str, ...] = ("links", "notes")
+    STAGES = False  # a wish and a to-think entry are cars with stages (stages.py); a todo is not
+    STATUS_STAGE: Dict[str, str] = {}  # a status move -> the stage it means (to_status)
+    KIND_RU: Union[Text, str, None] = None  # entry kind for the car's source note
 
     def __init__(self, state, cfg=None):
         self.state = state
@@ -250,7 +251,7 @@ class Queue(object):
 
     # --- the table -------------------------------------------------------------------------------
 
-    COLUMNS = ()
+    COLUMNS: Union[Text, Tuple[str, ...]] = ()
 
     def row(self, e):
         raise NotImplementedError

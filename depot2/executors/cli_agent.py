@@ -21,6 +21,7 @@ import signal
 import subprocess
 import threading
 import time
+from typing import Dict, Optional, Tuple, TypedDict
 
 from .. import effort
 from . import CallFailed, FatalError
@@ -286,7 +287,16 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
 
 # --- the transcript ------------------------------------------------------------------------------------------------
 
-_CACHE = {}
+class _TranscriptCacheEntry(TypedDict):
+    key: Tuple[int, int, Optional[Tuple[int, int]], int]
+    ino: int
+    tail: int
+    off: int
+    acc: Dict[str, object]
+    out: Dict[str, object]
+
+
+_CACHE: Dict[str, _TranscriptCacheEntry] = {}
 
 
 def _short(text, n=ARG_MAX):

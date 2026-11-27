@@ -12,6 +12,7 @@ The checks here are code, never a model's judgement. brainstorms.jsonl and order
 import os
 import re
 import shlex
+from typing import Dict, Optional, Tuple, Union
 
 from . import characters, i18n
 from .i18n import t
@@ -32,8 +33,8 @@ def standing_points(cfg):
 class EventLog(object):
     """Append-only records {id, status, ts, …}; an item is the merge of its records in order."""
 
-    prefix = None
-    filename = None
+    prefix: Optional[str] = None
+    filename: Optional[str] = None
 
     def __init__(self, state):
         self.state = state
@@ -67,8 +68,8 @@ class EventLog(object):
         return rec
 
 
-    OPEN = ()
-    STATUS_RU = {}
+    OPEN: Tuple[str, ...] = ()
+    STATUS_RU: Union[Dict[str, str], i18n.Labels] = {}
 
     def listing(self, all_=False):
         return [it for it in self.items() if all_ or it["status"] in self.OPEN]
