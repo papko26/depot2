@@ -34,6 +34,7 @@ def parse_ts(text):
         return None
     return d if d.tzinfo else d.astimezone()
 
+
 SCHEMA = 1
 ROLES = ("sketch", "plan", "build", "docs", "mergefix")
 ROLE_RU = i18n.Labels("agents.role", ROLES)
@@ -46,6 +47,8 @@ STATE_RU = i18n.Labels("agents.state", STATES)
 def state_means():
     """What each state word means, in one line (the agents table's legend)."""
     return t("agents.state_means")
+
+
 RE_AGENT = re.compile(r"^ag-\d{4}$")
 RE_AGENT_ID = re.compile(r"^(?:agent-)?([A-Za-z0-9_-]{4,64})$")
 
@@ -55,6 +58,7 @@ class AgentError(ValueError):
 
 
 # --- the run's log: the executor's (executors/) ------------------------------------------------------------------
+
 
 def read_transcript(path, tail=10, cfg=None):
     """The run's log read by the executor: {turns, mtok, first_at, last_at, actions, actions_n, finished, ...} or None."""
@@ -69,7 +73,7 @@ def find_transcript(cfg, agent_id):
 def _tilde(path):
     home = os.path.expanduser("~")
     path = os.path.abspath(os.path.expanduser(path))
-    return "~" + path[len(home):] if home not in ("", "~", "/") and path.startswith(home + "/") else path
+    return "~" + path[len(home) :] if home not in ("", "~", "/") and path.startswith(home + "/") else path
 
 
 def parse_usage(text):
@@ -93,6 +97,7 @@ def _pct(u):
 
 # --- the agents ----------------------------------------------------------------------------------------------------
 
+
 class Agents:
     def __init__(self, state, cfg, tracks=None) -> None:
         self.state = state
@@ -107,6 +112,7 @@ class Agents:
     def tracks(self):
         if self._tracks is None:
             from .tracks import Tracks
+
             self._tracks = Tracks(self.state, self.cfg)
         return self._tracks
 
@@ -131,14 +137,19 @@ class Agents:
     # --- reading ---------------------------------------------------------------------------------------------------
 
     def reading(self, ag):
-        return read_transcript(ag["transcript"], int(self.cfg["agents"]["tail"]), self.cfg) if ag.get("transcript") else None
+        return (
+            read_transcript(ag["transcript"], int(self.cfg["agents"]["tail"]), self.cfg)
+            if ag.get("transcript")
+            else None
+        )
 
     def status(self, ag, rd=None, now=None):
         """(state, words): working | silent | finished | stopped | unattached | lost."""
         if ag.get("state") == "stopped":
             s = ag.get("stopped") or {}
-            return "stopped", t("agents.st_stopped", at=str(s.get("ts") or "")[:16].replace("T", " "),
-                                why=s.get("why") or "")
+            return "stopped", t(
+                "agents.st_stopped", at=str(s.get("ts") or "")[:16].replace("T", " "), why=s.get("why") or ""
+            )
         if ag.get("state") == "finished":
             return "finished", t("agents.st_finished_at", at=str(ag.get("finished") or "")[:16].replace("T", " "))
         if not ag.get("transcript"):
@@ -152,6 +163,7 @@ class Agents:
         mins = int((now - last).total_seconds() // 60) if last else None
         if mins is not None and mins >= float(self.cfg["agents"]["silent_min"]):
             from .stack import age_ru
+
             return "silent", t("agents.st_silent", age=age_ru(last.isoformat(), now))
         return "working", STATE_RU["working"]
 
@@ -170,12 +182,23 @@ class Agents:
         turns = booked.get("turns") if booked else (rd or {}).get("turns")
         acts = (rd or {}).get("actions") or []
         out = dict(ag)
-        out.update(state=state, state_ru=STATE_RU[state], state_text=words, live=self.is_live(ag, rd),
-                   role_ru=ROLE_RU.get(ag["role"], ag["role"]), turns=turns, spent_mtok=mtok,
-                   spent_text=effort.fmt(mtok, self.cfg) if mtok is not None else "—",
-                   last_action=acts[-1] if acts else None, last_at=(rd or {}).get("last_at"),
-                   actions=acts, actions_n=(rd or {}).get("actions_n"), model=(rd or {}).get("model"),
-                   effort=(rd or {}).get("effort"), slot=self.slot_of(ag))
+        out.update(
+            state=state,
+            state_ru=STATE_RU[state],
+            state_text=words,
+            live=self.is_live(ag, rd),
+            role_ru=ROLE_RU.get(ag["role"], ag["role"]),
+            turns=turns,
+            spent_mtok=mtok,
+            spent_text=effort.fmt(mtok, self.cfg) if mtok is not None else "—",
+            last_action=acts[-1] if acts else None,
+            last_at=(rd or {}).get("last_at"),
+            actions=acts,
+            actions_n=(rd or {}).get("actions_n"),
+            model=(rd or {}).get("model"),
+            effort=(rd or {}).get("effort"),
+            slot=self.slot_of(ag),
+        )
         return out
 
     def slot_of(self, ag):
@@ -220,14 +243,28 @@ class Agents:
         mtok = float(rd["mtok"])
         c["spent_mtok"] = round(float(c.get("spent_mtok") or 0) + mtok, 4)
         c["transcript"] = ag["transcript"]
-        tr._save("agent_spent", trk["id"], car=c["n"], agent=ag["id"], spent_mtok=mtok, total_mtok=c["spent_mtok"],
-                 transcript=ag["transcript"], by=by)
+        tr._save(
+            "agent_spent",
+            trk["id"],
+            car=c["n"],
+            agent=ag["id"],
+            spent_mtok=mtok,
+            total_mtok=c["spent_mtok"],
+            transcript=ag["transcript"],
+            by=by,
+        )
         if c.get("st") and tr.stack._dep_open(c["st"]):  # its stack object shows the same spend
             tr.stack.set(c["st"], spent_mtok=c["spent_mtok"])
         ag["booked"] = {"ts": now_iso(), "mtok": mtok, "turns": rd["turns"]}
-        self.lines.append(t("agents.booked_finished" if ag.get("state") == "finished" else "agents.booked_stopped",
-                            id=ag["id"], car=ag["car"], mtok=effort.fmt(mtok, self.cfg),
-                            total=effort.fmt(c["spent_mtok"], self.cfg)))
+        self.lines.append(
+            t(
+                "agents.booked_finished" if ag.get("state") == "finished" else "agents.booked_stopped",
+                id=ag["id"],
+                car=ag["car"],
+                mtok=effort.fmt(mtok, self.cfg),
+                total=effort.fmt(c["spent_mtok"], self.cfg),
+            )
+        )
 
     # --- writing ---------------------------------------------------------------------------------------------------
 
@@ -263,14 +300,34 @@ class Agents:
                     unmet.update(tr.build_unmet(trk, c, obj, tr.parked(c)))
         elif role == "docs":  # the stage holds the build's slot (stages.py): the agent works there, takes none
             if stage != "docs":
-                unmet["role"].append(t("agents.role_docs_stage", role=ROLE_RU[role], stage=stages.ru(stage),
-                                       docs=stages.ru("docs"), ref=ref))
+                unmet["role"].append(
+                    t(
+                        "agents.role_docs_stage",
+                        role=ROLE_RU[role],
+                        stage=stages.ru(stage),
+                        docs=stages.ru("docs"),
+                        ref=ref,
+                    )
+                )
             elif not in_slot:  # only a forced `car stage` leaves it there out of a slot
-                unmet["role"].append(t("agents.role_docs_slot", role=ROLE_RU[role], docs=stages.ru("docs"),
-                                       st=c.get("st") or ref, ref=ref))
+                unmet["role"].append(
+                    t(
+                        "agents.role_docs_slot",
+                        role=ROLE_RU[role],
+                        docs=stages.ru("docs"),
+                        st=c.get("st") or ref,
+                        ref=ref,
+                    )
+                )
         elif stage not in ROLE_STAGES[role]:
-            unmet["role"].append(t("agents.role_stages", role=ROLE_RU[role], stage=stages.ru(stage),
-                                   stages=", ".join(f"«{stages.ru(s)}»" for s in ROLE_STAGES[role])))
+            unmet["role"].append(
+                t(
+                    "agents.role_stages",
+                    role=ROLE_RU[role],
+                    stage=stages.ru(stage),
+                    stages=", ".join(f"«{stages.ru(s)}»" for s in ROLE_STAGES[role]),
+                )
+            )
         stop = float(self.cfg["usage"]["stop_at"])
         if usage is None:
             unmet["window"].append(t("agents.no_usage", stop=_pct(stop)))
@@ -278,8 +335,9 @@ class Agents:
             unmet["window"].append(t("agents.over_stop", usage=_pct(usage), stop=_pct(stop)))
         for other in self.on_car(ref):
             _, words = self.status(other, self.reading(other))
-            unmet["agent"].append(t("agents.busy", id=other["id"], role=ROLE_RU.get(other["role"], other["role"]),
-                                    words=words))
+            unmet["agent"].append(
+                t("agents.busy", id=other["id"], role=ROLE_RU.get(other["role"], other["role"]), words=words)
+            )
         return unmet, to_slot
 
     def start(self, ref, role, by=None, usage=None, force=False, why=None):
@@ -296,21 +354,40 @@ class Agents:
         if to_slot:  # its own gate again, with what --force passed (the stage's history row says forced)
             _, msgs = self.tracks.car_stack(ref, start=True, force=force and bool(passed), why=why)
             self.lines += self.tracks.stack.notes + msgs
-        ag = {"id": "ag-%04d" % int(self.data["next"]), "car": ref, "role": role,  # noqa: UP031
-              "by": (by or t("agents.by_orchestrator")).strip(), "started": now_iso(), "state": "live", "usage": usage, "stop_at": float(self.cfg["usage"]["stop_at"]),
-              "st": c.get("st")}
+        ag = {
+            "id": "ag-%04d" % int(self.data["next"]),  # noqa: UP031
+            "car": ref,
+            "role": role,
+            "by": (by or t("agents.by_orchestrator")).strip(),
+            "started": now_iso(),
+            "state": "live",
+            "usage": usage,
+            "stop_at": float(self.cfg["usage"]["stop_at"]),
+            "st": c.get("st"),
+        }
         if passed:
             ag.update(forced=True, why=why.strip(), gates=passed)
         self.data["next"] = int(self.data["next"]) + 1
         self.data["agents"].append(ag)
-        self._save("start", ag, role=role, by=ag["by"], usage=usage, st=ag["st"], forced=ag.get("forced"),
-                   why=ag.get("why"), gates=ag.get("gates"))
+        self._save(
+            "start",
+            ag,
+            role=role,
+            by=ag["by"],
+            usage=usage,
+            st=ag["st"],
+            forced=ag.get("forced"),
+            why=ag.get("why"),
+            gates=ag.get("gates"),
+        )
         return ag
 
     def attach(self, aid, agent_id, transcript=None):
         ag = self.get(aid)
         if ag.get("state") != "live":
-            raise AgentError("{} is {}: only a live agent is attached".format(aid, STATE_RU.get(ag.get("state"), ag.get("state"))))
+            raise AgentError(
+                "{} is {}: only a live agent is attached".format(aid, STATE_RU.get(ag.get("state"), ag.get("state")))
+            )
         m = RE_AGENT_ID.match(str(agent_id or "").strip())
         if not m:
             raise AgentError(f"a run id is letters and digits (the executor's run id), got {agent_id!r}")
@@ -362,11 +439,20 @@ class Agents:
             L.append(t("agents.table"))
             L.append("|---|---|---|---|---|---|---|---|---|---|")
             for v in rows:
-                L.append("| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |".format(
-                    v["id"], v["car"], v["role_ru"], _cell(v["by"]), _when(v["started"], now),
-                    _cell(v["state_text"] + (" · " + t("agents.forced_mark") if v.get("forced") else "")),
-                    v["turns"] if v["turns"] is not None else "—", v["spent_text"], _cell(action_text(v["last_action"])),
-                    _cell(slot_text(v["slot"]))))
+                L.append(
+                    "| {} | {} | {} | {} | {} | {} | {} | {} | {} | {} |".format(
+                        v["id"],
+                        v["car"],
+                        v["role_ru"],
+                        _cell(v["by"]),
+                        _when(v["started"], now),
+                        _cell(v["state_text"] + (" · " + t("agents.forced_mark") if v.get("forced") else "")),
+                        v["turns"] if v["turns"] is not None else "—",
+                        v["spent_text"],
+                        _cell(action_text(v["last_action"])),
+                        _cell(slot_text(v["slot"])),
+                    )
+                )
         L.append("")
         L.append(t("agents.legend", means=state_means()))
         return "\n".join(L) + "\n"
@@ -374,17 +460,36 @@ class Agents:
     def show_md(self, aid, now=None):
         v = self.view(self.get(aid), now)
         L = ["## {} — {}, {}".format(v["id"], v["role_ru"], v["car"]), ""]
-        L.append(t("agents.show_who_usage", by=v["by"], at=_when(v["started"], now), usage=_pct(v["usage"]),
-                   stop=_pct(v["stop_at"])) if v.get("usage") is not None else
-                 t("agents.show_who", by=v["by"], at=_when(v["started"], now)))
+        L.append(
+            t(
+                "agents.show_who_usage",
+                by=v["by"],
+                at=_when(v["started"], now),
+                usage=_pct(v["usage"]),
+                stop=_pct(v["stop_at"]),
+            )
+            if v.get("usage") is not None
+            else t("agents.show_who", by=v["by"], at=_when(v["started"], now))
+        )
         if v.get("forced"):
             L.append(t("agents.show_forced", why=v.get("why"), gates=gates.gates_text(v.get("gates"))))
         L.append(t("agents.show_state", text=v["state_text"]))
         if v.get("agent_id"):
-            L.append(t("agents.show_agent", agent=v["agent_id"], path=v["transcript"]) + ((", {} {}".format(
-                v.get("model") or "", v.get("effort") or "")).rstrip(", ") if v.get("model") else ""))
-        L.append(t("agents.show_turns_booked" if v.get("booked") else "agents.show_turns",
-                   turns=v["turns"] if v["turns"] is not None else "—", spent=v["spent_text"]))
+            L.append(
+                t("agents.show_agent", agent=v["agent_id"], path=v["transcript"])
+                + (
+                    (", {} {}".format(v.get("model") or "", v.get("effort") or "")).rstrip(", ")
+                    if v.get("model")
+                    else ""
+                )
+            )
+        L.append(
+            t(
+                "agents.show_turns_booked" if v.get("booked") else "agents.show_turns",
+                turns=v["turns"] if v["turns"] is not None else "—",
+                spent=v["spent_text"],
+            )
+        )
         if v["slot"]:
             L.append(t("agents.show_stack", slot=slot_text(v["slot"])))
         if v["actions"]:
@@ -395,9 +500,15 @@ class Agents:
         return "\n".join(L) + "\n"
 
     def to_json(self, include_all=False, now=None):
-        return {"v": 1, "generated": now_iso(), "all": bool(include_all), "silent_min": self.cfg["agents"]["silent_min"],
-                "stop_at": self.cfg["usage"]["stop_at"], "roles": [{"role": r, "ru": ROLE_RU[r]} for r in ROLES],
-                "agents": self.views(include_all, now)}
+        return {
+            "v": 1,
+            "generated": now_iso(),
+            "all": bool(include_all),
+            "silent_min": self.cfg["agents"]["silent_min"],
+            "stop_at": self.cfg["usage"]["stop_at"],
+            "roles": [{"role": r, "ru": ROLE_RU[r]} for r in ROLES],
+            "agents": self.views(include_all, now),
+        }
 
 
 def live_by_object(state, cfg, places):
@@ -421,10 +532,18 @@ def live_by_object(state, cfg, places):
             continue
         state_, words = ags.status(a, rd)
         acts = (rd or {}).get("actions") or []
-        out[st] = {"id": a["id"], "role": a["role"], "role_ru": ROLE_RU.get(a["role"], a["role"]), "state": state_,
-                   "state_ru": STATE_RU[state_], "state_text": words, "turns": (rd or {}).get("turns"),
-                   "spent_mtok": (rd or {}).get("mtok"), "last_action": acts[-1] if acts else None,
-                   "last_at": (rd or {}).get("last_at")}
+        out[st] = {
+            "id": a["id"],
+            "role": a["role"],
+            "role_ru": ROLE_RU.get(a["role"], a["role"]),
+            "state": state_,
+            "state_ru": STATE_RU[state_],
+            "state_text": words,
+            "turns": (rd or {}).get("turns"),
+            "spent_mtok": (rd or {}).get("mtok"),
+            "last_action": acts[-1] if acts else None,
+            "last_at": (rd or {}).get("last_at"),
+        }
     return out
 
 
@@ -439,8 +558,14 @@ def agent_cell(a):
         return ""
     last = a.get("last_action")
     if last:
-        return t("agents.cell_last", id=a["id"], role=a["role_ru"], state=a["state_text"], action=action_text(last),
-                 at=_hm(last.get("at")))
+        return t(
+            "agents.cell_last",
+            id=a["id"],
+            role=a["role_ru"],
+            state=a["state_text"],
+            action=action_text(last),
+            at=_hm(last.get("at")),
+        )
     return t("agents.cell", id=a["id"], role=a["role_ru"], state=a["state_text"])
 
 
@@ -458,6 +583,7 @@ def _hm(iso):
 
 def _when(iso, now=None):
     from .stack import age_ru
+
     d = parse_ts(iso)
     if d is None:
         return "—"

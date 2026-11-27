@@ -107,11 +107,22 @@ class ReturnTest(ClaimBase):
         left.update(pr=8)
         write_json(self.t.state.path("stack.json"), s.data)
         h = self.t.state.path("stack-history.jsonl")
-        for oid, ts in (("st-0001", "2015-11-10T10:00:00+02:00"), ("st-0001", "2015-11-11T10:00:00+02:00"),
-                        ("st-0002", "2015-11-11T12:00:00+02:00")):
+        for oid, ts in (
+            ("st-0001", "2015-11-10T10:00:00+02:00"),
+            ("st-0001", "2015-11-11T10:00:00+02:00"),
+            ("st-0002", "2015-11-11T12:00:00+02:00"),
+        ):
             append_jsonl(h, {"ts": ts, "event": "start", "object": oid, "unposted": True, "reason": "владелец: правка"})
-        append_jsonl(h, {"ts": "2015-11-11T13:00:00+02:00", "event": "done", "object": "st-0002", "reason": "merged #8",
-                         "obj": left})
+        append_jsonl(
+            h,
+            {
+                "ts": "2015-11-11T13:00:00+02:00",
+                "event": "done",
+                "object": "st-0002",
+                "reason": "merged #8",
+                "obj": left,
+            },
+        )
         self.assertEqual(json.loads(self.ok("car", "show", "st-0001", "--json"))["returns"], 2)  # the history says so
         out = self.ok("queues", "migrate")
         self.assertIn("брак: returns записан у 2 вагонов (возвратов в сборку 3): st-0001 2, st-0002 1", out)
@@ -128,20 +139,33 @@ class RepairTest(ClaimBase):
         culprit = self.arrived()
         self.ok("stack", "add", "--title", "Очередь 1")
         self.ok("stack", "add", "--title", "Очередь 2")
-        rc, out, err = self.team("--set", "stack.queue_max=2", "repair", "add", "--of", "#142", "--brief", self.brief,
-                                 "--why", "импорт теряет обложки", "--by", "владелец")
+        rc, out, err = self.team(
+            "--set",
+            "stack.queue_max=2",
+            "repair",
+            "add",
+            "--of",
+            "#142",
+            "--brief",
+            self.brief,
+            "--why",
+            "импорт теряет обложки",
+            "--by",
+            "владелец",
+        )
         self.assertEqual(rc, 0, err)  # a full queue does not refuse a repair
         self.assertIn("st-0004 — ремонт st-0001: голова очереди стека (3/2), автозапуск да, этап эскиз", out)
         self.assertIn("st-0001: рекламация №1 (ремонт st-0004); рекламаций теперь 1", out)
         s = self.stk()
         r = s.queue()[0]
-        self.assertEqual((r["id"], r["kind"], r["repairs"], r["bug"], r["autostart"], r["stage"], r["title"]),
-                         ("st-0004", "repair", culprit, None, True, "sketch", "ремонт: st-0001 Импорт каталога"))
+        self.assertEqual(
+            (r["id"], r["kind"], r["repairs"], r["bug"], r["autostart"], r["stage"], r["title"]),
+            ("st-0004", "repair", culprit, None, True, "sketch", "ремонт: st-0001 Импорт каталога"),
+        )
         left = s.left_obj(culprit)
         self.assertEqual(left["claims"], 1)
         x = left["claim_links"][0]
-        self.assertEqual((x["n"], x["repair"], x["by"], x["why"]), (1, "st-0004", "владелец",
-                                                                    "импорт теряет обложки"))
+        self.assertEqual((x["n"], x["repair"], x["by"], x["why"]), (1, "st-0004", "владелец", "импорт теряет обложки"))
         self.assertEqual(s.left_stage(culprit), "arrived")
         out = self.ok("car", "show", culprit)
         self.assertIn("Рекламаций: 1:\n- №1 ", out)
@@ -165,9 +189,12 @@ class RepairTest(ClaimBase):
         self.assertTrue(r["stages"][0]["forced"])
         self.assertIn("рекламация", r["stages"][0]["gates"])
         self.assertIn("рекламация", self.stk().get("st-0001")["claim_links"][0]["forced"])
-        for argv, text in ((("--of", "nope_q9"), "нет бага nope_q9 в "), (("--of", "wl-0001"), "не выехавший вагон"),
-                           (("--of", "st-0001", "--bug", "x", "--of", "y_q"), "баг — один"),
-                           (("--of", "#999"), "#999: ни вагона, ни объекта стека с этим PR")):
+        for argv, text in (
+            (("--of", "nope_q9"), "нет бага nope_q9 в "),
+            (("--of", "wl-0001"), "не выехавший вагон"),
+            (("--of", "st-0001", "--bug", "x", "--of", "y_q"), "баг — один"),
+            (("--of", "#999"), "#999: ни вагона, ни объекта стека с этим PR"),
+        ):
             rc, _, err = self.team("repair", "add", *argv)
             self.assertEqual(rc, 1, argv)
             self.assertIn(text, err)
@@ -179,10 +206,14 @@ class RepairTest(ClaimBase):
         self.assertIn("виновник найдётся — depot2 repair link st-0002 --of", out)
         self.assertIn("BUGS.md: в строке t1_q1, в «куда», — st-0002", out)
         r = self.stk().get("st-0002")
-        self.assertEqual((r["repairs"], r["bug"], r["title"]),
-                         (None, "t1_q1", "ремонт: t1_q1 — Книга выдаётся с первого клика, раньше было два"))
-        self.assertIn("Ремонт: виновник не найден (depot2 repair link st-0002 --of …), баг t1_q1 (BUGS.md).",
-                      self.ok("car", "show", "st-0002"))
+        self.assertEqual(
+            (r["repairs"], r["bug"], r["title"]),
+            (None, "t1_q1", "ремонт: t1_q1 — Книга выдаётся с первого клика, раньше было два"),
+        )
+        self.assertIn(
+            "Ремонт: виновник не найден (depot2 repair link st-0002 --of …), баг t1_q1 (BUGS.md).",
+            self.ok("car", "show", "st-0002"),
+        )
         out = self.ok("repair", "link", "st-0002", "--of", culprit)
         self.assertIn("st-0001: рекламация №1 (ремонт st-0002): ремонт: t1_q1", out)
         self.assertEqual(self.stk().get("st-0002")["repairs"], "st-0001")
@@ -208,8 +239,9 @@ class RepairTest(ClaimBase):
         self.assertIn("tr-0001:0 — не вагон-ремонт: что за дефект он починил — --why «…»", err)
         for why in ("дубли авторов после импорта", "пустая графа года"):
             out = self.ok("repair", "link", "tr-0001:0", "--of", "#142", "--why", why)
-        self.assertIn("st-0001: рекламация №2 (ремонт tr-0001:0, внутри вагона): пустая графа года; "
-                      "рекламаций теперь 2", out)
+        self.assertIn(
+            "st-0001: рекламация №2 (ремонт tr-0001:0, внутри вагона): пустая графа года; рекламаций теперь 2", out
+        )
         _rc, _, err = self.team("repair", "link", "tr-0001:0", "--of", "#142", "--why", "пустая графа года")
         self.assertIn("уже есть рекламация с ремонтом tr-0001:0 и этой причиной", err)
         self.assertIn("Чинит рекламации: st-0001 №1; st-0001 №2.", self.ok("car", "show", "tr-0001:0"))
@@ -243,7 +275,9 @@ class OutOfTurnTest(ClaimBase):
         self.assertEqual([o["id"] for o in nx["stack"]], ["st-0005"])
         self.assertEqual((nx["upcoming"][0]["train"]["name"], nx["upcoming"][0]["track"]["id"]), ("poezd", "tr-0001"))
         out = self.ok("trains", "next")
-        self.assertIn("Вне очереди — ремонт: st-0005 «ремонт: st-0001 Импорт каталога» — `depot2 stack start st-0005`.", out)
+        self.assertIn(
+            "Вне очереди — ремонт: st-0005 «ремонт: st-0001 Импорт каталога» — `depot2 stack start st-0005`.", out
+        )
         self.assertNotIn("Потом из очереди стека", out)
         self.assertEqual(json.loads(self.ok("trains", "--json"))["next"]["repairs"], ["st-0005"])
         self.ok("stack", "set", "st-0005", "--autostart", "no")  # the owner's word, as any object
@@ -272,8 +306,10 @@ class ReportTest(ClaimBase):
         data = json.loads(self.ok("claims", "--json"))
         self.assertEqual(sorted(data), ["cars", "generated", "repairs", "since", "total", "tracks", "until", "v"])
         self.assertEqual(data["v"], 1)
-        self.assertEqual([(c["ref"], len(c["returns"]), len(c["claims"])) for c in data["cars"]],
-                         [("st-0001", 0, 1), ("tr-0001:0", 1, 0)])
+        self.assertEqual(
+            [(c["ref"], len(c["returns"]), len(c["claims"])) for c in data["cars"]],
+            [("st-0001", 0, 1), ("tr-0001:0", 1, 0)],
+        )
         self.assertEqual(data["cars"][1]["returns"][0]["why"], "доработать: подписи")
         self.assertEqual(json.loads(self.ok("claims", "--json", "--until", "2000-01-01"))["total"]["cars"], 0)
         rc, _, err = self.team("claims", "--since", "12.11")

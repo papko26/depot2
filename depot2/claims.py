@@ -31,8 +31,7 @@ def _text(s):
 
 def clip(text, n):
     t = _text(text)
-    return t if len(t) <= n else t[:n - 1] + "…"
-
+    return t if len(t) <= n else t[: n - 1] + "…"
 
 
 def bugs_path(cfg):
@@ -55,8 +54,10 @@ def read_bugs(cfg):
 
 # --- a car by its ref, and where its fields live -----------------------------------------------------------------
 
+
 def is_car_ref(text):
     from .tracks import RE_CAR, RE_PR
+
     t = str(text or "").strip()
     return bool(re.match(r"^st-\d{4}$", t) or RE_CAR.match(t) or RE_PR.match(t))
 
@@ -74,6 +75,7 @@ def ref_of_pr(stk, tr, n):
     if found:
         return found[-1]
     from .merge import MergeQueue
+
     for e in reversed(MergeQueue(stk.state).entries()):
         if str(e["pr"]) == str(n) and (e.get("car") or e.get("st")):
             return e.get("car") or e["st"]
@@ -83,6 +85,7 @@ def ref_of_pr(stk, tr, n):
 def resolve(state, cfg, text, stk, tr, what="car"):
     """A stages.Car for st-NNNN, tr-NNNN:N or #PR (the stack and the tracks shared: one write of each file)."""
     from .tracks import RE_PR
+
     ref = str(text or "").strip()
     m = RE_PR.match(ref)
     if m:
@@ -129,8 +132,14 @@ def active(rec):
 def add_claim(car, repair, bug, why, by, forced=None):
     kind, rec = where(car)
     links = list(rec.get("claim_links") or [])
-    link = {"n": max([x["n"] for x in links] or [0]) + 1, "repair": repair, "bug": bug, "at": now_iso(), "by": by,
-            "why": _text(why) or None}
+    link = {
+        "n": max([x["n"] for x in links] or [0]) + 1,
+        "repair": repair,
+        "bug": bug,
+        "at": now_iso(),
+        "by": by,
+        "why": _text(why) or None,
+    }
     if forced:
         link["forced"] = forced
     rec["claim_links"] = [*links, link]
@@ -148,6 +157,7 @@ def _on_prod(car, ref):
 
 # --- repair add, repair link -------------------------------------------------------------------------------------
 
+
 def add(state, cfg, of, bug=None, title=None, brief=None, why=None, size=None, by="repair add", force=False):
     """A claim: a new repair car, out of turn. of: the culprit (st-, tr-…:N, #PR) or, when it is not known, the
     bug's id in BUGS.md. Soft checks (the culprit on production, the bug in BUGS.md): --force with --why passes
@@ -155,6 +165,7 @@ def add(state, cfg, of, bug=None, title=None, brief=None, why=None, size=None, b
     """
     from .stack import Stack
     from .tracks import Tracks
+
     stk = Stack(state, cfg)
     tr = Tracks(state, cfg)
     tr._stack = stk
@@ -174,17 +185,41 @@ def add(state, cfg, of, bug=None, title=None, brief=None, why=None, size=None, b
     unmet = _on_prod(culprit, ref) if culprit else []
     bugs = read_bugs(cfg)
     if bug and bug not in bugs:
-        unmet.append(t("claims.no_bug", bug=bug, path=bugs_path(cfg)) if os.path.isfile(bugs_path(cfg)) else
-                     t("claims.no_bugs_file", path=bugs_path(cfg)))
+        unmet.append(
+            t("claims.no_bug", bug=bug, path=bugs_path(cfg))
+            if os.path.isfile(bugs_path(cfg))
+            else t("claims.no_bugs_file", path=bugs_path(cfg))
+        )
     # the gate's name is a shown word (it is kept in the forced history row as it is shown, in the run's language)
-    forced = gates.check({t("claims.gate"): unmet}, force, why, ref or bug, t("claims.target"),
-                         f"depot2 repair add --of {of}", error=ClaimError)
+    forced = gates.check(
+        {t("claims.gate"): unmet},
+        force,
+        why,
+        ref or bug,
+        t("claims.target"),
+        f"depot2 repair add --of {of}",
+        error=ClaimError,
+    )
     if not _text(title):
         what = bugs.get(bug, {}).get("what") if bug else None
-        title = ((t("claims.title_bug_what", bug=bug, what=clip(what, 80)) if what else t("claims.title_bug", bug=bug))
-                 if not culprit else t("claims.title_car", ref=ref, title=clip(culprit.title(), 80)))
-    obj = stk.add(title, brief=brief, at=1, autostart=True, stage="sketch", check_queue=False, size=size, by=by,
-                  why=why, extra={"kind": "repair", "repairs": ref, "bug": bug}, forced=forced)
+        title = (
+            (t("claims.title_bug_what", bug=bug, what=clip(what, 80)) if what else t("claims.title_bug", bug=bug))
+            if not culprit
+            else t("claims.title_car", ref=ref, title=clip(culprit.title(), 80))
+        )
+    obj = stk.add(
+        title,
+        brief=brief,
+        at=1,
+        autostart=True,
+        stage="sketch",
+        check_queue=False,
+        size=size,
+        by=by,
+        why=why,
+        extra={"kind": "repair", "repairs": ref, "bug": bug},
+        forced=forced,
+    )
     claim = add_claim(culprit, obj["id"], bug, why or title, by, forced) if culprit else None
     key = "claims.added" + ("_ref" if ref else "_noref") + ("" if brief else "_no_brief")
     L = [t(key, id=obj["id"], ref=ref, n=len(stk.queue()), max=stk.queue_max)]
@@ -206,6 +241,7 @@ def link(state, cfg, repair, of, why=None, by="repair link", force=False):
     """
     from .stack import Stack
     from .tracks import Tracks
+
     stk = Stack(state, cfg)
     tr = Tracks(state, cfg)
     tr._stack = stk
@@ -228,8 +264,15 @@ def link(state, cfg, repair, of, why=None, by="repair link", force=False):
     unmet = _on_prod(xcar, xref)
     if old:
         unmet.append(t("claims.move_unmet", repair=rref, old=old, of=xref))
-    forced = gates.check({t("claims.gate"): unmet}, force, why, xref, t("claims.target"),
-                         f"depot2 repair link {repair} --of {of}", error=ClaimError)
+    forced = gates.check(
+        {t("claims.gate"): unmet},
+        force,
+        why,
+        xref,
+        t("claims.target"),
+        f"depot2 repair link {repair} --of {of}",
+        error=ClaimError,
+    )
     L = []
     if old:
         ocar = resolve(state, cfg, old, stk, tr, what="old_culprit")
@@ -244,12 +287,21 @@ def link(state, cfg, repair, of, why=None, by="repair link", force=False):
         rrec["repairs"] = xref
         save(rcar, rkind, rrec, "repair_link", repairs=xref, by=by)
     claim = add_claim(xcar, rref, rrec.get("bug") if is_repair else None, what, by, forced)
-    L.append(t("claims.linked" if is_repair else "claims.linked_inside", of=xref, n=claim["n"], repair=rref,
-               why=claim["why"], claims=where(xcar)[1]["claims"]))
+    L.append(
+        t(
+            "claims.linked" if is_repair else "claims.linked_inside",
+            of=xref,
+            n=claim["n"],
+            repair=rref,
+            why=claim["why"],
+            claims=where(xcar)[1]["claims"],
+        )
+    )
     return claim, L
 
 
 # --- every car once, its returns and claims ----------------------------------------------------------------------
+
 
 def universe(stk, tr):
     """Every car that can hold returns and claims, once: [{ref, kind, rec, track, objects}] — the tracks' cars (with
@@ -297,18 +349,31 @@ def pre_stage_returns(stk):
 
 def return_events(rec, pre=()):
     """A car's returns to the build, oldest first: its history's return rows and the stack's rows before the stages."""
-    ev = [{"at": r.get("at"), "from": r.get("from"), "by": r.get("by"), "why": r.get("why")}
-          for r in rec.get("stages") or [] if r.get("return") or stages.is_return(r.get("from"), r.get("stage"))]
-    ev += [{"at": h.get("ts"), "from": "acceptance", "by": t("claims.by_pre_stage"), "why": h.get("reason"),
-            "object": h.get("object")} for h in pre]
+    ev = [
+        {"at": r.get("at"), "from": r.get("from"), "by": r.get("by"), "why": r.get("why")}
+        for r in rec.get("stages") or []
+        if r.get("return") or stages.is_return(r.get("from"), r.get("stage"))
+    ]
+    ev += [
+        {
+            "at": h.get("ts"),
+            "from": "acceptance",
+            "by": t("claims.by_pre_stage"),
+            "why": h.get("reason"),
+            "object": h.get("object"),
+        }
+        for h in pre
+    ]
     return sorted(ev, key=lambda e: e["at"] or "")
 
 
 def events(stk, tr):
     """[(unit, returns, claims)] for every car, all time."""
     pre = pre_stage_returns(stk)
-    return [(u, return_events(u["rec"], [h for st in u["objects"] for h in pre.get(st, [])]), active(u["rec"]))
-            for u in universe(stk, tr)]
+    return [
+        (u, return_events(u["rec"], [h for st in u["objects"] for h in pre.get(st, [])]), active(u["rec"]))
+        for u in universe(stk, tr)
+    ]
 
 
 def migrate(state, cfg, stk, tr, dry_run=False):
@@ -319,9 +384,9 @@ def migrate(state, cfg, stk, tr, dry_run=False):
     for u, ret, _ in events(stk, tr):
         if len(ret) != int(u["rec"].get("returns") or 0):
             fix[u["kind"]][u["ref"]] = (u, len(ret))
-    for (u, n) in fix["car"].values():
+    for u, n in fix["car"].values():
         u["rec"]["returns"] = n
-    for (u, n) in fix["stack"].values():
+    for u, n in fix["stack"].values():
         u["rec"]["returns"] = n
     if not dry_run:
         if fix["car"]:
@@ -334,17 +399,24 @@ def migrate(state, cfg, stk, tr, dry_run=False):
             stk._save("migrate_returns", oid, obj=obj, left=True, returns=n)
     n = sum(len(v) for v in fix.values())
     total = sum(x for v in fix.values() for (_, x) in v.values())
-    return [t("claims.migrated", n=n, total=total) + (
-        (": " + ", ".join("%s %d" % (r, x) for v in fix.values() for r, (_, x) in sorted(v.items()))) if n else "")], n  # noqa: UP031
+    return [
+        t("claims.migrated", n=n, total=total)
+        + ((": " + ", ".join("%s %d" % (r, x) for v in fix.values() for r, (_, x) in sorted(v.items()))) if n else "")  # noqa: UP031
+    ], n
 
 
 # --- the views: car show, the report -----------------------------------------------------------------------------
 
+
 def fixes_of(car):
     """The claims, on other cars, whose repair this car is: [{of, n, at, why, bug}]."""
     me = canon(car)
-    return [{"of": u["ref"], "n": x["n"], "at": x["at"], "why": x.get("why"), "bug": x.get("bug")}
-            for u in universe(car.stack, car.tracks) for x in active(u["rec"]) if x.get("repair") == me]
+    return [
+        {"of": u["ref"], "n": x["n"], "at": x["at"], "why": x.get("why"), "bug": x.get("bug")}
+        for u in universe(car.stack, car.tracks)
+        for x in active(u["rec"])
+        if x.get("repair") == me
+    ]
 
 
 def objects_of(car):
@@ -352,8 +424,9 @@ def objects_of(car):
     if car.car is None:
         return [car.ref] if car.ref.startswith("st-") else []
     ref = canon(car)
-    out = {car.car.get("st")} | {h["st"] for h in car.tracks.history()
-                                 if h.get("st") and "{}:{}".format(h.get("track"), h.get("car")) == ref}
+    out = {car.car.get("st")} | {
+        h["st"] for h in car.tracks.history() if h.get("st") and "{}:{}".format(h.get("track"), h.get("car")) == ref
+    }
     return sorted(x for x in out if x)
 
 
@@ -363,12 +436,25 @@ def car_returns(car, rec):
 
 
 def link_text(x, n=None):
-    tail = [b for b in (t("claims.tail_repair", id=x["repair"]) if x.get("repair") else None,
-                        t("claims.tail_bug", id=x["bug"]) if x.get("bug") else None,
-                        "--force" if x.get("forced") else None) if b]
+    tail = [
+        b
+        for b in (
+            t("claims.tail_repair", id=x["repair"]) if x.get("repair") else None,
+            t("claims.tail_bug", id=x["bug"]) if x.get("bug") else None,
+            "--force" if x.get("forced") else None,
+        )
+        if b
+    ]
     why = x.get("why") or "—"
-    return "№%d %s: %s%s" % (x["n"], (x.get("at") or "?")[:10], clip(why, n) if n else why,  # noqa: UP031
-                             (" ({})".format(", ".join(tail))) if tail else "")
+    return (
+        "№%d %s: %s%s"  # noqa: UP031
+        % (
+            x["n"],
+            (x.get("at") or "?")[:10],
+            clip(why, n) if n else why,
+            (" ({})".format(", ".join(tail))) if tail else "",
+        )
+    )
 
 
 def car_lines(car):
@@ -397,10 +483,14 @@ def car_json(car):
     kind, rec = where(car)
     rec = rec or {}
     log = car_returns(car, rec) if kind else []
-    return {"returns": len(log), "returns_log": log, "claims": len(active(rec)),
-            "claim_links": rec.get("claim_links") or [],
-            "repair": {"of": rec.get("repairs"), "bug": rec.get("bug")} if rec.get("kind") == "repair" else None,
-            "fixes": fixes_of(car) if rec else []}
+    return {
+        "returns": len(log),
+        "returns_log": log,
+        "claims": len(active(rec)),
+        "claim_links": rec.get("claim_links") or [],
+        "repair": {"of": rec.get("repairs"), "bug": rec.get("bug")} if rec.get("kind") == "repair" else None,
+        "fixes": fixes_of(car) if rec else [],
+    }
 
 
 def _day(text, name):
@@ -417,6 +507,7 @@ def within(at, since, until):
 def report(state, cfg, since=None, until=None):
     from .stack import Stack
     from .tracks import Tracks
+
     since, until = _day(since, "since"), _day(until, "until")
     stk = Stack(state, cfg)
     tr = Tracks(state, cfg)
@@ -429,28 +520,58 @@ def report(state, cfg, since=None, until=None):
         cl = [x for x in cl if within(x["at"], since, until)]
         if rec.get("kind") == "repair" and within(rec.get("added"), since, until):
             b = bugs.get(rec.get("bug")) or {}
-            repairs.append({"ref": u["ref"], "title": rec.get("title"), "stage": rec.get("stage"),
-                            "stage_ru": stages.ru(rec.get("stage")), "of": rec.get("repairs"), "bug": rec.get("bug"),
-                            "bug_status": b.get("status"), "added": rec.get("added")})
+            repairs.append(
+                {
+                    "ref": u["ref"],
+                    "title": rec.get("title"),
+                    "stage": rec.get("stage"),
+                    "stage_ru": stages.ru(rec.get("stage")),
+                    "of": rec.get("repairs"),
+                    "bug": rec.get("bug"),
+                    "bug_status": b.get("status"),
+                    "added": rec.get("added"),
+                }
+            )
         if not (ret or cl):
             continue
         trk = u["track"]
-        cars.append({"ref": u["ref"], "kind": u["kind"], "track": trk["id"] if trk else None,
-                     "track_title": trk["title"] if trk else None, "title": rec.get("title") or "", "pr": rec.get("pr"),
-                     "returns": ret, "claims": cl})
+        cars.append(
+            {
+                "ref": u["ref"],
+                "kind": u["kind"],
+                "track": trk["id"] if trk else None,
+                "track_title": trk["title"] if trk else None,
+                "title": rec.get("title") or "",
+                "pr": rec.get("pr"),
+                "returns": ret,
+                "claims": cl,
+            }
+        )
         k = trk["id"] if trk else None
-        row = tracks.setdefault(k, {"id": k, "title": trk["title"] if trk else None, "returns": 0, "claims": 0,
-                                    "cars": 0})
+        row = tracks.setdefault(
+            k, {"id": k, "title": trk["title"] if trk else None, "returns": 0, "claims": 0, "cars": 0}
+        )
         row["returns"] += len(ret)
         row["claims"] += len(cl)
         row["cars"] += 1
     cars.sort(key=lambda c: (-len(c["claims"]), -len(c["returns"]), c["ref"]))
     tl = sorted(tracks.values(), key=lambda r: (r["id"] is None, -(r["claims"] + r["returns"]), r["id"] or ""))
-    return {"v": V, "since": since, "until": until, "generated": now_iso(),
-            "total": {"returns": sum(len(c["returns"]) for c in cars), "claims": sum(len(c["claims"]) for c in cars),
-                      "cars": len(cars), "repairs": len(repairs),
-                      "repairs_open": len([r for r in repairs if r["stage"] not in stages.TERMINAL])},
-            "tracks": tl, "cars": cars, "repairs": repairs}
+    return {
+        "v": V,
+        "since": since,
+        "until": until,
+        "generated": now_iso(),
+        "total": {
+            "returns": sum(len(c["returns"]) for c in cars),
+            "claims": sum(len(c["claims"]) for c in cars),
+            "cars": len(cars),
+            "repairs": len(repairs),
+            "repairs_open": len([r for r in repairs if r["stage"] not in stages.TERMINAL]),
+        },
+        "tracks": tl,
+        "cars": cars,
+        "repairs": repairs,
+    }
 
 
 def _cell(text):
@@ -459,31 +580,72 @@ def _cell(text):
 
 def report_md(data):
     since, until = data["since"], data["until"]
-    period = (t("claims.period_all") if not (since or until) else
-              t("claims.period", since=since or t("claims.since_start"), until=until or t("claims.until_today")))
+    period = (
+        t("claims.period_all")
+        if not (since or until)
+        else t("claims.period", since=since or t("claims.since_start"), until=until or t("claims.until_today"))
+    )
     tot = data["total"]
-    L = [t("claims.report_head", period=period), "", t("claims.report_means"), "",
-         t("claims.report_total", returns=tot["returns"], claims=tot["claims"], cars=tot["cars"],
-           repairs=tot["repairs"], open=tot["repairs_open"])]
+    L = [
+        t("claims.report_head", period=period),
+        "",
+        t("claims.report_means"),
+        "",
+        t(
+            "claims.report_total",
+            returns=tot["returns"],
+            claims=tot["claims"],
+            cars=tot["cars"],
+            repairs=tot["repairs"],
+            open=tot["repairs_open"],
+        ),
+    ]
     if data["tracks"]:
         L += ["", t("claims.by_tracks"), "", t("claims.tracks_table"), "|---|---|---|---|"]
         for r in data["tracks"]:
-            L.append("| %s | %d | %d | %d |" % (_cell(clip("{} {}".format(r["id"], r["title"]), 60)) if r["id"] else  # noqa: UP031
-                                               t("claims.off_tracks"), r["cars"], r["returns"], r["claims"]))
+            L.append(
+                "| %s | %d | %d | %d |"  # noqa: UP031
+                % (
+                    _cell(clip("{} {}".format(r["id"], r["title"]), 60)) if r["id"] else t("claims.off_tracks"),
+                    r["cars"],
+                    r["returns"],
+                    r["claims"],
+                )
+            )
         L += ["", t("claims.cars_head"), "", t("claims.cars_table"), "|---|---|---|---|---|---|"]
         for c in data["cars"]:
-            det = [t("claims.det_return", at=(e["at"] or "?")[:10], why=clip(e.get("why") or "—", 70))
-                   for e in c["returns"]]
+            det = [
+                t("claims.det_return", at=(e["at"] or "?")[:10], why=clip(e.get("why") or "—", 70))
+                for e in c["returns"]
+            ]
             det += [t("claims.det_claim", link=link_text(x, 70)) for x in c["claims"]]
-            L.append("| %s | %s | %s | %d | %d | %s |" % (c["ref"], _cell(clip(c["title"], 60)),  # noqa: UP031
-                                                          ("#{}".format(c["pr"])) if c.get("pr") else "—", len(c["returns"]),
-                                                          len(c["claims"]), _cell("; ".join(det))))
+            L.append(
+                "| %s | %s | %s | %d | %d | %s |"  # noqa: UP031
+                % (
+                    c["ref"],
+                    _cell(clip(c["title"], 60)),
+                    ("#{}".format(c["pr"])) if c.get("pr") else "—",
+                    len(c["returns"]),
+                    len(c["claims"]),
+                    _cell("; ".join(det)),
+                )
+            )
     if data["repairs"]:
         L += ["", t("claims.repairs_head"), "", t("claims.repairs_table"), "|---|---|---|---|---|"]
         for r in data["repairs"]:
-            L.append("| {} | {} | {} | {} | {} |".format(r["ref"], _cell(clip(r["title"], 60)), r["stage_ru"], r["of"] or "—",
-                                                    _cell(("{} ({})".format(r["bug"], clip(r["bug_status"], 40))) if
-                                                          r.get("bug_status") else r["bug"] or "—")))
+            L.append(
+                "| {} | {} | {} | {} | {} |".format(
+                    r["ref"],
+                    _cell(clip(r["title"], 60)),
+                    r["stage_ru"],
+                    r["of"] or "—",
+                    _cell(
+                        ("{} ({})".format(r["bug"], clip(r["bug_status"], 40)))
+                        if r.get("bug_status")
+                        else r["bug"] or "—"
+                    ),
+                )
+            )
     if not data["cars"] and not data["repairs"]:
         L += ["", t("claims.none", period=period)]
     return "\n".join(L) + "\n"

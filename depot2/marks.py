@@ -51,8 +51,16 @@ RE_SUBLABEL = re.compile(r"(?i){}".format(rx("in.marks.sublabel")))  # a sub-hea
 RE_HEAD = re.compile(r"^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$")
 RE_BOLD = re.compile(r"^\s{0,3}\*\*(.+?)\*\*")
 RE_FENCE = re.compile(r"^\s{0,3}(```|~~~)")
-RE_ITEM = re.compile(r"^\s*[-*+]\s+(?:{}\s+)?(\d+)((?:[a-z]|{})?)\b\s*[:.)—\u2013-]?\s*(.*)$".format(rx("in.marks.principle"), rx("in.marks.suffix_a")), re.IGNORECASE)
-RE_MARK = re.compile(r"^({}|{}|{})(?![\w/])\s*[—\u2013:,.;-]*\s*(.*)$".format(rx("in.marks.na"), rx("in.marks.bad"), rx("in.marks.ok")), re.IGNORECASE)
+RE_ITEM = re.compile(
+    r"^\s*[-*+]\s+(?:{}\s+)?(\d+)((?:[a-z]|{})?)\b\s*[:.)—\u2013-]?\s*(.*)$".format(
+        rx("in.marks.principle"), rx("in.marks.suffix_a")
+    ),
+    re.IGNORECASE,
+)
+RE_MARK = re.compile(
+    r"^({}|{}|{})(?![\w/])\s*[—\u2013:,.;-]*\s*(.*)$".format(rx("in.marks.na"), rx("in.marks.bad"), rx("in.marks.ok")),
+    re.IGNORECASE,
+)
 
 
 class MarksError(ValueError):
@@ -74,10 +82,11 @@ def norm_label(n, suffix=""):
 
 def _clip(text, n=120):
     s = " ".join(str(text or "").split())
-    return s if len(s) <= n else s[:n - 1] + "…"
+    return s if len(s) <= n else s[: n - 1] + "…"
 
 
 # --- the PR's section ------------------------------------------------------------------------------------------
+
 
 def parse(body, labels=None):
     """The section starts at a heading (or a bold label at a line's start) that names it and ends at the next heading of
@@ -148,6 +157,7 @@ def by_hand(old, label, mark, text=None, at=None):
 
 # --- the verdict: the gates and the score ----------------------------------------------------------------------
 
+
 def signed(n):
     return "+%d" % n if n > 0 else ("-%d" % -n if n < 0 else "0")  # noqa: UP031
 
@@ -161,20 +171,34 @@ def evaluate(marks, plist):
     for p in plist or ():
         m = marks.get(p["label"]) or {}
         mark = m.get("mark") if m.get("mark") in MARKS else None
-        items.append(dict(p, mark=mark, mark_ru=MARK_RU.get(mark) or t("marks.unchecked"), text=m.get("text"),
-                          by=m.get("by"), at=m.get("at")))
+        items.append(
+            dict(
+                p,
+                mark=mark,
+                mark_ru=MARK_RU.get(mark) or t("marks.unchecked"),
+                text=m.get("text"),
+                by=m.get("by"),
+                at=m.get("at"),
+            )
+        )
     p1 = [i for i in items if i["priority"] == 1]
     p2 = [i for i in items if i["priority"] != 1]
     missing = [i["label"] for i in p1 if i["mark"] is None]
     bad = [i["label"] for i in p1 if i["mark"] == "bad"]
     counts = {k: len([i for i in p2 if i["mark"] == k]) for k in MARKS}
     counts["none"] = len([i for i in p2 if i["mark"] is None])
-    v = {"listed": bool(items), "read": any(i["mark"] for i in items),
-         "gate": {"passed": not missing and not bad, "missing": missing, "bad": bad, "of": [i["label"] for i in p1]},
-         "score": counts["ok"] - counts["bad"], "max": len(p2), "counts": counts,
-         "unchecked": [i["label"] for i in p2 if i["mark"] is None], "items": items,
-         "hand": [i["label"] for i in items if is_hand(i["by"])],
-         "sources": sorted({i["by"] for i in items if i["by"] and not is_hand(i["by"])})}
+    v = {
+        "listed": bool(items),
+        "read": any(i["mark"] for i in items),
+        "gate": {"passed": not missing and not bad, "missing": missing, "bad": bad, "of": [i["label"] for i in p1]},
+        "score": counts["ok"] - counts["bad"],
+        "max": len(p2),
+        "counts": counts,
+        "unchecked": [i["label"] for i in p2 if i["mark"] is None],
+        "items": items,
+        "hand": [i["label"] for i in items if is_hand(i["by"])],
+        "sources": sorted({i["by"] for i in items if i["by"] and not is_hand(i["by"])}),
+    }
     v["passed"] = v["gate"]["passed"]
     v["unmet"] = [] if v["passed"] else ["; ".join(gate_parts(v))]
     v["text"] = text(v)
@@ -184,8 +208,9 @@ def evaluate(marks, plist):
 
 def gate_parts(v):
     g = v["gate"]
-    return ([t("marks.gate_missing", labels=", ".join(g["missing"]))] if g["missing"] else []) + \
-        ([t("marks.gate_bad", labels=", ".join(g["bad"]))] if g["bad"] else [])
+    return ([t("marks.gate_missing", labels=", ".join(g["missing"]))] if g["missing"] else []) + (
+        [t("marks.gate_bad", labels=", ".join(g["bad"]))] if g["bad"] else []
+    )
 
 
 def gate_ru(v):
@@ -199,8 +224,11 @@ def score_ru(v, full=True, bare=False):
     if full and v["max"]:
         s += t("marks.score_counts", ok=c["ok"], na=c["na"], bad=c["bad"])
     if v["unchecked"]:
-        s += t("marks.score_unchecked", labels=", ".join(v["unchecked"])) if full else \
-            t("marks.score_unchecked_n", n=len(v["unchecked"]))
+        s += (
+            t("marks.score_unchecked", labels=", ".join(v["unchecked"]))
+            if full
+            else t("marks.score_unchecked_n", n=len(v["unchecked"]))
+        )
     return s
 
 
@@ -224,8 +252,17 @@ def compact(v):
     """The verdict without its items, for a car's row, a slot and a board card (None: nothing to check)."""
     if v is None or not v["listed"]:
         return None
-    return {"read": v["read"], "passed": v["gate"]["passed"], "missing": v["gate"]["missing"], "bad": v["gate"]["bad"],
-            "score": v["score"], "max": v["max"], "counts": v["counts"], "unchecked": v["unchecked"], "cell": v["cell"]}
+    return {
+        "read": v["read"],
+        "passed": v["gate"]["passed"],
+        "missing": v["gate"]["missing"],
+        "bad": v["gate"]["bad"],
+        "score": v["score"],
+        "max": v["max"],
+        "counts": v["counts"],
+        "unchecked": v["unchecked"],
+        "cell": v["cell"],
+    }
 
 
 def md(ref, v, heading=True):
@@ -234,8 +271,11 @@ def md(ref, v, heading=True):
     if not v["listed"]:
         L.append(t("marks.md_empty"))
         return "\n".join(L) + "\n"
-    L.append(t("marks.md_gates_passed") if v["gate"]["passed"] else
-             t("marks.md_gates_failed", parts="; ".join(gate_parts(v))))
+    L.append(
+        t("marks.md_gates_passed")
+        if v["gate"]["passed"]
+        else t("marks.md_gates_failed", parts="; ".join(gate_parts(v)))
+    )
     L.append(t("marks.md_score", score=score_ru(v, bare=True)))
     src = list(v["sources"]) + ([t("marks.md_hand", labels=", ".join(v["hand"]))] if v["hand"] else [])
     L.append(t("marks.md_sources", sources="; ".join(src) if src else t("marks.md_no_marks")))
@@ -243,9 +283,16 @@ def md(ref, v, heading=True):
     L.append(t("marks.md_header"))
     L.append("|---|---|---|---|---|")
     for i in v["items"]:
-        L.append("| {}. {} | {} | {} | {} | {} |".format(
-            i["label"], _cell(i["title"]), t("marks.md_priority_1") if i["priority"] == 1 else t("marks.md_priority_2"),
-            i["mark_ru"], _cell(i["text"] or "—"), _cell(i["by"] or "—")))
+        L.append(
+            "| {}. {} | {} | {} | {} | {} |".format(
+                i["label"],
+                _cell(i["title"]),
+                t("marks.md_priority_1") if i["priority"] == 1 else t("marks.md_priority_2"),
+                i["mark_ru"],
+                _cell(i["text"] or "—"),
+                _cell(i["by"] or "—"),
+            )
+        )
     L.append("")
     L.append(legend())
     return "\n".join(L) + "\n"
@@ -261,24 +308,32 @@ def lines(v, title=None):
     if v["read"]:
         for i in v["items"]:
             if i["mark"] or i["priority"] == 1:
-                L.append("- {} ({}) {} — {}{}{}".format(i["label"], t("marks.kind_gate") if i["priority"] == 1 else
-                                                     t("marks.kind_score"),
-                                                     _clip(i["title"], 50), i["mark_ru"],
-                                                     ": " + _clip(i["text"], 100) if i["text"] else "",
-                                                     " ({})".format(i["by"]) if i["by"] else ""))
+                L.append(
+                    "- {} ({}) {} — {}{}{}".format(
+                        i["label"],
+                        t("marks.kind_gate") if i["priority"] == 1 else t("marks.kind_score"),
+                        _clip(i["title"], 50),
+                        i["mark_ru"],
+                        ": " + _clip(i["text"], 100) if i["text"] else "",
+                        " ({})".format(i["by"]) if i["by"] else "",
+                    )
+                )
     return L
 
 
 # --- where the marks live, the reading and the saving ----------------------------------------------------------
 
+
 def plist(state, cfg=None):
     from .principles import Principles
+
     return Principles(state, cfg).check_list()
 
 
 def wanted(cfg):
     """The DoD checks the principles (`gates.dod` has `principles`): `stack post` and `merge add` read the PR."""
     from .gates import dod_items
+
     return "principles" in dod_items(cfg)
 
 
@@ -287,6 +342,7 @@ def holder(state, cfg, ref):
     from . import stages
     from .stack import StackError
     from .tracks import TrackError
+
     try:
         car = stages.Car(state, cfg, ref)
     except (stages.StageError, TrackError, StackError) as e:
@@ -305,6 +361,7 @@ def of(rec, pl):
 def pr_body(state, cfg, n):
     """The PR's body (`gh pr view N --json body`), else MarksError."""
     from .merge import MergeError, Rider
+
     try:
         d = Rider(state, cfg).gh_json("pr", "view", str(n), "-R", config_repo(cfg), "--json", "body")
     except MergeError as e:
@@ -351,8 +408,17 @@ class Reading:
             L.append(t("marks.read_no_section", pr=self.pr, section=section(), format=format_line()))
         elif self.parsed is not None:
             ms = [m["mark"] for m in self.parsed["marks"].values()]
-            L.append(t("marks.read_lines", pr=self.pr, section=section(), n=len(ms), ok=ms.count("ok"),
-                       na=ms.count("na"), bad=ms.count("bad")))
+            L.append(
+                t(
+                    "marks.read_lines",
+                    pr=self.pr,
+                    section=section(),
+                    n=len(ms),
+                    ok=ms.count("ok"),
+                    na=ms.count("na"),
+                    bad=ms.count("bad"),
+                )
+            )
             for no, junk in self.parsed["junk"]:
                 L.append(t("marks.read_junk", no=no, line=junk, format=format_line()))
             if self.parsed["repeats"]:
@@ -368,9 +434,16 @@ class Reading:
     def row(self):
         """The history row's fields for this reading."""
         p = self.parsed or {}
-        return {"pr": self.pr, "found": p.get("found") if self.parsed is not None else None,
-                "junk": p.get("junk") or None, "repeats": p.get("repeats") or None, "unknown": p.get("unknown") or None,
-                "error": self.error, "score": self.verdict["score"], "passed": self.verdict["gate"]["passed"]}
+        return {
+            "pr": self.pr,
+            "found": p.get("found") if self.parsed is not None else None,
+            "junk": p.get("junk") or None,
+            "repeats": p.get("repeats") or None,
+            "unknown": p.get("unknown") or None,
+            "error": self.error,
+            "score": self.verdict["score"],
+            "passed": self.verdict["gate"]["passed"],
+        }
 
     def save(self, by):
         """Write the new marks on the car (or the object), read fresh from the disk; nothing when they did not change
