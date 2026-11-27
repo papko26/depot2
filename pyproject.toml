@@ -67,6 +67,9 @@ extend-select = [
     "PTH101", # os-chmod
     "PTH102", # os-mkdir
     "PTH104", # os-rename
+    "PTH106", # os-rmdir
+    "PTH107", # os-remove
+    "PTH108", # os-unlink
     "PTH116", # os-stat
     "PTH121", # os-path-samefile
     "PTH124", # py-path

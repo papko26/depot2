@@ -131,7 +131,7 @@ def main():
         p, is_remote = local_of(pos[0])
         if not is_remote:
             return 97
-        os.remove(p)
+        os.remove(p)  # noqa: PTH107 - preserve trailing slashes in remote arguments
         return 0
     return 1
 

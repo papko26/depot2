@@ -19,6 +19,7 @@ one line into merge-history.jsonl.
 
 import contextlib
 import os
+from pathlib import Path
 
 from .i18n import t
 
@@ -174,7 +175,7 @@ class WorktreesMixin:
         target = None
         if os.path.islink(link) and self.git(path, "check-ignore", "-q", NODE_MODULES)[0] != 0:
             target = os.readlink(link)
-            os.unlink(link)  # the link itself: what it points at is never touched
+            Path(link).unlink()  # the link itself: what it points at is never touched
         code, out, err = self.git(self.clone, "worktree", "remove", path)
         if code != 0:
             if target is not None and os.path.isdir(path) and not os.path.lexists(link):

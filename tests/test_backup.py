@@ -315,7 +315,7 @@ class BackupCheckTest(BackupBase):
             self.assertIn("ok in", f.read())
         # A dry run never starts one.
         self.set_stamp(last_success=iso_ago(30))
-        os.remove(self.t.state.path(backup.DIR, backup.SPAWNED))
+        Path(self.t.state.path(backup.DIR, backup.SPAWNED)).unlink()
         self.team("round", "--kind", "ballot", "--input", "/nonexistent", "--dry-run", ok=False)
         self.assertIsNone(self.spawned())
         self.assert_no_secret()
@@ -337,7 +337,7 @@ class BackupCheckTest(BackupBase):
         self.assertEqual(len(self.cmds("copyto")), 1)
         # A run holds the lock: another start (the retry window over) exits at once, and --now refuses.
         self.set_stamp(last_success=iso_ago(25))
-        os.remove(self.t.state.path(backup.DIR, backup.SPAWNED))
+        Path(self.t.state.path(backup.DIR, backup.SPAWNED)).unlink()
         n = len(self.calls())
         with backup.backup_lock(self.t.state):
             self.team("ledger")

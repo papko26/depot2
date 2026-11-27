@@ -223,7 +223,7 @@ class EveryTenTest(PushBase):
         self.assertEqual(self.stamp()["pushed"], 10)
         # A dry run never starts one.
         self.commits(10)
-        os.remove(self.t.state.path(backup.DIR, push.SPAWNED))
+        Path(self.t.state.path(backup.DIR, push.SPAWNED)).unlink()
         self.team("round", "--kind", "ballot", "--input", "/nonexistent", "--dry-run", ok=False)
         self.assertIsNone(self.spawned())
 

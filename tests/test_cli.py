@@ -5,6 +5,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 import helpers
 from helpers import FAKE, HERE, slurp
@@ -132,7 +133,7 @@ class CliTest(unittest.TestCase):
         saved = slurp(path)
         self.assertIn("Ставок нет.", saved)
         self.assertNotIn("размышлени", saved)
-        os.remove(path)
+        Path(path).unlink()
         os.environ["FAKE_MODE"] = "crash"  # any model call would fail the command
         out = self.team("--set", "executor_bin=/nonexistent/claude", "report", "--round", rid).stdout
         self.assertEqual(slurp(path), saved)

@@ -10,6 +10,7 @@ import sys
 import tempfile
 import threading
 import unittest
+from pathlib import Path
 from unittest import mock
 
 import helpers
@@ -1119,7 +1120,7 @@ class WebHostsTest(WebBase):
         w = self.served()
         self.assertEqual(w.get("/api/meta", host="mybox.local:%d" % w.port)[0], 200)  # noqa: UP031
         self.assertEqual(self.web.get("/api/meta", host="mybox.local:%d" % self.web.port)[0], 403)  # started before  # noqa: UP031
-        os.remove(path)
+        Path(path).unlink()
         self.assertEqual(w.get("/api/meta", host="mybox.local:%d" % w.port)[0], 200)  # until it is restarted  # noqa: UP031
         again = self.served()
         self.assertEqual(again.get("/api/meta", host="mybox.local:%d" % again.port)[0], 403)  # noqa: UP031

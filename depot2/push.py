@@ -386,7 +386,7 @@ def export_range(root, base, head, dest, spec=None):
         finally:
             cat.stdout.close()
             cat.wait()
-    os.remove(lst)
+    Path(lst).unlink()
     p = subprocess.run(
         ["git", "-C", root, "log", "--format=commit %H%n%B", *spec], stdin=subprocess.DEVNULL, capture_output=True
     )

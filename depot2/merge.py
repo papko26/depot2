@@ -330,7 +330,7 @@ class Resolutions:
         self._save()
         p = self.file_of(it)
         if os.path.exists(p):
-            os.remove(p)
+            Path(p).unlink()
             self.state.touch(p)
         return it
 
@@ -1013,7 +1013,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                     fh.write(msg + "\n")
                 code, out, err = self.git(wt, "commit", "-q", "-F", mfile, env=env)
             finally:
-                os.remove(mfile)
+                Path(mfile).unlink()
             if code != 0:
                 raise Stop(f"the merge commit failed: {clip(err or out, 200)}")
         except Stop:
@@ -1162,7 +1162,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         finally:
             for p in tmps:
                 if os.path.exists(p):
-                    os.remove(p)
+                    Path(p).unlink()
 
     def regenerate(self, wt, got, mode):
         auto = self.m.get("auto") or {}
@@ -1245,7 +1245,7 @@ class Rider(TrialsMixin, WorktreesMixin):
             yield tw
         finally:
             if os.path.islink(link):
-                os.unlink(link)
+                Path(link).unlink()
             self.git(repo, "worktree", "remove", "--force", tw)
             shutil.rmtree(tmp, ignore_errors=True)
 

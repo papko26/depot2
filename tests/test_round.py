@@ -1,6 +1,7 @@
 import json
 import os
 import unittest
+from pathlib import Path
 
 from fake_executor import minimal
 from helpers import BALLOT, TempState, slurp
@@ -287,7 +288,7 @@ class ResumeTest(unittest.TestCase):
         )
         self.assertIn(f"depot2 round --resume {rid} calls only for the missing ones", msg)
         # the input file may be gone by now: the round goes on from its saved bundle
-        os.remove(self.input)
+        Path(self.input).unlink()
         r, runner, _ = self.resume(rid, {("painter", "r1"): ans([("B50", "agree", 1, "y")])})
         self.assertEqual(r["id"], rid)
         calls = [(c[0], c[1]) for c in runner.calls]
@@ -495,7 +496,7 @@ class StakeReportTest(unittest.TestCase):
         r = self.mixed()
         path = os.path.join(r["dir"], "report.md")
         self.assertEqual(slurp(path), r["report"])
-        os.remove(path)
+        Path(path).unlink()
         self.assertEqual(render(self.t.state, r["id"]), r["report"])  # reads files and the ledger only
         with self.assertRaises(ValueError):
             render(self.t.state, "no-such-round")
@@ -918,7 +919,7 @@ class SnapshotAndCostTest(unittest.TestCase):
         import tempfile
 
         extra = [tempfile.mkdtemp(prefix="team-read-test-") for _ in range(2)]
-        self.addCleanup(lambda: [os.rmdir(d) for d in extra])
+        self.addCleanup(lambda: [Path(d).rmdir() for d in extra])
         self.t.cfg["read_dirs"] = [*extra, os.path.join(self.t.dir, "no-such-dir")]
         runner = FakeRunner(self.t.state, {})
         r = run_round(

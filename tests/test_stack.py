@@ -1,5 +1,6 @@
 import json
 import os
+from pathlib import Path
 
 from helpers import slurp
 from test_extras import Base, order, proposal, r2
@@ -436,7 +437,7 @@ class BallotsTest(Base):
         self.assertIn("снят", out)
         self.assertEqual(Ballots(self.t.state).get(r2_["id"])["notes"][0][-7:], "устарел")
         self.assertEqual(self.team("ballots", "add", "--round", rid)[0], 1)  # in the queue already
-        os.remove(Ballots(self.t.state).path)
+        Path(Ballots(self.t.state).path).unlink()
         self.assertEqual(self.team("ballots", "add", "--round", rid)[0], 0)  # an existing round
         self.assertEqual(Ballots(self.t.state).get(rid)["status"], "waiting")
         self.assertEqual(self.team("ballots", "done", rid)[0], 0)
