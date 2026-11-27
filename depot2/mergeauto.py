@@ -42,18 +42,23 @@ def snapshot_test(path, cfg=None):
     """
     if cfg:
         from . import hooks
+
         got = hooks.call_first(cfg, "snapshot_test", path)
         if got:
             return got
     d, name = posixpath.split(path)
     if posixpath.basename(d) != "__snapshots__" or not name.endswith(".snap") or len(name) <= len(".snap"):
         return None
-    return posixpath.join(posixpath.dirname(d), name[:-len(".snap")])
+    return posixpath.join(posixpath.dirname(d), name[: -len(".snap")])
 
 
 def markers(tag=TAG):
-    return ("<" * MARK + " " + tag + "ours", "|" * MARK + " " + tag + "base", "=" * MARK,
-            ">" * MARK + " " + tag + "theirs")
+    return (
+        "<" * MARK + " " + tag + "ours",
+        "|" * MARK + " " + tag + "base",
+        "=" * MARK,
+        ">" * MARK + " " + tag + "theirs",
+    )
 
 
 def union(text, tag=TAG):
@@ -74,9 +79,9 @@ def union(text, tag=TAG):
             ti = lines.index(t, si + 1)
         except ValueError:
             return None, "a conflict's markers are not whole"
-        if o in lines[i + 1:ti]:
+        if o in lines[i + 1 : ti]:
             return None, "a conflict's markers are not whole"
-        got = join_hunk(lines[bi + 1:si], lines[i + 1:bi], lines[si + 1:ti])
+        got = join_hunk(lines[bi + 1 : si], lines[i + 1 : bi], lines[si + 1 : ti])
         if got is None:
             return None, "both sides changed the common text at line %d" % (len(out) + 1)  # noqa: UP031
         out += got
@@ -108,10 +113,13 @@ def join_adds(ours, theirs):
     s = 0
     while s < min(len(ours), len(theirs)) - p and ours[len(ours) - 1 - s] == theirs[len(theirs) - 1 - s]:
         s += 1
-    a, b = ours[p:len(ours) - s], theirs[p:len(theirs) - s]
-    sep = [""] if a and b and a[-1].strip() and b[0].strip() and not (ITEM_RE.match(a[-1]) and ITEM_RE.match(b[0])) \
+    a, b = ours[p : len(ours) - s], theirs[p : len(theirs) - s]
+    sep = (
+        [""]
+        if a and b and a[-1].strip() and b[0].strip() and not (ITEM_RE.match(a[-1]) and ITEM_RE.match(b[0]))
         else []
-    return ours[:p] + a + sep + b + ours[len(ours) - s:]
+    )
+    return ours[:p] + a + sep + b + ours[len(ours) - s :]
 
 
 def inserts(x, y):
@@ -142,10 +150,14 @@ NET_RE = re.compile(
     r"Connection reset|Connection refused|Connection closed|connection was closed|unexpected disconnect|early EOF|"
     r"RPC failed|unexpected EOF|\": EOF|error connecting to|i/o timeout|no such host|network is unreachable|"
     r"Temporary failure in name resolution|deadline exceeded|HTTP 50[0234]|50[234] (Bad Gateway|Service Unavailable|Gateway Time)|"
-    r"Could not read from remote repository|remote end hung up", re.IGNORECASE)
+    r"Could not read from remote repository|remote end hung up",
+    re.IGNORECASE,
+)
 NOT_NET_RE = re.compile(
     r"Permission denied|Authentication failed|Bad credentials|could not read Username|HTTP 40[0-9]|non-fast-forward|"
-    r"\[rejected\]|protected branch|not found|does not exist|no such pull request", re.IGNORECASE)
+    r"\[rejected\]|protected branch|not found|does not exist|no such pull request",
+    re.IGNORECASE,
+)
 
 
 def is_net(code, text):

@@ -37,9 +37,9 @@ def tree_bytes(path):
 
 def size_text(n):
     n = int(n or 0)
-    if n >= 1024 ** 3:
-        return "%.2f GB" % (n / 1024.0 ** 3)
-    return "%.1f MB" % (n / 1024.0 ** 2)
+    if n >= 1024**3:
+        return "%.2f GB" % (n / 1024.0**3)
+    return "%.1f MB" % (n / 1024.0**2)
 
 
 def worktree_list(text):
@@ -76,7 +76,7 @@ def locked(path):
         return None
     if not line.startswith("gitdir:"):
         return None
-    gd = line[len("gitdir:"):].strip()
+    gd = line[len("gitdir:") :].strip()
     p = os.path.join(gd if os.path.isabs(gd) else os.path.join(path, gd), "locked")
     if not os.path.exists(p):
         return None
@@ -93,6 +93,7 @@ def wt_text(res):
     if res.get("removed"):
         return t("mergewt.text_removed", size=size_text(res.get("freed")))
     from .merge import clip
+
     return t("mergewt.text_kept", reason=clip(res.get("reason"), 160))
 
 
@@ -108,6 +109,7 @@ class WorktreesMixin:
     def wt_known(self):
         """The main clone's worktrees by their real path, the main one left out."""
         from .merge import MergeError, clip
+
         code, out, err = self.git(self.clone, "worktree", "list", "--porcelain")
         if code != 0:
             raise MergeError(f"git worktree list in {self.clone}: {clip(err or out, 160)}")
@@ -117,6 +119,7 @@ class WorktreesMixin:
         """Why a branch's worktree is in use: an open merge queue entry (but `but`), a stack object in a slot; or None."""
         from .merge import STATUS_RU, MergeQueue
         from .stack import Stack
+
         for e in MergeQueue(self.state).entries(open_only=True):
             if e.get("branch") == branch and e["id"] != but:
                 return t("mergewt.busy_queue", id=e["id"], pr=e["pr"], status=STATUS_RU[e["status"]])
@@ -131,14 +134,18 @@ class WorktreesMixin:
     def wt_verdict(self, path, branch, known):
         """None: the worktree at path may go; else why it stays, in one line."""
         from .merge import clip
+
         if not os.path.isdir(path):
             return t("mergewt.no_dir")
         w = known.get(os.path.realpath(path))
         if w is None:
             return t("mergewt.not_a_worktree", clone=self.clone)
         if w["branch"] != branch:
-            return t("mergewt.on_branch", cur=w["branch"], branch=branch) if w["branch"] else \
-                t("mergewt.on_detached", branch=branch)
+            return (
+                t("mergewt.on_branch", cur=w["branch"], branch=branch)
+                if w["branch"]
+                else t("mergewt.on_detached", branch=branch)
+            )
         lk = locked(path)
         if lk:
             return t("mergewt.locked", reason=clip(lk, 80))
@@ -161,6 +168,7 @@ class WorktreesMixin:
 
     def wt_remove(self, path):
         from .merge import clip
+
         size = tree_bytes(path)
         link = os.path.join(path, NODE_MODULES)
         target = None
@@ -180,6 +188,7 @@ class WorktreesMixin:
         raises (but the entry dropped meanwhile: update's Dropped).
         """
         from .merge import clip, expand, stamp
+
         e = self.entry(eid)
         path = e.get("worktree") or os.path.join(expand(self.m["worktrees"]), e["branch"])
         try:
@@ -195,8 +204,21 @@ class WorktreesMixin:
     # --- `merge prune-worktrees [--dry-run]` ---
     def pr_heads(self):
         """GitHub's PRs by their branch: {branch: [(number, state)]}, the newest first."""
-        data = self.gh_json("pr", "list", "-R", self.repo, "--state", "all", "--limit", str(PR_LIMIT), "--json",
-                            "number,headRefName,state") or []
+        data = (
+            self.gh_json(
+                "pr",
+                "list",
+                "-R",
+                self.repo,
+                "--state",
+                "all",
+                "--limit",
+                str(PR_LIMIT),
+                "--json",
+                "number,headRefName,state",
+            )
+            or []
+        )
         out = {}
         for p in data:
             out.setdefault(p.get("headRefName"), []).append((int(p["number"]), str(p.get("state") or "").upper()))
@@ -206,6 +228,7 @@ class WorktreesMixin:
         """Every worktree under merge.worktrees whose branch is merged, by the rules above → lines."""
         from .merge import HISTORY, MergeQueue, clip, expand, stamp
         from .store import append_jsonl
+
         root = os.path.realpath(expand(self.m["worktrees"]))
         main = f"{self.remote}/{self.base}"
         L = []
@@ -234,8 +257,10 @@ class WorktreesMixin:
                 if opened:
                     why = t("mergewt.pr_open", n=opened[0])
                 elif not merged:
-                    why = t("mergewt.not_merged", why=t("mergewt.closed_unmerged", n=mine[0][0]) if mine else
-                            t("mergewt.no_pr"))
+                    why = t(
+                        "mergewt.not_merged",
+                        why=t("mergewt.closed_unmerged", n=mine[0][0]) if mine else t("mergewt.no_pr"),
+                    )
                 else:
                     pr_n = merged[0]
                     why = self.wt_busy(br) or self.wt_verdict(p, br, known)
@@ -262,9 +287,19 @@ class WorktreesMixin:
                 kept.append((d, t("mergewt.not_a_worktree", clone=self.clone)))
                 others += 1
         how = "dry" if dry_run else "real"
-        L.insert(0, t("mergewt.prune_head", dry=t("mergewt.prune_dry") if dry_run else "", root=root,
-                      n=len(rows) + others, clone=self.clone, wts=len(rows), main=main,
-                      sha=(self.rev(self.clone, main) or "?")[:7]))
+        L.insert(
+            0,
+            t(
+                "mergewt.prune_head",
+                dry=t("mergewt.prune_dry") if dry_run else "",
+                root=root,
+                n=len(rows) + others,
+                clone=self.clone,
+                wts=len(rows),
+                main=main,
+                sha=(self.rev(self.clone, main) or "?")[:7],
+            ),
+        )
         L.append(t("mergewt.prune_removed_" + how, n=len(removed), size=size_text(freed)))
         L += [f"  - {n}: {x}" for n, x, _ in removed] or ["  —"]
         L.append(t("mergewt.prune_kept", n=len(kept)))
@@ -273,9 +308,19 @@ class WorktreesMixin:
         if not dry_run:
             with self.state.lock():
                 path = self.state.path(HISTORY)
-                append_jsonl(path, {"ts": stamp(self.clock()), "event": "prune_worktrees", "entry": None,
-                                    "removed": [{"name": n, "bytes": b} for n, _, b in removed], "kept": len(kept),
-                                    "freed": freed})
+                append_jsonl(
+                    path,
+                    {
+                        "ts": stamp(self.clock()),
+                        "event": "prune_worktrees",
+                        "entry": None,
+                        "removed": [{"name": n, "bytes": b} for n, _, b in removed],
+                        "kept": len(kept),
+                        "freed": freed,
+                    },
+                )
                 self.state.touch(path)
-                self.state.commit("team: merge prune-worktrees: %d removed, %s freed" % (len(removed), size_text(freed)))  # noqa: UP031
+                self.state.commit(
+                    "team: merge prune-worktrees: %d removed, %s freed" % (len(removed), size_text(freed))  # noqa: UP031
+                )
         return L

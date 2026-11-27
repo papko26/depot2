@@ -48,6 +48,7 @@ class TrialsMixin:
             return self._presync(eid)
         except Exception as ex:
             from .merge import clip
+
             self.out(f"trials: {type(ex).__name__}: {clip(ex, 200)} (the ride goes on)")
             return False
 
@@ -60,7 +61,7 @@ class TrialsMixin:
         if cur["id"] not in ids:
             return []
         out = []
-        for e2 in es[ids.index(cur["id"]) + 1:]:
+        for e2 in es[ids.index(cur["id"]) + 1 :]:
             if len(out) >= self.depth():
                 break
             if e2["status"] != "waiting" or e2.get("merged") or e2.get("step") not in (None, "sync"):
@@ -70,6 +71,7 @@ class TrialsMixin:
 
     def _presync(self, eid):
         from .merge import MergeQueue, epoch
+
         q = MergeQueue(self.state)
         cur = q.get(eid)
         chain = self.trial_chain(q, cur)
@@ -94,8 +96,12 @@ class TrialsMixin:
             own = self.rev(self.clone, "{}/{}".format(self.remote, e2["branch"]))
             base_tree = self.tree(self.clone, base)
             t = e2.get("trial") or {}
-            fresh = bool(t) and t.get("base_tree") == base_tree and t.get("own") == own and not (
-                t.get("status") in ("blocked", "failed") and self.clock() - (epoch(t.get("ts")) or 0) >= retry)
+            fresh = (
+                bool(t)
+                and t.get("base_tree") == base_tree
+                and t.get("own") == own
+                and not (t.get("status") in ("blocked", "failed") and self.clock() - (epoch(t.get("ts")) or 0) >= retry)
+            )
             if not fresh:
                 return self.build_trial(e2, own, base, base_tree, label, bases) is not None
             if t.get("status") not in TRIAL_OK:
@@ -111,10 +117,18 @@ class TrialsMixin:
         or left the queue).
         """
         from .merge import Stop, clip, stamp
+
         n, br = e2["pr"], e2["branch"]
         name = self.trial_branch(n)
-        rec = {"branch": name, "own": own, "base": base, "base_tree": base_tree, "on": label,
-               "ts": stamp(self.clock()), "status": None}
+        rec = {
+            "branch": name,
+            "own": own,
+            "base": base,
+            "base_tree": base_tree,
+            "on": label,
+            "ts": stamp(self.clock()),
+            "status": None,
+        }
         try:
             if not own:
                 raise Hold("blocked", f"no {self.remote}/{br}")
@@ -134,7 +148,12 @@ class TrialsMixin:
                     return self.trial_put(e2, rec)
                 rec.update(auto=res["auto"], resolved=res["resolved"])
                 if res.get("golden"):
-                    raise Hold("golden", "{} takes main's side and is re-recorded at its turn: the trial is not pushed".format(((self.m.get("auto") or {}).get("golden") or {}).get("file")))
+                    raise Hold(
+                        "golden",
+                        "{} takes main's side and is re-recorded at its turn: the trial is not pushed".format(
+                            ((self.m.get("auto") or {}).get("golden") or {}).get("file")
+                        ),
+                    )
                 if not res["push"]:  # main and the PRs ahead are in its head already: the head is the trial
                     rec.update(status="same", sha=own, tree=self.tree(tw, own))
                     return self.trial_put(e2, rec)
@@ -164,6 +183,7 @@ class TrialsMixin:
         from .backup import _nice
         from .merge import Stop
         from .push import export_range, is_clean
+
         if self.m.get("scan") is False:  # the project chose to push without a scan
             return
         if not self.m.get("scan"):
@@ -205,6 +225,7 @@ class TrialsMixin:
         branch is deleted first (the queue's own throwaway branch: never forced, never a PR's). → (ok, why).
         """
         from .merge import clip
+
         remote = self.remote_head(tw, name)
         if remote == head:
             return True, None
@@ -218,6 +239,7 @@ class TrialsMixin:
     def trial_put(self, e2, rec):
         """The record on e2 (still waiting), a line in its log and in the history, the line printed. → rec or None."""
         from .merge import log_line
+
         line = trial_line(e2["pr"], rec)
         with self.edit() as q:
             e = q.get(e2["id"])
@@ -233,6 +255,7 @@ class TrialsMixin:
     def delete_trial(self, name):
         """The remote's mq/<PR>, when it is there. → None, or why it was not deleted."""
         from .merge import clip
+
         if not self.remote_head(self.clone, name):
             return None
         code, out, err = self.git(self.clone, "push", "-q", self.remote, "--delete", name, timeout=300)
@@ -241,6 +264,7 @@ class TrialsMixin:
     def discard_trials(self, why):
         """Every open entry's trial thrown away (the PR they stood on stopped): the branches deleted."""
         from .merge import MergeQueue, log_line
+
         if not os.path.isdir(self.clone):
             return
         for e2 in MergeQueue(self.state).entries(open_only=True):
@@ -248,8 +272,12 @@ class TrialsMixin:
             if not t:
                 continue
             err = self.delete_trial(t["branch"]) if t.get("status") == "pushed" else None
-            line = "trial %s of #%d thrown away: %s%s" % (t["branch"], e2["pr"], why, "" if not err else  # noqa: UP031
-                                                          f" (its branch not deleted: {err})")
+            line = "trial %s of #%d thrown away: %s%s" % (  # noqa: UP031
+                t["branch"],
+                e2["pr"],
+                why,
+                "" if not err else f" (its branch not deleted: {err})",
+            )
             with self.edit() as q:
                 e = q.get(e2["id"])
                 e["trial"] = None
@@ -260,6 +288,7 @@ class TrialsMixin:
     def sweep_trials(self):
         """The queue's mq/<PR> branches that no waiting or riding entry's live trial is: deleted (after a merge)."""
         from .merge import MergeQueue
+
         if self.depth() <= 0 or not os.path.isdir(self.clone):
             return []
         prefix = self.m.get("trial_prefix") or "mq/"
@@ -267,15 +296,18 @@ class TrialsMixin:
         if code != 0:
             return []
         q = MergeQueue(self.state)
-        keep = {((e.get("trial") or {}).get("branch"), (e.get("trial") or {}).get("sha"))
-                for e in q.entries(open_only=True) if (e.get("trial") or {}).get("status") == "pushed"}
+        keep = {
+            ((e.get("trial") or {}).get("branch"), (e.get("trial") or {}).get("sha"))
+            for e in q.entries(open_only=True)
+            if (e.get("trial") or {}).get("status") == "pushed"
+        }
         ours = {self.trial_branch(e["pr"]) for e in q.entries()}
         lines = []
         for ln in out.splitlines():
             parts = ln.split()
             if len(parts) != 2 or not parts[1].startswith("refs/heads/"):
                 continue
-            name = parts[1][len("refs/heads/"):]
+            name = parts[1][len("refs/heads/") :]
             if name in ours and (name, parts[0]) not in keep:
                 err = self.delete_trial(name)
                 lines.append("trial {} deleted{}".format(name, "" if not err else f": not deleted ({err})"))
@@ -290,9 +322,11 @@ class TrialsMixin:
         tree = self.tree(wt, head)
         if tree == t["tree"]:
             return "the tree of {} ({}) is the trial {}'s ({}): CI has tested it".format(
-                head[:7], tree[:7], t["branch"], (t.get("sha") or "?")[:7])
-        return "the tree of {} ({}) is not the trial {}'s ({}): CI anew".format(head[:7], (tree or "?")[:7], t["branch"],
-                                                                             t["tree"][:7])
+                head[:7], tree[:7], t["branch"], (t.get("sha") or "?")[:7]
+            )
+        return "the tree of {} ({}) is not the trial {}'s ({}): CI anew".format(
+            head[:7], (tree or "?")[:7], t["branch"], t["tree"][:7]
+        )
 
 
 # --- what is said ---
@@ -308,28 +342,42 @@ def conflicts_ru(rec):
 def trial_line(n, rec):
     """The runner's line for a trial record."""
     from .merge import clip
+
     st, name = rec.get("status"), rec.get("branch")
     head = "trial %s (#%d on %s)" % (name, n, rec.get("on"))  # noqa: UP031
     auto = "; the queue resolved: {}".format("; ".join(rec["auto"])) if rec.get("auto") else ""
     if st == "pushed":
-        return "{}: {} pushed after the scan, tree {}: CI on {}{}".format(head, (rec.get("sha") or "?")[:7],
-                                                                     (rec.get("tree") or "?")[:7], name, auto)
+        return "{}: {} pushed after the scan, tree {}: CI on {}{}".format(
+            head, (rec.get("sha") or "?")[:7], (rec.get("tree") or "?")[:7], name, auto
+        )
     if st == "same":
-        return "{}: its head {} has them already: the head is the trial (nothing pushed)".format(head, (rec.get("sha") or "?")[:7])
+        return "{}: its head {} has them already: the head is the trial (nothing pushed)".format(
+            head, (rec.get("sha") or "?")[:7]
+        )
     if st == "stop" and rec.get("conflicts"):
-        return t("mergetrials.line_conflict", head=head, n=n, conflicts=conflicts_ru(rec),
-                 reason=clip(rec.get("reason"), 240))
-    return "{}: {}: {}".format(head, {"stop": "it would stop", "golden": "not pushed", "blocked": "not built",
-                                  "failed": "failed"}.get(st, st), clip(rec.get("reason"), 240))
+        return t(
+            "mergetrials.line_conflict",
+            head=head,
+            n=n,
+            conflicts=conflicts_ru(rec),
+            reason=clip(rec.get("reason"), 240),
+        )
+    return "{}: {}: {}".format(
+        head,
+        {"stop": "it would stop", "golden": "not pushed", "blocked": "not built", "failed": "failed"}.get(st, st),
+        clip(rec.get("reason"), 240),
+    )
 
 
 def trial_brief(n, rec):
     """`merge --md`'s words for a trial (in the table's language)."""
     from .merge import clip
+
     st = rec.get("status")
     if st == "pushed":
-        return t("mergetrials.brief_pushed", n=n, branch=rec["branch"], sha=(rec.get("sha") or "?")[:7],
-                 on=rec.get("on"))
+        return t(
+            "mergetrials.brief_pushed", n=n, branch=rec["branch"], sha=(rec.get("sha") or "?")[:7], on=rec.get("on")
+        )
     if st == "same":
         return t("mergetrials.brief_same", n=n, sha=(rec.get("sha") or "?")[:7], on=rec.get("on"))
     if st == "stop" and rec.get("conflicts"):

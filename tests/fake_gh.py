@@ -27,10 +27,16 @@ import tempfile
 T0 = "2015-11-12T00:00:00Z"
 T1 = "2015-11-12T00:03:00Z"
 STATES = {  # state → (run status, run conclusion)
-    "queued": ("queued", ""), "in_progress": ("in_progress", ""), "stuck": ("in_progress", ""),
-    "success": ("completed", "success"), "failure": ("completed", "failure"),
-    "never_started": ("completed", "failure"), "deploy_skipped": ("completed", "success"),
-    "deploy_stuck": ("in_progress", ""), "cancelled": ("completed", "cancelled"), "ci_stuck": ("in_progress", ""),
+    "queued": ("queued", ""),
+    "in_progress": ("in_progress", ""),
+    "stuck": ("in_progress", ""),
+    "success": ("completed", "success"),
+    "failure": ("completed", "failure"),
+    "never_started": ("completed", "failure"),
+    "deploy_skipped": ("completed", "success"),
+    "deploy_stuck": ("in_progress", ""),
+    "cancelled": ("completed", "cancelled"),
+    "ci_stuck": ("in_progress", ""),
 }
 CD_LABELS = ["self-hosted", "primary"]  # the deploy job's runs-on: CD_RUNNER
 CI_LABELS = ["self-hosted", "primary"]
@@ -50,8 +56,17 @@ def now_z(minutes_ago=0):
 
 
 def ran(name, concl):
-    return {"name": name, "status": "completed", "conclusion": concl, "started_at": T0, "completed_at": T1,
-            "created_at": T0, "runner_name": "runner-1", "labels": ["self-hosted"], "steps": [{"name": "run"}]}
+    return {
+        "name": name,
+        "status": "completed",
+        "conclusion": concl,
+        "started_at": T0,
+        "completed_at": T1,
+        "created_at": T0,
+        "runner_name": "runner-1",
+        "labels": ["self-hosted"],
+        "steps": [{"name": "run"}],
+    }
 
 
 def jobs_for(state, main):
@@ -65,30 +80,101 @@ def jobs_for(state, main):
     if state == "failure":
         return [ran("Test and build", "failure")]
     if state == "in_progress":
-        return [{"name": "Test and build", "status": "in_progress", "conclusion": None, "started_at": T0,
-                 "created_at": now_z(), "runner_name": "runner-1", "labels": [], "steps": [{"name": "run"}]}]
+        return [
+            {
+                "name": "Test and build",
+                "status": "in_progress",
+                "conclusion": None,
+                "started_at": T0,
+                "created_at": now_z(),
+                "runner_name": "runner-1",
+                "labels": [],
+                "steps": [{"name": "run"}],
+            }
+        ]
     if state == "queued":
-        return [{"name": "Test and build", "status": "queued", "conclusion": None, "started_at": None,
-                 "created_at": now_z(), "runner_name": None, "labels": [], "steps": []}]
+        return [
+            {
+                "name": "Test and build",
+                "status": "queued",
+                "conclusion": None,
+                "started_at": None,
+                "created_at": now_z(),
+                "runner_name": None,
+                "labels": [],
+                "steps": [],
+            }
+        ]
     if state == "stuck":
-        return [{"name": "Test and build", "status": "queued", "conclusion": None, "started_at": None,
-                 "created_at": now_z(60.5), "runner_name": None, "labels": [], "steps": []}]
+        return [
+            {
+                "name": "Test and build",
+                "status": "queued",
+                "conclusion": None,
+                "started_at": None,
+                "created_at": now_z(60.5),
+                "runner_name": None,
+                "labels": [],
+                "steps": [],
+            }
+        ]
     if state == "deploy_stuck":
-        return [ran("Test and build", "success"),
-                {"name": deploy, "status": "queued", "conclusion": None, "started_at": None, "created_at": now_z(20),
-                 "runner_name": None, "labels": CD_LABELS, "steps": []}]
+        return [
+            ran("Test and build", "success"),
+            {
+                "name": deploy,
+                "status": "queued",
+                "conclusion": None,
+                "started_at": None,
+                "created_at": now_z(20),
+                "runner_name": None,
+                "labels": CD_LABELS,
+                "steps": [],
+            },
+        ]
     if state == "ci_stuck":
-        return [{"name": "Test and build", "status": "queued", "conclusion": None, "started_at": None,
-                 "created_at": now_z(20), "runner_name": None, "labels": CI_LABELS, "steps": []}]
+        return [
+            {
+                "name": "Test and build",
+                "status": "queued",
+                "conclusion": None,
+                "started_at": None,
+                "created_at": now_z(20),
+                "runner_name": None,
+                "labels": CI_LABELS,
+                "steps": [],
+            }
+        ]
     if state == "cancelled":
-        return [ran("Test and build", "success"),
-                {"name": deploy, "status": "completed", "conclusion": "cancelled", "started_at": None,
-                 "created_at": T0, "completed_at": T1, "runner_name": None, "labels": CD_LABELS, "steps": []}]
+        return [
+            ran("Test and build", "success"),
+            {
+                "name": deploy,
+                "status": "completed",
+                "conclusion": "cancelled",
+                "started_at": None,
+                "created_at": T0,
+                "completed_at": T1,
+                "runner_name": None,
+                "labels": CD_LABELS,
+                "steps": [],
+            },
+        ]
     if state == "never_started":
-        return [ran("Test and build", "success"),
-                {"name": deploy if main else "Lint and typecheck", "status": "queued", "conclusion": None,
-                 "started_at": T0, "completed_at": None, "created_at": T0, "runner_name": None, "labels": [],
-                 "steps": []}]
+        return [
+            ran("Test and build", "success"),
+            {
+                "name": deploy if main else "Lint and typecheck",
+                "status": "queued",
+                "conclusion": None,
+                "started_at": T0,
+                "completed_at": None,
+                "created_at": T0,
+                "runner_name": None,
+                "labels": [],
+                "steps": [],
+            },
+        ]
     return []
 
 
@@ -134,8 +220,13 @@ def pr_list(d, argv):
     """`gh pr list --state all --json number,headRefName,state`: every PR, the newest first."""
     want = opt(argv, "--state") or "open"
     prs = sorted(d["prs"].values(), key=lambda p: -int(p["number"]))
-    return out([{"number": p["number"], "headRefName": p["headRefName"], "state": p["state"]} for p in prs
-                if want == "all" or p["state"] == want.upper()])
+    return out(
+        [
+            {"number": p["number"], "headRefName": p["headRefName"], "state": p["state"]}
+            for p in prs
+            if want == "all" or p["state"] == want.upper()
+        ]
+    )
 
 
 def pr_merge(d, n, argv):
@@ -154,7 +245,21 @@ def pr_merge(d, n, argv):
         for args in (["clone", "-q", d["bare"], tmp],):
             git(d, *args)
         git(d, "checkout", "-q", pr["baseRefName"], cwd=tmp)
-        p = git(d, *([*ident, "merge", "--no-ff", "-q", "origin/" + pr["headRefName"], "-m", "Merge pull request #{} from x/{}".format(n, pr["headRefName"])]), cwd=tmp)
+        p = git(
+            d,
+            *(
+                [
+                    *ident,
+                    "merge",
+                    "--no-ff",
+                    "-q",
+                    "origin/" + pr["headRefName"],
+                    "-m",
+                    "Merge pull request #{} from x/{}".format(n, pr["headRefName"]),
+                ]
+            ),
+            cwd=tmp,
+        )
         if p.returncode != 0:
             return fail(f"merge conflict: {p.stdout}" + p.stderr)
         git(d, "push", "-q", "origin", pr["baseRefName"], cwd=tmp)
@@ -179,9 +284,20 @@ def run_list(d, argv):
             r["state"] = "cancelled"
         state, rid = r["state"], ids[key]
         status, concl = STATES[state]
-        return out([{"databaseId": rid, "status": status, "conclusion": concl, "headSha": sha,
-                     "event": "push" if branch == "main" else "pull_request", "createdAt": T0, "attempt": r["attempt"],
-                     "url": "https://github.com/x/y/actions/runs/%d" % rid}])  # noqa: UP031
+        return out(
+            [
+                {
+                    "databaseId": rid,
+                    "status": status,
+                    "conclusion": concl,
+                    "headSha": sha,
+                    "event": "push" if branch == "main" else "pull_request",
+                    "createdAt": T0,
+                    "attempt": r["attempt"],
+                    "url": "https://github.com/x/y/actions/runs/%d" % rid,  # noqa: UP031
+                }
+            ]
+        )
     script = d["ci"].get(branch) or ["success"]
     pos = d.setdefault("pos", {}).get(branch, 0)
     item = script[min(pos, len(script) - 1)]
@@ -198,9 +314,20 @@ def run_list(d, argv):
     r = runs.setdefault(str(rid), {"branch": branch, "sha": sha, "attempt": 1})
     r["state"] = state
     status, concl = STATES[state]
-    return out([{"databaseId": rid, "status": status, "conclusion": concl, "headSha": sha,
-                 "event": "push" if branch == "main" else "pull_request", "createdAt": T0, "attempt": r["attempt"],
-                 "url": "https://github.com/x/y/actions/runs/%d" % rid}])  # noqa: UP031
+    return out(
+        [
+            {
+                "databaseId": rid,
+                "status": status,
+                "conclusion": concl,
+                "headSha": sha,
+                "event": "push" if branch == "main" else "pull_request",
+                "createdAt": T0,
+                "attempt": r["attempt"],
+                "url": "https://github.com/x/y/actions/runs/%d" % rid,  # noqa: UP031
+            }
+        ]
+    )
 
 
 def rerun(d, rid):

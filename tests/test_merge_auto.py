@@ -1,4 +1,3 @@
-
 import json
 import os
 import sys
@@ -18,11 +17,12 @@ class AutoBase(MergeBase):
         super().setUp()
         self.genlog = os.path.join(self.tmp, "gen.jsonl")
         os.environ["FAKE_GEN_LOG"] = self.genlog
-        self.sets += ["merge.auto.generated.cmd=" + json.dumps([sys.executable, FAKE_GEN, "generated"]),
-                      "merge.auto.snapshots.cmd=" + json.dumps([sys.executable, FAKE_GEN, "snapshots", "{test}", "-u"]),
-                      "merge.auto.golden.cmd=" + json.dumps([sys.executable, FAKE_GEN, "golden", "{remote}/{branch}",
-                                                             "{out}"]),
-                      "merge.net_retry_s=0"]
+        self.sets += [
+            "merge.auto.generated.cmd=" + json.dumps([sys.executable, FAKE_GEN, "generated"]),
+            "merge.auto.snapshots.cmd=" + json.dumps([sys.executable, FAKE_GEN, "snapshots", "{test}", "-u"]),
+            "merge.auto.golden.cmd=" + json.dumps([sys.executable, FAKE_GEN, "golden", "{remote}/{branch}", "{out}"]),
+            "merge.net_retry_s=0",
+        ]
 
     def write(self, d, files):
         for name, text in files.items():
@@ -54,16 +54,19 @@ class AdditionsTest(AutoBase):
 
     def test_both_sides_only_added_one_merge_commit_and_a_journal_line(self):
         self.main_commit({"README.md": self.BASE})
-        self.pr(301, "feat-a", {"README.md": self.BASE.replace("| a | 1 |\n", "| a | 1 |\n| b | 2 |\n") +
-                                "\nbranch note\n"})
+        self.pr(
+            301, "feat-a", {"README.md": self.BASE.replace("| a | 1 |\n", "| a | 1 |\n| b | 2 |\n") + "\nbranch note\n"}
+        )
         before = self.bare_head("refs/heads/feat-a")
         self.main_commit({"README.md": self.BASE.replace("| a | 1 |\n", "| a | 1 |\n| c | 3 |\n") + "\nmain note\n"})
         self.team("merge", "add", "301", "--word", "мердж")
         rc, out, err = self.team("merge", "run")
         self.assertEqual(rc, 0, out + err)
         # the rows of one table join with no blank line; two paragraphs get one; the branch's first, then main's
-        self.assertEqual(self.show("main", "README.md"),
-                         "# T\n\nintro\n\n| k | v |\n| a | 1 |\n| b | 2 |\n| c | 3 |\n\nend\n\nbranch note\n\nmain note")
+        self.assertEqual(
+            self.show("main", "README.md"),
+            "# T\n\nintro\n\n| k | v |\n| a | 1 |\n| b | 2 |\n| c | 3 |\n\nend\n\nbranch note\n\nmain note",
+        )
         self.assertIn("the queue resolved in the merge of origin/main (", out)
         self.assertIn("README.md: both sides only added (2 places): the branch's lines, then main's", self.log(301))
         head = self.g(self.clone, "rev-parse", "refs/heads/feat-a")
@@ -113,11 +116,24 @@ class GeneratedTest(AutoBase):
         self.assertIn("docs/GENERATED.md: git's merge of it was stale, rebuilt", self.log(301))
 
     def snapshot_repo(self, broken=False):
-        self.main_commit({"strings.txt": "hello\n", "test/parser.test.ts": "// the strings\n",
-                          "test/__snapshots__/parser.test.ts.snap": "snap: hello\n"})
-        self.pr(301, "feat-a", {"strings.txt": "hello\nzeta\n" + ("BROKEN\n" if broken else ""),
-                                "test/__snapshots__/parser.test.ts.snap": "snap: hello zeta\n"})
-        self.main_commit({"strings.txt": "alpha\nhello\n", "test/__snapshots__/parser.test.ts.snap": "snap: alpha hello\n"})
+        self.main_commit(
+            {
+                "strings.txt": "hello\n",
+                "test/parser.test.ts": "// the strings\n",
+                "test/__snapshots__/parser.test.ts.snap": "snap: hello\n",
+            }
+        )
+        self.pr(
+            301,
+            "feat-a",
+            {
+                "strings.txt": "hello\nzeta\n" + ("BROKEN\n" if broken else ""),
+                "test/__snapshots__/parser.test.ts.snap": "snap: hello zeta\n",
+            },
+        )
+        self.main_commit(
+            {"strings.txt": "alpha\nhello\n", "test/__snapshots__/parser.test.ts.snap": "snap: alpha hello\n"}
+        )
         self.team("merge", "add", "301", "--word", "мердж")
 
     def test_a_snapshot_takes_mains_side_and_its_test_updates_it(self):
@@ -151,8 +167,9 @@ class GeneratedTest(AutoBase):
         self.assertEqual(self.show("main", g), "golden of s-branch s-main s1")
         self.assertEqual(len(self.pushed_to("feat-a")), 2)
         head = self.g(self.clone, "rev-parse", "refs/heads/feat-a")
-        self.assertEqual(self.g(self.tmp, "--git-dir", self.bare, "log", "-1", "--format=%s", head),
-                         f"Re-record {g} on the merge")
+        self.assertEqual(
+            self.g(self.tmp, "--git-dir", self.bare, "log", "-1", "--format=%s", head), f"Re-record {g} on the merge"
+        )
         self.assertIn(f"main's {g} is in ", self.log(301))
         self.assertEqual(self.gens("golden")[0]["argv"][1], "origin/feat-a")
         self.assertIsNone(self.entry(301).get("golden_pending"))
@@ -205,7 +222,12 @@ class TrialTest(AutoBase):
         hist = [(h["event"], h["entry"]) for h in self.q().history()]
         self.assertLess(hist.index(("trial", "mq-0002")), hist.index(("merged_pr", "mq-0001")))
         md = self.team("merge")[1]
-        self.assertIn("Пробы (ветки mq/<PR>, глубина 2): #302 — mq/302 {} поверх origin/main + #301 (CI на mq/302)".format(t2["sha"][:7]), md)
+        self.assertIn(
+            "Пробы (ветки mq/<PR>, глубина 2): #302 — mq/302 {} поверх origin/main + #301 (CI на mq/302)".format(
+                t2["sha"][:7]
+            ),
+            md,
+        )
         self.assertIn("ждёт · проба mq/303 {}".format(t3["sha"][:7]), md)
         rc, out, err = self.team("merge", "run")
         self.assertEqual(rc, 0, out + err)
@@ -273,8 +295,15 @@ class TrialTest(AutoBase):
 
     def test_the_dry_run_shows_the_trials_and_pushes_nothing(self):
         self.main_commit({"docs/GENERATED.md": MAP0})
-        self.pr(301, "feat-a", {"a.txt": "from a\n", "d.txt": "d\n",
-                                "docs/GENERATED.md": MAP0.replace("files: 3", "files: 4") + "d.txt\n"})
+        self.pr(
+            301,
+            "feat-a",
+            {
+                "a.txt": "from a\n",
+                "d.txt": "d\n",
+                "docs/GENERATED.md": MAP0.replace("files: 3", "files: 4") + "d.txt\n",
+            },
+        )
         self.pr(302, "feat-b", {"e.txt": "e\n", "docs/GENERATED.md": MAP0.replace("files: 3", "files: 4") + "e.txt\n"})
         self.pr(303, "feat-c", {"a.txt": "from c\n"})
         for n in (301, 302, 303):
@@ -284,10 +313,10 @@ class TrialTest(AutoBase):
         rc, out, err = self.team("merge", "run", "--dry-run")
         self.assertEqual(rc, 0, err)
         self.assertIn("trials: the 2 PR(s) after the one riding are tried on top of it on mq/<PR>", out)
-        part = out[out.index("2. mq-0002 PR #302"):out.index("3. mq-0003 PR #303")]
+        part = out[out.index("2. mq-0002 PR #302") : out.index("3. mq-0003 PR #303")]
         self.assertIn("the queue resolves by itself: docs/GENERATED.md: main's side, rebuilt (`", part)
         self.assertIn("trial: mq/302 = #302 + (origin/main + #301), built while #301 rides", part)
-        part = out[out.index("3. mq-0003 PR #303"):]
+        part = out[out.index("3. mq-0003 PR #303") :]
         self.assertIn("STOP: no prepared resolution for a.txt", part)
         self.assertIn("#303: конфликт с #301 в a.txt", part)
         self.assertIn("trial: mq/303 = #303 + (origin/main + #301 + #302), built while #302 rides", part)
@@ -304,7 +333,9 @@ class NetworkTest(AutoBase):
         self.team("merge", "add", "301", "--word", "мердж")
         fail = os.path.join(self.tmp, "git-fail")
         with open(fail, "w") as f:
-            f.write("push 2 unable to access 'https://github.com/x/y/': Connection timed out after 300001 milliseconds\n")
+            f.write(
+                "push 2 unable to access 'https://github.com/x/y/': Connection timed out after 300001 milliseconds\n"
+            )
         os.environ["FAKE_GIT_FAIL"] = fail
         rc, out, err = self.team("merge", "run")
         self.assertEqual(rc, 0, out + err)
@@ -341,9 +372,11 @@ class NetworkTest(AutoBase):
         self.team("merge", "add", "301", "--word", "мердж")
         self.ci(feat_a=["failure!", "success"])
         self.gh = self.load_gh()
-        self.gh["failed_log"] = {"feat-a": "Test and build\tSet up job\t##[error]Failed to download action "
-                                           "'https://api.github.com/repos/actions/checkout/tarball/x'. Error: "
-                                           "The request was canceled due to the configured HttpClient.Timeout of 100 seconds"}
+        self.gh["failed_log"] = {
+            "feat-a": "Test and build\tSet up job\t##[error]Failed to download action "
+            "'https://api.github.com/repos/actions/checkout/tarball/x'. Error: "
+            "The request was canceled due to the configured HttpClient.Timeout of 100 seconds"
+        }
         self.save_gh()
         rc, out, err = self.team("merge", "run")
         self.assertEqual(rc, 0, out + err)
@@ -365,21 +398,26 @@ class NetworkTest(AutoBase):
 
 
 class RulesTest(unittest.TestCase):
-    AUTO = {"generated": {"file": "docs/GENERATED.md", "cmd": ["x"]},  # noqa: RUF012
-            "snapshots": {"glob": "test/__snapshots__/*.snap", "cmd": ["x"]},
-            "golden": {"file": "test/golden/ranking.golden.json", "cmd": ["x"]},
-            "union": ["README.md", "NOTES.md", "docs/*/GUIDE.md"]}
+    AUTO = {  # noqa: RUF012
+        "generated": {"file": "docs/GENERATED.md", "cmd": ["x"]},
+        "snapshots": {"glob": "test/__snapshots__/*.snap", "cmd": ["x"]},
+        "golden": {"file": "test/golden/ranking.golden.json", "cmd": ["x"]},
+        "union": ["README.md", "NOTES.md", "docs/*/GUIDE.md"],
+    }
 
     def test_rule_of(self):
         def r(p):
             return mergeauto.rule_of(p, self.AUTO)
+
         self.assertEqual(r("docs/GENERATED.md"), "generated")
         self.assertEqual(r("test/__snapshots__/parser.test.ts.snap"), "snapshot")
         self.assertEqual(r("test/golden/ranking.golden.json"), "golden")
-        self.assertEqual([r(p) for p in ("README.md", "NOTES.md", "docs/api/GUIDE.md", "docs/web/ui/GUIDE.md")],
-                         ["union"] * 4)
-        self.assertEqual([r(p) for p in ("src/app/search.py", "tools/x/README.md", "GUIDE.md", "docs/README.md")],
-                         [None] * 4)
+        self.assertEqual(
+            [r(p) for p in ("README.md", "NOTES.md", "docs/api/GUIDE.md", "docs/web/ui/GUIDE.md")], ["union"] * 4
+        )
+        self.assertEqual(
+            [r(p) for p in ("src/app/search.py", "tools/x/README.md", "GUIDE.md", "docs/README.md")], [None] * 4
+        )
         self.assertIsNone(mergeauto.rule_of("README.md", None))
         self.assertEqual(mergeauto.snapshot_test("test/__snapshots__/parser.test.ts.snap"), "test/parser.test.ts")
         self.assertIsNone(mergeauto.snapshot_test("test/strings.snap"))
@@ -398,15 +436,19 @@ class RulesTest(unittest.TestCase):
         text, _ = mergeauto.union(self.hunk(["Files: a, b, c"], ["Files: a, b"], ["Files: a, b, d"]))
         self.assertEqual(text, "top\nFiles: a, b, c, d\nbottom\n")  # one line both appended to
         self.assertEqual(mergeauto.union(self.hunk(["Files: a, c"], ["Files: a, b"], ["Files: a, b, d"]))[0], None)
-        self.assertEqual(mergeauto.union(self.hunk(["the branch's"], ["common"], ["main's"])),
-                         (None, "both sides changed the common text at line 2"))
+        self.assertEqual(
+            mergeauto.union(self.hunk(["the branch's"], ["common"], ["main's"])),
+            (None, "both sides changed the common text at line 2"),
+        )
         self.assertEqual(mergeauto.union("plain\ntext\n"), ("plain\ntext\n", 0))
         crlf = self.hunk(["A"], [], ["B"]).replace("\n", "\r\n")  # markers it cannot read: nothing joined
         self.assertEqual(mergeauto.union(crlf), (crlf, 0))
 
     def test_is_net(self):
         net = mergeauto.is_net
-        self.assertTrue(net(128, "fatal: unable to access 'https://github.com/x/': Connection timed out after 300000 ms"))
+        self.assertTrue(
+            net(128, "fatal: unable to access 'https://github.com/x/': Connection timed out after 300000 ms")
+        )
         self.assertTrue(net(128, "fatal: the remote end hung up unexpectedly"))
         self.assertTrue(net(1, "error connecting to api.github.com"))
         self.assertTrue(net(1, 'Post "https://api.github.com/graphql": net/http: TLS handshake timeout'))

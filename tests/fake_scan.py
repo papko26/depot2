@@ -33,8 +33,22 @@ def move_head(state, n):
     with open(p, "w") as f:
         f.write("written during the scan %d\n" % n)  # noqa: UP031
     subprocess.run(["git", "-C", state, "add", "--", os.path.basename(p)], check=True)
-    subprocess.run(["git", "-C", state, "-c", "user.name=t", "-c", "user.email=t@localhost", "commit", "-q", "-m",
-                    "moved during the scan"], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            state,
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@localhost",
+            "commit",
+            "-q",
+            "-m",
+            "moved during the scan",
+        ],
+        check=True,
+    )
 
 
 def main():
