@@ -1052,7 +1052,7 @@ class Tracks:
                     if c.get("st") and not self.stack._known(c["st"]):
                         raise TrackError("car {}: unknown stack object {}".format(c["n"], c["st"]))
             except TrackError as e:
-                raise TrackError("{} {}: {}".format(t["id"], t["title"], e))
+                raise TrackError("{} {}: {}".format(t["id"], t["title"], e))  # noqa: B904
         if not dry_run:
             self._save("import", None, file=os.path.abspath(os.path.expanduser(path)),
                        sha256=hashlib.sha256(raw.encode("utf-8")).hexdigest(), tracks=[t["id"] for t in made])

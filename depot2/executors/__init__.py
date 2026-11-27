@@ -67,7 +67,7 @@ def adapter(cfg):
     try:
         return importlib.import_module(name)
     except ImportError as e:
-        raise FatalError(f"executor {name}: {e}")
+        raise FatalError(f"executor {name}: {e}")  # noqa: B904
 
 
 def run_call(spec, cfg, validate=None):

@@ -122,7 +122,7 @@ class TrialsMixin:
                 self.check_pr(e2, pr)
                 self.gates(e2)
             except Stop as s:
-                raise Hold("blocked", s.reason)
+                raise Hold("blocked", s.reason)  # noqa: B904
             with self.scratch(self.clone, own, "trial") as tw:
                 try:
                     res = self.merge_in(tw, base, br, label, "trial")

@@ -579,7 +579,7 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
                                                            f"fatal error in {rid}: {str(e)[:200]}")
         _wj(state, os.path.join(rdir, "round.json"), rec)
         state.commit(f"team: round {rid} ABORTED: {str(e)[:120]}")
-        raise RoundAborted("round {} aborted, no stakes debited{}: {}{}".format(rid, ", the brainstorm's fee returned" if holder.get("brainstorm") else "", e,
+        raise RoundAborted("round {} aborted, no stakes debited{}: {}{}".format(rid, ", the brainstorm's fee returned" if holder.get("brainstorm") else "", e,  # noqa: B904
                               "" if holder.get("brainstorm") else
                               f"; the answers saved stay: depot2 round --resume {rid} calls only for the missing ones"))
 

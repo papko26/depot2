@@ -134,7 +134,7 @@ def parse_mtok(text):
     try:
         return float(t)
     except ValueError:
-        raise EffortError(f"an effort is a number of MTok or a range like 10-13, got {text!r}")
+        raise EffortError(f"an effort is a number of MTok or a range like 10-13, got {text!r}")  # noqa: B904
 
 
 def est_from(cfg, pct=None, mtok=None, allow_range=False):

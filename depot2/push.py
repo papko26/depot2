@@ -111,7 +111,7 @@ def _git(state, *args):
         return subprocess.run(["git", "-C", state.root, *list(args)], stdin=subprocess.DEVNULL,
                               capture_output=True, text=True)
     except FileNotFoundError:
-        raise PushError(t("push.no_git"), "git")
+        raise PushError(t("push.no_git"), "git")  # noqa: B904
 
 
 def remote_url(state, remote):
@@ -467,7 +467,7 @@ class Pusher:
             code, out, err = run_group(push_argv(remote, branch, sha), push_env(self.state), timeout,
                                        cwd=self.state.root)
         except FileNotFoundError:
-            raise PushError(t("push.no_git"), "push")
+            raise PushError(t("push.no_git"), "push")  # noqa: B904
         if code is None:
             raise PushError(t("push.push_timeout", s=timeout), "push")
         err = redact(err, self.secrets)

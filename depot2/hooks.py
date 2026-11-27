@@ -48,7 +48,7 @@ def _load_one(spec):
         try:
             mod = importlib.import_module(spec)
         except ImportError as e:
-            raise HookError(f"plugin {spec}: {e}")
+            raise HookError(f"plugin {spec}: {e}")  # noqa: B904
     _cache[spec] = mod
     return mod
 

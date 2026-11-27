@@ -134,7 +134,7 @@ def backup_lock(state, name=LOCK):
         try:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
-            raise Busy()
+            raise Busy()  # noqa: B904
         os.ftruncate(fd, 0)
         os.write(fd, ("%d\n" % os.getpid()).encode())  # noqa: UP031
         yield
@@ -245,9 +245,9 @@ class Runner:
                                stdin=subprocess.DEVNULL if self.auto else None,
                                capture_output=True, timeout=60 if self.auto else 300)
         except FileNotFoundError:
-            raise BackupError(t("backup.no_pass_bin"), "pass")
+            raise BackupError(t("backup.no_pass_bin"), "pass")  # noqa: B904
         except subprocess.TimeoutExpired:
-            raise BackupError(t("backup.pass_silent"), "pass")
+            raise BackupError(t("backup.pass_silent"), "pass")  # noqa: B904
         key = self.secrets.add((p.stdout or "").split("\n")[0].rstrip("\r"))
         err = self.secrets.redact((p.stderr or "").strip())
         if p.returncode == 0 and len(key) >= 16:
@@ -263,7 +263,7 @@ class Runner:
             p = subprocess.run([self.b["rclone_bin"], "obscure", "-"], input=key + "\n", text=True,
                                capture_output=True, timeout=60)
         except FileNotFoundError:
-            raise BackupError(t("backup.no_rclone"), "rclone")
+            raise BackupError(t("backup.no_rclone"), "rclone")  # noqa: B904
         out = self.secrets.add((p.stdout or "").strip())
         if p.returncode != 0 or not out:
             raise BackupError(t("backup.obscure_failed"), "rclone", self.secrets.redact(p.stderr or ""))
@@ -294,9 +294,9 @@ class Runner:
             return subprocess.run(argv, env=self.env, stdin=subprocess.DEVNULL, text=True,
                                   capture_output=True, timeout=int(self.b["timeout_s"]))
         except FileNotFoundError:
-            raise BackupError(t("backup.no_rclone"), step)
+            raise BackupError(t("backup.no_rclone"), step)  # noqa: B904
         except subprocess.TimeoutExpired:
-            raise BackupError(t("backup.rclone_timeout", step=step, s=int(self.b["timeout_s"])), step)
+            raise BackupError(t("backup.rclone_timeout", step=step, s=int(self.b["timeout_s"])), step)  # noqa: B904
 
     def rclone_error(self, step, p):
         err = self.secrets.redact(p.stderr or "")
@@ -323,7 +323,7 @@ class Runner:
         try:
             items = json.loads(p.stdout or "[]")
         except ValueError:
-            raise BackupError(t("backup.not_json"), "lsjson")
+            raise BackupError(t("backup.not_json"), "lsjson")  # noqa: B904
         return {it["Path"]: int(it["Size"]) for it in items if not it.get("IsDir")}
 
     # --- the steps -------------------------------------------------------------------------
@@ -342,7 +342,7 @@ class Runner:
         except RuntimeError:
             w = int(self.b["lock_wait_s"])
             wait = t("backup.wait_min", m=w // 60) if w >= 60 else t("backup.wait_s", s=w)
-            raise BackupError(t("backup.busy", wait=wait), "snapshot")
+            raise BackupError(t("backup.busy", wait=wait), "snapshot")  # noqa: B904
         if p.returncode != 0:
             raise BackupError(t("backup.tar", code=p.returncode), "snapshot", p.stderr.strip()[-500:])
         self.say(f"snapshot: {os.path.basename(tar_path)}, {os.path.getsize(tar_path) / 1e6:.1f} MB, the state lock held {held:.1f} s (waited {time.time() - t0 - held:.1f} s)")

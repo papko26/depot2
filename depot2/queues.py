@@ -39,13 +39,13 @@ class Queue:
     NAME: str | None = None  # the file's name: <NAME>.json, <NAME>-history.jsonl
     PREFIX: str | None = None  # the id's prefix
     TITLE: Text | None = None  # the table's heading (a Text)
-    STATUS_RU: dict[str, str] | i18n.Labels = {}  # status -> its word (an i18n.Labels)
+    STATUS_RU: dict[str, str] | i18n.Labels = {}  # status -> its word (an i18n.Labels)  # noqa: RUF012
     OPEN: tuple[str, ...] = ()  # the statuses of an open entry
-    ALSO_FROM: dict[str, tuple[str, ...]] = {}  # target status -> closed statuses allowed to move there
+    ALSO_FROM: dict[str, tuple[str, ...]] = {}  # target status -> closed statuses allowed to move there  # noqa: RUF012
     FIELDS: tuple[str, ...] = ()  # the fields `set` may change (lists: LIST_FIELDS append)
     LIST_FIELDS: tuple[str, ...] = ("links", "notes")
     STAGES = False  # a wish and a to-think entry are cars with stages (stages.py); a todo is not
-    STATUS_STAGE: dict[str, str] = {}  # a status move -> the stage it means (to_status)
+    STATUS_STAGE: dict[str, str] = {}  # a status move -> the stage it means (to_status)  # noqa: RUF012
     KIND_RU: Text | str | None = None  # entry kind for the car's source note
 
     def __init__(self, state, cfg=None):
@@ -350,13 +350,13 @@ class Wishes(Queue):
     PREFIX = "wl"
     TITLE = Text("queues.wishes.title")
     STATUS_RU = i18n.Labels("queues.wishes.status", ("waiting", "taken", "declined", "done"))
-    ALSO_FROM = {"done": ("taken",)}
+    ALSO_FROM = {"done": ("taken",)}  # noqa: RUF012
     OPEN = ("waiting",)
     FIELDS = ("date", "words", "title", "area", "priority", "text", "source_ref")
     COLUMNS = Text("queues.col.wish", "queues.col.date", "queues.col.words", "queues.col.area", "queues.col.priority",
                    "queues.col.status")
     STAGES = True
-    STATUS_STAGE = {"declined": "scrapped", "done": "arrived"}
+    STATUS_STAGE = {"declined": "scrapped", "done": "arrived"}  # noqa: RUF012
     KIND_RU = Text("queues.wishes.kind")
 
     def stage_default_why(self, e):
@@ -428,7 +428,7 @@ class Think(Queue):
     COLUMNS = Text("queues.col.topic", "queues.col.date", "queues.col.questions", "queues.col.by", "queues.col.related",
                    "queues.col.priority", "queues.col.status")
     STAGES = True
-    STATUS_STAGE = {"dropped": "scrapped"}
+    STATUS_STAGE = {"dropped": "scrapped"}  # noqa: RUF012
     KIND_RU = Text("queues.think.kind")
 
     def stage_default_why(self, e):

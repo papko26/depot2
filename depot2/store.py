@@ -122,7 +122,7 @@ def read_jsonl(path):
             try:
                 out.append(json.loads(line))
             except ValueError:
-                raise ValueError("%s:%d is not valid JSON" % (path, n))  # noqa: UP031
+                raise ValueError("%s:%d is not valid JSON" % (path, n))  # noqa: B904, UP031
     return out
 
 
@@ -174,7 +174,7 @@ class State:
                     break
                 except OSError:
                     if time.time() >= deadline:
-                        raise LockBusy("another depot2 has held {} for over {:g} s, nothing was written: run the "
+                        raise LockBusy("another depot2 has held {} for over {:g} s, nothing was written: run the "  # noqa: B904
                                        "command again in a moment (a write of the merge runner or the backup's snapshot "
                                        "holds it for about a second, a team round for its whole run)".format(
                                            self.path(".lock"), LOCK_WAIT_S if wait_s is None else wait_s))

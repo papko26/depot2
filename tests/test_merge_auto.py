@@ -365,7 +365,7 @@ class NetworkTest(AutoBase):
 
 
 class RulesTest(unittest.TestCase):
-    AUTO = {"generated": {"file": "docs/GENERATED.md", "cmd": ["x"]},
+    AUTO = {"generated": {"file": "docs/GENERATED.md", "cmd": ["x"]},  # noqa: RUF012
             "snapshots": {"glob": "test/__snapshots__/*.snap", "cmd": ["x"]},
             "golden": {"file": "test/golden/ranking.golden.json", "cmd": ["x"]},
             "union": ["README.md", "NOTES.md", "docs/*/GUIDE.md"]}

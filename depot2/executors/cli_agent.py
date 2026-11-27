@@ -146,7 +146,7 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
                                     stderr=subprocess.PIPE, cwd=spec.cwd, env=child_env(),
                                     start_new_session=True)
         except OSError as e:
-            raise FatalError(f"cannot start {executor_bin}: {e}")
+            raise FatalError(f"cannot start {executor_bin}: {e}")  # noqa: B904
 
         def feed():
             try:

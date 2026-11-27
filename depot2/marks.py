@@ -288,7 +288,7 @@ def holder(state, cfg, ref):
     try:
         car = stages.Car(state, cfg, ref)
     except (stages.StageError, TrackError, StackError) as e:
-        raise MarksError(str(e))
+        raise MarksError(str(e))  # noqa: B904
     rec = car.car if car.car is not None else car.obj
     if rec is None:
         raise MarksError(t("marks.holder_none", ref=ref))
@@ -306,7 +306,7 @@ def pr_body(state, cfg, n):
     try:
         d = Rider(state, cfg).gh_json("pr", "view", str(n), "-R", config_repo(cfg), "--json", "body")
     except MergeError as e:
-        raise MarksError(t("marks.pr_unread", n=n, error=e))
+        raise MarksError(t("marks.pr_unread", n=n, error=e))  # noqa: B904
     return str((d or {}).get("body") or "")
 
 

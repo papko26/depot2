@@ -102,7 +102,7 @@ def parse_when(text):
     try:
         d = datetime.datetime.fromisoformat(t)
     except ValueError:
-        raise TrainError(f"not a date-time: {text!r} (want 2031-04-08 or 2031-04-08T15:00)")
+        raise TrainError(f"not a date-time: {text!r} (want 2031-04-08 or 2031-04-08T15:00)")  # noqa: B904
     if d.tzinfo is None:
         d = d.astimezone()  # local time
     return d
@@ -501,7 +501,7 @@ class Trains:
                     back = self._take_back(tn, added, n)
                     if not isinstance(x, ValueError):
                         raise
-                    raise TrainError(i18n.t("trains.enqueue_failed", name=tn["name"], ref=ref, said=_pr_said(n, x),
+                    raise TrainError(i18n.t("trains.enqueue_failed", name=tn["name"], ref=ref, said=_pr_said(n, x),  # noqa: B904
                                             back="\n".join(back), state=STATE_RU[tn["state"]]))
                 added.append((ref, e))
                 out += [f"{ref}: {x}" for x in lines[:1]]

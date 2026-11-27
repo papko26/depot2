@@ -347,7 +347,7 @@ class RouteTest(GateBase):
 
 class DocsTest(GateBase):
 
-    HANDED = ["--ci", "green", "--heavy", "n/a", "--scan", "CLEAN", "--shots", "n/a"]
+    HANDED = ["--ci", "green", "--heavy", "n/a", "--scan", "CLEAN", "--shots", "n/a"]  # noqa: RUF012
 
     def setUp(self):
         super().setUp()

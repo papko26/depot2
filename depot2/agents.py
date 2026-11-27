@@ -79,7 +79,7 @@ def parse_usage(text):
     try:
         v = float(t.rstrip("%").strip())
     except ValueError:
-        raise AgentError(f"--usage is the usage window's share: 0.62, 62 or 62%, got {text!r}")
+        raise AgentError(f"--usage is the usage window's share: 0.62, 62 or 62%, got {text!r}")  # noqa: B904
     if pct or v > 1:
         v = v / 100.0
     if not 0 <= v <= 1:

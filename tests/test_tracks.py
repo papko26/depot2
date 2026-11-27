@@ -297,7 +297,7 @@ class StackLinkTest(TracksBase):
 
 
 class ImportTest(TracksBase):
-    SPEC = {"tracks": [
+    SPEC = {"tracks": [  # noqa: RUF012
         {"title": "Поиск", "notes": ["бывший st-0006"],
          "cars": [{"n": "0", "title": "дизайн-док", "size": "doc", "spent_mtok": 4.6, "status": "merged"},
                   {"n": "1", "title": "индекс и фильтры", "size": "L", "spent_mtok": 15, "status": "pr", "pr": 189},

@@ -92,7 +92,7 @@ def resolve(state, cfg, text, stk, tr, what="car"):
     try:
         return stages.Car(state, cfg, ref, stack=stk, tracks=tr)
     except ValueError as e:
-        raise ClaimError(str(e))
+        raise ClaimError(str(e))  # noqa: B904
 
 
 def canon(car):

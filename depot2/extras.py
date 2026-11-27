@@ -68,7 +68,7 @@ class EventLog:
 
 
     OPEN: tuple[str, ...] = ()
-    STATUS_RU: dict[str, str] | i18n.Labels = {}
+    STATUS_RU: dict[str, str] | i18n.Labels = {}  # noqa: RUF012
 
     def listing(self, all_=False):
         return [it for it in self.items() if all_ or it["status"] in self.OPEN]

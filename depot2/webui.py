@@ -92,7 +92,7 @@ def track(state, cfg, tid):
     try:
         t = tr.get(tid)
     except TrackError as e:
-        raise NotFound(str(e))
+        raise NotFound(str(e))  # noqa: B904
     return tr.track_json(t)
 
 
@@ -109,7 +109,7 @@ def train(state, cfg, name):
     try:
         t = tr.get(name)
     except TrainError as e:
-        raise NotFound(str(e))
+        raise NotFound(str(e))  # noqa: B904
     return tr.train_json(t)
 
 
@@ -122,7 +122,7 @@ def car_of(state, cfg, ref):
     try:
         return stages.Car(state, cfg, ref)
     except (stages.StageError, TrackError, StackError) as e:
-        raise NotFound(str(e))
+        raise NotFound(str(e))  # noqa: B904
 
 
 def car(state, cfg, ref):

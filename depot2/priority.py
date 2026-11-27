@@ -50,7 +50,7 @@ def arg(text):
     try:
         return parse(text)
     except PriorityError as e:
-        raise argparse.ArgumentTypeError(str(e))
+        raise argparse.ArgumentTypeError(str(e))  # noqa: B904
 
 
 def add_arg(parser, synonym=False):

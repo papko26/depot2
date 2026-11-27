@@ -181,7 +181,7 @@ class MergeQueue:
         try:
             n = int(ref.lstrip("#"))
         except ValueError:
-            raise MergeError(f"a merge queue entry is mq-NNNN or a PR number, got {ref!r}")
+            raise MergeError(f"a merge queue entry is mq-NNNN or a PR number, got {ref!r}")  # noqa: B904
         mine = [e for e in self.data["entries"] if e["pr"] == n]
         if not mine:
             raise MergeError("PR #%d is not in the merge queue" % n)  # noqa: UP031
@@ -503,7 +503,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         try:
             return json.loads(out or "null")
         except ValueError:
-            raise MergeError("gh {}: not JSON: {}".format(" ".join(args[:2]), clip(out, 120)))
+            raise MergeError("gh {}: not JSON: {}".format(" ".join(args[:2]), clip(out, 120)))  # noqa: B904
 
     def pr_view(self, n):
         return self.gh_json("pr", "view", str(n), "-R", self.repo, "--json",
@@ -590,7 +590,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                 except OSError:
                     if left == 1:
                         pid = (os.pread(fd, 32, 0) or b"?").decode(errors="replace").strip()
-                        raise MergeError(f"another merge run holds the queue (pid {pid}): one runner at a time")
+                        raise MergeError(f"another merge run holds the queue (pid {pid}): one runner at a time")  # noqa: B904
                     time.sleep(pause)
             os.ftruncate(fd, 0)
             os.write(fd, ("%d\n" % os.getpid()).encode())  # noqa: UP031
@@ -1839,7 +1839,7 @@ def check(state, cfg, pr_n, word, sh=None, force=False, why=None):
             forced = gates.check(unmet, force, why, "PR #%d" % n, ru("queued"),  # noqa: UP031
                                  "depot2 merge add %d --word «…»" % n, error=MergeError)  # noqa: UP031
         except MergeError as e:  # what the PR's section gave, under the refusal
-            raise MergeError("\n".join([str(e), *lines]))
+            raise MergeError("\n".join([str(e), *lines]))  # noqa: B904
     return types.SimpleNamespace(n=n, q=q, pr=pr, br=br, o=o, car=car, tr=tr, c=c, reading=reading, forced=forced,
                                  lines=lines)
 
