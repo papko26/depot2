@@ -1,4 +1,3 @@
-
 import json
 import os
 
@@ -35,8 +34,11 @@ class StackTest(Base):
         self.assertEqual([o["id"] for o in s.queue()], ["st-0002", "st-0003", "st-0001"])
         with self.assertRaises(StackError) as e:
             s.add("лишняя")
-        self.assertEqual(str(e.exception), "очередь полна (3): место освобождает depot2 stack done ID --reason «…» (что уже "
-                                           "не нужно) или stack start ID (голова очереди — в слот)")
+        self.assertEqual(
+            str(e.exception),
+            "очередь полна (3): место освобождает depot2 stack done ID --reason «…» (что уже "
+            "не нужно) или stack start ID (голова очереди — в слот)",
+        )
         with self.assertRaises(StackError) as e:
             s.start(b["id"])
         self.assertIn("depends on st-0001, not done yet", str(e.exception))
@@ -84,14 +86,22 @@ class StackTest(Base):
         s.start("st-0001")
         s.lock("st-0002", "keeper", "ответ владельца про лимиты", "дорого", "r", "tx-000001", 10)
         md = s.md()
-        self.assertIn("| № | Где | Задача | Приоритет | Ветка / PR | Статус | Автозапуск | Effort (ожидаемо / потрачено) "
-                      "| Зависит от | Замок |", md)
+        self.assertIn(
+            "| № | Где | Задача | Приоритет | Ветка / PR | Статус | Автозапуск | Effort (ожидаемо / потрачено) "
+            "| Зависит от | Замок |",
+            md,
+        )
         self.assertIn("| **Сборка — в слотах (1/2)** | | | | | | | | | |", md)
-        self.assertIn("| С1 | слот | st-0001 Импорт 3 | P5 | import-3 / PR #181 | агент работает | нет | — | — | — |", md)
+        self.assertIn(
+            "| С1 | слот | st-0001 Импорт 3 | P5 | import-3 / PR #181 | агент работает | нет | — | — | — |", md
+        )
         self.assertIn("| С2 | слот | свободен | | | | | | | |", md)
         self.assertIn("| **Очередь — ждёт слота (1/3)** | | | | | | | | | |", md)
-        self.assertIn("| 1 | очередь | st-0002 Обложки | P5 | — | ждёт слота | нет | — | st-0001 | lk-0001 Копилка: ответ "
-                      "владельца про лимиты (-10) |", md)
+        self.assertIn(
+            "| 1 | очередь | st-0002 Обложки | P5 | — | ждёт слота | нет | — | st-0001 | lk-0001 Копилка: ответ "
+            "владельца про лимиты (-10) |",
+            md,
+        )
         self.assertLess(md.index("в слотах"), md.index("ждёт слота"))
 
     def test_the_effort_column(self):
@@ -102,8 +112,11 @@ class StackTest(Base):
         with self.assertRaises(ValueError):
             s.add("x", size="XXL")
         md = s.md()
-        self.assertIn("| 1 | очередь | st-0001 Импорт 3 | P5 | — | ждёт слота | нет | ≈ 1%UW (10 MTok) / 1.44%UW "
-                      "(14.4 MTok) | — | — |", md)
+        self.assertIn(
+            "| 1 | очередь | st-0001 Импорт 3 | P5 | — | ждёт слота | нет | ≈ 1%UW (10 MTok) / 1.44%UW "
+            "(14.4 MTok) | — | — |",
+            md,
+        )
         self.assertIn("| 2 | очередь | st-0002 Замер | P5 | — | ждёт слота | нет | ≈ 0.3%UW (3 MTok) / — | — | — |", md)
         self.assertIn("1%UW ≈ 10 MTok (usage.mtok_per_pct)", md)
         self.t.cfg["usage"]["mtok_per_pct"] = 24.0
@@ -134,9 +147,9 @@ class StackTest(Base):
         self.assertEqual(self.team("stack", "done", "st-0001", "--reason", "merged #190")[0], 0)
         self.assertNotIn("st-0001", self.team("stack")[1])
 
-
     def test_a_note_onto_the_object(self):
         from depot2.store import now_iso
+
         self.assertEqual(self.team("stack", "add", "--title", "Импорт 3")[0], 0)
         rc, out, _ = self.team("stack", "set", "st-0001", "--note", "ждёт CI")
         self.assertEqual(rc, 0)
@@ -156,7 +169,6 @@ class StackTest(Base):
 
 
 class AutostartAndParkTest(Base):
-
     def test_the_autostart_flag(self):
         rc, out, err = self.team("stack", "add", "--title", "Импорт 3")
         self.assertEqual(rc, 0, err)
@@ -165,8 +177,11 @@ class AutostartAndParkTest(Base):
         self.assertIn("st-0002 added to the queue (2/10), autostart yes", out)
         self.assertIn("| 1 | очередь | st-0001 Импорт 3 | P5 | — | ждёт слота | нет | — | — | — |", out)
         self.assertIn("| 2 | очередь | st-0002 Обложки | P5 | — | ждёт слота | да | — | — | — |", out)
-        self.assertIn("Автозапуск: да — первый свободный слот берёт объект сам (`trains next`, после поездов); "
-                      "нет (по умолчанию) — ждёт слова владельца, `stack start`;", out)
+        self.assertIn(
+            "Автозапуск: да — первый свободный слот берёт объект сам (`trains next`, после поездов); "
+            "нет (по умолчанию) — ждёт слова владельца, `stack start`;",
+            out,
+        )
         s = Stack(self.t.state, self.t.cfg)
         self.assertEqual([o["autostart"] for o in s.queue()], [False, True])
         self.assertEqual(self.team("stack", "set", "st-0002", "--autostart", "no")[0], 0)
@@ -214,16 +229,24 @@ class AutostartAndParkTest(Base):
         s = Stack(self.t.state, self.t.cfg)
         self.assertEqual([o["id"] for o in s.queue()], ["st-0001", "st-0002"])
         o = s.get("st-0001")
-        self.assertEqual((o["where"], o["branch"], o["pr"], o["status"], o["parked"]["reason"]),
-                         ("queue", "bookmarks-size", 205, "PR #205 готов; ждёт замера", "ждёт замера выдачи"))
-        self.assertIn("| 1 | очередь | st-0001 Закладки | P5 | bookmarks-size / PR #205 | PR #205 готов; ждёт замера (запаркован {}: "
-                      "ждёт замера выдачи) | да |".format(o["parked"]["ts"][:10]), out)
+        self.assertEqual(
+            (o["where"], o["branch"], o["pr"], o["status"], o["parked"]["reason"]),
+            ("queue", "bookmarks-size", 205, "PR #205 готов; ждёт замера", "ждёт замера выдачи"),
+        )
+        self.assertIn(
+            "| 1 | очередь | st-0001 Закладки | P5 | bookmarks-size / PR #205 | PR #205 готов; ждёт замера (запаркован {}: "
+            "ждёт замера выдачи) | да |".format(o["parked"]["ts"][:10]),
+            out,
+        )
         # a freed slot never takes it by itself, though its autostart is yes; the next object goes
         from depot2.trains import Trains
+
         nx = Trains(self.t.state, self.t.cfg).next()
         self.assertEqual([x["id"] for x in nx["stack"]], ["st-0002"])
-        self.assertEqual([(w["stack"]["id"], w["why"], w["command"]) for w in nx["owner_word"]],
-                         [("st-0001", "запаркован: ждёт замера выдачи", "depot2 stack start st-0001")])
+        self.assertEqual(
+            [(w["stack"]["id"], w["why"], w["command"]) for w in nx["owner_word"]],
+            [("st-0001", "запаркован: ждёт замера выдачи", "depot2 stack start st-0001")],
+        )
         rc, out, _ = self.team("stack", "park", "st-0001", "--reason", "ещё раз")
         self.assertEqual(rc, 1)  # only an object in a slot
         # `stack start` brings it back
@@ -242,10 +265,13 @@ class LockPassTest(Base):
         s.start("st-0001")
 
     def test_the_lock_pass_runs_after_the_vote_and_sees_the_balance_after_the_debits(self):
-        script = {("counter", "r1"): dict(ans([("B49", "agree", 4, "важно")]),
-                                          brainstorm_proposal=proposal("Обложки и полки")),
-                  ("builder", "r1"): dict(ans(), order=order(seeds="1-5", threshold="8 мс", forecast="6")),
-                  ("keeper", "r3"): lock("st-0001")}
+        script = {
+            ("counter", "r1"): dict(
+                ans([("B49", "agree", 4, "важно")]), brainstorm_proposal=proposal("Обложки и полки")
+            ),
+            ("builder", "r1"): dict(ans(), order=order(seeds="1-5", threshold="8 мс", forecast="6")),
+            ("keeper", "r3"): lock("st-0001"),
+        }
         for cid in characters.IDS:
             script[(cid, "r2")] = r2([("BR1", "yes")])
         r, runner = self.play(script)
@@ -271,8 +297,11 @@ class LockPassTest(Base):
         self.assertEqual((lk["id"], lk["by"], lk["round"], lk["tx"]), ("lk-0001", "keeper", r["id"], locks[0]["id"]))
         rep = r["report"]
         self.assertIn("Проход замков (раунд 3) прошёл: 5 вызовов.", rep)
-        self.assertIn("- lk-0001 Копилка на st-0001 «Импорт 3» (-10 ток.): условие: тест «isbn-dedup-cap» зелёный; "
-                      "зачем: иначе каталог двоится.", rep)
+        self.assertIn(
+            "- lk-0001 Копилка на st-0001 «Импорт 3» (-10 ток.): условие: тест «isbn-dedup-cap» зелёный; "
+            "зачем: иначе каталог двоится.",
+            rep,
+        )
         self.assertEqual(self.rows(rep)["Копилка"], ["Копилка", "20", "—", "0", "0", "-5", "0", "-10", "5"])
         self.assertIn("замки 10 ток. (не возвращаются)", rep)
         self.assertNotIn("НЕ СХОДИТСЯ", rep)
@@ -280,8 +309,13 @@ class LockPassTest(Base):
 
     def test_refused_locks(self):
         Ledger(self.t.state).fine("painter", 15, "тест")  # 5 < 10: no call at all
-        r, runner = self.play({("builder", "r3"): lock("st-0002"), ("counter", "r3"): lock("st-0002"),
-                               ("keeper", "r3"): lock("st-0001", condition="")})
+        r, runner = self.play(
+            {
+                ("builder", "r3"): lock("st-0002"),
+                ("counter", "r3"): lock("st-0002"),
+                ("keeper", "r3"): lock("st-0001", condition=""),
+            }
+        )
         self.assertNotIn("painter", [c[0] for c in runner.calls if c[1] == "r3"])
         rep = r["report"]
         self.assertIn("- отклонён, Палитра, Краски — не может заплатить замок (5 < 10): без вызова.", rep)
@@ -290,12 +324,23 @@ class LockPassTest(Base):
         self.assertEqual([e["character"] for e in Ledger(self.t.state).entries() if e["type"] == "lock"], ["builder"])
         # One per character per round, and only on an object in the stack (checked by code).
         stk = Stack(self.t.state, self.t.cfg)
-        placed, refused = _place_locks(self.t.state, self.t.cfg, Ledger(self.t.state), stk, "r-x",
-                                       [("chronicler", lock("st-0001")["lock"]), ("chronicler", lock("st-0002")["lock"]),
-                                        ("keeper", lock("st-0404")["lock"])])
+        placed, refused = _place_locks(
+            self.t.state,
+            self.t.cfg,
+            Ledger(self.t.state),
+            stk,
+            "r-x",
+            [
+                ("chronicler", lock("st-0001")["lock"]),
+                ("chronicler", lock("st-0002")["lock"]),
+                ("keeper", lock("st-0404")["lock"]),
+            ],
+        )
         self.assertEqual([p["object"] for p in placed], ["st-0001"])
-        self.assertEqual([x["reason"] for x in refused], ["второй замок за раунд: один на персонажа",
-                                                         "нет такого объекта в стеке: st-0404"])
+        self.assertEqual(
+            [x["reason"] for x in refused],
+            ["второй замок за раунд: один на персонажа", "нет такого объекта в стеке: st-0404"],
+        )
 
     def test_skipped_on_an_empty_stack(self):
         s = Stack(self.t.state, self.t.cfg)
@@ -312,8 +357,9 @@ class LockPassTest(Base):
         self.assertIn("Перо, Летописец: раунд 3 (замки) пропущен (cap: 12 calls per round)", r["report"])
 
     def test_a_fatal_error_in_the_lock_pass_keeps_the_round(self):
-        r, runner = self.play({("painter", "r3"): FatalError("API error 429: usage limit"),
-                               ("builder", "r3"): lock("st-0001")})
+        r, runner = self.play(
+            {("painter", "r3"): FatalError("API error 429: usage limit"), ("builder", "r3"): lock("st-0001")}
+        )
         self.assertIn("lock pass stopped", r["fatal"])
         self.assertEqual([c[0] for c in runner.calls if c[1] == "r3"], ["builder", "painter"])
         rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
@@ -334,9 +380,13 @@ class LockPassTest(Base):
         self.assertEqual(self.team("stack", "unlock", "st-0002", "--met", "--reason", "x")[0], 1)  # no lock now
         # The next round's report lists them as lifted.
         r, _ = self.play({})
-        self.assertIn("- снят с прошлого раунда: lk-0001 на st-0001 (Строитель), условие выполнено: тест зелёный, CI #5.",
-                      r["report"])
-        self.assertIn("- снят с прошлого раунда: lk-0002 на st-0002 (Копилка), снял владелец: беру на себя.", r["report"])
+        self.assertIn(
+            "- снят с прошлого раунда: lk-0001 на st-0001 (Строитель), условие выполнено: тест зелёный, CI #5.",
+            r["report"],
+        )
+        self.assertIn(
+            "- снят с прошлого раунда: lk-0002 на st-0002 (Копилка), снял владелец: беру на себя.", r["report"]
+        )
 
 
 class BallotsTest(Base):

@@ -14,8 +14,7 @@ from . import priority as pri
 from .i18n import is_word, t
 from .stack import WHERE, Stack, StackError, _cell
 
-KINDS = ("review", "review-10", "discuss", "ballot", "brainstorm", "solo", "question", "reflect", "export",
-         "other")
+KINDS = ("review", "review-10", "discuss", "ballot", "brainstorm", "solo", "question", "reflect", "export", "other")
 KIND_RU = i18n.Labels("tstack.kind", KINDS)
 
 
@@ -42,8 +41,19 @@ class TeamStack(Stack):
             return any(x["id"] == oid for x in self.agents().objects())
         return super()._dep_open(oid)
 
-    def add(self, kind, title=None, input_path=None, who="all", depends=(), at=None, status=None, size=None,
-            est_mtok=None, priority=None):
+    def add(
+        self,
+        kind,
+        title=None,
+        input_path=None,
+        who="all",
+        depends=(),
+        at=None,
+        status=None,
+        size=None,
+        est_mtok=None,
+        priority=None,
+    ):
         if kind not in KINDS:
             raise StackError("kind must be one of {}".format(", ".join(KINDS)))
         if len(self.queue()) >= self.queue_max:
@@ -56,11 +66,28 @@ class TeamStack(Stack):
         path = os.path.abspath(os.path.expanduser(input_path)) if input_path else None
         if not (title or "").strip():
             title = KIND_RU[kind] + (": " + os.path.basename(path) if path else "")
-        obj = {"id": self._new_id(), "kind": kind, "title": title.strip(), "input": path, "who": who,
-               "round": None, "cost_usd": None, "where": "queue", "depends_on": list(depends or ()),
-               "status": status or t("stack.waiting"), "added": _now(), "started": None, "lock": None,
-               "branch": None, "pr": None, "brief": None, "size": size, "est_mtok": est_mtok, "spent_mtok": None,
-               "priority": pri.DEFAULT if priority is None else pri.parse(priority)}
+        obj = {
+            "id": self._new_id(),
+            "kind": kind,
+            "title": title.strip(),
+            "input": path,
+            "who": who,
+            "round": None,
+            "cost_usd": None,
+            "where": "queue",
+            "depends_on": list(depends or ()),
+            "status": status or t("stack.waiting"),
+            "added": _now(),
+            "started": None,
+            "lock": None,
+            "branch": None,
+            "pr": None,
+            "brief": None,
+            "size": size,
+            "est_mtok": est_mtok,
+            "spent_mtok": None,
+            "priority": pri.DEFAULT if priority is None else pri.parse(priority),
+        }
         return self._insert(obj, at)
 
     def set(self, oid, **fields):
@@ -73,9 +100,13 @@ class TeamStack(Stack):
         return super().set(oid, **fields)
 
     def record_round(self, oid, rid, costs):
-        return super().set(oid, round=rid, cost_usd=round(float(costs.get("total_usd") or 0.0), 4),
-                                          spent_mtok=round(effort.costs_mtok(costs, self.cfg), 6),
-                                          status=t("tstack.round_done", rid=rid))
+        return super().set(
+            oid,
+            round=rid,
+            cost_usd=round(float(costs.get("total_usd") or 0.0), 4),
+            spent_mtok=round(effort.costs_mtok(costs, self.cfg), 6),
+            status=t("tstack.round_done", rid=rid),
+        )
 
     def command(self, o):
         """The command that runs the item (printed on `tstack start`), or None for a question."""
@@ -86,7 +117,9 @@ class TeamStack(Stack):
             kind = "review" if k == "review-10" else k
             return "depot2 round --kind {}{}{} --item {} --dry-run".format(kind, inp, solo, o["id"])
         if k == "solo":
-            return "depot2 round --kind discuss{}{} --item {} --dry-run".format(inp, solo or " --only <character>", o["id"])
+            return "depot2 round --kind discuss{}{} --item {} --dry-run".format(
+                inp, solo or " --only <character>", o["id"]
+            )
         if k == "reflect":
             return f"depot2 reflect{solo}"
         if k == "export":
@@ -99,8 +132,10 @@ class TeamStack(Stack):
         L.append(t("tstack.header"))
         L.append("|---|---|---|---|---|---|---|---|---|---|---|")
         rows = self.rows()
-        for part, where, n, cap in ((t("stack.part_slots"), "slot", len(slots), self.slots_n),
-                                    (t("stack.part_queue"), "queue", len(q), self.queue_max)):
+        for part, where, n, cap in (
+            (t("stack.part_slots"), "slot", len(slots), self.slots_n),
+            (t("stack.part_queue"), "queue", len(q), self.queue_max),
+        ):
             L.append("| **%s (%d/%d)** | | | | | | | | | | |" % (part, n, cap))  # noqa: UP031
             for num, w, o in rows:
                 if w != where:
@@ -108,12 +143,22 @@ class TeamStack(Stack):
                 if o is None:
                     L.append("| {} | {} | {} | | | | | | | | |".format(num, WHERE[w], t("stack.free")))
                     continue
-                L.append("| {} | {} | {} {} | {} | {} | {} | {} | {} | {} | {} | {} |".format(
-                    num, WHERE[w], o["id"], _cell(o["title"]), pri.cell(o), KIND_RU.get(o["kind"], o["kind"]),
-                    who_ru(o.get("who")),
-                    _cell(os.path.basename(o["input"]) if o.get("input") else None), _cell(o.get("round") or "—"),
-                    _cell(o.get("status")), effort.cell(effort.item_expected(o, self.cfg), spent_of(o, self.cfg), self.cfg),
-                    ", ".join(o.get("depends_on") or []) or "—"))
+                L.append(
+                    "| {} | {} | {} {} | {} | {} | {} | {} | {} | {} | {} | {} |".format(
+                        num,
+                        WHERE[w],
+                        o["id"],
+                        _cell(o["title"]),
+                        pri.cell(o),
+                        KIND_RU.get(o["kind"], o["kind"]),
+                        who_ru(o.get("who")),
+                        _cell(os.path.basename(o["input"]) if o.get("input") else None),
+                        _cell(o.get("round") or "—"),
+                        _cell(o.get("status")),
+                        effort.cell(effort.item_expected(o, self.cfg), spent_of(o, self.cfg), self.cfg),
+                        ", ".join(o.get("depends_on") or []) or "—",
+                    )
+                )
         L.append("")
         L.append(t("tstack.footer"))
         L.append(effort.legend(self.cfg))
@@ -146,4 +191,5 @@ def spent_of(o, cfg):
 
 def _now():
     from .store import now_iso
+
     return now_iso()

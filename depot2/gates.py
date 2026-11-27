@@ -25,13 +25,21 @@ DOR = ("brief", "questions", "after", "project", "checks")
 DOD = ("ci", "heavy", "scan", "shots", "principles", "docs")
 ITEM_RU = i18n.Labels("gates.item", DOR + DOD)
 # The sections of the three checks in a brief (their shown names: gates.section.<code>), read in every language.
-CHECK_SECTIONS = (("code", re.compile(r"(?i)" + rx("in.gates.section_code"))),
-                  ("principles", re.compile(r"(?i)" + rx("in.gates.section_principles"))))
+CHECK_SECTIONS = (
+    ("code", re.compile(r"(?i)" + rx("in.gates.section_code"))),
+    ("principles", re.compile(r"(?i)" + rx("in.gates.section_principles"))),
+)
 RE_SECTION = re.compile(r"^\s{0,3}(?:#{1,6}\s|\*\*)")
 # A sketch's line «Docs: needed» / «Docs: not needed» (group 1: the «not»), in every language.
-RE_DOCS = re.compile(r"(?im)^\s{0,3}(?:[-*+]\s+|#{1,6}\s+)?(?:\*\*)?" + rx("in.gates.docs") +
-                     r"(?:\*\*)?\s*:\s*(?:\*\*)?\s*(" + rx("in.gates.docs_not") + r")?" + rx("in.gates.docs_needed") +
-                     r"(?!\w)")
+RE_DOCS = re.compile(
+    r"(?im)^\s{0,3}(?:[-*+]\s+|#{1,6}\s+)?(?:\*\*)?"
+    + rx("in.gates.docs")
+    + r"(?:\*\*)?\s*:\s*(?:\*\*)?\s*("
+    + rx("in.gates.docs_not")
+    + r")?"
+    + rx("in.gates.docs_needed")
+    + r"(?!\w)"
+)
 CHECKS_SINCE = None  # the rule's day: `gates.checks_since` in the config (null: every car)
 GATE_RU = i18n.Labels("gates.gate", ("DoR", "DoD", "limit", "role", "window", "agent"))
 
@@ -133,8 +141,7 @@ def docs_need(recs):
         if r.get("docs") is not None:
             return t("gates.docs_flag") if r["docs"] else None
     brief = next((r.get("brief") for r in recs if r.get("brief")), None)
-    return t("gates.docs_sketch") if brief and os.path.isfile(os.path.expanduser(brief)) and \
-        brief_docs(brief) else None
+    return t("gates.docs_sketch") if brief and os.path.isfile(os.path.expanduser(brief)) and brief_docs(brief) else None
 
 
 DOCS_WORD = i18n.Labels("gates.docs_word", ("ahead", "now", "passed", "skipped"))
@@ -146,9 +153,16 @@ def docs_state(recs, stage, ref=None):
     elif stage in (*stages.PLANNING, "build"):
         state = "ahead"
     else:
-        state = "passed" if any(row.get("stage") == "docs" for r in recs for row in r.get("stages") or []) else "skipped"
-    return {"need": docs_need(recs), "state": state, "word": DOCS_WORD[state], "done": state == "now",
-            "cmd": "depot2 car stage %s docs" % (ref or "…")}
+        state = (
+            "passed" if any(row.get("stage") == "docs" for r in recs for row in r.get("stages") or []) else "skipped"
+        )
+    return {
+        "need": docs_need(recs),
+        "state": state,
+        "word": DOCS_WORD[state],
+        "done": state == "now",
+        "cmd": "depot2 car stage %s docs" % (ref or "…"),
+    }
 
 
 def docs_word(d):
@@ -245,8 +259,14 @@ def dor_unmet(stack, tracks, obj=None, car=None, track=None, items=None):
         out.append(t("gates.brief_not_found", path=brief))
     qs = open_questions(recs) if "questions" in items else []
     if qs:
-        out.append(t("gates.open_questions", n=len(qs), list="; ".join("%d. %s" % (q["n"], q["q"]) for q in qs[:3])  # noqa: UP031
-                     + (" …" if len(qs) > 3 else "")))
+        out.append(
+            t(
+                "gates.open_questions",
+                n=len(qs),
+                list="; ".join("%d. %s" % (q["n"], q["q"]) for q in qs[:3])  # noqa: UP031
+                + (" …" if len(qs) > 3 else ""),
+            )
+        )
     if after and car is not None and tracks is not None and track is not None:
         b = tracks.car_blockers(track, car, lock=False)
         if b:
@@ -277,10 +297,10 @@ def post_unmet(stack, oid, where):
 def limits(stack):
     """The columns' limits as the board shows them: {stage: {what, key, used, max, over}}."""
     out = {}
-    for stage, what, key, used, cap in (("build", t("gates.limit_slots"), "stack.slots", len(stack.in_slots()),
-                                         stack.slots_n),
-                                        ("acceptance", t("gates.limit_post"), "stack.post_max", len(stack.posted()),
-                                         stack.post_max)):
+    for stage, what, key, used, cap in (
+        ("build", t("gates.limit_slots"), "stack.slots", len(stack.in_slots()), stack.slots_n),
+        ("acceptance", t("gates.limit_post"), "stack.post_max", len(stack.posted()), stack.post_max),
+    ):
         out[stage] = {"what": what, "key": key, "used": used, "max": cap, "over": used > cap}
     return out
 
