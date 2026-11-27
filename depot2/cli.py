@@ -9,17 +9,17 @@ import os
 import re
 import sys
 
-from . import (  # noqa: E402
+from . import (
     characters,
     config,
-    i18n,  # noqa: E402
+    i18n,
 )
-from . import priority as pri  # noqa: E402
-from .executors import FatalError  # noqa: E402
-from .i18n import t  # noqa: E402
-from .ledger import Decisions, Ledger, LedgerError, Pending  # noqa: E402
-from .persona import Persona  # noqa: E402
-from .store import LockBusy, State  # noqa: E402
+from . import priority as pri
+from .executors import FatalError
+from .i18n import t
+from .ledger import Decisions, Ledger, LedgerError, Pending
+from .persona import Persona
+from .store import LockBusy, State
 
 
 def cmd_round(state, cfg, a):

@@ -12,10 +12,10 @@ os.environ["DEPOT2_LANG"] = "ru"  # the suites read the Russian catalog's texts;
 os.environ["DEPOT2_RAW_SCAN"] = "off"  # no private scan of the calls' raw streams; test_push turns it on with its fake
 sys.path.insert(0, os.path.dirname(HERE))
 
-from depot2 import characters, config  # noqa: E402
-from depot2.ledger import Ledger  # noqa: E402
-from depot2.persona import Persona  # noqa: E402
-from depot2.store import State  # noqa: E402
+from depot2 import characters, config
+from depot2.ledger import Ledger
+from depot2.persona import Persona
+from depot2.store import State
 
 FAKE = os.path.join(HERE, "fake_executor.py")
 with open(os.environ["DEPOT2_CONFIG"], encoding="utf-8") as _f:

@@ -372,7 +372,7 @@ class RulesTest(unittest.TestCase):
             "union": ["README.md", "NOTES.md", "docs/*/GUIDE.md"]}
 
     def test_rule_of(self):
-        r = lambda p: mergeauto.rule_of(p, self.AUTO)  # noqa: E731
+        r = lambda p: mergeauto.rule_of(p, self.AUTO)
         self.assertEqual(r("docs/GENERATED.md"), "generated")
         self.assertEqual(r("test/__snapshots__/parser.test.ts.snap"), "snapshot")
         self.assertEqual(r("test/golden/ranking.golden.json"), "golden")

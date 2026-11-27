@@ -45,7 +45,7 @@ class TrialsMixin:
             return False
         try:
             return self._presync(eid)
-        except Exception as ex:  # noqa: BLE001 (a trial is an optimisation: whatever it hits, the ride goes on)
+        except Exception as ex:
             from .merge import clip
             self.out("trials: %s: %s (the ride goes on)" % (type(ex).__name__, clip(ex, 200)))
             return False
@@ -149,7 +149,7 @@ class TrialsMixin:
             rec.update(status=h.status, reason=h.reason)
         except Stop as s:  # the throwaway worktree, a git step
             rec.update(status="failed", reason=s.reason)
-        except Exception as ex:  # noqa: BLE001 (recorded; tried again when its inputs move)
+        except Exception as ex:
             rec.update(status="failed", reason="%s: %s" % (type(ex).__name__, clip(ex, 200)))
         return self.trial_put(e2, rec)
 

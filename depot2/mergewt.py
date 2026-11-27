@@ -185,7 +185,7 @@ class WorktreesMixin:
             self.git(self.clone, "fetch", "-q", self.remote, self.base, timeout=300)  # origin/main with the merge in it
             why = self.wt_busy(e["branch"], but=eid) or self.wt_verdict(path, e["branch"], self.wt_known())
             res = self.wt_remove(path) if why is None else {"removed": False, "reason": why}
-        except Exception as ex:  # noqa: BLE001 (a cleanup after the merge: never a stop)
+        except Exception as ex:
             res = {"removed": False, "reason": "%s: %s" % (type(ex).__name__, clip(ex, 160))}
         res.update(path=path, ts=stamp(self.clock()))
         self.update(eid, "worktree", wt=res, say=wt_line(path, e["branch"], res))

@@ -9,7 +9,7 @@ import re
 import string
 import unittest
 
-import helpers  # noqa: F401
+import helpers
 
 import depot2
 from depot2 import config, i18n

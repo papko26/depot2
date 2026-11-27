@@ -668,7 +668,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         try:  # its own trial's branch, and any the queue left behind
             for line in self.sweep_trials():
                 self.say(eid, line)
-        except Exception as ex:  # noqa: BLE001 (a record: never after a merge)
+        except Exception as ex:
             self.out("trials: not swept: %s: %s" % (type(ex).__name__, clip(ex, 160)))
         for line in report_entry(e):
             self.out(line)
@@ -724,7 +724,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                     out.append("stage: %s%s" % ("" if isinstance(ex, StageError) else type(ex).__name__ + ": ", ex))
             try:
                 hand = rolled_before(self.state, self.cfg, (e.get("merged") or {}).get("ts"))
-            except Exception as ex:  # noqa: BLE001 (a record: it never stops the queue)
+            except Exception as ex:
                 hand = []
                 out.append("stage: merged by hand: %s: %s" % (type(ex).__name__, clip(ex, 160)))
             for car, at in hand:
@@ -745,7 +745,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                  % (e["pr"], e["pr"]))
         try:  # the trials stood on it: thrown away (mergetrials.py)
             self.discard_trials("#%d stopped" % e["pr"])
-        except Exception as ex:  # noqa: BLE001 (the stop is recorded already)
+        except Exception as ex:
             self.out("trials: not thrown away: %s: %s" % (type(ex).__name__, clip(ex, 160)))
 
     # --- the gates: a lock, a car's `after` ---

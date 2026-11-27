@@ -10,7 +10,7 @@ import sys
 import tempfile
 import unittest
 
-import helpers  # noqa: F401
+import helpers
 
 ROOT = os.path.dirname(helpers.HERE)
 SCRIPT = os.path.join(ROOT, "examples", "demo", "make-demo.sh")

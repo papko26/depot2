@@ -5,7 +5,7 @@ import os
 import re
 import unittest
 
-import helpers  # noqa: F401
+import helpers
 
 from depot2 import cli as team
 
