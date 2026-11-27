@@ -141,7 +141,7 @@ DOCS_WORD = i18n.Labels("gates.docs_word", ("ahead", "now", "passed", "skipped")
 def docs_state(recs, stage, ref=None):
     if stage == "docs":
         state = "now"
-    elif stage in stages.PLANNING + ("build",):
+    elif stage in (*stages.PLANNING, "build"):
         state = "ahead"
     else:
         state = "passed" if any(row.get("stage") == "docs" for r in recs for row in r.get("stages") or []) else "skipped"

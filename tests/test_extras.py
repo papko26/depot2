@@ -90,8 +90,7 @@ class Base(unittest.TestCase):
     def team(self, *argv):
         buf = io.StringIO()
         with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(io.StringIO()) as err:
-            rc = team.main(["--state", self.t.dir, "--set", "orders.results_dir=" + self.t.cfg["orders"]["results_dir"],
-                            "--set", "brainstorm.topics_dir=" + self.t.cfg["brainstorm"]["topics_dir"]] + list(argv))
+            rc = team.main(["--state", self.t.dir, "--set", "orders.results_dir=" + self.t.cfg["orders"]["results_dir"], "--set", "brainstorm.topics_dir=" + self.t.cfg["brainstorm"]["topics_dir"], *list(argv)])
         return rc, buf.getvalue(), err.getvalue()
 
 

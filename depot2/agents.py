@@ -255,7 +255,7 @@ class Agents:
         if role == "build":
             if not in_slot:
                 to_slot = True
-                if stage not in stages.PLANNING + ("build",):
+                if stage not in (*stages.PLANNING, "build"):
                     unmet["role"].append(t("agents.role_build_stage", role=ROLE_RU[role], stage=stages.ru(stage)))
                 else:
                     obj = stk.get(c["st"]) if c.get("st") and stk._dep_open(c["st"]) else None

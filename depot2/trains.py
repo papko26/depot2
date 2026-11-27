@@ -393,7 +393,7 @@ class Trains:
     def _place(self, tn, at):
         rest = [x for x in self.data["trains"] if x is not tn]
         pos = len(rest) if at is None else max(0, min(len(rest), int(at) - 1))
-        self.data["trains"] = rest[:pos] + [tn] + rest[pos:]
+        self.data["trains"] = [*rest[:pos], tn, *rest[pos:]]
 
     def set(self, name, new_name=None, title=None, after=None, no_after=False, not_before=None, owner=None, note=None,
             slots=None, est_mtok=None, clear_est=False, at=None, add_note=None, priority=None):
@@ -577,7 +577,7 @@ class Trains:
     def _place_car(self, tn, ref, at):
         rest = [x for x in tn["cars"] if x != ref]
         pos = len(rest) if at is None else max(0, min(len(rest), int(at) - 1))
-        tn["cars"] = rest[:pos] + [ref] + rest[pos:]
+        tn["cars"] = [*rest[:pos], ref, *rest[pos:]]
 
     def _of_train(self, tn, ref):
         """A car's ref in a train's list: as given, or a moved car's old ref read as its new one."""

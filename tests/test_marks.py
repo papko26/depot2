@@ -286,9 +286,9 @@ class PostTest(DepotBase):
         self.ok("stack", "add", "--title", "без вагона", "--brief", self.brief, "--pr", "302", "--branch", "feat")
         self.ok("stack", "start", "st-0001")
         self.prs({302: BROKEN})
-        rc, out, err = self.team("stack", "post", "st-0001", *self.handed("st-0001") + ["--force"])
+        rc, out, err = self.team("stack", "post", "st-0001", *[*self.handed("st-0001"), "--force"])
         self.assertIn("--force — только с причиной", err)
-        rc, out, err = self.team("stack", "post", "st-0001", *self.handed("st-0001") + ["--force", "--why", "владелец: ок"])
+        rc, out, err = self.team("stack", "post", "st-0001", *[*self.handed("st-0001"), "--force", "--why", "владелец: ок"])
         self.assertEqual(rc, 0, err)
         self.assertIn("st-0001: ворота пройдены с --force (владелец: ок): DoD (вход в приёмку) — принципы, ворота: "
                       "нарушен — 5", out)

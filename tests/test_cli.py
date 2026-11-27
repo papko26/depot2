@@ -46,11 +46,7 @@ class CliTest(unittest.TestCase):
         os.environ.pop("FAKE_MODE", None)
 
     def team(self, *args, ok=True):
-        p = subprocess.run([sys.executable, TEAM, "--state", self.state, "--set", "executor_bin=" + FAKE,
-                            "--set", "bundle.decisions_glob=" + os.path.join(self.dir, "none-*.md"),
-                            "--set", "deep_repo.clone=", "--set", "read_dirs=[]",
-                            "--set", "brainstorm.topics_dir=" + os.path.join(self.dir, "topics"),
-                            "--set", "orders.results_dir=" + os.path.join(self.dir, "orders")] + list(args),
+        p = subprocess.run([sys.executable, TEAM, "--state", self.state, "--set", "executor_bin=" + FAKE, "--set", "bundle.decisions_glob=" + os.path.join(self.dir, "none-*.md"), "--set", "deep_repo.clone=", "--set", "read_dirs=[]", "--set", "brainstorm.topics_dir=" + os.path.join(self.dir, "topics"), "--set", "orders.results_dir=" + os.path.join(self.dir, "orders"), *list(args)],
                            capture_output=True, text=True)
         if ok and p.returncode != 0:
             raise AssertionError("depot2 %s failed (%d): %s %s" % (args, p.returncode, p.stdout, p.stderr))  # noqa: UP031

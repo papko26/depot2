@@ -683,7 +683,7 @@ def migrate_from(state, cfg, dry_run=False):
                 except TrackError:
                     continue
                 name = re.compile(r"(?<![\w-]){}(?![\w-])".format(re.escape(e["id"])))
-                hits = [c for c in trk["cars"] if name.search(" ".join([c.get("title") or ""] + car_notes(c)))]
+                hits = [c for c in trk["cars"] if name.search(" ".join([c.get("title") or "", *car_notes(c)]))]
                 if len(hits) != 1:
                     left.append(t("queues.migrate_many_cars", id=e["id"], to=to, n=len(hits)) if hits
                                 else t("queues.migrate_no_car", id=e["id"], to=to))
@@ -701,7 +701,7 @@ def migrate_from(state, cfg, dry_run=False):
                 continue
             if e["id"] in (c.get("from") or []):
                 continue
-            c["from"] = list(c.get("from") or []) + [e["id"]]
+            c["from"] = [*list(c.get("from") or []), e["id"]]
             added.setdefault("{}:{}".format(trk["id"], c["n"]), []).append(e["id"])
         if retarget:
             queues.append((q, retarget))

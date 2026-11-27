@@ -96,7 +96,7 @@ def opt(argv, name):
 
 
 def git(d, *args, cwd=None):
-    return subprocess.run([d["git"]] + list(args), cwd=cwd, capture_output=True, text=True)
+    return subprocess.run([d["git"], *list(args)], cwd=cwd, capture_output=True, text=True)
 
 
 def head_of(d, branch):
@@ -153,8 +153,7 @@ def pr_merge(d, n, argv):
         for args in (["clone", "-q", d["bare"], tmp],):
             git(d, *args)
         git(d, "checkout", "-q", pr["baseRefName"], cwd=tmp)
-        p = git(d, *(ident + ["merge", "--no-ff", "-q", "origin/" + pr["headRefName"], "-m",
-                              "Merge pull request #{} from x/{}".format(n, pr["headRefName"])]), cwd=tmp)
+        p = git(d, *([*ident, "merge", "--no-ff", "-q", "origin/" + pr["headRefName"], "-m", "Merge pull request #{} from x/{}".format(n, pr["headRefName"])]), cwd=tmp)
         if p.returncode != 0:
             return fail(f"merge conflict: {p.stdout}" + p.stderr)
         git(d, "push", "-q", "origin", pr["baseRefName"], cwd=tmp)

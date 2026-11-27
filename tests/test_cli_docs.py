@@ -29,8 +29,8 @@ def _paths(p, path=()):
     for name, sp in s.choices.items():
         if id(sp) not in seen:
             seen.add(id(sp))
-            yield path + (name,)
-            yield from _paths(sp, path + (name,))
+            yield (*path, name)
+            yield from _paths(sp, (*path, name))
 
 
 def _resolve(ap, words):
@@ -48,9 +48,9 @@ def _resolve(ap, words):
             if s is None or not WORD.match(w):
                 done.append(path)  # no subcommand here, or a value, a flag, a placeholder: the path ends
             elif all(x in s.choices for x in w.split("|")):
-                nxt += [path + (x,) for x in w.split("|")]
+                nxt += [(*path, x) for x in w.split("|")]
             else:
-                bad.append(" ".join(path + (w,)))
+                bad.append(" ".join((*path, w)))
                 done.append(path)
         live = nxt
         if not live:
@@ -101,7 +101,7 @@ class CliDocsTest(unittest.TestCase):
         for path in sorted(named):
             out = io.StringIO()
             with contextlib.redirect_stdout(out), self.assertRaises(SystemExit) as e:
-                self.ap.parse_args(list(path) + ["--help"])
+                self.ap.parse_args([*list(path), "--help"])
             self.assertEqual(e.exception.code, 0, " ".join(path))
             self.assertIn("usage: depot2 " + " ".join(path), " ".join(out.getvalue().split()))
 
@@ -129,8 +129,8 @@ class CliDocsTest(unittest.TestCase):
                     helps = {c.dest: c.help for c in a._choices_actions}
                     for name, sp in a.choices.items():
                         if name in helps and not helps[name]:
-                            no.append(" ".join(path + [name]) + ": no help line")
-                        walk(sp, path + [name])
+                            no.append(" ".join([*path, name]) + ": no help line")
+                        walk(sp, [*path, name])
                 elif not isinstance(a, argparse._HelpAction) and not a.help:
                     no.append("{} {}".format(" ".join(path), "/".join(a.option_strings) or a.dest))
         walk(self.ap, [])

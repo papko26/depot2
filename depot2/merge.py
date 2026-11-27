@@ -474,7 +474,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         sub = git_subcommand(args)
 
         def run():
-            return self.sh.run(["git"] + list(args), cwd=cwd, timeout=timeout, env_extra=extra)
+            return self.sh.run(["git", *list(args)], cwd=cwd, timeout=timeout, env_extra=extra)
         return self.net_retry(f"git {sub}", run) if sub in NET_GIT else run()
 
     def unmerged(self, cwd):
@@ -491,7 +491,7 @@ class Rider(TrialsMixin, WorktreesMixin):
     def gh(self, *args, timeout=120, net=True):
         """gh; a network failure is tried again (net_retry), but never `pr merge` (step_merge looks first)."""
         def run():
-            return self.sh.run(["gh"] + list(args), timeout=timeout)
+            return self.sh.run(["gh", *list(args)], timeout=timeout)
         if not net or tuple(args[:2]) == ("pr", "merge"):
             return run()
         return self.net_retry("gh {}".format(" ".join(args[:2])), run)
@@ -1002,7 +1002,7 @@ class Rider(TrialsMixin, WorktreesMixin):
             return True
         if not self.m.get("scan"):
             raise Stop("merge.scan is not set: a scan command (its last line CLEAN), or false to push without one")
-        argv = argv_of([self.m["scan"]] + list(self.m["scan_args"]), worktree=wt)
+        argv = argv_of([self.m["scan"], *list(self.m["scan_args"])], worktree=wt)
         if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):
             raise Stop(f"no private scan {argv[0]} (merge.scan): no push")
         code, out, _ = self.sh.run(_nice(argv), cwd=tempfile.gettempdir(), timeout=int(self.m["scan_timeout_s"]))
@@ -1557,7 +1557,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         items = q.entries(open_only=True)
         L = ["DRY RUN: the merge queue's plan (no push, no merge, the depot unchanged)"]
         if not items:
-            return L + ["the merge queue is empty"]
+            return [*L, "the merge queue is empty"]
         L.append(f"runner: {runner_cell(self.state)}")
         st = q.stopped()
         if st is not None:
@@ -1565,7 +1565,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                      "below, the plan after that" % (st["id"], st["pr"], (st.get("stop") or {}).get("reason"),
                                                       st["pr"], st["pr"]))
         if not os.path.isdir(self.clone):
-            return L + [f"no main clone {self.clone} (merge.clone)"]
+            return [*L, f"no main clone {self.clone} (merge.clone)"]
         if self.git(self.clone, "fetch", "-q", self.remote, timeout=300)[0] != 0:
             L.append("warning: git fetch failed: the plan reads the refs as they were")
         main_ref = f"{self.remote}/{self.base}"
@@ -1576,7 +1576,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                  "GIT_COMMITTER_NAME": "merge-plan", "GIT_COMMITTER_EMAIL": "merge-plan@localhost"}
         try:
             if self.git(self.clone, "worktree", "add", "-q", "--detach", sim, sim_main)[0] != 0:
-                return L + [f"could not make a throwaway worktree in {tmp}"]
+                return [*L, f"could not make a throwaway worktree in {tmp}"]
             label, ahead, bases = main_ref, [], [("main", sim_main)]
             if self.depth() > 0:
                 L.append("trials: the %d PR(s) after the one riding are tried on top of it on %s<PR> while it rides "  # noqa: UP031
@@ -1605,7 +1605,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         try:
             pr = self.pr_view(n)
         except MergeError as ex:
-            return L + [f"  gh: {ex}"]
+            return [*L, f"  gh: {ex}"]
         L.append("  PR: {}{}, head {}, into {}".format(pr["state"], ", draft" if pr.get("isDraft") else "",
                                                   (pr.get("headRefOid") or "?")[:7], pr.get("baseRefName")))
         stk, tr = Stack(self.state, self.cfg), Tracks(self.state, self.cfg)
@@ -1624,10 +1624,9 @@ class Rider(TrialsMixin, WorktreesMixin):
         except Stop as s:
             L.append(f"  STOP at the gate: {s.reason}")
         if e.get("merged"):
-            return L + ["  merged already as {}: the runner goes on with the deploy, smoke and usage".format(e["merged"]["sha"][:7])]
+            return [*L, "  merged already as {}: the runner goes on with the deploy, smoke and usage".format(e["merged"]["sha"][:7])]
         if pr["state"] == "MERGED":
-            return L + ["  merged on GitHub already ({}): the runner takes its merge commit".format((
-                (pr.get("mergeCommit") or {}).get("oid") or "?")[:7])]
+            return [*L, "  merged on GitHub already ({}): the runner takes its merge commit".format(((pr.get("mergeCommit") or {}).get("oid") or "?")[:7])]
         head0 = self.rev(self.clone, f"{self.remote}/{br}") or pr.get("headRefOid")
         ahead = False
         if not os.path.isdir(wt):
@@ -1650,7 +1649,7 @@ class Rider(TrialsMixin, WorktreesMixin):
             L.append("  worktree: {}, on {}, {}, {}".format(wt, cur or "?", "DIRTY — the real run stops here" if dirty else "clean",
                                                         rel))
         if not head0 or self.git(sim, "checkout", "-q", "--detach", head0)[0] != 0:
-            return L + [f"  no {self.remote}/{br} to try"]
+            return [*L, f"  no {self.remote}/{br} to try"]
         trial = self.plan_trial(e, label, prev)
         try:
             res = self.merge_in(sim, sim_main, br, label, "plan", env=ident)
@@ -1693,8 +1692,8 @@ class Rider(TrialsMixin, WorktreesMixin):
         if self.git(sim, "checkout", "-q", "--detach", sim_main)[0] != 0 or \
                 self.git(sim, "merge", "-q", "--no-ff", res["head"], "-m", "simulated merge of #%d" % n, env=ident)[0] != 0:  # noqa: UP031
             self.git(sim, "merge", "--abort")
-            return L + ["  (the simulated merge of #%d into main failed: the next PRs are tried without it)" % n]  # noqa: UP031
-        return L + ["  → simulated merge of #%d: %s" % (n, self.rev(sim, "HEAD"))]  # noqa: UP031
+            return L + ["  (the simulated merge of #%d into main failed: the next PRs are tried without it)" % n]  # noqa: RUF005, UP031
+        return L + ["  → simulated merge of #%d: %s" % (n, self.rev(sim, "HEAD"))]  # noqa: RUF005, UP031
 
     def plan_trial(self, e, label, prev):
         """The dry run's line for e's trial: built while the PR ahead rides; what the entry holds now."""
@@ -1736,10 +1735,10 @@ def place(q, e, at):
         held += 1
     pos = max(held, min(len(op), int(at) - 1))
     if pos >= len(op):
-        q.data["entries"] = rest + [e]
+        q.data["entries"] = [*rest, e]
     else:
         i = rest.index(op[pos])
-        q.data["entries"] = rest[:i] + [e] + rest[i:]
+        q.data["entries"] = [*rest[:i], e, *rest[i:]]
     return [x for x in q.data["entries"] if x["status"] in OPEN].index(e) + 1
 
 
@@ -1790,7 +1789,7 @@ def handoff(state, cfg, ref, reason):
     log_line(e, f"handed off: its deploy rides with the next merge ({reason})")
     q.save("handoff", e["id"], reason=reason)
     from .stages import ru
-    return e, ["%s #%d (merged as %s) is no longer watched: its deploy rides with the next merge; «%s» until "  # noqa: UP031
+    return e, ["%s #%d (merged as %s) is no longer watched: its deploy rides with the next merge; «%s» until "  # noqa: RUF005, UP031
                "that one arrives (%s)" % (e["id"], e["pr"], e["merged"]["sha"][:7], ru("rolling"), reason)] + lines
 
 
@@ -1840,7 +1839,7 @@ def check(state, cfg, pr_n, word, sh=None, force=False, why=None):
             forced = gates.check(unmet, force, why, "PR #%d" % n, ru("queued"),  # noqa: UP031
                                  "depot2 merge add %d --word «…»" % n, error=MergeError)  # noqa: UP031
         except MergeError as e:  # what the PR's section gave, under the refusal
-            raise MergeError("\n".join([str(e)] + lines))
+            raise MergeError("\n".join([str(e), *lines]))
     return types.SimpleNamespace(n=n, q=q, pr=pr, br=br, o=o, car=car, tr=tr, c=c, reading=reading, forced=forced,
                                  lines=lines)
 
@@ -1964,7 +1963,7 @@ def drop(state, cfg, ref, reason):
         lines += restore_status(state, cfg, e)
         lines += on_the_tracks(state, cfg, e, back_stage(state, cfg, e),
                                i18n.t("merge.why_dropped", reason=reason.strip()), "merge drop")
-    return e, ["%s #%d left the merge queue: %s" % (e["id"], e["pr"], reason)] + lines  # noqa: UP031
+    return e, ["%s #%d left the merge queue: %s" % (e["id"], e["pr"], reason)] + lines  # noqa: RUF005, UP031
 
 
 def rerun(state, cfg, ref, sh=None):
@@ -2101,13 +2100,13 @@ def ensure(state, cfg, sets=None, wait_s=None):
     while True:
         # the runner writes its pid only once it holds the lock; then the probe cannot refuse it
         if lock_pid(state) == str(p.pid) and lock_held(state) == str(p.pid):
-            return 0, lines + [i18n.t("merge.ensure_started", pid=p.pid, log=log)]
+            return 0, [*lines, i18n.t("merge.ensure_started", pid=p.pid, log=log)]
         code = p.poll()
         if code is not None:  # killed by a signal (a negative code): a failure all the same
             return code if code >= 0 else 1, lines + [i18n.t("merge.ensure_exited", pid=p.pid, code=code, log=log)] + [
                 "  " + ln for ln in log_tail(log)]
         if time.monotonic() >= end:
-            return 0, lines + [i18n.t("merge.ensure_no_lock", pid=p.pid, log=log)]
+            return 0, [*lines, i18n.t("merge.ensure_no_lock", pid=p.pid, log=log)]
         time.sleep(0.1)
 
 

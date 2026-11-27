@@ -179,16 +179,7 @@ def task_r2(cid, own_positions, points, available, cfg, turns, dirs, proposal_id
     if proposal_ids:
         votes = [t("prompts.r2_votes", ids=", ".join(proposal_ids), quorum=quorum_text(cfg),
                    fee_init=int(cfg["brainstorm"]["fee_initiator"]), fee_other=int(cfg["brainstorm"]["fee_other"]))]
-    return "\n".join([
-        t("prompts.task_r2"),
-        t("prompts.r2_tools", tools=tools_line(turns, dirs)),
-        t("prompts.r2_own"),
-        compact_answer(points, own_positions),
-        "",
-        t("prompts.r2_rebut", n=int(r["rebuttals_max"])),
-        t("prompts.r2_points"),
-        t("prompts.r2_sum", n=int(available)),
-    ] + votes + [t("prompts.r2_order", order=order_line(cfg))])
+    return "\n".join([t("prompts.task_r2"), t("prompts.r2_tools", tools=tools_line(turns, dirs)), t("prompts.r2_own"), compact_answer(points, own_positions), "", t("prompts.r2_rebut", n=int(r["rebuttals_max"])), t("prompts.r2_points"), t("prompts.r2_sum", n=int(available)), *votes, t("prompts.r2_order", order=order_line(cfg))])
 
 
 def outcome_text(points, finals, bs, orders):

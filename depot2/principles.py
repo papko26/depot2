@@ -643,7 +643,7 @@ def _item(m, section, order, ref):
 
 def render_item(e):
     words = [w for w in e.get("words") or [] if "«{}»".format(w["text"]) not in
-             " ".join([e.get("title") or "", e.get("text") or ""] + list(e.get("subs") or []))]
+             " ".join([e.get("title") or "", e.get("text") or "", *list(e.get("subs") or [])])]
     text = e.get("text") or ""
     if words:  # the owner's words the text does not quote: in a bracket after the title
         said = t("principles.owner_said",
@@ -669,7 +669,7 @@ def render_text(head, items, banner=True):
     head = list(default_head() if head is None else head)
     if banner:
         at = 2 if len(head) > 1 and not head[1].strip() else 1
-        head = head[:at] + [banner_line(), ""] + head[at:]
+        head = [*head[:at], banner_line(), "", *head[at:]]
     L = list(head)
     rows = sorted(items, key=lambda e: (SECTION_RANK.get(e["section"], 9), e.get("order") or 0, e.get("n") or 0))
     seen = None

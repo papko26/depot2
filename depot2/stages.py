@@ -114,7 +114,7 @@ def record(rec, stage, by, why=None, default=None, at=None, forced=False, gates=
         row["return"] = True
         rec["returns"] = int(rec.get("returns") or 0) + 1
     rec["stage"] = stage
-    rec["stages"] = list(rec.get("stages") or []) + [row]
+    rec["stages"] = [*list(rec.get("stages") or []), row]
     return row
 
 
@@ -436,7 +436,7 @@ class Car:
         qs = list(r.get("asks") or [])
         q = {"n": max([x["n"] for x in qs] or [0]) + 1, "q": " ".join(text.split()), "at": now_iso(), "by": by,
              "answer": None, "answered": None}
-        r["asks"] = qs + [q]
+        r["asks"] = [*qs, q]
         self._save_rec("ask", question=q["n"], text=q["q"], by=by)
         return q
 

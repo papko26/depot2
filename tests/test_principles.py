@@ -171,7 +171,7 @@ class ImportTest(PBase):
         self.assertEqual(by["mechanics"], [2, 3, "3a", 5, 6, 7, 19, 20])
         self.assertEqual(len(p.ordered()), 20)
         self.assertEqual([x for x in strip_banner(slurp(path)) if x.startswith("## ")],
-                         NEW_HEADS + ["## Как мы работаем", "## Как мы проверяем", "## Голос и тексты"])
+                         [*NEW_HEADS, "## Как мы работаем", "## Как мы проверяем", "## Голос и тексты"])
         self.assertIn("## Основа", original.splitlines())
         self.assertIsNone(p.drift())  # rendered: no hand edit
         os.chmod(path, 0o644)
@@ -199,7 +199,7 @@ class ImportTest(PBase):
         self.assertEqual(three["words"], [{"date": "2015-11-05", "text": "да"}])
         rendered = render_text(head, items, banner=False).splitlines()
         self.assertIsNone(diff_lines(today_headings(SAMPLE.splitlines()), rendered))
-        self.assertEqual([x for x in rendered if x.startswith("## ")], NEW_HEADS + ["## Голос и тексты"])
+        self.assertEqual([x for x in rendered if x.startswith("## ")], [*NEW_HEADS, "## Голос и тексты"])
         self.assertEqual(today_headings(["## Основа", "## механики", "## Приоритет 1", "## балл", "## Голос и тексты",
                                          "## Разное", "текст"]),
                          NEW_HEADS + NEW_HEADS + ["## Голос и тексты", "## Разное", "текст"])

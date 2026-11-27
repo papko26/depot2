@@ -260,7 +260,7 @@ def code_stamp(root=CODE_ROOT):
 def code_commit(root=CODE_ROOT):
     """{commit, date, dirty} of the git checkout the code is in, or None outside git."""
     def git(*args):
-        return subprocess.run(["git", "-C", root] + list(args), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
+        return subprocess.run(["git", "-C", root, *list(args)], stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
                               text=True, timeout=5)
     try:
         r = git("log", "-1", "--format=%h %cI")
@@ -295,7 +295,7 @@ def reexec(srv):
     env[FD_ENV] = str(fd)
     sys.stdout.flush()
     sys.stderr.flush()
-    os.execve(sys.executable, [sys.executable] + sys.argv, env)
+    os.execve(sys.executable, [sys.executable, *sys.argv], env)
 
 
 # --- the files: only .md under the read dirs ---------------------------------------------------------------

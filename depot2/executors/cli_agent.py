@@ -74,9 +74,9 @@ def build_argv(spec, executor_bin):
     if spec.tools:
         # Variadic options go last.
         if spec.add_dirs:
-            argv += ["--add-dir"] + spec.add_dirs
+            argv += ["--add-dir", *spec.add_dirs]
         if spec.deny:
-            argv += ["--disallowedTools"] + spec.deny
+            argv += ["--disallowedTools", *spec.deny]
     return argv
 
 

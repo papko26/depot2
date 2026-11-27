@@ -422,7 +422,7 @@ class Stack:
         if note is not None:
             if not note.strip():
                 raise StackError("an empty --note adds nothing")
-            changed["notes"] = list(o.get("notes") or []) + [f"{now_iso()[:10]}: {note.strip()}"]
+            changed["notes"] = [*list(o.get("notes") or []), f"{now_iso()[:10]}: {note.strip()}"]
         if "ci" in changed:
             changed["ci"] = ci_record(changed["ci"])
         handed = self._handed(dod)
@@ -857,7 +857,7 @@ class Ballots:
         e = self.get(rid)
         rest = [x for x in self.data["entries"] if x is not e]
         pos = max(0, min(len(rest), int(at) - 1))
-        self.data["entries"] = rest[:pos] + [e] + rest[pos:]
+        self.data["entries"] = [*rest[:pos], e, *rest[pos:]]
         self._save()
         return e
 

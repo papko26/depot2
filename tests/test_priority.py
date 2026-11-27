@@ -29,8 +29,7 @@ class PBase(TracksBase):
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             try:
-                rc = team.main(["--state", self.t.dir, "--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent"]
-                               + list(argv))
+                rc = team.main(["--state", self.t.dir, "--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent", *list(argv)])
             except SystemExit as x:
                 rc = x.code
         self.assertIn(rc, (1, 2), out.getvalue())
@@ -291,8 +290,7 @@ class MigrateTest(PBase):
         import subprocess
         import sys
         here = os.path.dirname(os.path.abspath(__file__))
-        p = subprocess.run([sys.executable, os.path.join(os.path.dirname(here), "depot2"), "--state", state_dir,
-                            "--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent"] + list(argv),
+        p = subprocess.run([sys.executable, os.path.join(os.path.dirname(here), "depot2"), "--state", state_dir, "--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent", *list(argv)],
                            capture_output=True, text=True, env=dict(os.environ, DEPOT2_BACKUP="off"))
         return p.returncode, p.stdout, p.stderr
 

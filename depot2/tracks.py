@@ -482,7 +482,7 @@ class Tracks:
     def _place(self, t, at):
         rest = [x for x in self.data["tracks"] if x is not t]
         pos = len(rest) if at is None else max(0, min(len(rest), int(at) - 1))
-        self.data["tracks"] = rest[:pos] + [t] + rest[pos:]
+        self.data["tracks"] = [*rest[:pos], t, *rest[pos:]]
 
     def set(self, tid, title=None, est_mtok=None, clear_est=False, at=None, add_note=None):
         t = self.get(tid)
@@ -571,8 +571,8 @@ class Tracks:
     def car_took(self, ref, src, note, by="take"):
         t, c = self.car(ref)
         if src not in (c.get("from") or []):
-            c["from"] = list(c.get("from") or []) + [src]
-        c["notes"] = car_notes(c) + [f"{now_iso()[:10]}: {note.strip()}"]
+            c["from"] = [*list(c.get("from") or []), src]
+        c["notes"] = [*car_notes(c), f"{now_iso()[:10]}: {note.strip()}"]
         c.pop("note", None)
         self._save("car_from", t["id"], car=c["n"], by=by, note_added=note.strip(), **{"from": src})
         return t, c
@@ -616,7 +616,7 @@ class Tracks:
     def _place_car(self, t, c, at):
         rest = [x for x in t["cars"] if x is not c]
         pos = len(rest) if at is None else max(0, min(len(rest), int(at) - 1))
-        t["cars"] = rest[:pos] + [c] + rest[pos:]
+        t["cars"] = [*rest[:pos], c, *rest[pos:]]
 
     def car_set(self, ref, title=None, after=None, no_after=False, size=None, est_mtok=None, clear_est=False,
                 spent_mtok=None, brief=None, branch=None, pr=None, status=None, st=None, note=None, note_replace=None,
@@ -689,7 +689,7 @@ class Tracks:
         if note is not None:
             if not note.strip():
                 raise TrackError("an empty --note adds nothing (--note-replace '' clears the notes)")
-            c["notes"] = car_notes(c) + [f"{now_iso()[:10]}: {note.strip()}"]
+            c["notes"] = [*car_notes(c), f"{now_iso()[:10]}: {note.strip()}"]
             c.pop("note", None)
             changed["note_added"] = note.strip()
         if note_replace is not None:
@@ -780,8 +780,8 @@ class Tracks:
             self._place_car(t, c, at)
         c["n"] = new_n
         row = {k: v for k, v in (("from", old), ("to", new), ("at", now), ("by", by), ("why", why)) if v}
-        c["moved_from"] = list(c.get("moved_from") or []) + [row]
-        t["moved_out"] = list(t.get("moved_out") or []) + [dict(n=old_n, title=c["title"], **row)]
+        c["moved_from"] = [*list(c.get("moved_from") or []), row]
+        t["moved_out"] = [*list(t.get("moved_out") or []), dict(n=old_n, title=c["title"], **row)]
         lines = [i18n.t("tracks.moved", old=old, new=new)]
         if c["status"] in CAR_BUSY and c.get("st"):
             lines.append(i18n.t("tracks.moved_slot_pr", new=new, st=c["st"], pr=c["pr"]) if c.get("pr")
@@ -963,7 +963,7 @@ class Tracks:
                 return []
             if pr is not None:
                 c["pr"] = int(pr)
-                if c["status"] in CAR_OPEN + ("running",):
+                if c["status"] in (*CAR_OPEN, "running"):
                     self._car_status(c, "pr")
                 out.append("%s → PR #%d" % (ref, int(pr)))  # noqa: UP031
             if spent_mtok is not None:
@@ -1277,7 +1277,7 @@ def status_move(before, status, c):
     if status == "running":
         return None if before in stages.WORK else "build"
     if status == "pr":
-        return None if before in stages.WORK + ("acceptance", "queued") else "build"
+        return None if before in (*stages.WORK, "acceptance", "queued") else "build"
     if before in stages.PLANNING:  # waiting, ready
         return None
     return stages.prev_planning(c)

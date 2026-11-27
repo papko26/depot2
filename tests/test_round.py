@@ -760,11 +760,11 @@ class SnapshotAndCostTest(unittest.TestCase):
         import tempfile
         extra = [tempfile.mkdtemp(prefix="team-read-test-") for _ in range(2)]
         self.addCleanup(lambda: [os.rmdir(d) for d in extra])
-        self.t.cfg["read_dirs"] = extra + [os.path.join(self.t.dir, "no-such-dir")]
+        self.t.cfg["read_dirs"] = [*extra, os.path.join(self.t.dir, "no-such-dir")]
         runner = FakeRunner(self.t.state, {})
         r = run_round(self.t.state, self.t.cfg, "ballot", self.input, runner=runner, out=lambda *a: None,
                       snapshot=self.snapshot)
-        want = [self.snap_dirs[0]] + extra
+        want = [self.snap_dirs[0], *extra]
         self.assertEqual(sorted({c[1] for c in runner.calls}), ["r1", "r2"])
         for cid, stage, _, spec in runner.calls:
             self.assertEqual(spec.add_dirs, want, (cid, stage))

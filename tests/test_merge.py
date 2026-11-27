@@ -326,7 +326,7 @@ class EnsureTest(unittest.TestCase):
         self.spawned.append((argv, log, cwd))
         extra = [] if self.exit_code is None else ["x", str(self.exit_code)]
         with open(log, "a") as out:
-            p = subprocess.Popen([sys.executable, "-c", STAND_IN, self.t.state.path(merge.RUN_DIR, merge.RUN_LOCK)] + extra,
+            p = subprocess.Popen([sys.executable, "-c", STAND_IN, self.t.state.path(merge.RUN_DIR, merge.RUN_LOCK), *extra],
                                  stdin=subprocess.DEVNULL, stdout=out, stderr=out)
         self.procs.append(p)
         return p
@@ -334,7 +334,7 @@ class EnsureTest(unittest.TestCase):
     def team(self, *argv):
         buf, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(buf), contextlib.redirect_stderr(err):
-            rc = team.main(["--state", self.t.dir, "--set", "merge.poll_s=0"] + list(argv))
+            rc = team.main(["--state", self.t.dir, "--set", "merge.poll_s=0", *list(argv)])
         return rc, buf.getvalue(), err.getvalue()
 
     def put(self, n, status="waiting", **kw):
@@ -630,7 +630,7 @@ THE_SPARE = '["self-hosted","spare"]'
 
 def runner(name, status, *labels):
     return {"name": name, "status": status, "busy": False,
-            "labels": [{"name": x, "type": "custom"} for x in ("self-hosted", "Linux", "X64") + labels]}
+            "labels": [{"name": x, "type": "custom"} for x in ("self-hosted", "Linux", "X64", *labels)]}
 
 
 class CdRunnerTest(MergeBase):

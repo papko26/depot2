@@ -133,7 +133,7 @@ def add_claim(car, repair, bug, why, by, forced=None):
             "why": _text(why) or None}
     if forced:
         link["forced"] = forced
-    rec["claim_links"] = links + [link]
+    rec["claim_links"] = [*links, link]
     rec["claims"] = len(active(rec))
     save(car, kind, rec, "claim", claim=link["n"], repair=repair, bug=bug, why=link["why"], by=by)
     return link

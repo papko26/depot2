@@ -17,7 +17,7 @@ from .store import read_json
 
 # What a round writes as it ends: the stakes, their auto refunds, the brainstorm fee, the orders
 # (and an old round's paid passes).
-ROUND_TYPES = ("stake", "auto_refund", "brainstorm_fee", "order", "lock") + LEGACY
+ROUND_TYPES = ("stake", "auto_refund", "brainstorm_fee", "order", "lock", *LEGACY)
 STAGES = ("r1", "deep", "r2")  # "deep": an old round's paid pass, read only for its main point
 NO_COSTS = {"calls": 0, "mtok": 0.0, "total_usd": 0.0, "unknown_cost_calls": 0, "duration_s": 0.0, "turns": 0,
             "tool_turns": 0, "tokens": {"input": 0, "cache_read": 0, "cache_write": 0, "output": 0, "total": 0},
@@ -75,7 +75,7 @@ def stake_rows(rec, entries):
     for cid in characters.IDS:
         mine = sorted((e for e in entries if e["character"] == cid and e.get("round") == rid
                        and e["type"] in ROUND_TYPES), key=lambda e: e["seq"])
-        block = [e for e in mine if e["type"] in ("stake",) + LEGACY]
+        block = [e for e in mine if e["type"] in ("stake", *LEGACY)]
         stakes = [e for e in block if e["type"] == "stake"]
         backs = [e for e in mine if e["type"] == "auto_refund"]
         before = before_all[cid]
@@ -394,7 +394,7 @@ def _end_seq(rec, entries):
     stake (or an old round's think transaction), else the last one written before it finished."""
     if rec.get("ledger_seq") is not None:
         return rec["ledger_seq"]
-    own = [e["seq"] for e in entries if e.get("round") == rec["id"] and e["type"] in ("stake",) + LEGACY]
+    own = [e["seq"] for e in entries if e.get("round") == rec["id"] and e["type"] in ("stake", *LEGACY)]
     if own:
         return max(own)
     return max([e["seq"] for e in entries if e["ts"] <= (rec.get("finished") or "")] or [0])

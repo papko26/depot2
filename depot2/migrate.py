@@ -187,7 +187,7 @@ def run(state, cfg, dry_run=False, names=None):
     if v < 4:
         L += step_priority(state, dry_run, planned=dry_run and v < 2)
     L += step_arrivals(state, cfg, dry_run, planned=dry_run and v < 4)
-    return ([t("migrate.dry_run")] + L if dry_run else L), 1
+    return ([t("migrate.dry_run"), *L] if dry_run else L), 1
 
 
 def step_tracks_trains(state, dry_run=False, names=None):

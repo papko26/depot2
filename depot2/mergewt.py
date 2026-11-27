@@ -47,7 +47,7 @@ def worktree_list(text):
     """`git worktree list --porcelain` → [{path, head, branch (None: a detached HEAD), bare}], the main one first.
     (git 2.25 says nothing of a lock there: locked() reads it.)"""
     out, cur = [], None
-    for ln in text.splitlines() + [""]:
+    for ln in [*text.splitlines(), ""]:
         if not ln.strip():
             if cur:
                 out.append(cur)

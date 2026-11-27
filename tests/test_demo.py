@@ -41,7 +41,7 @@ class DemoTest(unittest.TestCase):
             env["DEPOT2_LANG"] = lang
         else:
             env.pop("DEPOT2_LANG", None)
-        p = subprocess.run([sys.executable, MAIN, "--state", self.state] + list(args), capture_output=True,
+        p = subprocess.run([sys.executable, MAIN, "--state", self.state, *list(args)], capture_output=True,
                            text=True, env=env)
         self.assertEqual(p.returncode, 0, p.stderr)
         return p.stdout

@@ -288,7 +288,7 @@ class Runner:
         return f"{self.crypt}:{name}"
 
     def rclone(self, step, *args):
-        argv = [self.b["rclone_bin"]] + list(args)
+        argv = [self.b["rclone_bin"], *list(args)]
         self.secrets.check_argv(argv)
         try:
             return subprocess.run(argv, env=self.env, stdin=subprocess.DEVNULL, text=True,
@@ -449,7 +449,7 @@ class Runner:
             if os.path.abspath(root) == self.state.root:
                 dirs[:] = [d for d in dirs if d != DIR]
             size += sum(os.path.getsize(os.path.join(root, f)) for f in fs if f != ".lock")
-        keep, drop = plan_retention(list(files) + [name], self.host, self.b["keep_daily"])
+        keep, drop = plan_retention([*list(files), name], self.host, self.b["keep_daily"])
         self.say(f"would write: {name} (the state is {size / 1e6:.1f} MB before gzip)")
         self.say(f"would upload: rclone copyto --immutable <tmp>/{name} {self.crypt}:{name}, then lsjson + cryptcheck")
         self.say("retention would keep %d and delete %d%s" % (len(keep), len(drop),  # noqa: UP031
@@ -582,7 +582,7 @@ def spawn(state, sets, args=("--drive", "--auto"), marker=SPAWNED, log=LOG):
     for s in sets or []:
         argv += ["--set", s]
     with open(log_path(state, log), "a") as out:
-        subprocess.Popen(argv + ["backup"] + list(args), stdin=subprocess.DEVNULL, stdout=out, stderr=out,
+        subprocess.Popen([*argv, "backup", *list(args)], stdin=subprocess.DEVNULL, stdout=out, stderr=out,
                          cwd=d, start_new_session=True, close_fds=True)
 
 

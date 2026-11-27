@@ -88,7 +88,7 @@ class CatalogTest(unittest.TestCase):
     def test_no_russian_outside_the_russian_catalog(self):
         """The code, its comments and the web page are English; Russian lives in depot2/catalogs/ru.py alone."""
         bad = []
-        paths = glob.glob(os.path.join(PKG, "**", "*.py"), recursive=True) + [os.path.join(PKG, "web", "index.html")]
+        paths = [*glob.glob(os.path.join(PKG, "**", "*.py"), recursive=True), os.path.join(PKG, "web", "index.html")]
         for path in sorted(paths):
             if os.path.abspath(path) == os.path.join(PKG, "catalogs", "ru.py"):
                 continue

@@ -181,7 +181,7 @@ class ModelTest(TracksBase):
             err = io.StringIO()
             with contextlib.redirect_stdout(io.StringIO()), contextlib.redirect_stderr(err):
                 with self.assertRaises(SystemExit) as cm:
-                    team.main(["--state", self.t.dir] + list(argv))
+                    team.main(["--state", self.t.dir, *list(argv)])
             return cm.exception.code, err.getvalue()
         self.assertEqual(self.team("trains", "add", "--name", "export", "--title", "Экспорт", "--car", "tr-0001:0")[0], 0)
         for word, cmd in (("arrived", "depot2 trains done NAME"), ("прибыл", "depot2 trains done NAME"),

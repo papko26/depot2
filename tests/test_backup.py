@@ -366,7 +366,7 @@ class RetentionTest(BackupBase):
                   "team-h-latest.tar.gz", "team-h-20150815T030000Z.tar.gz.partial"]
         keep, drop = backup.plan_retention(names, "h", 14)
         days = ["team-h-201509%02dT030000Z.tar.gz" % d for d in range(17, 30)] + ["team-h-20150930T120000Z.tar.gz"]  # noqa: UP031
-        self.assertEqual(keep, ["team-h-20150801T030000Z.tar.gz", "team-h-20150901T030000Z.tar.gz"] + days)
+        self.assertEqual(keep, ["team-h-20150801T030000Z.tar.gz", "team-h-20150901T030000Z.tar.gz", *days])
         self.assertNotIn("team-h-20150930T030000Z.tar.gz", keep)  # the same day's older one
         self.assertEqual(len(drop), 31 + 30 + 1 - len(keep))
         self.assertFalse([n for n in drop if not n.startswith("team-h-2015")])
@@ -390,7 +390,7 @@ class RetentionTest(BackupBase):
             f.write("not ours")
         self.team("backup", "--drive", "--now")
         new = self.stamp()["archive"]
-        keep, drop = backup.plan_retention(ours + [new] + foreign, "testhost", 14)
+        keep, drop = backup.plan_retention([*ours, new, *foreign], "testhost", 14)
         self.assertIn(new, keep)
         self.assertEqual(len(keep), 14 + 3)  # 14 days + the first of Aug, Sep, Oct (Nov's is the new one)
         self.assertEqual(sorted(a[1] for a in self.cmds("deletefile")), sorted("depot2backupcrypt:" + n for n in drop))

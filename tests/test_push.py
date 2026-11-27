@@ -25,7 +25,7 @@ FORCE = ("--force", "-f", "--force-with-lease", "--mirror", "--delete", "-d", "-
 
 
 def git(cwd, *args, check=True):
-    return subprocess.run(["git", "-C", cwd, "-c", "user.name=t", "-c", "user.email=t@localhost"] + list(args),
+    return subprocess.run(["git", "-C", cwd, "-c", "user.name=t", "-c", "user.email=t@localhost", *list(args)],
                           check=check, capture_output=True, text=True)
 
 
@@ -126,7 +126,7 @@ class PushBase(unittest.TestCase):
             return f.read()
 
     def assert_never_shown(self, *secrets):
-        texts = list(self.outputs) + [self.log()]
+        texts = [*list(self.outputs), self.log()]
         sp = self.t.state.path(backup.DIR, push.STAMP)
         if os.path.exists(sp):
             with open(sp, encoding="utf-8") as f:
@@ -490,7 +490,7 @@ class RawGateTest(unittest.TestCase):
                          ("quarantined", q["to"], "приватный скан не CLEAN"))
         self.assertEqual(len(lines), 1)
         self.assertIn("в карантине {} (вне депо)".format(q["to"]), lines[0])
-        for text in lines + [slurp(p)]:
+        for text in [*lines, slurp(p)]:
             self.assertNotIn(HIT, text)  # nothing the scan found is shown or kept in the state
         p = self.raw("chronicler-r1.jsonl", f'{{"text": "{HIT} again"}}\n')  # a later one keeps the first
         self.assertEqual(push.gate_raw(self.t.state, self.t.cfg, p, lines.append)["to"], q["to"] + ".2")

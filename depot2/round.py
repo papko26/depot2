@@ -133,7 +133,7 @@ def repo_snapshot(cfg, out=print, commit_wanted=None):
         return None, None
 
     def git(*args, **kw):
-        return subprocess.run(["git", "-C", clone] + list(args), capture_output=True,
+        return subprocess.run(["git", "-C", clone, *list(args)], capture_output=True,
                               timeout=120, **kw)
 
     if r.get("fetch"):
@@ -349,7 +349,7 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
         _print_resume_plan(out, state, cfg, resume, cast, stk)
         return None
     if dry_run:
-        planned = ["<a snapshot of %s>" % (f"PR #{pr}'s head" if pr else cfg["deep_repo"].get("ref"))] + dirs
+        planned = ["<a snapshot of %s>" % (f"PR #{pr}'s head" if pr else cfg["deep_repo"].get("ref")), *dirs]
         _print_plan(out, cfg, kind, b, points, r1_prompts(planned), balances, sch1, planned, only=only,
                     lock_pass=not stk.empty())
         if holder.get("brainstorm"):
@@ -803,7 +803,7 @@ def _place_orders(state, cfg, ledger, rid, asks, snap_dir):
         oid = log.next_id()
         tx = ledger.order(cid, price, rid, oid, "order {}: {}".format(oid, o["command"][:80]))
         log.add(oid, "queued", character=cid, round=rid, stage=stage, tx=tx["id"], price=price,
-                **{k: o[k] for k in extras.ORDER_FIELDS + ("script",)})
+                **{k: o[k] for k in (*extras.ORDER_FIELDS, "script")})
         item.update(id=oid, tx=tx["id"], price=price, **{k: o[k] for k in extras.ORDER_FIELDS})
         placed.append(item)
     return {"placed": placed, "refused": refused}

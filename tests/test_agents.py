@@ -140,13 +140,13 @@ class BuildTest(AgentsBase):
     def test_a_build_goes_into_a_slot_through_the_dor(self):
         dor = ["--set", "gates.dor=" + json.dumps(GATES_ALL["dor"])]
         # no brief: the DoR refuses, beside the agents' own gates, in one line; nothing moves
-        rc, _, err = self.team(*(dor + ["agents", "start", "tr-0001:3", "--role", "build"]))
+        rc, _, err = self.team(*([*dor, "agents", "start", "tr-0001:3", "--role", "build"]))
         self.assertEqual(rc, 1)
         self.assertIn("окно расхода — нет показания", err)
         self.assertIn("DoR (вход в сборку) — нет брифа", err)
         self.assertIsNone(self.car("tr-0001:3").get("st"))
         # a brief: into a free slot, as `tracks car stack --start`
-        rc, out, err = self.team(*(dor + ["agents", "start", "tr-0001:1", "--role", "build", "--usage", "0.4"]))
+        rc, out, err = self.team(*([*dor, "agents", "start", "tr-0001:1", "--role", "build", "--usage", "0.4"]))
         self.assertEqual(rc, 0, err)
         self.assertEqual(out.splitlines()[0], "ag-0001")
         self.assertIn("tr-0001:1 → st-0001 in the stack queue", out)

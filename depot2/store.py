@@ -187,7 +187,7 @@ class State:
         return os.path.isdir(self.path(".git"))
 
     def git(self, *args, check=True):
-        return subprocess.run(["git", "-C", self.root] + list(args), check=check,
+        return subprocess.run(["git", "-C", self.root, *list(args)], check=check,
                               capture_output=True, text=True)
 
     def init_git(self):

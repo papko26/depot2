@@ -385,7 +385,7 @@ class RulesTest(unittest.TestCase):
 
     def hunk(self, ours, base, theirs):
         o, b, s, t = mergeauto.markers()
-        return "\n".join(["top", o] + ours + [b] + base + [s] + theirs + [t, "bottom", ""])
+        return "\n".join(["top", o, *ours, b, *base, s, *theirs, t, "bottom", ""])
 
     def test_union(self):
         text, n = mergeauto.union(self.hunk(["", "branch para"], [], ["", "main para"]))

@@ -152,29 +152,28 @@ class LimitTest(GateBase):
     def test_the_columns_limits_are_soft(self):
         self.t.cfg["stack"]["slots"] = 1
         sets = ["--set", "stack.slots=1", "--set", "stack.post_max=1"]
-        self.team(*(sets + ["stack", "add", "--title", "a", "--brief", self.brief]))
-        self.team(*(sets + ["stack", "add", "--title", "b", "--brief", self.brief]))
-        self.assertEqual(self.team(*(sets + ["stack", "start", "st-0001"]))[0], 0)
-        rc, _, err = self.team(*(sets + ["stack", "start", "st-0002"]))
+        self.team(*([*sets, "stack", "add", "--title", "a", "--brief", self.brief]))
+        self.team(*([*sets, "stack", "add", "--title", "b", "--brief", self.brief]))
+        self.assertEqual(self.team(*([*sets, "stack", "start", "st-0001"]))[0], 0)
+        rc, _, err = self.team(*([*sets, "stack", "start", "st-0002"]))
         self.assertEqual(rc, 1)
         self.assertIn("лимит колонки — no free slot (1/1), stack.slots", err)
-        rc, out, err = self.team(*(sets + ["stack", "start", "st-0002", "--force", "--why", "владелец: пятый агент"]))
+        rc, out, err = self.team(*([*sets, "stack", "start", "st-0002", "--force", "--why", "владелец: пятый агент"]))
         self.assertEqual(rc, 0, err)
         self.assertIn("| **Сборка — в слотах (2/1) ⚠ сверх лимита** |", out)
         self.assertIn("| С+ | слот | st-0002 b |", out)
-        board = self.team(*(sets + ["board"]))[1]
+        board = self.team(*([*sets, "board"]))[1]
         self.assertIn("| сборка | 2 | слоты 2/1 ⚠ сверх лимита |", board)
         self.assertIn("### Сборка — 2 · слоты 2/1 ⚠ сверх лимита", board)
-        lim = json.loads(self.team(*(sets + ["board", "--json"]))[1])["columns"][3]["limit"]
+        lim = json.loads(self.team(*([*sets, "board", "--json"]))[1])["columns"][3]["limit"]
         self.assertEqual(lim, {"what": "слоты", "key": "stack.slots", "used": 2, "max": 1, "over": True})
         # the post-stack's places
         for oid, pr in (("st-0001", "301"), ("st-0002", "302")):
-            self.team(*(sets + ["stack", "set", oid, "--pr", pr, "--ci", "green", "--heavy", "green", "--scan", "clean",
-                                "--shots", "n/a"]))
-        self.assertEqual(self.team(*(sets + ["stack", "post", "st-0001"]))[0], 0)
-        rc, _, err = self.team(*(sets + ["stack", "post", "st-0002"]))
+            self.team(*([*sets, "stack", "set", oid, "--pr", pr, "--ci", "green", "--heavy", "green", "--scan", "clean", "--shots", "n/a"]))
+        self.assertEqual(self.team(*([*sets, "stack", "post", "st-0001"]))[0], 0)
+        rc, _, err = self.team(*([*sets, "stack", "post", "st-0002"]))
         self.assertIn("пост-стек полон (1/1): st-0002 stays in its slot", err)
-        self.assertEqual(self.team(*(sets + ["stack", "post", "st-0002", "--force", "--why", "оба ждут слова"]))[0], 0)
+        self.assertEqual(self.team(*([*sets, "stack", "post", "st-0002", "--force", "--why", "оба ждут слова"]))[0], 0)
         self.assertEqual(self.stk().get("st-0002")["stages"][-1]["gates"],
                          {"limit": ["пост-стек полон (1/1): st-0002 stays in its slot; the owner merges one first "
                                     "(stack done), or one goes back for work (stack start)"]})
@@ -437,7 +436,7 @@ class DocsTest(GateBase):
         self.assertEqual(rc, 1)
         self.assertIn("документация: не сделана (нужна — флаг вагона (tracks car set --docs yes); depot2 car stage "
                       "tr-0001:1 docs)", err)
-        rc, _out, err = self.team("stack", "post", "st-0002", *self.HANDED + ["--force", "--why", "доки едут отдельно"])
+        rc, _out, err = self.team("stack", "post", "st-0002", *[*self.HANDED, "--force", "--why", "доки едут отдельно"])
         self.assertEqual(rc, 0, err)
         row = self.stk().get("st-0002")["stages"][-1]
         self.assertEqual((row["from"], row["stage"], row["forced"], row["gates"]),

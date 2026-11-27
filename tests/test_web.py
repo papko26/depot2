@@ -108,8 +108,7 @@ class WebBase(GateBase):
         self.team("trains", "add", "--name", "search", "--title", "Поиск-поезд", "--car", "tr-0001:0", "--car", "tr-0001:1")
         self.team("wishes", "add", "--title", "Хочу поиск", "--words", "поиск бы")
         self.team("stack", "start", "st-0001")
-        self.sets = ["orders.results_dir=" + self.t.cfg["orders"]["results_dir"],
-                     "brainstorm.topics_dir=" + self.t.cfg["brainstorm"]["topics_dir"]] + ALL[1::2]
+        self.sets = ["orders.results_dir=" + self.t.cfg["orders"]["results_dir"], "brainstorm.topics_dir=" + self.t.cfg["brainstorm"]["topics_dir"], *ALL[1::2]]
         self.dirs = (os.path.join(self.scratch, "briefs"), os.path.join(self.scratch, "design"))
         self.web = Served(self.t.state, self.sets, read_dirs=self.dirs, doc_base=self.scratch, docs_base=self.scratch)
 
@@ -196,7 +195,7 @@ class WebTest(WebBase):
 
     def test_a_depot_without_a_team(self):
         """No `characters` in the config: every view still answers; the team's queues are empty, the who-list is `all`."""
-        web = Served(self.t.state, self.sets + ["characters=null"], read_dirs=self.dirs, doc_base=self.scratch,
+        web = Served(self.t.state, [*self.sets, "characters=null"], read_dirs=self.dirs, doc_base=self.scratch,
                      docs_base=self.scratch)
         try:
             for p in ["/", "/api/meta", "/api/board", "/api/board?all=1", "/api/trains", "/api/tracks", "/api/stack",
@@ -277,7 +276,7 @@ class WebTest(WebBase):
                  ("/api/queue/tstack", ["tstack", "--json"])]
         for name, argv in (("todo", ["todo"]), ("think", ["think"]), ("wishes", ["wishes"]), ("ballots", ["ballots"]),
                            ("orders", ["orders"]), ("brainstorms", ["brainstorm", "list"])):
-            pairs += [("/api/queue/" + name, argv + ["--json"]), (f"/api/queue/{name}?all=1", argv + ["--all", "--json"])]
+            pairs += [("/api/queue/" + name, [*argv, "--json"]), (f"/api/queue/{name}?all=1", [*argv, "--all", "--json"])]
         for path, argv in pairs:
             code, got = self.web.json(path)
             self.assertEqual(code, 200, (path, got))
@@ -718,7 +717,7 @@ class WebHostsTest(WebBase):
             self.assertFalse(w.srv.authorize(Peer(addr, "other.local:%d" % p)), addr)  # noqa: UP031
         for host in ("0.0.0.0", "mybox.local", "192.168.1.10", "::"):  # and no name is an address to listen on
             with self.assertRaises(ValueError):
-                webui.Server(self.t.state, sets=self.sets + [hosts], port=0, host=host)
+                webui.Server(self.t.state, sets=[*self.sets, hosts], port=0, host=host)
         ip = outside_ip()
         if ip:
             s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
