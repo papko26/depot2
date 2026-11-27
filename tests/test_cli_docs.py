@@ -30,8 +30,7 @@ def _paths(p, path=()):
         if id(sp) not in seen:
             seen.add(id(sp))
             yield path + (name,)
-            for q in _paths(sp, path + (name,)):
-                yield q
+            yield from _paths(sp, path + (name,))
 
 
 def _resolve(ap, words):

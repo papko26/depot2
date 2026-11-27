@@ -40,5 +40,4 @@ ignore = [
     "B904",   # raise-without-from-inside-except
     "B905",   # zip-without-explicit-strict
     "RET503", # implicit-return
-    "UP028",  # yield-in-for-loop
 ]
