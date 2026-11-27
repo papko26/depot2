@@ -15,8 +15,16 @@ def main():
     argv = sys.argv[1:]
     if os.environ.get("FAKE_PASS_LOG"):
         with open(os.environ["FAKE_PASS_LOG"], "a") as f:
-            f.write(json.dumps({"argv": argv, "gpg_opts": os.environ.get("PASSWORD_STORE_GPG_OPTS", ""),
-                                "stdin_tty": sys.stdin.isatty() if sys.stdin else None}) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "argv": argv,
+                        "gpg_opts": os.environ.get("PASSWORD_STORE_GPG_OPTS", ""),
+                        "stdin_tty": sys.stdin.isatty() if sys.stdin else None,
+                    }
+                )
+                + "\n"
+            )
     if len(argv) != 2 or argv[0] != "show":
         sys.stderr.write(f"fake pass: only `show ENTRY` is allowed, got {argv}\n")
         return 99

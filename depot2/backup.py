@@ -36,9 +36,17 @@ NAME_RE = re.compile(r"^team-(?P<host>[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?)-
 FORBIDDEN_FOLDERS = ("backups",)  # plus the config's backup.forbidden_folders
 # Network flags for every rclone call that talks to the cloud.
 NET = ["--retries", "3", "--low-level-retries", "10", "--contimeout", "30s", "--timeout", "5m"]
-NET_HINTS = ("dial tcp", "no such host", "network is unreachable", "i/o timeout", "connection refused",
-             "tls handshake timeout", "temporary failure in name resolution", "connection reset",
-             "context deadline exceeded")
+NET_HINTS = (
+    "dial tcp",
+    "no such host",
+    "network is unreachable",
+    "i/o timeout",
+    "connection refused",
+    "tls handshake timeout",
+    "temporary failure in name resolution",
+    "connection reset",
+    "context deadline exceeded",
+)
 AUTH_HINTS = ("invalid_grant", "couldn't fetch token", "oauth2: ", "token expired", "unauthorized")
 
 
@@ -78,6 +86,7 @@ class Secrets:
 
 # --- time, paths, the stamp ------------------------------------------------------------------
 
+
 def utc_iso(t=None):
     return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(time.time() if t is None else t))
 
@@ -93,7 +102,9 @@ def host_name(b):
 
 
 def archive_name(host, t=None):
-    return "team-{}-{}.tar.gz".format(host, time.strftime("%Y%m%dT%H%M%SZ", time.gmtime(time.time() if t is None else t)))
+    return "team-{}-{}.tar.gz".format(
+        host, time.strftime("%Y%m%dT%H%M%SZ", time.gmtime(time.time() if t is None else t))
+    )
 
 
 def bdir(state):
@@ -183,6 +194,7 @@ def check_cfg(b):
 
 # --- retention -------------------------------------------------------------------------------
 
+
 def plan_retention(names, host, keep_daily=14):
     """Our archives (this host, the exact name pattern) → (keep, delete), both sorted by time.
 
@@ -201,12 +213,13 @@ def plan_retention(names, host, keep_daily=14):
         ts = mine[n]
         newest_of_day[ts[:8]] = n
         first_of_month.setdefault(ts[:6], n)
-    days = sorted(newest_of_day)[-int(keep_daily):]
+    days = sorted(newest_of_day)[-int(keep_daily) :]
     keep = {newest_of_day[d] for d in days} | set(first_of_month.values())
     return [n for n in by_ts if n in keep], [n for n in by_ts if n not in keep]
 
 
 # --- one run ---------------------------------------------------------------------------------
+
 
 def _nice(argv):
     return (["nice", "-n", "10"] if shutil.which("nice") else []) + argv
@@ -240,12 +253,18 @@ class Runner:
     def read_key(self, entry):
         env = dict(os.environ)
         if self.auto:  # the background never prompts: no cached passphrase → gpg fails at once
-            env["PASSWORD_STORE_GPG_OPTS"] = (env.get("PASSWORD_STORE_GPG_OPTS", "") +
-                                              " --batch --pinentry-mode=error").strip()
+            env["PASSWORD_STORE_GPG_OPTS"] = (
+                env.get("PASSWORD_STORE_GPG_OPTS", "") + " --batch --pinentry-mode=error"
+            ).strip()
         try:
-            p = subprocess.run([self.b["pass_bin"], "show", entry], env=env, text=True,
-                               stdin=subprocess.DEVNULL if self.auto else None,
-                               capture_output=True, timeout=60 if self.auto else 300)
+            p = subprocess.run(
+                [self.b["pass_bin"], "show", entry],
+                env=env,
+                text=True,
+                stdin=subprocess.DEVNULL if self.auto else None,
+                capture_output=True,
+                timeout=60 if self.auto else 300,
+            )
         except FileNotFoundError:
             raise BackupError(t("backup.no_pass_bin"), "pass")  # noqa: B904
         except subprocess.TimeoutExpired:
@@ -262,8 +281,9 @@ class Runner:
 
     def obscure(self, key):
         try:
-            p = subprocess.run([self.b["rclone_bin"], "obscure", "-"], input=key + "\n", text=True,
-                               capture_output=True, timeout=60)
+            p = subprocess.run(
+                [self.b["rclone_bin"], "obscure", "-"], input=key + "\n", text=True, capture_output=True, timeout=60
+            )
         except FileNotFoundError:
             raise BackupError(t("backup.no_rclone"), "rclone")  # noqa: B904
         out = self.secrets.add((p.stdout or "").strip())
@@ -278,9 +298,17 @@ class Runner:
             raise BackupError(t("backup.same_secrets"), "pass")
         n = f"RCLONE_CONFIG_{self.crypt.upper()}_"
         env = {k: v for k, v in os.environ.items() if not k.startswith(n)}
-        env.update({n + "TYPE": "crypt", n + "REMOTE": self.dest, n + "PASSWORD": self.obscure(k1),
-                    n + "PASSWORD2": self.obscure(k2), n + "FILENAME_ENCRYPTION": "standard",
-                    n + "DIRECTORY_NAME_ENCRYPTION": "true", "TZ": "UTC"})
+        env.update(
+            {
+                n + "TYPE": "crypt",
+                n + "REMOTE": self.dest,
+                n + "PASSWORD": self.obscure(k1),
+                n + "PASSWORD2": self.obscure(k2),
+                n + "FILENAME_ENCRYPTION": "standard",
+                n + "DIRECTORY_NAME_ENCRYPTION": "true",
+                "TZ": "UTC",
+            }
+        )
         self.env = env
 
     # --- rclone ----------------------------------------------------------------------------
@@ -293,8 +321,14 @@ class Runner:
         argv = [self.b["rclone_bin"], *list(args)]
         self.secrets.check_argv(argv)
         try:
-            return subprocess.run(argv, env=self.env, stdin=subprocess.DEVNULL, text=True,
-                                  capture_output=True, timeout=int(self.b["timeout_s"]))
+            return subprocess.run(
+                argv,
+                env=self.env,
+                stdin=subprocess.DEVNULL,
+                text=True,
+                capture_output=True,
+                timeout=int(self.b["timeout_s"]),
+            )
         except FileNotFoundError:
             raise BackupError(t("backup.no_rclone"), step)  # noqa: B904
         except subprocess.TimeoutExpired:
@@ -331,15 +365,28 @@ class Runner:
     # --- the steps -------------------------------------------------------------------------
     def snapshot(self, tmp, name):
         parent, base = os.path.split(self.state.root)
-        tar_path = os.path.join(tmp, name[:-len(".gz")])
+        tar_path = os.path.join(tmp, name[: -len(".gz")])
         t0 = time.time()
         try:
             with self.state.lock(wait_s=float(self.b["lock_wait_s"])):
                 held = time.time()
                 # Not niced: it is short (~0.4 s for 100 MB) and holds the lock.
-                p = subprocess.run(["tar", "-C", parent, "-cf", tar_path, f"--exclude={base}/.lock",
-                                    f"--exclude={base}/{DIR}", "--exclude=*.tmp-*", base],
-                                   stdin=subprocess.DEVNULL, capture_output=True, text=True)
+                p = subprocess.run(
+                    [
+                        "tar",
+                        "-C",
+                        parent,
+                        "-cf",
+                        tar_path,
+                        f"--exclude={base}/.lock",
+                        f"--exclude={base}/{DIR}",
+                        "--exclude=*.tmp-*",
+                        base,
+                    ],
+                    stdin=subprocess.DEVNULL,
+                    capture_output=True,
+                    text=True,
+                )
                 held = time.time() - held
         except RuntimeError:
             w = int(self.b["lock_wait_s"])
@@ -347,9 +394,12 @@ class Runner:
             raise BackupError(t("backup.busy", wait=wait), "snapshot")  # noqa: B904
         if p.returncode != 0:
             raise BackupError(t("backup.tar", code=p.returncode), "snapshot", p.stderr.strip()[-500:])
-        self.say(f"snapshot: {os.path.basename(tar_path)}, {os.path.getsize(tar_path) / 1e6:.1f} MB, the state lock held {held:.1f} s (waited {time.time() - t0 - held:.1f} s)")
-        p = subprocess.run(_nice(["gzip", "-6", "-n", tar_path]), stdin=subprocess.DEVNULL,
-                           capture_output=True, text=True)
+        self.say(
+            f"snapshot: {os.path.basename(tar_path)}, {os.path.getsize(tar_path) / 1e6:.1f} MB, the state lock held {held:.1f} s (waited {time.time() - t0 - held:.1f} s)"
+        )
+        p = subprocess.run(
+            _nice(["gzip", "-6", "-n", tar_path]), stdin=subprocess.DEVNULL, capture_output=True, text=True
+        )
         local = os.path.join(tmp, name)
         if p.returncode != 0 or not os.path.isfile(local):
             raise BackupError(t("backup.gzip", code=p.returncode), "snapshot", p.stderr.strip()[-500:])
@@ -398,8 +448,11 @@ class Runner:
         if not dry_run:
             st["last_attempt"] = utc_iso(t0)
             save_stamp(self.state, st)
-        self.say("backup {}{} → {} (crypt {}:)".format("(dry run) " if dry_run else "", self.state.root, self.dest,
-                                                  self.crypt))
+        self.say(
+            "backup {}{} → {} (crypt {}:)".format(
+                "(dry run) " if dry_run else "", self.state.root, self.dest, self.crypt
+            )
+        )
         tmp = None
         try:
             check_cfg(self.b)
@@ -417,8 +470,16 @@ class Runner:
             self.upload(local, name)
             files = self.verify_upload(tmp, name, size)
             self.say("uploaded and verified: lsjson size %d, cryptcheck ok" % size)  # noqa: UP031
-            st.update(last_success=utc_iso(), archive=name, size=size, sha256=sha, remote=self.dest,
-                      source=self.state.root, duration_s=round(time.time() - t0, 1), last_error=None)
+            st.update(
+                last_success=utc_iso(),
+                archive=name,
+                size=size,
+                sha256=sha,
+                remote=self.dest,
+                source=self.state.root,
+                duration_s=round(time.time() - t0, 1),
+                last_error=None,
+            )
             save_stamp(self.state, st)
             try:
                 keep, deleted = self.retention(name, files)
@@ -437,8 +498,11 @@ class Runner:
             return 1
         except Exception as e:
             if not dry_run:
-                st["last_error"] = {"ts": utc_iso(), "reason": t("backup.crash", error=self.secrets.redact(e)[:200]),
-                                    "step": "internal"}
+                st["last_error"] = {
+                    "ts": utc_iso(),
+                    "reason": t("backup.crash", error=self.secrets.redact(e)[:200]),
+                    "step": "internal",
+                }
                 save_stamp(self.state, st)
             raise
         finally:
@@ -454,8 +518,14 @@ class Runner:
         keep, drop = plan_retention([*list(files), name], self.host, self.b["keep_daily"])
         self.say(f"would write: {name} (the state is {size / 1e6:.1f} MB before gzip)")
         self.say(f"would upload: rclone copyto --immutable <tmp>/{name} {self.crypt}:{name}, then lsjson + cryptcheck")
-        self.say("retention would keep %d and delete %d%s" % (len(keep), len(drop),  # noqa: UP031
-                                                             "".join("\n  delete " + n for n in drop)))
+        self.say(
+            "retention would keep %d and delete %d%s"  # noqa: UP031
+            % (
+                len(keep),
+                len(drop),
+                "".join("\n  delete " + n for n in drop),
+            )
+        )
         self.say("dry run: nothing written, uploaded or deleted")
         return 0
 
@@ -491,8 +561,7 @@ class Runner:
             sha = h.hexdigest()
             if st.get("archive") == name and st.get("sha256") and st["sha256"] != sha:
                 raise BackupError(t("backup.v_sha"), "verify")
-            p = subprocess.run(_nice(["tar", "-tzf", local]), stdin=subprocess.DEVNULL, capture_output=True,
-                               text=True)
+            p = subprocess.run(_nice(["tar", "-tzf", local]), stdin=subprocess.DEVNULL, capture_output=True, text=True)
             if p.returncode != 0:
                 raise BackupError(t("backup.v_tar_t", code=p.returncode), "verify", p.stderr.strip()[-500:])
             entries = [ln for ln in p.stdout.split("\n") if ln]
@@ -502,25 +571,46 @@ class Runner:
             top = tops.pop()
             x = os.path.join(tmp, "x")
             os.makedirs(x)
-            p = subprocess.run(_nice(["tar", "-xzf", local, "-C", x]), stdin=subprocess.DEVNULL,
-                               capture_output=True, text=True)
+            p = subprocess.run(
+                _nice(["tar", "-xzf", local, "-C", x]), stdin=subprocess.DEVNULL, capture_output=True, text=True
+            )
             if p.returncode != 0:
                 raise BackupError(t("backup.v_tar_x", code=p.returncode), "verify", p.stderr.strip()[-500:])
             repo = os.path.join(x, top)
-            p = subprocess.run(_nice(["git", "-C", repo, "fsck", "--full", "--no-progress"]),
-                               stdin=subprocess.DEVNULL, capture_output=True, text=True)
+            p = subprocess.run(
+                _nice(["git", "-C", repo, "fsck", "--full", "--no-progress"]),
+                stdin=subprocess.DEVNULL,
+                capture_output=True,
+                text=True,
+            )
             if p.returncode != 0:
                 raise BackupError(t("backup.v_fsck", code=p.returncode), "verify", (p.stdout + p.stderr).strip()[-800:])
-            commits = subprocess.run(["git", "-C", repo, "rev-list", "--count", "HEAD"], capture_output=True,
-                                     text=True).stdout.strip()
-            head = subprocess.run(["git", "-C", repo, "log", "-1", "--format=%cI %s"], capture_output=True,
-                                  text=True).stdout.strip()
-            self.say("verified: {}, sha256 {}{}".format(name, sha, " (= the upload's)" if st.get("archive") == name else ""))
-            self.say("  %d entries under %s/; git fsck --full ok; %s commits; HEAD %s" % (len(entries), top, commits,  # noqa: UP031
-                                                                                         head))
+            commits = subprocess.run(
+                ["git", "-C", repo, "rev-list", "--count", "HEAD"], capture_output=True, text=True
+            ).stdout.strip()
+            head = subprocess.run(
+                ["git", "-C", repo, "log", "-1", "--format=%cI %s"], capture_output=True, text=True
+            ).stdout.strip()
+            self.say(
+                "verified: {}, sha256 {}{}".format(name, sha, " (= the upload's)" if st.get("archive") == name else "")
+            )
+            self.say(
+                "  %d entries under %s/; git fsck --full ok; %s commits; HEAD %s"  # noqa: UP031
+                % (
+                    len(entries),
+                    top,
+                    commits,
+                    head,
+                )
+            )
             st = load_stamp(self.state)
-            st["last_verify"] = {"ts": utc_iso(), "archive": name, "ok": True, "entries": len(entries),
-                                 "commits": int(commits or 0)}
+            st["last_verify"] = {
+                "ts": utc_iso(),
+                "archive": name,
+                "ok": True,
+                "entries": len(entries),
+                "commits": int(commits or 0),
+            }
             save_stamp(self.state, st)
             return 0
         except BackupError as e:
@@ -536,6 +626,7 @@ class Runner:
 
 
 # --- the check after every command -----------------------------------------------------------
+
 
 def _age_h(now, iso):
     return (now - parse_utc(iso)) / 3600.0
@@ -585,8 +676,15 @@ def spawn(state, sets, args=("--drive", "--auto"), marker=SPAWNED, log=LOG):
     for s in sets or []:
         argv += ["--set", s]
     with open(log_path(state, log), "a") as out:
-        subprocess.Popen([*argv, "backup", *list(args)], stdin=subprocess.DEVNULL, stdout=out, stderr=out,
-                         cwd=d, start_new_session=True, close_fds=True)
+        subprocess.Popen(
+            [*argv, "backup", *list(args)],
+            stdin=subprocess.DEVNULL,
+            stdout=out,
+            stderr=out,
+            cwd=d,
+            start_new_session=True,
+            close_fds=True,
+        )
 
 
 def after_command(state, a):
@@ -599,6 +697,7 @@ def after_command(state, a):
         return
     try:
         from . import config
+
         b = config.load(state.root, getattr(a, "set", None), warn=lambda m: None)["backup"]
     except Exception as e:  # the check must never break a command
         print(t("backup.check_crashed", kind=type(e).__name__, error=e), file=sys.stderr)
@@ -606,6 +705,7 @@ def after_command(state, a):
     if b.get("drive") is True:
         drive_check(state, a, b)
     from . import push
+
     try:
         line = push.check(state, a, b)
         if line:
@@ -637,8 +737,10 @@ def drive_check(state, a, b):
 
 # --- `depot2 backup` ------------------------------------------------------------------------
 
+
 def status(state, cfg):
     from . import push
+
     push.status(state, cfg)
     print()
     drive_status(state, cfg)
@@ -650,22 +752,41 @@ def drive_status(state, cfg):
     st = load_stamp(state)
     now = time.time()
     on = b.get("drive") is True
-    print("drive: %s" % ("on (backup.drive true): daily, started by any depot2 command" if on else
-                         "off (backup.drive false): only by hand, depot2 backup --drive [--now|--dry-run|--verify]"))
-    print("backup of {} → {}{}/ (crypt {}:, names and contents encrypted)".format(state.root, b["remote"], b["folder"],
-                                                                            b["crypt_name"]))
+    print(
+        "drive: %s"
+        % (
+            "on (backup.drive true): daily, started by any depot2 command"
+            if on
+            else "off (backup.drive false): only by hand, depot2 backup --drive [--now|--dry-run|--verify]"
+        )
+    )
+    print(
+        "backup of {} → {}{}/ (crypt {}:, names and contents encrypted)".format(
+            state.root, b["remote"], b["folder"], b["crypt_name"]
+        )
+    )
     print("keys: pass {}, {} (never shown)".format(b["pass_password"], b["pass_salt"]))
     ls = st.get("last_success")
     if ls:
-        print("last success: %s (%.1f h ago): %s, %d bytes, sha256 %s, %s s"  # noqa: UP031
-              % (ls, _age_h(now, ls), st.get("archive"), st.get("size") or 0, st.get("sha256"), st.get("duration_s")))
+        print(
+            "last success: %s (%.1f h ago): %s, %d bytes, sha256 %s, %s s"  # noqa: UP031
+            % (ls, _age_h(now, ls), st.get("archive"), st.get("size") or 0, st.get("sha256"), st.get("duration_s"))
+        )
         left = float(b["every_h"]) - _age_h(now, ls)
         if on:
-            print("next: %s" % ("due: the next depot2 command starts it in the background" if left <= 0 else
-                                f"in {left:.1f} h, started by any depot2 command"))
+            print(
+                "next: %s"
+                % (
+                    "due: the next depot2 command starts it in the background"
+                    if left <= 0
+                    else f"in {left:.1f} h, started by any depot2 command"
+                )
+            )
     elif on:
-        print("last success: never. The first run is a person's: depot2 backup --drive --now "
-              "(no background run starts before it)")
+        print(
+            "last success: never. The first run is a person's: depot2 backup --drive --now "
+            "(no background run starts before it)"
+        )
     else:
         print("last success: never")
     err = st.get("last_error")
@@ -675,12 +796,24 @@ def drive_status(state, cfg):
         print("last attempt: {}".format(st["last_attempt"]))
     r = st.get("retention")
     if r:
-        print("retention: %s" % (("kept %d, deleted %d" % (r.get("kept", 0), len(r.get("deleted") or [])))  # noqa: UP031
-                                 if not r.get("error") else "FAILED: " + r["error"]))
+        print(
+            "retention: %s"
+            % (
+                ("kept %d, deleted %d" % (r.get("kept", 0), len(r.get("deleted") or [])))  # noqa: UP031
+                if not r.get("error")
+                else "FAILED: " + r["error"]
+            )
+        )
     v = st.get("last_verify")
     if v:
-        print("last verify: {}, {}".format(v.get("ts"), ("ok: {}, {} entries, {} commits".format(
-            v.get("archive"), v.get("entries"), v.get("commits"))) if v.get("ok") else "FAILED: " + v.get("reason", "")))
+        print(
+            "last verify: {}, {}".format(
+                v.get("ts"),
+                ("ok: {}, {} entries, {} commits".format(v.get("archive"), v.get("entries"), v.get("commits")))
+                if v.get("ok")
+                else "FAILED: " + v.get("reason", ""),
+            )
+        )
     print("running now: %s" % ("yes" if is_running(state) else "no"))
     print(f"log: {log_path(state)}")
     line = warning(state, st, b, now) if on else None
@@ -689,16 +822,25 @@ def drive_status(state, cfg):
 
 
 def command(state, cfg, a):
-    drive_only = [f for f, on in (("--now", a.now), ("--dry-run", a.dry_run), ("--verify", a.verify),
-                                  ("--archive", a.archive)) if on]
+    drive_only = [
+        f
+        for f, on in (("--now", a.now), ("--dry-run", a.dry_run), ("--verify", a.verify), ("--archive", a.archive))
+        if on
+    ]
     if drive_only and not a.drive:
-        print("error: {} is for Drive: depot2 backup --drive {} (the git push: depot2 backup --push)".format(drive_only[0], " ".join(drive_only)), file=sys.stderr)
+        print(
+            "error: {} is for Drive: depot2 backup --drive {} (the git push: depot2 backup --push)".format(
+                drive_only[0], " ".join(drive_only)
+            ),
+            file=sys.stderr,
+        )
         return 1
     if a.auto and not (a.push or a.drive):
         print("error: --auto goes with --push or --drive", file=sys.stderr)
         return 1
     if a.push:
         from . import push
+
         return push.command(state, cfg, a)
     if not a.drive:
         return status(state, cfg)
@@ -712,6 +854,7 @@ def command(state, cfg, a):
         if a.auto:
             r.say(f"another backup run holds {state.path(DIR, LOCK)}: nothing to do")
             return 0
-        print(f"error: a backup is running already ({state.path(DIR, LOCK)}); see depot2 backup --status",
-              file=sys.stderr)
+        print(
+            f"error: a backup is running already ({state.path(DIR, LOCK)}); see depot2 backup --status", file=sys.stderr
+        )
         return 1

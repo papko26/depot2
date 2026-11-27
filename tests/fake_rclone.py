@@ -32,7 +32,7 @@ def obscure(s):
 def crypt_remote():
     for k, v in os.environ.items():
         if k.startswith("RCLONE_CONFIG_") and k.endswith("_TYPE") and v == "crypt":
-            name = k[len("RCLONE_CONFIG_"):-len("_TYPE")]
+            name = k[len("RCLONE_CONFIG_") : -len("_TYPE")]
             return name.lower(), os.environ.get(f"RCLONE_CONFIG_{name}_REMOTE", ""), name
     return None, None, None
 
@@ -48,8 +48,16 @@ def main():
         ok = got == want and len(got) == 2
     if os.environ.get("FAKE_RCLONE_LOG"):
         with open(os.environ["FAKE_RCLONE_LOG"], "a") as f:
-            f.write(json.dumps({"argv": argv, "crypt_env_ok": ok,
-                                "env": sorted(k for k in os.environ if k.startswith("RCLONE_CONFIG_"))}) + "\n")
+            f.write(
+                json.dumps(
+                    {
+                        "argv": argv,
+                        "crypt_env_ok": ok,
+                        "env": sorted(k for k in os.environ if k.startswith("RCLONE_CONFIG_")),
+                    }
+                )
+                + "\n"
+            )
     if not argv:
         return 1
     cmd, rest = argv[0], argv[1:]
@@ -73,14 +81,16 @@ def main():
         sys.stderr.write(f"fake rclone: {cmd} is forbidden in the backup\n")
         return 99
     if os.environ.get("FAKE_RCLONE_FAIL") == "network":
-        sys.stderr.write('ERROR : Failed to create file system: Get "https://www.googleapis.com/drive/v3/files": '
-                         "dial tcp: lookup www.googleapis.com: no such host\n")
+        sys.stderr.write(
+            'ERROR : Failed to create file system: Get "https://www.googleapis.com/drive/v3/files": '
+            "dial tcp: lookup www.googleapis.com: no such host\n"
+        )
         return 1
     folder = os.path.join(os.environ["FAKE_RCLONE_DIR"], remote.split(":", 1)[1])
 
     def local_of(path):
         if name and path.startswith(name + ":"):
-            return os.path.join(folder, path[len(name) + 1:]), True
+            return os.path.join(folder, path[len(name) + 1 :]), True
         if ":" in path and not path.startswith("/"):
             sys.stderr.write(f"fake rclone: unknown remote in {path}\n")
             sys.exit(98)
@@ -90,8 +100,10 @@ def main():
         if not os.path.isdir(folder):
             sys.stderr.write("ERROR : : error listing: directory not found\n")
             return 3
-        out = [{"Path": n, "Name": n, "Size": os.path.getsize(os.path.join(folder, n)), "ModTime": "x",
-                "IsDir": False} for n in sorted(os.listdir(folder))]
+        out = [
+            {"Path": n, "Name": n, "Size": os.path.getsize(os.path.join(folder, n)), "ModTime": "x", "IsDir": False}
+            for n in sorted(os.listdir(folder))
+        ]
         print(json.dumps(out))
         return 0
     if cmd == "copyto":

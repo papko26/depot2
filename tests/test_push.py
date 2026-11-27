@@ -25,8 +25,12 @@ FORCE = ("--force", "-f", "--force-with-lease", "--mirror", "--delete", "-d", "-
 
 
 def git(cwd, *args, check=True):
-    return subprocess.run(["git", "-C", cwd, "-c", "user.name=t", "-c", "user.email=t@localhost", *list(args)],
-                          check=check, capture_output=True, text=True)
+    return subprocess.run(
+        ["git", "-C", cwd, "-c", "user.name=t", "-c", "user.email=t@localhost", *list(args)],
+        check=check,
+        capture_output=True,
+        text=True,
+    )
 
 
 class PushBase(unittest.TestCase):
@@ -264,8 +268,10 @@ class FailureTest(PushBase):
         self.assertFalse(st["last_error"]["person"])
         self.assertEqual(st["fails"], 1)
         for cmd in (("ledger",), ("stack",), ("config",)):
-            self.assertIn("⚠ пуш депо в backup не прошёл (не отправлено коммитов: 10): нет репозитория на remote",
-                          self.team(*cmd).stderr)
+            self.assertIn(
+                "⚠ пуш депо в backup не прошёл (не отправлено коммитов: 10): нет репозитория на remote",
+                self.team(*cmd).stderr,
+            )
         self.assertIn("⚠ пуш депо в backup не прошёл", self.team("backup", "--status").stdout)
         # The next background try waits retry_min (30) and doubles after each failure.
         started = self.spawned()
@@ -308,8 +314,10 @@ class FailureTest(PushBase):
         self.assertTrue(st["last_error"]["person"])
         self.assertEqual(self.remote_head(), theirs)  # nothing forced
         self.assertIn("keep-me", git(self.bare, "tag").stdout)
-        self.assertIn("⚠ пуш депо в backup не прошёл (не отправлено коммитов: 10): remote разошёлся, нужен владелец",
-                      self.team("stack").stderr)
+        self.assertIn(
+            "⚠ пуш депо в backup не прошёл (не отправлено коммитов: 10): remote разошёлся, нужен владелец",
+            self.team("stack").stderr,
+        )
         # It needs a person: no background retry, whatever the window.
         self.age_marker(10000)
         started = self.spawned()
@@ -336,8 +344,14 @@ class FailureTest(PushBase):
     def test_refused_before_any_scan(self):
         self.add_remote()
         self.commits(3)
-        for bad in ("backup.git.branch=+master", "backup.git.branch=a:b", "backup.git.remote=../x",
-                    "backup.git.remote=-f", "backup.git.every_commits=0", 'backup.git.scan_pushed_args=["--repo"]'):
+        for bad in (
+            "backup.git.branch=+master",
+            "backup.git.branch=a:b",
+            "backup.git.remote=../x",
+            "backup.git.remote=-f",
+            "backup.git.every_commits=0",
+            'backup.git.scan_pushed_args=["--repo"]',
+        ):
             p = self.team("--set", bad, "backup", "--push", ok=False)
             self.assertEqual(p.returncode, 1, bad)
             self.assertIn("⚠ пуш депо не запущен", self.team("--set", bad, "ledger").stderr, bad)
@@ -355,13 +369,21 @@ class FailureTest(PushBase):
     def test_push_argv_is_the_only_push(self):
         sha = "0123456789abcdef0123456789abcdef01234567"
         argv = push.push_argv("backup", "master", sha)
-        self.assertEqual(argv, ["git", "-c", "push.followTags=false", "push", "--porcelain", "backup",
-                                sha + ":refs/heads/master"])
+        self.assertEqual(
+            argv, ["git", "-c", "push.followTags=false", "push", "--porcelain", "backup", sha + ":refs/heads/master"]
+        )
         self.assertFalse(set(argv) & set(FORCE))
-        for remote, branch, c in (("backup", "+master", sha), ("backup", "a:b", sha), ("-f", "master", sha),
-                                  ("backup", ":master", sha), ("ba..ck", "master", sha), ("backup", "", sha),
-                                  ("backup", "master", "HEAD"), ("backup", "master", "+" + sha[1:]),
-                                  ("backup", "master", sha[:12])):
+        for remote, branch, c in (
+            ("backup", "+master", sha),
+            ("backup", "a:b", sha),
+            ("-f", "master", sha),
+            ("backup", ":master", sha),
+            ("ba..ck", "master", sha),
+            ("backup", "", sha),
+            ("backup", "master", "HEAD"),
+            ("backup", "master", "+" + sha[1:]),
+            ("backup", "master", sha[:12]),
+        ):
             with self.assertRaises(push.PushError):
                 push.push_argv(remote, branch, c)
         env = push.push_env(self.t.state)
@@ -398,8 +420,10 @@ class ScanTest(PushBase):
         self.team("ledger")
         self.wait_for(lambda: self.stamp().get("last_error"))
         self.wait_done()
-        self.assertEqual(self.stamp()["last_error"]["reason"], "скан не CLEAN (то, что уйдёт пушем), пуша нет: "
-                         "запусти скан руками, затем depot2 backup --push")
+        self.assertEqual(
+            self.stamp()["last_error"]["reason"],
+            "скан не CLEAN (то, что уйдёт пушем), пуша нет: запусти скан руками, затем depot2 backup --push",
+        )
         self.assertEqual(self.remote_head(), pushed)
         self.assertEqual(len(self.scans()), 3)  # the push's scan stopped it; the files' never ran
         self.age_marker(10000)
@@ -423,13 +447,15 @@ class CheckUnitTest(unittest.TestCase):
             self.assertFalse(push.is_clean(out), out)
         rows = push.parse_porcelain("To /x\n!\tHEAD:refs/heads/master\t[rejected] (fetch first)\nDone\n")
         self.assertEqual(rows, [("!", "HEAD:refs/heads/master", "[rejected] (fetch first)")])
-        self.assertEqual(push.redact("fatal: https://u:p@h/x and http://t0k@h"),
-                         "fatal: https://***@h/x and http://***@h")
+        self.assertEqual(
+            push.redact("fatal: https://u:p@h/x and http://t0k@h"), "fatal: https://***@h/x and http://***@h"
+        )
 
     def test_backoff(self):
         g = {"retry_min": 30}
-        self.assertEqual([push.wait_min(g, {"fails": f}) for f in (0, 1, 2, 3, 4, 5, 9)],
-                         [30, 30, 60, 120, 240, 360, 360])
+        self.assertEqual(
+            [push.wait_min(g, {"fails": f}) for f in (0, 1, 2, 3, 4, 5, 9)], [30, 30, 60, 120, 240, 360, 360]
+        )
 
 
 if __name__ == "__main__":
@@ -437,7 +463,6 @@ if __name__ == "__main__":
 
 
 class RawGateTest(unittest.TestCase):
-
     def setUp(self):
         self.t = TempState(git=True)
         self.t.state.commit("test: seed")
@@ -486,8 +511,9 @@ class RawGateTest(unittest.TestCase):
         self.assertEqual(q["to"], os.path.join(self.q, "rounds", "r", "raw", "chronicler-r1.jsonl"))
         self.assertIn(HIT, slurp(q["to"]))
         marker = json.loads(slurp(p))
-        self.assertEqual((marker["type"], marker["to"], marker["why"]),
-                         ("quarantined", q["to"], "приватный скан не CLEAN"))
+        self.assertEqual(
+            (marker["type"], marker["to"], marker["why"]), ("quarantined", q["to"], "приватный скан не CLEAN")
+        )
         self.assertEqual(len(lines), 1)
         self.assertIn("в карантине {} (вне депо)".format(q["to"]), lines[0])
         for text in [*lines, slurp(p)]:
@@ -518,6 +544,7 @@ class RawGateTest(unittest.TestCase):
 
         from depot2.executors import FatalError
         from depot2.round import RoundAborted, run_round
+
         inp = os.path.join(self.tmp, "q.md")
         with open(inp, "w") as f:
             f.write(BALLOT)
@@ -527,6 +554,7 @@ class RawGateTest(unittest.TestCase):
             with open(spec.raw_path, "w") as f:
                 f.write('{"text": "%s"}\n' % (HIT if spec.call_id.endswith("/chronicler-r1") else "plain"))
             return inner(spec)
+
         lines = []
         with self.assertRaises(RoundAborted):
             run_round(self.t.state, self.t.cfg, "ballot", inp, runner=runner, out=lines.append)
@@ -542,6 +570,7 @@ class RawGateTest(unittest.TestCase):
         self.assertEqual(git(self.t.state.root, "status", "--porcelain").stdout.strip(), "")
         self.assertIn(HIT, slurp(os.path.join(self.q, rel)))
         # the round goes on (`round --resume`); its report names the stream in the quarantine
-        r = run_round(self.t.state, self.t.cfg, None, resume=rid, runner=FakeRunner(self.t.state, {}),
-                      out=lambda *a: None)
+        r = run_round(
+            self.t.state, self.t.cfg, None, resume=rid, runner=FakeRunner(self.t.state, {}), out=lambda *a: None
+        )
         self.assertIn(f"{rel}: сырой поток в карантине (приватный скан не CLEAN)", r["report"])
