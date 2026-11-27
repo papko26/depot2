@@ -161,18 +161,23 @@ class State:
         return os.path.isdir(self.root)
 
     @contextlib.contextmanager
-    def lock(self, wait_s=None):
+    def lock(self, wait_s=None, on_busy=None):
         """The state's lock. A command waits up to LOCK_WAIT_S for it (the backup's snapshot holds
-        it for about a second), then fails."""
+        it for about a second), then fails; the merge runner and the backup's snapshot wait longer
+        (wait_s). on_busy(path): called once when the first try finds it held, for a line in a log."""
         os.makedirs(self.root, exist_ok=True)
         fd = os.open(self.path(".lock"), os.O_RDWR | os.O_CREAT, 0o644)
         try:
             deadline = time.time() + (LOCK_WAIT_S if wait_s is None else wait_s)
+            told = on_busy is None
             while True:
                 try:
                     fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     break
                 except OSError:
+                    if not told:
+                        told = True
+                        on_busy(self.path(".lock"))
                     if time.time() >= deadline:
                         raise LockBusy("another depot2 has held %s for over %g s, nothing was written: run the "
                                        "command again in a moment (a write of the merge runner or the backup's snapshot "

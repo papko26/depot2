@@ -206,6 +206,12 @@ class Agents(object):
 
     # --- the end of a run: the spend on the car, once ---------------------------------------------------------------
 
+    def to_settle(self):
+        """A live agent whose transcript says it finished, so `settle` has something to book: read without the
+        state's lock (a reading command takes it only for that write)."""
+        return any(ag.get("state") == "live" and ag.get("transcript") and (self.reading(ag) or {}).get("finished")
+                   for ag in self.data["agents"])
+
     def settle(self, by="agents"):
         """Every live agent whose transcript says it finished: finished, and its spend booked on its car (once)."""
         for ag in self.data["agents"]:
@@ -354,7 +360,12 @@ class Agents(object):
     # --- the tables ------------------------------------------------------------------------------------------------
 
     def views(self, include_all=False, now=None):
-        out = [self.view(a, now) for a in self.data["agents"]]
+        """The agents as the tables show them. Without include_all only the live ones, and only their transcripts are
+        read: one whose record says finished or stopped is not live (is_live), so its log is never opened (a depot
+        with hundreds of finished runs would read every one of them on each listing)."""
+        ags = self.data["agents"] if include_all else [a for a in self.data["agents"]
+                                                       if a.get("state") not in ("finished", "stopped")]
+        out = [self.view(a, now) for a in ags]
         return out if include_all else [v for v in out if v["live"]]
 
     def md(self, include_all=False, now=None):

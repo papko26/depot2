@@ -4,6 +4,7 @@ import fcntl
 import io
 import json
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -631,6 +632,90 @@ THE_SPARE = '["self-hosted","spare"]'
 def runner(name, status, *labels):
     return {"name": name, "status": status, "busy": False,
             "labels": [{"name": x, "type": "custom"} for x in ("self-hosted", "Linux", "X64") + labels]}
+
+
+HOLDER = r"""
+import fcntl, os, sys, time
+fd = os.open(sys.argv[1], os.O_RDWR | os.O_CREAT, 0o644)
+try:
+    fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
+except OSError:
+    print("busy", flush=True)
+    sys.exit(1)
+print("holds", flush=True)
+time.sleep(float(sys.argv[2]))
+"""
+
+
+class BusyLockTest(MergeBase):
+    """Another depot2 holds the state's lock while the runner rides: the runner's next write waits for it."""
+
+    def hold_at_the_first_sleep(self, seconds):
+        """At the runner's first sleep (its poll of the CI) another process takes the state's lock for `seconds`;
+        the runner's next write («CI green») finds it held."""
+        holders = []
+        sleep = merge.SLEEP
+
+        def sleep_then_hold(s):
+            if not holders:
+                p = subprocess.Popen([sys.executable, "-c", HOLDER, self.t.state.path(".lock"), str(seconds)],
+                                     stdout=subprocess.PIPE, universal_newlines=True)
+                holders.append(p)
+                self.assertEqual(p.stdout.readline().strip(), "holds")
+            sleep(s)
+        merge.SLEEP = sleep_then_hold
+        return holders
+
+    def wait_for(self, holders):
+        for p in holders:
+            p.wait()
+            p.stdout.close()
+
+    def test_a_lock_held_15_s_by_another_process_the_runner_waits_and_rides_on(self):
+        self.pr(301, "feat-a", {"a.txt": "A\n"})
+        self.ci(feat_a=["in_progress", "success"])
+        self.team("merge", "add", "301", "--word", "мердж")
+        holders = self.hold_at_the_first_sleep(15)
+        try:
+            rc, out, err = self.team("merge", "run")
+        finally:
+            self.wait_for(holders)
+        self.assertEqual(len(holders), 1)
+        self.assertEqual(rc, 0, out + err)
+        self.assertIn("the state's lock (%s) is held by another depot2: the runner waits for it, up to 1800 s "
+                      "(merge.lock_wait_s)" % self.t.state.path(".lock"), out)
+        waited = re.search(r"the state's lock is free after (\d+) s: the runner goes on", out)
+        self.assertTrue(waited, out)
+        self.assertGreaterEqual(int(waited.group(1)), 10)  # past the 10 s a command waits, which the runner left at
+        self.assertLess(out.index("is held by another depot2"), out.index("CI green on feat-a"))
+        self.assertEqual(self.entry(301)["status"], "merged")
+        self.assertEqual([c[2] for c in self.gh_calls("pr", "merge")], ["301"])
+
+    def test_past_merge_lock_wait_s_the_runner_leaves_and_the_next_run_goes_on_from_its_step(self):
+        self.sets.append("merge.lock_wait_s=1")
+        self.pr(301, "feat-a", {"a.txt": "A\n"})
+        self.ci(feat_a=["in_progress", "success"])
+        self.team("merge", "add", "301", "--word", "мердж")
+        holders = self.hold_at_the_first_sleep(4)
+        try:
+            rc, out, err = self.team("merge", "run")
+            self.assertEqual(rc, 1, out + err)
+            self.assertIn("another depot2 has held %s for over 1 s, nothing was written" % self.t.state.path(".lock"),
+                          err)
+            self.assertRegex(out, r"the state's lock is still held after \d+ s: the runner leaves; `depot2 merge run "
+                                  r"--ensure` goes on from the same step")
+            e = self.entry(301)
+            self.assertEqual((e["status"], e["step"]), ("riding", "ci"))
+            self.assertEqual(self.gh_calls("pr", "merge"), [])
+        finally:
+            self.wait_for(holders)
+        self.assertIn("**Очередь 1, исполнитель не едет** — `depot2 merge run --ensure`.", self.team("merge")[1])
+        rc, out, err = self.team("merge", "run")  # the lock is free: on from the same step
+        self.assertEqual(rc, 0, out + err)
+        self.assertNotIn("== #301", out)  # not started again: it rode on from its step
+        self.assertIn("CI green on feat-a", out)
+        self.assertEqual(self.entry(301)["status"], "merged")
+        self.assertEqual([c[2] for c in self.gh_calls("pr", "merge")], ["301"])
 
 
 class CdRunnerTest(MergeBase):

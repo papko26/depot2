@@ -197,6 +197,10 @@ DEFAULTS = {
         "trial_retry_min": 10,
         "net_retries": 5,
         "net_retry_s": 60,
+        # the runner's write waits this long for the state's lock another command holds (a team round: its whole
+        # run), with a line in its log, rather than leaving after the 10 s a command waits; past it the runner leaves
+        # and `merge run --ensure` goes on from the same step
+        "lock_wait_s": 1800,
         "ci_net_reruns": 2,
         "ci_net_patterns": ["HttpClient.Timeout", "download has timed out", "Failed to download action",
                             "Could not resolve host", "TLS handshake timeout", "Connection timed out", "ETIMEDOUT",
@@ -482,7 +486,7 @@ def check_merge(m):
     for key in ("poll_s", "run_appear_min", "ci_timeout_min", "deploy_timeout_min", "queued_max_min",
                 "github_reruns_max", "github_wait_max_min", "scan_timeout_s", "after_resolve_timeout_s",
                 "smoke_timeout_s", "generate_timeout_s", "golden_timeout_s", "presync_depth", "trial_retry_min",
-                "net_retries", "net_retry_s", "ci_net_reruns"):
+                "net_retries", "net_retry_s", "ci_net_reruns", "lock_wait_s"):
         num(key)
     if not isinstance(m.get("trial_prefix"), str) or not m["trial_prefix"].endswith("/") or len(m["trial_prefix"]) < 2:
         raise ValueError("merge.trial_prefix must be a branch prefix ending in «/» (mq/)")

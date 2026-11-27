@@ -15,6 +15,7 @@ lock) takes the PRs one at a time, in the order they were added, so each PR is t
 While a PR waits for its CI or the deploy, the next ones are tried on top of it (mergetrials.py). A runner pool that is
 offline can be swapped through a repository variable (merge.cd_fallback, merge.ci_fallback). A network failure of git
 or gh is tried again (merge.net_retries); a CI run that failed only on the network is rerun (merge.ci_net_patterns).
+A write of the runner waits for the state's lock another command holds up to merge.lock_wait_s (Rider.state_lock).
 A failure stops the queue until `merge resume` or `merge drop`; GitHub not starting a job is no failure.
 
 merge-queue.json         {"next": n, "entries": [...]}: in the order added (merged and dropped ones stay)
@@ -39,7 +40,7 @@ import types
 from . import hooks, i18n, mergeauto
 from .mergetrials import TrialsMixin, trial_brief, trial_cell
 from .mergewt import WorktreesMixin, size_text, wt_text
-from .store import append_jsonl, read_json, write_json
+from .store import LockBusy, append_jsonl, read_json, write_json
 
 FILE = "merge-queue.json"
 HISTORY = "merge-history.jsonl"
@@ -531,9 +532,36 @@ class Rider(TrialsMixin, WorktreesMixin):
 
     # --- the state ---
     @contextlib.contextmanager
+    def state_lock(self):
+        """The state's lock for one of the runner's writes. Another command may hold it past the 10 s a command waits
+        (store.LOCK_WAIT_S; a team round holds it for its whole run): the runner waits for it up to
+        merge.lock_wait_s, with a line in its log when it starts waiting and one when it goes on, rather than leaving
+        the queue standing. Past that it leaves (LockBusy) with a line, and `merge run --ensure` goes on from the step."""
+        limit = float(self.m["lock_wait_s"])
+        t0 = time.monotonic()
+        busy = []
+
+        def waiting(path):
+            busy.append(path)
+            self.out("the state's lock (%s) is held by another depot2: the runner waits for it, up to %d s "
+                     "(merge.lock_wait_s)" % (path, limit))
+        got = False
+        try:
+            with self.state.lock(wait_s=limit, on_busy=waiting):
+                got = True
+                if busy:
+                    self.out("the state's lock is free after %d s: the runner goes on" % (time.monotonic() - t0))
+                yield
+        except LockBusy:
+            if busy and not got:
+                self.out("the state's lock is still held after %d s: the runner leaves; `depot2 merge run --ensure` "
+                         "goes on from the same step" % (time.monotonic() - t0))
+            raise
+
+    @contextlib.contextmanager
     def edit(self):
         """A short write under the state's lock: the file read fresh (another command may have added to it)."""
-        with self.state.lock():
+        with self.state_lock():
             q = MergeQueue(self.state)
             yield q
 
@@ -604,11 +632,16 @@ class Rider(TrialsMixin, WorktreesMixin):
     def run(self, once=False):
         """0: the queue is empty (or `--once` rode one); 1: stopped; 3: waiting for GitHub, the runner left."""
         with self.run_lock():
+            left = False
             try:
                 return self._run(once)
+            except LockBusy:
+                left = True  # the lock is still held: the log is on disk, the runner's next commit takes it
+                raise
             finally:
-                with self.state.lock():
-                    self.state.commit("team: merge run: the log")
+                if not left:
+                    with self.state_lock():
+                        self.state.commit("team: merge run: the log")
 
     def _run(self, once):
         while True:
@@ -682,7 +715,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         ref = e.get("car") or e.get("st")
         if not ref:
             return ["no stack object, no car: no stage to move"]
-        with self.state.lock():
+        with self.state_lock():
             try:
                 car = Car(self.state, self.cfg, ref)
                 if car.obj is not None:
@@ -699,7 +732,7 @@ class Rider(TrialsMixin, WorktreesMixin):
     def arrive_earlier(self, e):
         from .stages import Car, StageError, hand_why, rolled_before, ru
         out = []
-        with self.state.lock():
+        with self.state_lock():
             q = MergeQueue(self.state)
             mine = q.get(e["id"])
             for h in q.entries():
@@ -1447,7 +1480,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         from .trains import freed_slot_lines
         reason = i18n.t("merge.done_reason", pr=e["pr"], sha=sha[:7], id=e["id"], word=clip(e.get("word"), 120))
         out = []
-        with self.state.lock():
+        with self.state_lock():
             stk = Stack(self.state, self.cfg)
             oid = e.get("st")
             if oid and stk._dep_open(oid):

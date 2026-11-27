@@ -145,7 +145,10 @@ waits («waiting for GitHub») and the runner reruns what GitHub left unstarted.
 top of it on branches of their own (`merge.presync_depth`, `merge.trial_prefix`), so their CI runs early. When a
 runner pool is offline, `merge.cd_fallback` / `merge.ci_fallback` can move the jobs to a spare pool through a
 repository variable and move them back after the run. After a merge the PR's worktree is removed when nothing in it
-can be lost; `merge prune-worktrees` takes the old ones.
+can be lost; `merge prune-worktrees` takes the old ones. A command waits 10 s for the state's lock; when another one
+holds it longer (a team round holds it for its whole run), a write of the runner waits up to `merge.lock_wait_s`
+(30 min), with a line in its log, and goes on; past that the runner leaves and `merge run --ensure` goes on from the
+same step.
 
 ## Connecting your project
 
@@ -233,7 +236,8 @@ functions (`depot2/executors/__init__.py` has the interface):
 The runs themselves are started by whoever orchestrates the work: `depot2 agents start <car> --role build --usage N`
 asks the gates (the car's stage, the role, the usage window's stop, one live run per car) and gives a slot;
 `depot2 agents attach ag-N <run id>` links the run to its log; the depot reads the log when asked and books the spend
-on the car once the run is over.
+on the car once the run is over. A listing reads the logs of the runs it shows (the live ones; `--all`: every one)
+without the state's lock, and takes the lock only to book a run that ended.
 
 **Who needs one.** Only the team rounds (`round`, with its brainstorms and solo rounds) and `reflect` make calls,
 and only `agents attach|show|list` read a run's log. The stack, the cars, the trains, the gates, the merge queue, the

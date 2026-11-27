@@ -574,8 +574,13 @@ def cmd_agents(state, cfg, a):
             print(line)
         state.commit("team: agents stop %s" % ag["id"])
         return 0
-    # reading: an agent that finished is booked on its car first (once), then the table
-    ags.settle()
+    # reading: an agent that finished is booked on its car first (once), under the state's lock for that write alone;
+    # the table is read without it (the transcripts, seconds to read, would keep every other command waiting)
+    if ags.to_settle():
+        with state.lock():
+            ags = Agents(state, cfg)  # read again under the lock: another command may have written meanwhile
+            ags.settle()
+            state.commit("team: agents: %s" % "; ".join(ags.lines)[:200])
     if act == "show":
         ags.get(a.id)
         if a.json:
@@ -588,7 +593,6 @@ def cmd_agents(state, cfg, a):
         print(ags.md(include_all=a.all), end="")
     for line in ags.lines:
         print(line, file=sys.stderr if a.json else sys.stdout)
-    state.commit("team: agents: %s" % "; ".join(ags.lines)[:200])
     return 0
 
 
@@ -2026,7 +2030,7 @@ def build_parser():
     q.add_argument("id", metavar="AG")
     q.add_argument("--why", required=True)
     q.add_argument("--by", help=t("cli.help.agents_stop_by"))
-    p.set_defaults(fn=cmd_agents, mutates=True)  # reading books a finished agent's spend on its car
+    p.set_defaults(fn=cmd_agents, mutates=False)  # start, attach, stop write (main); a reading locks for its booking
 
     p = sub.add_parser("web", help="depot2's web view, seven tabs: tracks, trains, board, merge queue, agents, "
                                    "decisions and principles, queues; search, copy icons, a car's panel and brief; "
@@ -2334,7 +2338,8 @@ def main(argv=None):
     if extra:
         ap.error(_unrecognized(argv, extra))
     if a.cmd in ("stack", "ballots", "tstack", "tracks", "trains", "wishes", "wish", "think", "todo", "queues",
-                 "principles", "principle") and getattr(a, "action", None) not in (None, "next", "show", "checks"):
+                 "principles", "principle", "agents", "agent") and getattr(a, "action", None) not in (
+                     None, "next", "show", "checks"):
         a.mutates = True  # an action changes the file; printing it does not
     if a.cmd == "merge" and (a.action in ("add", "move", "handoff", "resume", "drop", "rerun") or
                              (a.action == "resolve" and getattr(a, "res_action", None) in ("add", "drop"))):

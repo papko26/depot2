@@ -368,6 +368,41 @@ class SpendTest(AgentsBase):
         self.assertIn("ag-0001 закончил: на вагон tr-0001:2 записано", out)
         self.assertEqual(self.car("tr-0001:2")["spent_mtok"], 0.0265)
 
+    def test_a_listing_reads_only_the_live_logs_and_takes_the_lock_only_to_book(self):
+        from depot2 import agents as agents_mod
+        self.t.state.init_git()
+        self.start("tr-0001:1", "build")
+        self.team("agents", "attach", "ag-0001", DONE)  # finished and booked
+        self.start("tr-0001:2", "sketch")
+        self.team("agents", "attach", "ag-0002", LIVE)
+        read = []
+        real = agents_mod.read_transcript
+
+        def counted(path, *rest):
+            read.append(path)
+            return real(path, *rest)
+        with mock.patch.object(agents_mod, "read_transcript", counted):
+            with self.t.state.lock():  # another command holds the state's lock: a listing waits for nothing
+                rc, out, err = self.team("agents")
+            self.assertEqual(rc, 0, err)
+            self.assertIn("| ag-0002 | tr-0001:2 |", out)
+            self.assertNotIn("ag-0001", out)
+            self.assertNotIn(self.path(DONE), read)  # a finished one's log is not opened for the live table
+            self.assertIn(self.path(LIVE), read)
+            del read[:]
+            self.assertIn("| ag-0001 | tr-0001:1 |", self.team("agents", "--all")[1])
+            self.assertIn(self.path(DONE), read)  # --all shows it, so it reads it
+        with open(os.path.join(self.projects, SUB, "agent-%s.meta.json" % LIVE), "w") as f:
+            json.dump({"finished": True}, f)
+        rc, out, err = self.team("agents")  # something to book: the lock for that write, then committed
+        self.assertEqual(rc, 0, err)
+        self.assertIn("ag-0002 закончил: на вагон tr-0001:2 записано", out)
+        self.assertEqual(self.car("tr-0001:2")["spent_mtok"], 0.0265)
+        left = self.t.state.git("status", "--porcelain", "--", "agents.json", "agents-history.jsonl", "tracks.json",
+                                "tracks-history.jsonl").stdout.strip()
+        self.assertEqual(left, "")
+        self.assertIn("team: agents: ag-0002 закончил", self.t.state.git("log", "-1", "--format=%s").stdout)
+
     def test_stop_records_it_and_books_the_spend_so_far(self):
         self.start("tr-0001:2", "plan")
         self.team("agents", "attach", "ag-0001", LIVE)
