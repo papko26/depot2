@@ -53,7 +53,7 @@ class FakeClock:
         self.write()
 
     def write(self):
-        with open(self.path, "w") as f:
+        with Path(self.path).open("w") as f:
             f.write(repr(self.t))
 
 
@@ -68,7 +68,7 @@ class MergeBase(unittest.TestCase):
         self.env0 = dict(os.environ)
         b = os.path.join(self.tmp, "bin")
         Path(b).mkdir(parents=True)
-        with open(os.path.join(b, "gh"), "w") as f:
+        with Path(b, "gh").open("w") as f:
             f.write(f'#!/bin/sh\nexec {sys.executable} -S {FAKE_GH} "$@"\n')
         Path(b, "gh").chmod(0o755)
         os.symlink(FAKE_GIT, os.path.join(b, "git"))
@@ -137,7 +137,7 @@ class MergeBase(unittest.TestCase):
 
     def write(self, d, files):
         for name, text in files.items():
-            with open(os.path.join(d, name), "w") as f:
+            with Path(d, name).open("w") as f:
                 f.write(text)
 
     def main_commit(self, files, msg="main moves"):
@@ -182,11 +182,11 @@ class MergeBase(unittest.TestCase):
         return None
 
     def load_gh(self):
-        with open(self.ghstate) as f:
+        with Path(self.ghstate).open() as f:
             return json.load(f)
 
     def save_gh(self):
-        with open(self.ghstate, "w") as f:
+        with Path(self.ghstate).open("w") as f:
             json.dump(self.gh, f)
 
     def ci(self, **scripts):
@@ -198,14 +198,14 @@ class MergeBase(unittest.TestCase):
     def gh_calls(self, *prefix):
         if not os.path.exists(self.ghlog):
             return []
-        with open(self.ghlog) as f:
+        with Path(self.ghlog).open() as f:
             calls = [json.loads(ln) for ln in f if ln.strip()]
         return [c for c in calls if c[: len(prefix)] == list(prefix)]
 
     def pushes(self):
         if not os.path.exists(self.gitlog):
             return []
-        with open(self.gitlog) as f:
+        with Path(self.gitlog).open() as f:
             calls = [ln.rstrip("\n").split("\t", 1) for ln in f if ln.strip()]
         calls = [{"cwd": cwd, "argv": args.split("\037")[:-1]} for cwd, args in calls]
         return [c for c in calls if "push" in c["argv"]]
@@ -227,7 +227,7 @@ class MergeBase(unittest.TestCase):
         return merge.MergeQueue(self.t.state)
 
     def bytes(self, rel):
-        with open(self.t.state.path(rel), "rb") as f:
+        with Path(self.t.state.path(rel)).open("rb") as f:
             return f.read()
 
     def entry(self, ref):
@@ -356,7 +356,7 @@ class EnsureTest(unittest.TestCase):
     def spawn(self, argv, log, cwd):
         self.spawned.append((argv, log, cwd))
         extra = [] if self.exit_code is None else ["x", str(self.exit_code)]
-        with open(log, "a") as out:
+        with Path(log).open("a") as out:
             p = subprocess.Popen(
                 [sys.executable, "-c", STAND_IN, self.t.state.path(merge.RUN_DIR, merge.RUN_LOCK), *extra],
                 stdin=subprocess.DEVNULL,
@@ -415,7 +415,7 @@ class EnsureTest(unittest.TestCase):
         self.put(301)
         self.put(302)
         Path(self.t.state.path(merge.RUN_DIR)).mkdir(parents=True, exist_ok=True)
-        with open(self.t.state.path(merge.RUN_DIR, merge.RUN_LOCK), "w") as f:
+        with Path(self.t.state.path(merge.RUN_DIR, merge.RUN_LOCK)).open("w") as f:
             f.write("99999999\n")  # the runner that wrote it is gone: the lock is free
         rc, out, err = self.team("merge", "run", "--ensure")
         self.assertEqual(rc, 0, err)
@@ -437,7 +437,7 @@ class EnsureTest(unittest.TestCase):
         )
         self.assertIn("исполнитель не едет (в замке был pid 99999999, замок свободен), в очереди 2: запускаю", out)
         self.assertIn("исполнитель едет (pid %d); лог: %s" % (pid, log), out)  # noqa: UP031
-        with open(log) as f:
+        with Path(log).open() as f:
             text = f.read()
         self.assertIn("merge run --ensure: start, 2 in the queue", text)
         self.assertIn("stand-in rides", text)
@@ -1016,7 +1016,7 @@ class ConflictTest(MergeBase):
 
     def test_a_prepared_resolution_by_the_blobs_is_applied(self):
         f = os.path.join(self.tmp, "a.resolved")
-        with open(f, "w") as fh:
+        with Path(f).open("w") as fh:
             fh.write("<<<<<<< ours\nbranch\n=======\nmain\n>>>>>>> theirs\n")
         rc, _, err = self.team(
             "merge", "resolve", "add", "a.txt", "--ours", self.ours, "--theirs", self.theirs, "--from", f
@@ -1027,7 +1027,7 @@ class ConflictTest(MergeBase):
             "merge", "resolve", "add", "a.txt", "--ours", self.ours[:12], "--theirs", self.theirs, "--from", f
         )
         self.assertIn("the full blob id", err)
-        with open(f, "w") as fh:
+        with Path(f).open("w") as fh:
             fh.write("branch and main\n")
         rc, out, err = self.team(
             "merge",
@@ -1050,7 +1050,7 @@ class ConflictTest(MergeBase):
         rc, out, err = self.team("merge", "run")
         self.assertEqual(rc, 0, out + err)
         self.assertIn("resolved a.txt from the prepared resolution", out)
-        with open(self.marker) as fh:
+        with Path(self.marker).open() as fh:
             self.assertEqual(fh.read(), "checked\n")  # the checks ran after the resolution
         self.assertEqual(self.g(self.tmp, "--git-dir", self.bare, "show", "main:a.txt"), "branch and main")
         self.assertEqual([c[2] for c in self.gh_calls("pr", "merge")], ["301", "302"])
@@ -1061,7 +1061,7 @@ class ConflictTest(MergeBase):
 
     def test_a_resolutions_path_is_the_repos(self):
         f = os.path.join(self.tmp, "ci.resolved")
-        with open(f, "w") as fh:
+        with Path(f).open("w") as fh:
             fh.write("on: push\n")
         res = merge.Resolutions(self.t.state)
         it, replaced = res.add("./.github/workflows/ci.yml", self.ours, self.theirs, f)
@@ -1075,7 +1075,7 @@ class ConflictTest(MergeBase):
 
     def test_a_check_failing_after_the_resolution_stops(self):
         f = os.path.join(self.tmp, "a.resolved")
-        with open(f, "w") as fh:
+        with Path(f).open("w") as fh:
             fh.write("branch and main\n")
         self.team("merge", "resolve", "add", "a.txt", "--ours", self.ours, "--theirs", self.theirs, "--from", f)
         self.sets.append("merge.after_resolve=" + json.dumps([[sys.executable, "-c", "import sys; sys.exit(3)"]]))
@@ -1328,7 +1328,7 @@ class WorktreeTest(MergeBase):
         Path(nm).mkdir(parents=True)
         self.write(nm, {"pkg.js": "x\n"})
         os.symlink(nm, os.path.join(self.wt_of("feat-a"), "node_modules"))
-        with open(os.path.join(self.clone, ".git", "info", "exclude"), "a") as f:
+        with Path(self.clone, ".git", "info", "exclude").open("a") as f:
             f.write("*.log\n")
         self.write(self.wt_of("feat-a"), {"build.log": "ignored\n" * 2000})  # ignored: no hindrance
         self.write(self.wt_of("feat-b"), {"notes.txt": "the agent's notes\n"})  # untracked: it rides, it stays

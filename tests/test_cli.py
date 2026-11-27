@@ -40,7 +40,7 @@ class CliTest(unittest.TestCase):
             ("seed.json", slurp(SEED)),
             ("q.md", "### B49. Фильтры поиска\n**Рекомендую:** позже.\n"),
         ):
-            with open(os.path.join(self.dir, name), "w", encoding="utf-8") as f:
+            with Path(self.dir, name).open("w", encoding="utf-8") as f:
                 f.write(body)
         os.environ.pop("FAKE_STRUCTURED", None)
         os.environ["FAKE_MODE"] = "ok"
@@ -277,7 +277,7 @@ class CliTest(unittest.TestCase):
         self.team(
             "seed", "--specs", os.path.join(self.dir, "brief.md"), "--ledger", os.path.join(self.dir, "seed.json")
         )
-        with open(os.path.join(self.state, "config.json"), "w") as f:
+        with Path(self.state, "config.json").open("w") as f:
             json.dump(
                 {
                     "deep_levels": {"1": {"price": 1, "max_tool_turns": 11}},

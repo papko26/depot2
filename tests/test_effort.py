@@ -86,7 +86,7 @@ class OldDollarKeysTest(unittest.TestCase):
         self.t.close()
 
     def load(self, conf, sets=()):
-        with open(os.path.join(self.t.dir, "config.json"), "w") as f:
+        with Path(self.t.dir, "config.json").open("w") as f:
             json.dump(conf, f)
         warned = []
         return config.load(self.t.dir, list(sets), warn=warned.append), warned
@@ -139,7 +139,7 @@ class OldDollarKeysTest(unittest.TestCase):
         self.assertEqual(cfg["round"]["budget_mtok"], 2.0)
 
     def test_the_cli_reads_them_and_says_so(self):
-        with open(os.path.join(self.t.dir, "config.json"), "w") as f:
+        with Path(self.t.dir, "config.json").open("w") as f:
             json.dump({"round": {"budget_usd": 6}, "free": {"budget_usd_r1": 1.0}}, f)
         p = subprocess.run([sys.executable, TEAM, "--state", self.t.dir, "config"], capture_output=True, text=True)
         self.assertEqual(p.returncode, 0, p.stderr)
@@ -186,7 +186,7 @@ class SpendTest(unittest.TestCase):
         d = TempState()
         try:
             sys_path = os.path.join(d.dir, "system.md")
-            with open(sys_path, "w") as f:
+            with Path(sys_path).open("w") as f:
                 f.write("rules")
             sch = {
                 "type": "object",
@@ -266,7 +266,7 @@ class RoundInMtokTest(unittest.TestCase):
         self.input = os.path.join(self.t.dir, "q.md")
         from helpers import BALLOT
 
-        with open(self.input, "w") as f:
+        with Path(self.input).open("w") as f:
             f.write(BALLOT)
 
     def tearDown(self):

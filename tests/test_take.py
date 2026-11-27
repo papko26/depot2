@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from test_queues import QBase
 
@@ -19,7 +20,7 @@ class TakeBase(QBase):
         return Tracks(self.t.state, self.t.cfg)
 
     def raw(self, name):
-        with open(self.t.state.path(name), encoding="utf-8") as f:
+        with Path(self.t.state.path(name)).open(encoding="utf-8") as f:
             return f.read()
 
     def ok(self, *argv):

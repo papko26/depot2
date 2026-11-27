@@ -5,6 +5,7 @@ import json
 import os
 import shutil
 import tempfile
+from pathlib import Path
 from unittest import mock
 
 from helpers import BRIEF_TEXT, GATES_ALL
@@ -40,7 +41,7 @@ class AgentsBase(Base):
         shutil.copytree(os.path.join(FIXTURES, "-work-depot"), os.path.join(self.projects, "-work-depot"))
         self.t.cfg["agents"]["projects"] = self.projects
         self.brief = os.path.join(self.t.dir, "brief.md")
-        with open(self.brief, "w") as f:
+        with Path(self.brief).open("w") as f:
             f.write(BRIEF_TEXT)
         tr = Tracks(self.t.state, self.t.cfg)
         tr.add("Депо")
@@ -280,7 +281,7 @@ class TranscriptTest(AgentsBase):
         self.assertEqual(ags.status(ag, None)[0], "lost")
 
     def test_a_grown_transcript_is_read_on_from_where_it_stopped(self):
-        with open(self.path(DONE), "rb") as f:
+        with Path(self.path(DONE)).open("rb") as f:
             lines = f.read().splitlines(keepends=True)
         path = os.path.join(self.projects, "growing.jsonl")
         seeks = []
@@ -385,7 +386,7 @@ class SpendTest(AgentsBase):
         self.t.state.init_git()
         self.start("tr-0001:2", "sketch")
         self.team("agents", "attach", "ag-0001", LIVE)
-        with open(os.path.join(self.projects, SUB, f"agent-{LIVE}.meta.json"), "w") as f:
+        with Path(self.projects, SUB, f"agent-{LIVE}.meta.json").open("w") as f:
             json.dump({"finished": True}, f)
         rc, out, _err = self.team("agents", "start", "tr-0001:2", "--role", "plan")  # no --usage: refused
         self.assertEqual(rc, 1)
@@ -402,7 +403,7 @@ class SpendTest(AgentsBase):
         self.team("agents", "attach", "ag-0001", LIVE)
         self.assertIsNone(self.car("tr-0001:2").get("spent_mtok"))
         meta = os.path.join(self.projects, SUB, f"agent-{LIVE}.meta.json")
-        with open(meta, "w") as f:
+        with Path(meta).open("w") as f:
             json.dump({"finished": True}, f)
         rc, out, err = self.team("agents")
         self.assertEqual(rc, 0, err)

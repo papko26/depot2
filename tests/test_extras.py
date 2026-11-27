@@ -65,7 +65,7 @@ class Base(unittest.TestCase):
         self.t.cfg["brainstorm"]["topics_dir"] = os.path.join(self.out, "topics")
         self.t.cfg["orders"]["results_dir"] = os.path.join(self.out, "orders")
         self.input = os.path.join(self.t.dir, "q.md")
-        with open(self.input, "w") as f:
+        with Path(self.input).open("w") as f:
             f.write(BALLOT)
         self.snaps = []
 
@@ -76,7 +76,7 @@ class Base(unittest.TestCase):
     def snapshot(self, cfg, out, commit_wanted=None):
         d = tempfile.mkdtemp(prefix="team-repo-test-")
         Path(d, "tools", "bench").mkdir(parents=True)
-        with open(os.path.join(d, "tools", "bench", "run.mjs"), "w") as f:
+        with Path(d, "tools", "bench", "run.mjs").open("w") as f:
             f.write("// a bench run\n")
         self.snaps.append(d)
         return d, "a" * 40
@@ -122,7 +122,7 @@ class StandingQuestionsTest(Base):
 
     def test_x1_x2_in_every_kind(self):
         topic = os.path.join(self.t.dir, "topic.md")
-        with open(topic, "w") as f:
+        with Path(topic).open("w") as f:
             f.write(TOPIC)
         runs = [
             ("ballot", {}),
@@ -152,7 +152,7 @@ class StandingQuestionsTest(Base):
         self.assertIn("- Строитель (ставка токенов: 4): в скорости поиска", rep)
 
     def test_a_clash_with_the_input_is_an_error(self):
-        with open(self.input, "a") as f:
+        with Path(self.input).open("a") as f:
             f.write("\n### X1. Чужой пункт\n**Рекомендую:** нет.\n")
         with self.assertRaises(ValueError):
             self.play({})
@@ -392,7 +392,7 @@ class OrdersTest(Base):
             }
         )
         res = os.path.join(self.out, "run.json")
-        with open(res, "w") as f:
+        with Path(res).open("w") as f:
             f.write('{"p90": 6.2}\n')
         rc, out, err = self.team("order", "settle", "ord-0001", "moved", "--reason", "рано")  # noqa: RUF059
         self.assertEqual(rc, 1)

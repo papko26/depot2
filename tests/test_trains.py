@@ -75,7 +75,7 @@ class ModelTest(TracksBase):
     def test_the_states_and_their_gates(self):
         self.t.cfg["gates"] = {"dor": ["brief", "after"], "dod": []}
         brief = os.path.join(self.out, "brief.md")
-        with open(brief, "w", encoding="utf-8") as f:
+        with Path(brief).open("w", encoding="utf-8") as f:
             f.write(BRIEF_TEXT)
         tr = self.trains()
         tr.add(
@@ -577,7 +577,7 @@ def old_depot(state):
         {"ts": "2015-11-07T10:00:00+02:00", "event": "car_stack", "train": "tr-0002", "car": "M", "st": "st-0001"},
         {"ts": "2015-11-05T09:00:00+02:00", "event": "import", "train": None, "trains": ["tr-0001"]},
     ]
-    with open(state.path("trains-history.jsonl"), "w", encoding="utf-8") as f:
+    with Path(state.path("trains-history.jsonl")).open("w", encoding="utf-8") as f:
         f.write("".join(json.dumps(r, ensure_ascii=False, sort_keys=True) + "\n" for r in rows))
     stk = Stack(state, config.load(state.root))
     o = stk.add("tr-0002:M Аккаунты — почта", branch="acc-mail")
@@ -586,7 +586,7 @@ def old_depot(state):
 
 
 def files_of(d):
-    return {f: open(os.path.join(d, f), "rb").read() for f in sorted(os.listdir(d)) if f.endswith((".json", ".jsonl"))}
+    return {f: Path(d, f).read_bytes() for f in sorted(os.listdir(d)) if f.endswith((".json", ".jsonl"))}
 
 
 class MigrateTest(TracksBase):
@@ -641,8 +641,8 @@ class MigrateTest(TracksBase):
             [("migrate", 2), ("migrate", 3), ("migrate", 4), ("migrate", 5)],
         )
         self.assertEqual(hist[-4]["planning"]["tr-0004"]["status"], "paused")
-        self.assertEqual(open(self.t.state.path(migrate.ARCHIVE_TRAINS), "rb").read(), before["trains.json"])  # noqa: SIM115
-        self.assertEqual(open(self.t.state.path(migrate.ARCHIVE_HISTORY), "rb").read(), before["trains-history.jsonl"])  # noqa: SIM115
+        self.assertEqual(Path(self.t.state.path(migrate.ARCHIVE_TRAINS)).read_bytes(), before["trains.json"])
+        self.assertEqual(Path(self.t.state.path(migrate.ARCHIVE_HISTORY)).read_bytes(), before["trains-history.jsonl"])
         self.assertEqual([h["train"] for h in Trains(self.t.state, self.t.cfg).history()], ["akkaunty", "chitatelskiy"])
         # a second run changes nothing
         snap = files_of(self.t.dir)
@@ -678,7 +678,7 @@ class MigrateTest(TracksBase):
         old_depot(self.t.state)
         p = self.t.state.path(merge.RUN_DIR, merge.RUN_LOCK)
         Path(p).parent.mkdir(parents=True, exist_ok=True)
-        with open(p, "w") as f:
+        with Path(p).open("w") as f:
             f.write("4242")
             f.flush()
             fcntl.flock(f.fileno(), fcntl.LOCK_EX)

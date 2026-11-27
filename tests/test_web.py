@@ -79,7 +79,7 @@ def tree_hash(root):
     for d, _, files in os.walk(root):
         for n in files:
             p = os.path.join(d, n)
-            with open(p, "rb") as f:
+            with Path(p).open("rb") as f:
                 out[os.path.relpath(p, root)] = hashlib.sha256(f.read()).hexdigest()
     return out
 
@@ -91,12 +91,12 @@ class WebBase(GateBase):
         for d in ("briefs", "design", "notes", "drafts"):
             Path(self.scratch, d).mkdir(parents=True)
         self.web_brief = os.path.join(self.scratch, "briefs", "search.md")
-        with open(self.web_brief, "w", encoding="utf-8") as f:
+        with Path(self.web_brief).open("w", encoding="utf-8") as f:
             f.write("# Поиск\n\n- **жирный** и `код`\n\n<script>alert(1)</script>\n")
-        with open(os.path.join(self.scratch, "design", "sketch.md"), "w", encoding="utf-8") as f:
+        with Path(self.scratch, "design", "sketch.md").open("w", encoding="utf-8") as f:
             f.write("# Эскиз\n")
         self.secret = os.path.join(self.scratch, "notes", "secret.md")
-        with open(self.secret, "w") as f:
+        with Path(self.secret).open("w") as f:
             f.write("private\n")
         os.symlink(self.secret, os.path.join(self.scratch, "briefs", "out.md"))
         self.team("stack", "add", "--title", "Поиск", "--brief", self.web_brief, "--size", "M")
@@ -231,7 +231,7 @@ class WebTest(WebBase):
         want = "'sha256-{}'".format(webui.base64.b64encode(hashlib.sha256(main.encode("utf-8")).digest()).decode())
         script_src = h["Content-Security-Policy"].split("script-src ")[1].split(";")[0]
         self.assertEqual(script_src, want)
-        with open(webui.PAGE, encoding="utf-8") as f:
+        with Path(webui.PAGE).open(encoding="utf-8") as f:
             en = webui.page_html(f.read(), "en")
         self.assertIn('<html lang="en">', en)
         self.assertEqual(page_messages(en)["tab.board"], "Board")
@@ -837,9 +837,9 @@ class WebTest(WebBase):
 
     def test_a_state_read_mid_write(self):
         p = os.path.join(self.t.dir, "stack.json")
-        with open(p, encoding="utf-8") as f:
+        with Path(p).open(encoding="utf-8") as f:
             good = f.read()
-        with open(p, "w", encoding="utf-8") as f:
+        with Path(p).open("w", encoding="utf-8") as f:
             f.write(good[: len(good) // 2])
         with mock.patch.object(webui, "RETRY_S", 0.01):
             code, j = self.web.json("/api/board")
@@ -847,7 +847,7 @@ class WebTest(WebBase):
         self.assertTrue(j["retry"])
         self.assertIn("повторит при следующем обновлении", j["error"])
         self.assertEqual(self.web.json("/api/meta")[0], 200)  # the server is still up
-        with open(p, "w", encoding="utf-8") as f:
+        with Path(p).open("w", encoding="utf-8") as f:
             f.write(good)
         self.assertEqual(self.web.json("/api/board")[0], 200)
 
@@ -929,7 +929,7 @@ class ReexecTest(unittest.TestCase):
                 meta0 = json.loads(body)["code"]
                 self.assertIsNone(meta0["commit"])  # a copy outside git: its stamp only
                 # new code on disk: a file of it changes (as a pull of main does)
-                with open(os.path.join(code, "depot2", "webui.py"), "a") as f:
+                with Path(code, "depot2", "webui.py").open("a") as f:
                     f.write("\n# a change\n")
                 import time
 
@@ -951,7 +951,7 @@ class ReexecTest(unittest.TestCase):
                 self.assertEqual(meta1["stamp"], webui.code_stamp(code))
                 self.assertEqual(get("/api/tracks")[0], 200)  # an API of the new code, on the same port
                 # code that does not compile is not run: the old one keeps serving and says why
-                with open(os.path.join(code, "depot2", "webui.py"), "a") as f:
+                with Path(code, "depot2", "webui.py").open("a") as f:
                     f.write("\ndef broken(:\n")
                 time.sleep(webui.CODE_CHECK_S + 0.2)
                 st, _, body = get("/api/meta")
@@ -1115,7 +1115,7 @@ class WebHostsTest(WebBase):
     def test_the_names_are_read_from_the_config_at_the_start(self):
         path = os.path.join(self.t.dir, "config.json")
         self.assertFalse(os.path.exists(path))
-        with open(path, "w", encoding="utf-8") as f:
+        with Path(path).open("w", encoding="utf-8") as f:
             json.dump({"web": {"hosts": ["mybox.local"]}}, f)
         w = self.served()
         self.assertEqual(w.get("/api/meta", host="mybox.local:%d" % w.port)[0], 200)  # noqa: UP031

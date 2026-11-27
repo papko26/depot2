@@ -16,7 +16,7 @@ class RunnerTest(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp(prefix="team-cli-")
         self.sys_path = os.path.join(self.dir, "system.md")
-        with open(self.sys_path, "w") as f:
+        with Path(self.sys_path).open("w") as f:
             f.write("rules")
         self.schema = {
             "type": "object",

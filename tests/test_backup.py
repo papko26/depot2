@@ -99,7 +99,7 @@ class BackupBase(unittest.TestCase):
     def calls(self):
         if not os.path.exists(self.rlog):
             return []
-        with open(self.rlog) as f:
+        with Path(self.rlog).open() as f:
             return [json.loads(ln) for ln in f if ln.strip()]
 
     def cmds(self, name=None):
@@ -108,7 +108,7 @@ class BackupBase(unittest.TestCase):
     def pass_calls(self):
         if not os.path.exists(self.plog):
             return []
-        with open(self.plog) as f:
+        with Path(self.plog).open() as f:
             return [json.loads(ln) for ln in f if ln.strip()]
 
     def stamp(self):
@@ -142,7 +142,7 @@ class BackupBase(unittest.TestCase):
         texts = list(self.outputs)
         for p in (self.rlog, self.plog, backup.log_path(self.t.state), self.t.state.path(backup.DIR, backup.STAMP)):
             if os.path.exists(p):
-                with open(p, encoding="utf-8") as f:
+                with Path(p).open(encoding="utf-8") as f:
                     texts.append(f.read())
         for k in self.keys.values():
             for s in (k, fake_obscure(k)):
@@ -311,7 +311,7 @@ class BackupCheckTest(BackupBase):
         self.team("ledger")
         self.assertEqual(self.spawned(), started)
         self.assertEqual(len(self.cmds("copyto")), 1)
-        with open(backup.log_path(self.t.state), encoding="utf-8") as f:
+        with Path(backup.log_path(self.t.state)).open(encoding="utf-8") as f:
             self.assertIn("ok in", f.read())
         # A dry run never starts one.
         self.set_stamp(last_success=iso_ago(30))
@@ -344,7 +344,7 @@ class BackupCheckTest(BackupBase):
             self.assertIsNotNone(self.spawned())
 
             def told():
-                with open(backup.log_path(self.t.state), encoding="utf-8") as f:
+                with Path(backup.log_path(self.t.state)).open(encoding="utf-8") as f:
                     return "another backup run holds" in f.read()
 
             self.wait_for(told)
@@ -408,11 +408,11 @@ class RetentionTest(BackupBase):
         ours.append("team-testhost-20151030T150000Z.tar.gz")
         foreign = ["team-otherhost-20150801T030000Z.tar.gz", "notes.txt", "team-testhost-latest.tar.gz"]
         for n in ours + foreign:
-            with open(os.path.join(d, n), "w") as f:
+            with Path(d, n).open("w") as f:
                 f.write(n)
         outside = os.path.join(self.cloud, "spare-1")
         Path(outside).mkdir(parents=True)
-        with open(os.path.join(outside, "team-testhost-20150801T030000Z.tar.gz"), "w") as f:
+        with Path(outside, "team-testhost-20150801T030000Z.tar.gz").open("w") as f:
             f.write("not ours")
         self.team("backup", "--drive", "--now")
         new = self.stamp()["archive"]
@@ -438,7 +438,7 @@ class RealRcloneTest(BackupBase):
     def test_env_crypt_over_a_local_folder(self):
         drive = os.path.join(self.tmp, "drive") + "/"
         conf = os.path.join(self.tmp, "empty-rclone.conf")
-        open(conf, "w").close()
+        Path(conf).open("w").close()
         self.env["RCLONE_CONFIG"] = conf
         self.sets = [
             "backup.rclone_bin=rclone",
@@ -451,7 +451,7 @@ class RealRcloneTest(BackupBase):
         raw = os.listdir(os.path.join(drive, "depot2-backup"))
         self.assertEqual(len(raw), 1)
         self.assertNotEqual(raw[0], name)  # the name is encrypted too
-        with open(os.path.join(drive, "depot2-backup", raw[0]), "rb") as f:
+        with Path(drive, "depot2-backup", raw[0]).open("rb") as f:
             self.assertEqual(f.read(8), b"RCLONE\x00\x00")  # rclone crypt's file header
         out = self.team("backup", "--drive", "--verify").stdout
         self.assertIn("git fsck --full ok", out)

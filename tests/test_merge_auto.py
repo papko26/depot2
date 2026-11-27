@@ -28,7 +28,7 @@ class AutoBase(MergeBase):
     def write(self, d, files):
         for name, text in files.items():
             Path(d, name).parent.mkdir(parents=True, exist_ok=True)
-            with open(os.path.join(d, name), "w") as f:
+            with Path(d, name).open("w") as f:
                 f.write(text)
 
     def log(self, ref):
@@ -46,7 +46,7 @@ class AutoBase(MergeBase):
     def gens(self, what):
         if not os.path.exists(self.genlog):
             return []
-        with open(self.genlog) as f:
+        with Path(self.genlog).open() as f:
             return [json.loads(ln) for ln in f if json.loads(ln)["argv"][0] == what]
 
 
@@ -207,7 +207,7 @@ class TrialTest(AutoBase):
         os.environ["FAKE_SCAN_LOG"] = scans
         rc, out, err = self.team("merge", "run", "--once")
         self.assertEqual(rc, 0, out + err)
-        with open(scans) as f:
+        with Path(scans).open() as f:
             roots = [json.loads(ln) for ln in f if "--root" in json.loads(ln)["argv"]]
         # a trial's scan: what its push carries (its merge commit, the map the merge made), not the whole tree
         self.assertEqual(len(roots), 2)
@@ -333,7 +333,7 @@ class NetworkTest(AutoBase):
         self.main_commit({"c.txt": "C\n"})
         self.team("merge", "add", "301", "--word", "мердж")
         fail = os.path.join(self.tmp, "git-fail")
-        with open(fail, "w") as f:
+        with Path(fail).open("w") as f:
             f.write(
                 "push 2 unable to access 'https://github.com/x/y/': Connection timed out after 300001 milliseconds\n"
             )
@@ -360,7 +360,7 @@ class NetworkTest(AutoBase):
         self.main_commit({"c.txt": "C\n"})
         self.team("merge", "add", "301", "--word", "мердж")
         fail = os.path.join(self.tmp, "git-fail")
-        with open(fail, "w") as f:
+        with Path(fail).open("w") as f:
             f.write("push 1 Authentication failed for 'https://github.com/x/y/'\n")
         os.environ["FAKE_GIT_FAIL"] = fail
         rc, out, _ = self.team("merge", "run")

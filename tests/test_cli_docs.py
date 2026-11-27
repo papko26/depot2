@@ -4,6 +4,7 @@ import io
 import os
 import re
 import unittest
+from pathlib import Path
 
 import helpers
 
@@ -60,7 +61,7 @@ def _resolve(ap, words):
 
 
 def _readme_lines():
-    with open(README, encoding="utf-8") as f:
+    with Path(README).open(encoding="utf-8") as f:
         text = f.read()
     top = set(_subs(team.build_parser()).choices)
     lines, block, commands = [], False, False
@@ -107,7 +108,7 @@ class CliDocsTest(unittest.TestCase):
             self.assertIn("usage: depot2 " + " ".join(path), " ".join(out.getvalue().split()))
 
     def test_every_command_is_in_the_commands_block(self):
-        with open(README, encoding="utf-8") as f:
+        with Path(README).open(encoding="utf-8") as f:
             block = f.read().split("## Commands", 1)[1].split("```", 2)[1]
         lines = [ln for ln in block.split("\n") if ln.startswith("depot2 ")]
         top = set(_subs(self.ap).choices)

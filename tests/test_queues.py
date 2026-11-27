@@ -17,7 +17,7 @@ from depot2.tstack import TeamStack
 
 def write(d, name, text):
     path = os.path.join(d, name)
-    with open(path, "w", encoding="utf-8") as f:
+    with Path(path).open("w", encoding="utf-8") as f:
         f.write(text)
     return path
 
@@ -90,7 +90,7 @@ class ThinkTest(QBase):
         self.assertIn("| 1: Показывать сразу? | Краски | X1 | P5 | ждёт |", out)
         self.assertEqual(self.team("think", "round", "th-0001", "--round", "2015-11-05-discuss")[0], 1)  # no such round
         Path(self.t.state.rounds_dir(), "2015-11-05-discuss").mkdir(parents=True)
-        with open(os.path.join(self.t.state.rounds_dir(), "2015-11-05-discuss", "round.json"), "w") as f:
+        with Path(self.t.state.rounds_dir(), "2015-11-05-discuss", "round.json").open("w") as f:
             f.write("{}")
         rc, out, _ = self.team("think", "round", "th-0001", "--round", "2015-11-05-discuss")
         self.assertIn("в раунде 2015-11-05-discuss", out)

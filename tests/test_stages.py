@@ -2,6 +2,7 @@ import json
 import os
 import time
 import unittest
+from pathlib import Path
 
 from helpers import slurp
 from test_extras import Base
@@ -67,7 +68,7 @@ class StackStagesTest(Base):
 
     def test_the_commands_move_an_objects_stage(self):
         brief = os.path.join(self.t.dir, "brief.md")
-        with open(brief, "w") as f:
+        with Path(brief).open("w") as f:
             f.write("# бриф\n")
         self.assertEqual(self.team("stack", "add", "--title", "Импорт", "--brief", brief)[0], 0)
         self.team("stack", "add", "--title", "Мысль")
@@ -161,7 +162,7 @@ class TrainStagesTest(Base):
     def setUp(self):
         super().setUp()
         self.brief = os.path.join(self.t.dir, "brief.md")
-        with open(self.brief, "w") as f:
+        with Path(self.brief).open("w") as f:
             f.write("# бриф\n")
         self.team("tracks", "add", "--title", "Поезд")
         self.team("tracks", "car", "add", "tr-0001", "--title", "парсер: поле", "--brief", self.brief)
@@ -292,7 +293,7 @@ class MigrateStagesTest(Base):
     def setUp(self):
         super().setUp()
         brief = os.path.join(self.t.dir, "brief.md")
-        with open(brief, "w") as f:
+        with Path(brief).open("w") as f:
             f.write("# бриф\n")
         s = Stack(self.t.state, self.t.cfg)
         s.add("в слоте")

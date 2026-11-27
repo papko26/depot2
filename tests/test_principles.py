@@ -55,7 +55,7 @@ SAMPLE = """# Принципы (проба)
 
 def write(d, name, text):
     path = os.path.join(d, name)
-    with open(path, "w", encoding="utf-8") as f:
+    with Path(path).open("w", encoding="utf-8") as f:
         f.write(text)
     return path
 

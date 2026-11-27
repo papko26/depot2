@@ -9,6 +9,7 @@ import pkgutil
 import re
 import string
 import unittest
+from pathlib import Path
 
 import helpers
 
@@ -65,13 +66,13 @@ class CatalogTest(unittest.TestCase):
         for path in glob.glob(os.path.join(PKG, "**", "*.py"), recursive=True):
             if os.sep + "catalogs" + os.sep in path:
                 continue
-            with open(path, encoding="utf-8") as f:
+            with Path(path).open(encoding="utf-8") as f:
                 text = f.read()
             for m in RE_KEY.finditer(text):
                 key = m.group(1) or m.group(2)
                 if key not in en:
                     missing.append(f"{os.path.relpath(path, ROOT)}: {key}")
-        with open(os.path.join(PKG, "web", "index.html"), encoding="utf-8") as f:
+        with Path(PKG, "web", "index.html").open(encoding="utf-8") as f:
             page = f.read()
         web = i18n.web_messages("en")
         missing += [f"depot2/web/index.html: web.{k}" for k in RE_WEB_KEY.findall(page) if k not in web]
@@ -95,7 +96,7 @@ class CatalogTest(unittest.TestCase):
         for path in sorted(paths):
             if os.path.abspath(path) == os.path.join(PKG, "catalogs", "ru.py"):
                 continue
-            with open(path, encoding="utf-8") as f:
+            with Path(path).open(encoding="utf-8") as f:
                 for n, line in enumerate(f, 1):
                     if CYRILLIC.search(line):
                         bad.append("%s:%d" % (os.path.relpath(path, ROOT), n))  # noqa: UP031

@@ -6,6 +6,7 @@ by `queues migrate`, `repair add` (a repair car out of turn: the head of the que
 import json
 import os
 import unittest
+from pathlib import Path
 
 from helpers import BRIEF_TEXT, GATES_ALL
 from test_extras import Base
@@ -29,10 +30,10 @@ class ClaimBase(Base):
     def setUp(self):
         super().setUp()
         self.brief = os.path.join(self.t.dir, "brief.md")
-        with open(self.brief, "w") as f:
+        with Path(self.brief).open("w") as f:
             f.write(BRIEF_TEXT)
         self.bugs = os.path.join(self.t.dir, "BUGS.md")
-        with open(self.bugs, "w") as f:
+        with Path(self.bugs).open("w") as f:
             f.write(BUGS)
 
     def team(self, *argv):

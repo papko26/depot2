@@ -71,7 +71,7 @@ class RoundTest(unittest.TestCase):
     def setUp(self):
         self.t = TempState({"builder": 4, "painter": 5, "counter": 5, "chronicler": 10, "keeper": 1})
         self.input = os.path.join(self.t.dir, "q.md")
-        with open(self.input, "w") as f:
+        with Path(self.input).open("w") as f:
             f.write(BALLOT)
 
     def tearDown(self):
@@ -254,7 +254,7 @@ class ResumeTest(unittest.TestCase):
     def setUp(self):
         self.t = TempState({"builder": 4, "painter": 5, "counter": 5, "chronicler": 10, "keeper": 1})
         self.input = os.path.join(self.t.dir, "q.md")
-        with open(self.input, "w") as f:
+        with Path(self.input).open("w") as f:
             f.write(BALLOT)
 
     def tearDown(self):
@@ -372,7 +372,7 @@ class StakeReportTest(unittest.TestCase):
     def setUp(self):
         self.t = TempState({"builder": 4, "painter": 5, "counter": 5, "chronicler": 10, "keeper": 1})
         self.input = os.path.join(self.t.dir, "q.md")
-        with open(self.input, "w") as f:
+        with Path(self.input).open("w") as f:
             f.write(BALLOT)
 
     def tearDown(self):
@@ -464,7 +464,7 @@ class StakeReportTest(unittest.TestCase):
         txs = [json.loads(l) for l in slurp(led.path).splitlines()]  # noqa: E741
         back = next(t for t in txs if t["type"] == "auto_refund" and t["character"] == "chronicler")
         back["amount"] = 1
-        with open(led.path, "w") as f:
+        with Path(led.path).open("w") as f:
             f.write("".join(json.dumps(t, ensure_ascii=False) + "\n" for t in txs))
         self.assertIn("НЕ СХОДИТСЯ с журналом: Перо, Летописец", render(self.t.state, r["id"]))
 
@@ -719,7 +719,7 @@ class ReflectionGateTest(unittest.TestCase):
             return self.fake(spec)
 
         path = os.path.join(self.t.dir, "q.md")
-        with open(path, "w") as f:
+        with Path(path).open("w") as f:
             f.write(BALLOT)
         script = {(cid, "r1"): ans([("B49", "agree", 2, "важно")]) for cid in characters.IDS}
         r = run_round(
@@ -842,7 +842,7 @@ class DiscussRoundTest(unittest.TestCase):
     def setUp(self):
         self.t = TempState({"builder": 6, "painter": 6, "counter": 6, "chronicler": 6, "keeper": 6})
         self.input = os.path.join(self.t.dir, "topic.md")
-        with open(self.input, "w") as f:
+        with Path(self.input).open("w") as f:
             f.write(TOPIC)
 
     def tearDown(self):
@@ -891,7 +891,7 @@ class SnapshotAndCostTest(unittest.TestCase):
     def setUp(self):
         self.t = TempState()
         self.input = os.path.join(self.t.dir, "q.md")
-        with open(self.input, "w") as f:
+        with Path(self.input).open("w") as f:
             f.write(BALLOT)
         self.snap_dirs = []
 
@@ -1030,7 +1030,7 @@ class GenderTest(unittest.TestCase):
         for cid in characters.IDS:
             Persona(self.t.state, cid).set_gender(characters.BY_ID[cid]["default_gender"])
         self.input = os.path.join(self.t.dir, "q.md")
-        with open(self.input, "w") as f:
+        with Path(self.input).open("w") as f:
             f.write(BALLOT)
 
     def tearDown(self):

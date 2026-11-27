@@ -7,6 +7,7 @@ board's views (`--md`, `--json`, `--view stack`), the stable `--json` formats, t
 import json
 import os
 import unittest
+from pathlib import Path
 
 from helpers import BRIEF_TEXT, GATES_ALL
 from test_extras import Base
@@ -24,7 +25,7 @@ class GateBase(Base):
         super().setUp()
         self.t.cfg["gates"] = json.loads(json.dumps(GATES_ALL))
         self.brief = os.path.join(self.t.dir, "brief.md")
-        with open(self.brief, "w") as f:
+        with Path(self.brief).open("w") as f:
             f.write(BRIEF_TEXT)
 
     def team(self, *argv):
@@ -288,13 +289,17 @@ class TrainGateTest(GateBase):
             self.team("trains", "next")[1],
         )
         before = (
-            open(self.t.state.path("stack.json")).read() if os.path.exists(self.t.state.path("stack.json")) else None  # noqa: SIM115
+            Path(self.t.state.path("stack.json")).read_text()
+            if os.path.exists(self.t.state.path("stack.json"))
+            else None
         )
         rc, _, err = self.team("tracks", "car", "stack", "tr-0001:0", "--start")
         self.assertEqual(rc, 1)
         self.assertIn("ворота: tr-0001:0 → «сборка» не пройдены: DoR (вход в сборку) — нет брифа", err)
         self.assertEqual(
-            open(self.t.state.path("stack.json")).read() if os.path.exists(self.t.state.path("stack.json")) else None,  # noqa: SIM115
+            Path(self.t.state.path("stack.json")).read_text()
+            if os.path.exists(self.t.state.path("stack.json"))
+            else None,
             before,
         )
         rc, out, err = self.team("tracks", "car", "stack", "tr-0001:0", "--start", "--force", "--why", "бриф в голове")
@@ -525,7 +530,7 @@ class DocsTest(GateBase):
     def setUp(self):
         super().setUp()
         self.docs_brief = os.path.join(self.t.dir, "docs-brief.md")
-        with open(self.docs_brief, "w") as f:
+        with Path(self.docs_brief).open("w") as f:
             f.write(BRIEF_TEXT + "\n## Тесты\n- **Документация:** нужна\n")
         self.team("tracks", "add", "--title", "Каталог")
         self.team("tracks", "car", "add", "tr-0001", "--title", "доки", "--brief", self.docs_brief)

@@ -1,5 +1,6 @@
 import os
 import unittest
+from pathlib import Path
 
 from helpers import TempState, slurp
 
@@ -99,7 +100,7 @@ class PortraitTest(unittest.TestCase):
 
     def test_history_is_never_overwritten(self):
         self.p.replace_portrait("one", "seed", cap=100)
-        with open(os.path.join(self.p.history_dir, "v0002.md"), "w") as f:
+        with Path(self.p.history_dir, "v0002.md").open("w") as f:
             f.write("squatter")
         with self.assertRaises(FileExistsError):
             self.p.replace_portrait("two", "reflect", cap=100)
@@ -107,7 +108,7 @@ class PortraitTest(unittest.TestCase):
 
     def test_a_hand_edited_portrait_is_refused(self):
         self.p.replace_portrait("one", "seed", cap=100)
-        with open(self.p.portrait_path, "w") as f:
+        with Path(self.p.portrait_path).open("w") as f:
             f.write("edited outside the tool")
         with self.assertRaises(WriteCheckError):
             self.p.replace_portrait("two", "reflect", cap=100)
@@ -120,7 +121,7 @@ class PortraitTest(unittest.TestCase):
         self.assertEqual(len(v["summary_en_sha256"]), 64)
         self.p.replace_portrait("Я Краски, вторая.", "reflect", cap=100)
         self.assertIsNone(self.p.summary_en())  # the newest version has none
-        with open(os.path.join(self.p.dir, v["summary_en_path"]), "w") as f:
+        with Path(self.p.dir, v["summary_en_path"]).open("w") as f:
             f.write("tampered")
         with self.assertRaises(WriteCheckError):
             self.p.verify()

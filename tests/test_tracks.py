@@ -1,6 +1,7 @@
 import datetime
 import json
 import os
+from pathlib import Path
 
 from test_extras import Base
 
@@ -274,7 +275,7 @@ class StackLinkTest(TracksBase):
                 "message": {"id": "msg_b", "usage": {"cache_read_input_tokens": 2000000, "output_tokens": 1000}},
             },
         ]
-        with open(path, "w") as f:
+        with Path(path).open("w") as f:
             f.write("\n".join(json.dumps(x) for x in lines) + "\nnot json\n")
         # 1000 + 2000 x 1.25 + 1e6 x 0.1 + 500 x 5, then 2e6 x 0.1 + 1000 x 5
         from depot2.effort import from_transcript
@@ -370,7 +371,7 @@ class ImportTest(TracksBase):
 
     def write(self, spec):
         path = os.path.join(self.out, "tracks-import.json")
-        with open(path, "w", encoding="utf-8") as f:
+        with Path(path).open("w", encoding="utf-8") as f:
             json.dump(spec, f, ensure_ascii=False)
         return path
 

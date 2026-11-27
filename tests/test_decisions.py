@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+from pathlib import Path
 
 from test_extras import Base
 
@@ -14,7 +15,7 @@ def tree_hash(root):
     out = {}
     for d, _, files in os.walk(root):
         for n in files:
-            with open(os.path.join(d, n), "rb") as f:
+            with Path(d, n).open("rb") as f:
                 out[os.path.relpath(os.path.join(d, n), root)] = hashlib.sha256(f.read()).hexdigest()
     return out
 
@@ -65,7 +66,7 @@ class DecisionsTest(Base):
             },
         )
         self.assertEqual(rows[1]["links"], {k: [] for k in dec.LINK_KINDS})
-        with open(self.t.state.decisions_path, encoding="utf-8") as f:
+        with Path(self.t.state.decisions_path).open(encoding="utf-8") as f:
             stored = [json.loads(x) for x in f]
         for k in ("id", "seq", "ts", "character", "text"):  # the record as it is stored, nothing renamed
             self.assertEqual(rows[2][k], stored[0][k])

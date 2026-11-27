@@ -1,6 +1,7 @@
 import json
 import os
 import unittest
+from pathlib import Path
 
 from helpers import TempState
 
@@ -164,7 +165,7 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(tx["seq"], self.led.last_seq())
 
     def test_a_corrupt_ledger_is_an_error_not_a_skip(self):
-        with open(self.led.path, "a") as f:
+        with Path(self.led.path).open("a") as f:
             f.write('{"broken": \n')
         with self.assertRaises(ValueError):
             self.led.balances()
@@ -172,7 +173,7 @@ class LedgerTest(unittest.TestCase):
     def test_balance_after_is_recorded(self):
         tx = self.led.stake("painter", 2, "r1", "p1")
         self.assertEqual(tx["balance_after"], 3)
-        with open(self.led.path) as f:
+        with Path(self.led.path).open() as f:
             last = json.loads(f.read().splitlines()[-1])
         self.assertEqual(last, tx)
 
@@ -201,7 +202,7 @@ class WriteCheckTest(unittest.TestCase):
         try:
             path = os.path.join(t.dir, "y.jsonl")
             append_jsonl(path, {"text": "a\nb"})  # json escapes \n, so this is one line
-            with open(path) as f:
+            with Path(path).open() as f:
                 self.assertEqual(len(f.read().splitlines()), 1)
         finally:
             t.close()

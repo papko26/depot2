@@ -80,7 +80,7 @@ class PushBase(unittest.TestCase):
         for _ in range(k):
             self.n += 1
             name = "note-%03d.txt" % self.n  # noqa: UP031
-            with open(os.path.join(self.root, name), "w") as f:
+            with Path(self.root, name).open("w") as f:
                 f.write((text or "note %d" % self.n) + "\n")  # noqa: UP031
             git(self.root, "add", "--", name)
             git(self.root, "commit", "-q", "-m", "test: note %d" % self.n)  # noqa: UP031
@@ -95,7 +95,7 @@ class PushBase(unittest.TestCase):
     def scans(self):
         if not os.path.exists(self.slog):
             return []
-        with open(self.slog) as f:
+        with Path(self.slog).open() as f:
             return [json.loads(ln) for ln in f if ln.strip()]
 
     def stamp(self):
@@ -127,14 +127,14 @@ class PushBase(unittest.TestCase):
         p = push.log_path(self.t.state)
         if not os.path.exists(p):
             return ""
-        with open(p, encoding="utf-8") as f:
+        with Path(p).open(encoding="utf-8") as f:
             return f.read()
 
     def assert_never_shown(self, *secrets):
         texts = [*list(self.outputs), self.log()]
         sp = self.t.state.path(backup.DIR, push.STAMP)
         if os.path.exists(sp):
-            with open(sp, encoding="utf-8") as f:
+            with Path(sp).open(encoding="utf-8") as f:
                 texts.append(f.read())
         for s in secrets:
             for t in texts:
@@ -300,7 +300,7 @@ class FailureTest(PushBase):
         git(self.bare, "tag", "keep-me", self.head())
         other = os.path.join(self.tmp, "other")
         git(self.tmp, "clone", "-q", self.bare, other)
-        with open(os.path.join(other, "theirs.txt"), "w") as f:
+        with Path(other, "theirs.txt").open("w") as f:
             f.write("a commit made elsewhere\n")
         git(other, "add", "theirs.txt")
         git(other, "commit", "-q", "-m", "elsewhere")
@@ -414,7 +414,7 @@ class ScanTest(PushBase):
         self.first_push()
         pushed = self.head()
         self.commits(1, text=f"a line with {HIT} in it")
-        with open(os.path.join(self.root, "note-001.txt"), "w") as f:
+        with Path(self.root, "note-001.txt").open("w") as f:
             f.write("redacted\n")
         git(self.root, "commit", "-q", "-am", "test: redact")
         self.commits(8)
@@ -487,12 +487,12 @@ class RawGateTest(unittest.TestCase):
     def raw(self, name, text):
         p = os.path.join(self.t.state.rounds_dir(), "r", "raw", name)
         Path(p).parent.mkdir(parents=True, exist_ok=True)
-        with open(p, "w") as f:
+        with Path(p).open("w") as f:
             f.write(text)
         return p
 
     def scans(self):
-        with open(self.slog) as f:
+        with Path(self.slog).open() as f:
             return [json.loads(x) for x in f if x.strip()]
 
     def test_a_clean_stream_stays(self):
@@ -547,12 +547,12 @@ class RawGateTest(unittest.TestCase):
         from depot2.round import RoundAborted, run_round
 
         inp = os.path.join(self.tmp, "q.md")
-        with open(inp, "w") as f:
+        with Path(inp).open("w") as f:
             f.write(BALLOT)
         inner = FakeRunner(self.t.state, {("chronicler", "r1"): FatalError("API error 400: the message was refused")})
 
         def runner(spec):
-            with open(spec.raw_path, "w") as f:
+            with Path(spec.raw_path).open("w") as f:
                 f.write('{"text": "%s"}\n' % (HIT if spec.call_id.endswith("/chronicler-r1") else "plain"))
             return inner(spec)
 

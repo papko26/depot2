@@ -259,7 +259,7 @@ class DepotBase(GateBase):
         super().setUp()
         self.files = tempfile.mkdtemp(prefix="team-marks-")
         path = os.path.join(self.files, "PRINCIPLES.md")
-        with open(path, "w", encoding="utf-8") as f:
+        with Path(path).open("w", encoding="utf-8") as f:
             f.write(PFILE)
         self.ok("principles", "import", path)
         for pc in ("pc-0005", "pc-0026", "pc-0011", "pc-0004", "pc-0005a"):
