@@ -208,7 +208,8 @@ def plan_retention(names, host, keep_daily=14):
         if m and m.group("host") == host:
             mine[n] = m.group("ts")
     by_ts = sorted(mine, key=lambda n: mine[n])
-    newest_of_day, first_of_month = {}, {}
+    newest_of_day: dict[str, str] = {}
+    first_of_month: dict[str, str] = {}
     for n in by_ts:
         ts = mine[n]
         newest_of_day[ts[:8]] = n
@@ -231,7 +232,7 @@ class Runner:
         self.secrets = Secrets()
         self.crypt = self.b["crypt_name"]
         self.host = host_name(self.b)
-        self.env = None
+        self.env: dict[str, str] | None = None
         self.dest = self.b["remote"] + self.b["folder"]
 
     # output: in --auto stdout IS the log; in the foreground print and append to the log

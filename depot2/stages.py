@@ -162,7 +162,7 @@ def prev_planning(rec, default=None):
 
 
 def counts(stages_):
-    out = {}
+    out: dict[str, int] = {}
     for s in stages_:
         out[s] = out.get(s, 0) + 1
     return out

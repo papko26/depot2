@@ -287,7 +287,7 @@ class Agents:
         tr = self.tracks
         stk = tr.stack
         stage = tr.stage_of(c)
-        unmet = {"role": [], "window": [], "agent": []}
+        unmet: dict[str, list[str]] = {"role": [], "window": [], "agent": []}
         to_slot = False
         in_slot = bool(c.get("st")) and any(o["id"] == c["st"] for o in stk.in_slots())
         if role == "build":

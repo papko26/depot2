@@ -635,7 +635,8 @@ class Trains:
         from . import merge
 
         queued = {e["pr"] for e in merge.MergeQueue(self.state).entries(open_only=True)}
-        plan, bad, seen = [], [], {}
+        plan, bad = [], []
+        seen: dict[int, str] = {}
         for ref, _t, c in self.open_cars(tn):
             n = c.get("pr")
             off = i18n.t("trains.off_hint", name=tn["name"], ref=ref)

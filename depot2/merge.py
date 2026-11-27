@@ -3084,7 +3084,7 @@ def report_json(state, last=1):
 
 def counts(state):
     q = MergeQueue(state)
-    c = {}
+    c: dict[str, int] = {}
     for e in q.entries(open_only=True):
         c[e["status"]] = c.get(e["status"], 0) + 1
     return c, q

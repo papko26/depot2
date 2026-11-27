@@ -39,7 +39,8 @@ def bugs_path(cfg):
 
 
 def read_bugs(cfg):
-    path, out = bugs_path(cfg), {}
+    path = bugs_path(cfg)
+    out: dict[str, dict[str, str]] = {}
     if not path or not os.path.isfile(path):
         return out
     with open(path, encoding="utf-8") as f:
@@ -307,7 +308,7 @@ def universe(stk, tr):
     """Every car that can hold returns and claims, once: [{ref, kind, rec, track, objects}] — the tracks' cars (with
     every object each had), the live stack objects that are no car's, the objects that left and are no car's.
     """
-    objs_of = {}
+    objs_of: dict[str, set[str]] = {}
     for track in tr.data["tracks"]:
         for c in track["cars"]:
             if c.get("st"):

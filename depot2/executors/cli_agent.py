@@ -184,14 +184,14 @@ def run_call(spec, cfg=None, validate=None, executor_bin=None):
             except (BrokenPipeError, OSError):
                 pass
 
-        lines = queue.Queue()
+        lines: queue.Queue[bytes | None] = queue.Queue()
 
         def read_out():
             for line in proc.stdout:
                 lines.put(line)
             lines.put(None)
 
-        err_chunks = []
+        err_chunks: list[bytes] = []
 
         def read_err():
             for chunk in iter(lambda: proc.stderr.read(4096), b""):

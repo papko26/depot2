@@ -6,12 +6,20 @@ so CI runs on it early. The next trial is on top of that one, merge.presync_dept
 another PR's commits before that PR is merged.
 """
 
+from __future__ import annotations
+
 import os
 import shutil
 import tempfile
+from typing import TYPE_CHECKING
 
 from . import i18n
 from .i18n import t
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from .store import State
 
 TRIAL_OK = ("pushed", "same")
 
@@ -19,12 +27,19 @@ TRIAL_OK = ("pushed", "same")
 class Hold(Exception):
     """A trial not built: why, under its status."""
 
-    def __init__(self, status, reason) -> None:
+    def __init__(self, status: str, reason: str) -> None:
         Exception.__init__(self, reason)
         self.status, self.reason = status, reason
 
 
 class TrialsMixin:
+    clone: str
+    remote: str
+    base: str
+    state: State
+    clock: Callable[[], float]
+    out: Callable[[str], None]
+
     def depth(self):
         return int(self.m.get("presync_depth") or 0)
 
@@ -207,7 +222,7 @@ class TrialsMixin:
         whose merge into the PR's head already conflicts in it. → [{"file", "with"}].
         """
         files = list(files or [])
-        who_of = {}
+        who_of: dict[str, str] = {}
         for who, ref in bases[:-1]:
             left = [f for f in files if f not in who_of]
             if not left:

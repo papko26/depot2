@@ -87,7 +87,7 @@ def cell(rec):
 
 def counts(recs):
     """{priority: n} over the records."""
-    out = {}
+    out: dict[int, int] = {}
     for r in recs:
         out[of(r)] = out.get(of(r), 0) + 1
     return out

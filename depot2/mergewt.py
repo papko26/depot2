@@ -219,7 +219,7 @@ class WorktreesMixin:
             )
             or []
         )
-        out = {}
+        out: dict[str | None, list[tuple[int, str]]] = {}
         for p in data:
             out.setdefault(p.get("headRefName"), []).append((int(p["number"]), str(p.get("state") or "").upper()))
         return out

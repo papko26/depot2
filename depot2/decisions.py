@@ -28,7 +28,7 @@ def who_ru(who):
 
 def links(text):
     """The ids the text names, each kind in the order they first appear, once."""
-    out = {k: [] for k in LINK_KINDS}
+    out: dict[str, list[str | int]] = {k: [] for k in LINK_KINDS}
     for m in RE_LINK.finditer(text or ""):
         car, track, item, dec, pr = m.groups()
         kind, val = (

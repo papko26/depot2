@@ -931,7 +931,7 @@ def overview(state, cfg, now=None):
     )
     live = tr.trains(include_done=False)
     nx = tr.next(now)
-    by = {}
+    by: dict[str, int] = {}
     for tn in live:
         by[tn["state"]] = by.get(tn["state"], 0) + 1
     head = (
@@ -969,7 +969,7 @@ def overview(state, cfg, now=None):
     )
     rows.append((t("queues.ov.wishes"), str(len(wl.entries(True))), wl.head(), "wishes", wl.prio_counts()))
     rows.append((t("queues.ov.think"), str(len(th.entries(True))), th.head(), "think", th.prio_counts()))
-    kinds = {}
+    kinds: dict[str, int] = {}
     for e in td.entries(True):
         kinds[e["kind"]] = kinds.get(e["kind"], 0) + 1
     rows.append(

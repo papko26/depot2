@@ -128,7 +128,7 @@ def plan(old, names=None):
     """
     names = names or {}
     tracks, trains, rows, skipped = [], [], [], []
-    taken = set()
+    taken: set[str] = set()
     planning = {}
     now = now_iso()
     for old_t in old["trains"]:

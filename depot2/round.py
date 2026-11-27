@@ -192,7 +192,7 @@ def trim_to(positions, available, order, free_max):
     """
     total = sum(a["stake"] for a in positions.values())
     excess = total - max(0, available)
-    notes = []
+    notes: list[str] = []
     if excess <= 0:
         return notes
     staked = [pid for pid in positions if positions[pid]["stake"] > 0]
@@ -988,7 +988,7 @@ def _brainstorm_check(state, cfg, ledger, rid, proposals, invalid, votes, took_p
     if not proposals and not invalid:
         return None
     log = extras.Brainstorms(state)
-    history = {}
+    history: dict[str, int] = {}
     for it in log.items():
         history[it["initiator"]] = history.get(it["initiator"], 0) + 1
     results = extras.evaluate(proposals, votes, took_part, ledger.balances(), cfg, history, genders)
