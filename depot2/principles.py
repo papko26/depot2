@@ -383,7 +383,7 @@ class Principles(Queue):
             items = [dict(e, label=label(e), status_ru=STATUS_RU[e["status"]], lines=render_item(e), priority=priority(e))
                      for e in rows if e["section"] == key]
             sections.append({"key": key, "title": title, "count": len(items), "items": items})
-        counts = {s: 0 for s in STATUS_RU}
+        counts = dict.fromkeys(STATUS_RU, 0)
         for e in self.data["entries"]:
             counts[e["status"]] = counts.get(e["status"], 0) + 1
         return {"v": 1, "generated": now_iso(), "all": not open_only, "file": self.target(),

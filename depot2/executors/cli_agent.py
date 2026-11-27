@@ -342,7 +342,7 @@ def meta_path(transcript):
 def _acc(tail):
     """What a reading sums as it goes: the message ids seen (the spend once per message), the tool calls seen, the
     tokens by kind, the last `tail` actions, the first and last times."""
-    return {"seen": set(), "tok": {k: 0 for k in effort.WEIGHTS}, "acts": collections.deque(maxlen=tail),
+    return {"seen": set(), "tok": dict.fromkeys(effort.WEIGHTS, 0), "acts": collections.deque(maxlen=tail),
             "calls": set(), "n_calls": 0, "first": None, "last": None}
 
 

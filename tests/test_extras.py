@@ -48,7 +48,7 @@ def r2(votes=(), order_=None, points=()):
 
 
 class Base(unittest.TestCase):
-    balances = {cid: 20 for cid in characters.IDS}
+    balances = dict.fromkeys(characters.IDS, 20)
 
     def setUp(self):
         self.t = TempState(self.balances)
@@ -251,7 +251,7 @@ class BrainstormTest(Base):
         led = Ledger(self.t.state)
         backs = [e for e in led.entries() if e["type"] == "brainstorm_refund"]
         self.assertEqual(len(backs), 5)
-        self.assertEqual(led.balances(), {cid: 20 for cid in characters.IDS})
+        self.assertEqual(led.balances(), dict.fromkeys(characters.IDS, 20))
         b = extras.Brainstorms(self.t.state).get("bs-0001")
         self.assertEqual(b["status"], "failed")
         self.assertIn("fatal error", b["reason"])
@@ -266,7 +266,7 @@ class BrainstormTest(Base):
         rc, out, err = self.team("brainstorm", "cancel", "bs-0001", "--reason", "тема устарела")
         self.assertEqual(rc, 0, err)
         self.assertIn("bs-0001 cancelled; the fee came back", out)
-        self.assertEqual(Ledger(self.t.state).balances(), {cid: 20 for cid in characters.IDS})
+        self.assertEqual(Ledger(self.t.state).balances(), dict.fromkeys(characters.IDS, 20))
         self.assertEqual(extras.Brainstorms(self.t.state).get("bs-0001")["status"], "cancelled")
         rc, _, err = self.team("brainstorm", "cancel", "bs-0001", "--reason", "ещё раз")
         self.assertEqual(rc, 1)

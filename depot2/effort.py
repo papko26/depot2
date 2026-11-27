@@ -81,7 +81,7 @@ def from_transcript(path):
     """It sums the per-message `usage` with the weights, deduped by message id: a streamed message is
     logged once per content block with the same usage."""
     seen = set()
-    tok = {k: 0 for k in WEIGHTS}
+    tok = dict.fromkeys(WEIGHTS, 0)
     n = 0
     with open(path, encoding="utf-8", errors="replace") as f:
         for line in f:

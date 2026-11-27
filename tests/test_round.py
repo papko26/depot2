@@ -480,7 +480,7 @@ class OldRoundTest(unittest.TestCase):
                       "status": "не удалось, возврат (tx-000008): cap", "tx": "tx-000007"}],
             "settings": {"model": "model-a", "effort": "xhigh", "free": {"max_tool_turns_r1": 4},
                          "deep_levels": {"1": {"price": 1, "max_tool_turns": 8}}},
-            "balances_before": {cid: 5 for cid in characters.IDS}, "balances_after": bal,
+            "balances_before": dict.fromkeys(characters.IDS, 5), "balances_after": bal,
             "stakes": ["tx-000009", "tx-000010"], "ledger_seq": 10, "repo_commit": "c" * 40})
         write_json(os.path.join(rdir, "costs.json"), {
             "calls": 2, "total_usd": 0.5, "unknown_cost_calls": 0, "duration_s": 60.0, "turns": 9,
@@ -727,7 +727,7 @@ class DiscussRoundTest(unittest.TestCase):
         led = Ledger(self.t.state)
         self.assertEqual(led.open_stakes(), [])  # a discussion returns its stakes too
         self.assertEqual(len(led.auto_refunds(r["id"])), 3)
-        self.assertEqual(led.balances(), {cid: 6 for cid in characters.IDS})
+        self.assertEqual(led.balances(), dict.fromkeys(characters.IDS, 6))
 
 
 class SnapshotAndCostTest(unittest.TestCase):

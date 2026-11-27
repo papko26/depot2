@@ -243,8 +243,8 @@ class RoundInMtokTest(unittest.TestCase):
         os.makedirs(os.path.join(rdir, "answers"))
         write_json(os.path.join(rdir, "round.json"), {
             "id": rid, "kind": "discuss", "status": "done", "created": "2015-11-03T10:00:00Z", "only": "keeper",
-            "points": [], "finals": {}, "balances_before": {c: 5 for c in characters.IDS},
-            "balances_after": {c: 5 for c in characters.IDS},
+            "points": [], "finals": {}, "balances_before": dict.fromkeys(characters.IDS, 5),
+            "balances_after": dict.fromkeys(characters.IDS, 5),
             "settings": {"effort": "xhigh", "round": {"budget_usd": 0.9, "max_calls": 2}}})
         write_json(os.path.join(rdir, "costs.json"), {
             "calls": 1, "total_usd": 1.36, "unknown_cost_calls": 0, "duration_s": 30.0, "turns": 3, "tool_turns": 1,
