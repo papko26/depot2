@@ -185,8 +185,8 @@ The config is read in layers, each deep-merged over the one before:
 | `web.hosts`, `web.docs.base`, `web.docs.dirs` | `[]`, null, `[]` | more names of this computer for the web view; where its briefs live |
 | `backup.git.*`, `backup.*` | push off until a remote exists | the depot's own backup (below) |
 
-**The effort unit.** Spend is stored in MTok: millions of price-weighted input-equivalent tokens (input ×1, cache
-write ×1.25, cache read ×0.1, output ×5). It prints as `X%UW (Y MTok)`: the share of a usage window, at
+**The effort unit.** Spend is stored in MTok: millions of price-weighted input-equivalent tokens (input x1, cache
+write x1.25, cache read x0.1, output x5). It prints as `X%UW (Y MTok)`: the share of a usage window, at
 `usage.mtok_per_pct` MTok per percent. Set it to your runner's own budget; the sizes of cars (`usage.sizes`) are in
 `%UW`.
 
@@ -254,7 +254,7 @@ with the user prompt on its stdin:
   saved to resume, and anything that would ask for a permission is denied;
 - the system prompt and the answer's JSON schema are depot2's; the tools are read-only (`tools`: Read, Grep, Glob or
   fewer; a reflection gets none), confined to the round's dirs (a snapshot of `deep_repo`, and `read_dirs`) with `deny_read` on top;
-- `--max-budget-usd` is the call's cap in MTok × `usage.usd_per_mtok`, since the runner takes its cap in dollars; the
+- `--max-budget-usd` is the call's cap in MTok x `usage.usd_per_mtok`, since the runner takes its cap in dollars; the
   runner has no turn-cap flag, so depot2 counts the tool turns in the stream and kills the process group at the cap or
   the timeout;
 - the child's environment is the caller's without `CLAUDECODE`, any `CLAUDE_CODE_*` variable, `ANTHROPIC_API_KEY` and
@@ -282,7 +282,7 @@ stopped. Nothing else in the log is read.
 - any other runner is a module of its own with the three functions, named in `executor`. `run_call` gets a `CallSpec`
   (`depot2/executors/__init__.py`: the prompts, the schema, the tools, the dirs, the caps in turns, MTok and seconds)
   and returns a dict with `structured` (the answer), `usage` (`input`, `cache_write`, `cache_read`, `output`; or
-  `cost_usd` alone), `status`, and `utilization` / `week_utilization` (window shares, 0–1) when the runner reports
+  `cost_usd` alone), `status`, and `utilization` / `week_utilization` (window shares, 0-1) when the runner reports
   them; it raises `CallFailed` or `FatalError` with that dict. `find_transcript` returns a log's path;
   `read_transcript` returns `{turns, mtok, first_at, last_at, actions, finished, stopped_by_user}`, or None.
   The modes of `tests/fake_executor.py` are the failures such a module has to tell apart.
@@ -410,7 +410,7 @@ depot2 trains car move             # its place in the train
 depot2 trains car drop             # out of the train
 depot2 train                       # one train: its cars in order
 depot2 migrate                     # bring the depot's data to today's form, once (schema 1 → 5: tracks and trains, …
-depot2 priority                    # the priority 1–10 (10 — the most important, default 5) of a train or a car in …
+depot2 priority                    # the priority 1-10 (10 — the most important, default 5) of a train or a car in …
 depot2 car                         # one car (tr-NNNN:N, st-, wl-, th-): its stage, show, its open questions, the …
 depot2 car stage                   # move its stage, on the route; the moves a command makes are refused, each with …
 depot2 car show                    # its stage, where it may go, the next gate, its history

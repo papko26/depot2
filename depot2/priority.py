@@ -1,4 +1,4 @@
-"""The priority 1–10 of every train and every car in any of its forms (10 — the most important, 5 by default).
+"""The priority 1-10 of every train and every car in any of its forms (10 — the most important, 5 by default).
 
 On: a train, a track's car, a stack object and a team stack item, a wish, a to-think entry, a todo. A car and its live
 stack object are one car: one priority, written on both. An entry taken into a new car gives it its priority.
@@ -26,7 +26,7 @@ class PriorityError(ValueError):
 
 def parse(value):
     if isinstance(value, bool):
-        raise PriorityError("priority is a whole number %d–%d, got %r" % (MIN, MAX, value))  # noqa: UP031
+        raise PriorityError("priority is a whole number %d-%d, got %r" % (MIN, MAX, value))  # noqa: UP031
     if isinstance(value, int):
         n = value
     else:
@@ -36,11 +36,11 @@ def parse(value):
                 return p
         m = RE_P.match(s)
         if not m:
-            raise PriorityError("priority is a whole number %d–%d (10 — the most important; or high 8, normal 5, "  # noqa: UP031
+            raise PriorityError("priority is a whole number %d-%d (10 — the most important; or high 8, normal 5, "  # noqa: UP031
                                 "later 2), got %r" % (MIN, MAX, value))
         n = int(m.group(1))
     if not MIN <= n <= MAX:
-        raise PriorityError("priority is %d–%d (10 — the most important), got %d" % (MIN, MAX, n))  # noqa: UP031
+        raise PriorityError("priority is %d-%d (10 — the most important), got %d" % (MIN, MAX, n))  # noqa: UP031
     return n
 
 
@@ -57,7 +57,7 @@ def add_arg(parser, synonym=False):
     """--priority N on an add or a set (and --prio, its synonym, where the queues had it)."""
     flags = ("--priority", "--prio") if synonym else ("--priority",)
     parser.add_argument(*flags, dest="priority", type=arg, metavar="N",
-                        help="priority %d–%d, 10 — the most important (default %d)%s" % (  # noqa: UP031
+                        help="priority %d-%d, 10 — the most important (default %d)%s" % (  # noqa: UP031
                             MIN, MAX, DEFAULT, "; --prio high|normal|later = 8 / 5 / 2" if synonym else ""))
 
 

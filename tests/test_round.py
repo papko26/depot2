@@ -70,7 +70,7 @@ class RoundTest(unittest.TestCase):
     def test_points_parsed(self):
         pts = parse_points(BALLOT)
         self.assertEqual([p["id"] for p in pts], ["B49", "B50"])
-        self.assertIn("вернуться после PR 2–3", pts[0]["recommendation"])
+        self.assertIn("вернуться после PR 2-3", pts[0]["recommendation"])
         self.assertEqual(pts[0]["question"], "Что значит фильтр поиска и когда к нему вернуться?")
 
     def test_report_orders_points_by_total_stake(self):
@@ -367,8 +367,8 @@ class StakeReportTest(unittest.TestCase):
         # The owner's cost stays in the header.
         self.assertIn("Вызовов 10, ходов 20 (с инструментами 9)", rep)
         # no tokens from the fake runner: its ≈$0.01 per call / usage.usd_per_mtok 2.5 = 0.004 MTok
-        self.assertIn("Расход 0.004%UW (0.04 MTok): токены вызовов по весам (вход ×1, запись кэша ×1.25, чтение "
-                      "кэша ×0.1, выход ×5; 1%UW ≈ 10 MTok); у 10 вызовов без токенов — по оценке CLI / "
+        self.assertIn("Расход 0.004%UW (0.04 MTok): токены вызовов по весам (вход x1, запись кэша x1.25, чтение "
+                      "кэша x0.1, выход x5; 1%UW ≈ 10 MTok); у 10 вызовов без токенов — по оценке CLI / "
                       "usage.usd_per_mtok. Окно расхода: 10% → 10%.", rep)
         self.assertNotIn("$", rep.split("## Команда")[0])
 
@@ -425,14 +425,14 @@ class StakeReportTest(unittest.TestCase):
         rep = render(self.t.state, r["id"])
         self.assertEqual(rep[:rep.index("## После раунда")].rstrip("\n"), r["report"].rstrip("\n"))
         rows = self.rows(rep, "## После раунда")
-        self.assertEqual(rows["Палитра, Краски"], ["Палитра, Краски", "5", "0", "0", "−1", "+2", "6"])
-        self.assertEqual(rows["Перо, Летописец"], ["Перо, Летописец", "10", "0", "+1", "−1", "0", "10"])
-        self.assertEqual(rows["Копилка"], ["Копилка", "1", "0", "0", "−1", "0", "0"])
+        self.assertEqual(rows["Палитра, Краски"], ["Палитра, Краски", "5", "0", "0", "-1", "+2", "6"])
+        self.assertEqual(rows["Перо, Летописец"], ["Перо, Летописец", "10", "0", "+1", "-1", "0", "10"])
+        self.assertEqual(rows["Копилка"], ["Копилка", "1", "0", "0", "-1", "0", "0"])
         for cid in characters.IDS:
             self.assertEqual(int(rows[characters.name(cid)][-1]), led.balance(cid), cid)  # `depot2 ledger`
         self.assertIn("Перо, Летописец: выплата +1 (B49): толково", rep)
-        self.assertIn("Строитель: штраф −1 (B50): требовал(а) обратного", rep)
-        self.assertIn("Копилка: штраф −0 из 1 (больше не было): ещё", rep)
+        self.assertIn("Строитель: штраф -1 (B50): требовал(а) обратного", rep)
+        self.assertIn("Копилка: штраф -0 из 1 (больше не было): ещё", rep)
         self.assertNotIn("возврат ставки", rep)  # the auto refunds are not the owner's
         self.assertIn("«Сейчас» сходится с журналом (баланс на tx-", rep)
 
@@ -783,7 +783,7 @@ class SnapshotAndCostTest(unittest.TestCase):
             return res
         r = run_round(self.t.state, self.t.cfg, "ballot", self.input, runner=runner, out=lambda *a: None)
         self.assertIn("(≈: у убитых вызовов — по потоку)", r["report"])
-        self.assertIn("Расход 0.0036%UW (0.036 MTok)", r["report"])  # 9 × 0.004: the killed one had no tokens
+        self.assertIn("Расход 0.0036%UW (0.036 MTok)", r["report"])  # 9 x 0.004: the killed one had no tokens
 
 
 class OnePrReviewTest(unittest.TestCase):
@@ -817,7 +817,7 @@ class OnePrReviewTest(unittest.TestCase):
         self.assertEqual(len(self.gh_calls), 1)  # no merged/open lists for a one-PR review
         self.assertTrue(r["id"].endswith("-review-pr125"))
         bundle = slurp(os.path.join(r["dir"], "bundle.md"))
-        self.assertIn("app/importer/run.py (+9 −0)", bundle)
+        self.assertIn("app/importer/run.py (+9 -0)", bundle)
         self.assertIn("the importer", bundle)
         self.assertEqual(wanted, ["b" * 40])  # every pass reads the PR's head, not origin/main
         self.assertIn("PR #125 «Catalogue import»", r["report"])

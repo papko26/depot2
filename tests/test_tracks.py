@@ -70,7 +70,7 @@ class TracksTest(TracksBase):
                       md)
         self.assertIn("| 1 | tr-0001 Поиск | 1 / 4 | ≈ 3.9%UW (46.8 MTok) / 1.63%UW (19.6 MTok) | открыто 3; "
                       "вне поездов 3 |", md)
-        self.assertIn("| 2 | tr-0002 Читалка | 0 / 2 | ≈ 10–13%UW (120–156 MTok) / — (по вагонам ≈ 2.4%UW (28.8 MTok)) | "
+        self.assertIn("| 2 | tr-0002 Читалка | 0 / 2 | ≈ 10-13%UW (120-156 MTok) / — (по вагонам ≈ 2.4%UW (28.8 MTok)) | "
                       "открыто 2; вне поездов 2 |", md)
         self.assertIn("| 3 | tr-0003 Экспорт | 0 / 0 | — | вагонов нет |", md)
         self.assertIn("1%UW ≈ 12 MTok (usage.mtok_per_pct). Размеры, %UW: S 0.3, doc 0.4, M 1, L 1.4.", md)
@@ -228,7 +228,7 @@ class StackLinkTest(TracksBase):
                                                                           "output_tokens": 1000}}}]
         with open(path, "w") as f:
             f.write("\n".join(json.dumps(x) for x in lines) + "\nnot json\n")
-        # 1000 + 2000 × 1.25 + 1e6 × 0.1 + 500 × 5, then 2e6 × 0.1 + 1000 × 5
+        # 1000 + 2000 x 1.25 + 1e6 x 0.1 + 500 x 5, then 2e6 x 0.1 + 1000 x 5
         from depot2.effort import from_transcript
         self.assertEqual(from_transcript(path), 0.311)
         self.team("tracks", "car", "stack", "tr-0001:0", "--start")

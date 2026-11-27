@@ -778,7 +778,7 @@ def status_cell(o, agent=None):
 def lock_cell(lock):
     if not lock:
         return "—"
-    return "{} {}: {} (−{})".format(lock["id"], characters.name(lock["by"]), lock["condition"], lock.get("price", "?"))
+    return "{} {}: {} (-{})".format(lock["id"], characters.name(lock["by"]), lock["condition"], lock.get("price", "?"))
 
 
 def _branch_pr(o):

@@ -124,7 +124,7 @@ def run_portrait_calls(state, cfg, jobs, label, out=print, runner=None, dry_run=
         for cid, s, u in jobs:
             out("  %-17s system %6d chars (~%d tok)  user %6d chars (~%d tok)"  # noqa: UP031
                 % (characters.name(cid), len(s), len(s) // 3, len(u), len(u) // 3))
-        out("planned: %d × %s effort %s, no tools, cap %s each, portrait ≤ %d chars"  # noqa: UP031
+        out("planned: %d x %s effort %s, no tools, cap %s each, portrait ≤ %d chars"  # noqa: UP031
             % (len(jobs), cfg["model"], cfg["effort"] or "(not passed)", effort.fmt(rc["budget_mtok"], cfg),
                rc["portrait_max_chars"]))
         return {}

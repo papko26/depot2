@@ -42,7 +42,7 @@ class CalibrationTest(unittest.TestCase):
         self.assertEqual(effort.fmt(0.16, cfg), "0.016%UW (0.16 MTok)")  # a call's cap never prints as 0
         self.assertEqual(effort.fmt(0.000468, cfg), "0.000047%UW (0.00047 MTok)")
         self.assertEqual(effort.fmt(0, cfg), "0%UW (0 MTok)")
-        self.assertEqual(effort.fmt([100, 125], cfg), "10–12.5%UW (100–125 MTok)")
+        self.assertEqual(effort.fmt([100, 125], cfg), "10-12.5%UW (100-125 MTok)")
         self.assertEqual(effort.share(0.9, cfg), "90%UW (900 MTok)")
         self.assertEqual(effort.to_usd(0.16, cfg), 0.4)
         self.assertEqual(effort.from_usd(6, cfg), 2.4)
@@ -225,7 +225,7 @@ class RoundInMtokTest(unittest.TestCase):
         self.assertEqual((r1.budget_mtok, r1.budget_usd), (0.16, 0.4))
         self.assertEqual((r2.budget_mtok, r2.budget_usd), (0.2, 0.5))
         costs = json.loads(slurp(os.path.join(r["dir"], "costs.json")))
-        self.assertAlmostEqual(costs["mtok"], 0.04)  # 10 calls × ≈$0.01 / 2.5, no tokens
+        self.assertAlmostEqual(costs["mtok"], 0.04)  # 10 calls x ≈$0.01 / 2.5, no tokens
         self.assertEqual(costs["mtok_from_cost_calls"], 10)
         self.assertAlmostEqual(costs["total_usd"], 0.1)
         self.assertAlmostEqual(costs["by_model"]["model-a"]["mtok"], 0.04)

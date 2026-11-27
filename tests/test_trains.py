@@ -248,7 +248,7 @@ class ModelTest(TracksBase):
         self.assertEqual(data["effort"], {
             "note": "примерно, по размерам вагонов",
             "live": {"trains": 2, "expected": [19.2, 31.2], "spent": 6.0, "unpriced": 1,
-                     "text": "≈ 1.6–2.6%UW (19.2–31.2 MTok) / 0.5%UW (6 MTok); вагонов без оценки: 1"},
+                     "text": "≈ 1.6-2.6%UW (19.2-31.2 MTok) / 0.5%UW (6 MTok); вагонов без оценки: 1"},
             "done": {"trains": 1, "expected": 3.6, "spent": None, "unpriced": 0, "text": "≈ 0.3%UW (3.6 MTok) / —"}})
         line = "Цена %s поездов (%d) — примерно, по размерам вагонов; ожидаемо / потрачено: %s."
         rc, out, err = self.team("trains")

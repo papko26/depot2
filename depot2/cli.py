@@ -1911,12 +1911,12 @@ def build_parser():
     p.add_argument("--dry-run", action="store_true", help="say what it would do, write nothing")
     p.set_defaults(fn=cmd_migrate, mutates=True)
 
-    p = sub.add_parser("priority", help="the priority 1–10 (10 — the most important, default 5) of a train or a car in "
+    p = sub.add_parser("priority", help="the priority 1-10 (10 — the most important, default 5) of a train or a car in "
                                         "any form: print it, or set it (the same as --priority N on its "
                                         "set). A free slot takes the trains by it, then the cars (trains next)")
     p.add_argument("id", help="a train's name, tr-NNNN:N, st-/tm-NNNN, wl-/th-/td-NNNN (a car and its live stack "
                               "object are one car: both get it)")
-    p.add_argument("n", nargs="?", help="1–10 (P7 too; high|normal|later = 8 / 5 / 2); left out: print it")
+    p.add_argument("n", nargs="?", help="1-10 (P7 too; high|normal|later = 8 / 5 / 2); left out: print it")
     p.set_defaults(fn=cmd_priority, mutates=True)
 
     p = sub.add_parser("car", help=t("cli.help.car"))

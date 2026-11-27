@@ -134,8 +134,8 @@ class VerdictTest(unittest.TestCase):
                                     "1 · нарушен 0); не проверены: 4, 5a")
         self.assertEqual(v["cell"], "ворота не пройдены: нет строки — 26; нарушен — 5, балл 0 из 3, не проверено 2")
         v = marks.evaluate({"5": m("ok"), "26": m("ok"), "11": m("bad"), "4": m("bad"), "5a": m("bad")}, PL)
-        self.assertEqual((v["score"], marks.score_ru(v, full=False)), (-3, "балл −3 из 3"))
-        self.assertEqual([marks.signed(n) for n in (2, 0, -1)], ["+2", "0", "−1"])
+        self.assertEqual((v["score"], marks.score_ru(v, full=False)), (-3, "балл -3 из 3"))
+        self.assertEqual([marks.signed(n) for n in (2, 0, -1)], ["+2", "0", "-1"])
 
     def test_nothing_read_nothing_listed(self):
         v = marks.evaluate({}, PL)

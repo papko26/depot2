@@ -330,10 +330,10 @@ PRIOS = tuple(pri.WORDS)  # the words of before (`--prio high|normal|later`): 8 
 
 
 def check_priority(e):
-    """Every entry has its priority, a whole number 1–10 (priority.py)."""
+    """Every entry has its priority, a whole number 1-10 (priority.py)."""
     p = e.get("priority")
     if isinstance(p, bool) or not isinstance(p, int) or not pri.MIN <= p <= pri.MAX:
-        raise QueueError("%s: priority is a whole number %d–%d, got %r" % (e.get("id"), pri.MIN, pri.MAX, p))  # noqa: UP031
+        raise QueueError("%s: priority is a whole number %d-%d, got %r" % (e.get("id"), pri.MIN, pri.MAX, p))  # noqa: UP031
 
 
 def by_prio(q, rows):
@@ -643,7 +643,7 @@ def migrate(state, cfg, dry_run=False):
     without `stage` gets its stage (stages.migrate); every entry taken into a car is named in the car's `from`
     (migrate_from). An entry or object that has the field is never touched, so a second run changes nothing. The
     priority of a todo or to-think entry from its newest `prio: …` note, that this command wrote once, is the depot's
-    data migration's now (migrate.py, schema 3 → 4: `priority` 1–10 for every entry). Returns (lines, changed)."""
+    data migration's now (migrate.py, schema 3 → 4: `priority` 1-10 for every entry). Returns (lines, changed)."""
     from .stack import Stack
     L, changed = [], 0
     stk = Stack(state, cfg)

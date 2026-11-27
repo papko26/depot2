@@ -21,7 +21,7 @@ MESSAGES = {
                          "чтобы выполнить условие); держится до `stack unlock --met` или `--owner`"),
 
     # --- приоритет (priority.py) ---
-    "priority.means": ("приоритет 1–10 (10 — важнее всего, по умолчанию 5): `depot2 priority ID N` или `--priority N` "
+    "priority.means": ("приоритет 1-10 (10 — важнее всего, по умолчанию 5): `depot2 priority ID N` или `--priority N` "
                        "у add/set; свободный слот берёт по приоритету поезда, затем вагона, при равенстве — по порядку"),
 
     # --- слово автора (первые строки README; конец `depot2 --help`) ---
@@ -53,8 +53,8 @@ MESSAGES = {
     "decisions.empty": "(пусто)",
     "decisions.footer": "Пишет их `depot2 decide`; эта команда только читает (`--grep СЛОВА`, `--limit N`, `--json`).",
     # --- the effort (effort.py) ---
-    "effort.legend": ("Effort — %UW, доля окна расхода; в скобках MTok, млн токенов «эквивалента ввода» (ввод ×1, "
-                      "запись кэша ×1.25, чтение кэша ×0.1, вывод ×5). 1%UW ≈ {per} MTok (usage.mtok_per_pct). "
+    "effort.legend": ("Effort — %UW, доля окна расхода; в скобках MTok, млн токенов «эквивалента ввода» (ввод x1, "
+                      "запись кэша x1.25, чтение кэша x0.1, вывод x5). 1%UW ≈ {per} MTok (usage.mtok_per_pct). "
                       "Размеры, %UW: {sizes}."),
     # --- seeding (seed.py): a spec and the first portrait's prompt ---
     "seed.spec": "# {name} («{full}»)\n\nИз брифа команды ({brief}).\n\n{spec}\n",
@@ -92,7 +92,7 @@ MESSAGES = {
     "migrate.queue.wishes": "хотелки",
     "migrate.queue.think": "«подумать»",
     "migrate.queue.todo": "todo",
-    "migrate.head_4": ("миграция данных депо: схема 3 → 4 (приоритет 1–10 у поездов и вагонов в любом виде: поезд, "
+    "migrate.head_4": ("миграция данных депо: схема 3 → 4 (приоритет 1-10 у поездов и вагонов в любом виде: поезд, "
                        "вагон трека, объект стека и стека команды, хотелка, «подумать», todo; 10 — важнее всего)"),
     "migrate.queue_prio": "{queue}: prio → priority у {n} (high 8, normal 5, later 2; без слова — 5)",
     "migrate.prio_notes": "из заметки «prio: …»: {ids}",
@@ -299,7 +299,7 @@ MESSAGES = {
     "cli.question_closed": "{car}: вопрос {n} закрыт: {answer}",
     "cli.project_required": "{car}: проект обязателен: {why}",
     "cli.project_required_off": "{car}: отметка «проект обязателен» снята",
-    "cli.priority_show": "{ref}: приоритет {cell} ({min}–{max}, 10 — важнее всего; по умолчанию {default})",
+    "cli.priority_show": "{ref}: приоритет {cell} ({min}-{max}, 10 — важнее всего; по умолчанию {default})",
     "cli.agent_started": ("{id} — {role}, {car} ({by}): теперь запусти агента; его id запуска — depot2 agents attach "
                           "{id} <run id>"),
     "cli.agent_attached": "{id} → {agent} ({path}): {state}, ходов {turns}, потрачено {spent}",
@@ -471,7 +471,7 @@ MESSAGES = {
     "stages.questions": "Вопросы:",
     "stages.question_answered": "- {n}. {q} — ответ ({at}): {answer}",
     "stages.question_open": "- {n}. {q} — открыт",
-    "stages.show_priority": "Приоритет: {p} (1–10, 10 — важнее всего; `depot2 priority {ref} N`).",
+    "stages.show_priority": "Приоритет: {p} (1-10, 10 — важнее всего; `depot2 priority {ref} N`).",
     "stages.show_track": "Трек: {track} {title}. Поезд: {train}.",
     "stages.show_old_ref": "{ref} — старый номер: вагон перенесён, теперь {now}.",
     "stages.show_moved": "Перенесён: {src} → {to} ({at}{why}).",
@@ -962,7 +962,7 @@ MESSAGES = {
     "queues.ov.principles_count": "{n} действуют",
     "queues.ov.heading": "## Очереди ({ts})",
     "queues.ov.header": "| Очередь | Открыто | Приоритет | Сверху | Команда |",
-    "queues.ov.priority_legend": ("Приоритет: открытые по приоритету 1–10 (P10 — важнее всего; `depot2 priority ID N`); "
+    "queues.ov.priority_legend": ("Приоритет: открытые по приоритету 1-10 (P10 — важнее всего; `depot2 priority ID N`); "
                                   "«Сверху» — по нему же; у принципов «Сверху» — принципы третьей проверки (③, "
                                   "`depot2 principles checks`)."),
     "queues.ov.stages": ("Этапы вагонов (стек, открытые вагоны поездов, хотелки, «подумать»; без прибывших и "
@@ -976,7 +976,7 @@ MESSAGES = {
     "extras.order.done": "прогнан, ждёт решения",
     "extras.order.settled": "закрыт",
     "extras.no_topic": "нет темы",
-    "extras.questions_count": "вопросов {n}, нужно {lo}–{hi}",
+    "extras.questions_count": "вопросов {n}, нужно {lo}-{hi}",
     "extras.quorum_majority": "больше половины «да»: {need} из {n} (кто не голосовал — «нет»)",
     "extras.quorum_unanimous": "вся команда участвует в раунде 2 и все говорят «да»",
     "extras.no_part": {"m": "{who} не участвовал в раунде 2", "f": "{who} не участвовала в раунде 2"},
@@ -1107,7 +1107,7 @@ MESSAGES = {
     "marks.format": "`- 20: ок — как сделано`, `- 26: не касается`, `- 4: нарушен — что; взамен …`",
     "marks.legend": ("Оценка по принципам (`depot2 tracks car check <вагон>`): приоритет 1 — ворота (у каждого строка, "
                      "ни один не «нарушен»: иначе `stack post` и `merge add` не пускают); приоритет 2 — балл вагона: "
-                     "ок +1, не касается 0, нарушен −1; нет строки — «не проверен». Источник — раздел «{section}» в "
+                     "ок +1, не касается 0, нарушен -1; нет строки — «не проверен». Источник — раздел «{section}» в "
                      "теле PR."),
     "marks.gate_missing": "нет строки — {labels}",
     "marks.gate_bad": "нарушен — {labels}",
@@ -1166,7 +1166,7 @@ MESSAGES = {
     "in.principles.section.checks": r"проверка",
     "in.principles.section.voice": r"тексты|голос",
     "principles.means.1": "у каждого строка, и ни один не «нарушен» — иначе вагон не идёт в приёмку и в мердж",
-    "principles.means.2": "ок +1, не касается 0, нарушен −1; нет строки — «не проверен»",
+    "principles.means.2": "ок +1, не касается 0, нарушен -1; нет строки — «не проверен»",
     "principles.banner": ("> Собран из депо (`depot2 principles render`); править через `depot2 principles` "
                           "(add, set, replace, drop), не руками: между рендерами файл только для чтения."),
     "principles.banner_words": "Собран из депо",
@@ -1474,7 +1474,7 @@ MESSAGES = {
     "prompts.brainstorm": (
         "`brainstorm_proposal` (по желанию, иначе не заполняй): команда может сама созвать мозговой "
         "штурм на любую тему, без вызова владельца; он получит бюллетень по итогу. Дай тему (topic), "
-        "зачем сейчас (why) и {qmin}–{qmax} вопросов (questions). Взнос: {fee_init} ток. с инициатора и по {fee_other} "
+        "зачем сейчас (why) и {qmin}-{qmax} вопросов (questions). Взнос: {fee_init} ток. с инициатора и по {fee_other} "
         "с каждого из остальных; взнос не возвращается. Штурм состоится, только если в раунде 2 {quorum}, и каждый "
         "может заплатить из баланса после возврата ставок. Штурм за раунд один."),
     "prompts.order": (
@@ -1691,10 +1691,10 @@ MESSAGES = {
     "report.calls_approx": ("Вызовов {calls}, ходов {turns} (с инструментами {tool_turns}), {secs} с; токенов {total}: "
                             "вход {input}, чтение кэша {cache_read}, запись кэша {cache_write}, выход {output} (≈: у "
                             "убитых вызовов — по потоку)."),
-    "report.spend": ("Расход {spent}: токены вызовов по весам (вход ×1, запись кэша ×1.25, чтение кэша ×0.1, выход ×5; "
+    "report.spend": ("Расход {spent}: токены вызовов по весам (вход x1, запись кэша x1.25, чтение кэша x0.1, выход x5; "
                      "1%UW ≈ {per} MTok). Окно расхода: {window}. Модель {models}, усилие {effort}."),
-    "report.spend_by_cost": ("Расход {spent}: токены вызовов по весам (вход ×1, запись кэша ×1.25, чтение кэша ×0.1, "
-                             "выход ×5; 1%UW ≈ {per} MTok); у {by_cost} вызовов без токенов — по оценке CLI / "
+    "report.spend_by_cost": ("Расход {spent}: токены вызовов по весам (вход x1, запись кэша x1.25, чтение кэша x0.1, "
+                             "выход x5; 1%UW ≈ {per} MTok); у {by_cost} вызовов без токенов — по оценке CLI / "
                              "usage.usd_per_mtok. Окно расхода: {window}. Модель {models}, усилие {effort}."),
     "report.na": "н/д",
     "report.effort_default": "по умолчанию",
@@ -1763,14 +1763,14 @@ MESSAGES = {
     "report.bs_run": ("- Тема: `{file}`. Запуск (оркестратор, сразу после этого раунда): "
                       "`depot2 round --kind brainstorm --brainstorm {id}`"),
     "report.orders_head": "## Заказы",
-    "report.order_placed": ("- {id} {name} (−{price} ток.): `{command}`; seeds {seeds}; {hardware}; порог: {threshold}; "
+    "report.order_placed": ("- {id} {name} (-{price} ток.): `{command}`; seeds {seeds}; {hardware}; порог: {threshold}; "
                             "прогноз: {forecast}; зачем: {why}."),
     "report.order_refused": "- отклонён, {name}: `{command}` — {reason}.",
     "report.orders_shown": "- результаты в пакете этого раунда: {ids}.",
     "report.locks_head": "## Замки",
     "report.locks_ran": "Проход замков (раунд 3) прошёл: {n} вызовов. Замок: {means}.",
     "report.locks_skipped": "Проход замков (раунд 3) пропущен: {why}.",
-    "report.lock_placed": "- {id} {name} на {object} «{title}» (−{price} ток.): условие: {condition}; зачем: {why}.",
+    "report.lock_placed": "- {id} {name} на {object} «{title}» (-{price} ток.): условие: {condition}; зачем: {why}.",
     "report.lock_refused": "- отклонён, {name} — {reason}.",
     "report.lock_refused_obj": "- отклонён, {name}: {object} — {reason}.",
     "report.lock_lifted": "- снят с прошлого раунда: {id} на {object} ({name}), {how}: {reason}.",
@@ -1780,8 +1780,8 @@ MESSAGES = {
     "report.ow_payout": "выплата +{n}",
     "report.ow_forfeit": "ставка {n} не возвращена",
     "report.ow_settle": "заказ {order}: {outcome}, {amount}",
-    "report.ow_fine": "штраф −{n}",
-    "report.ow_fine_part": "штраф −{n} из {asked} (больше не было)",
+    "report.ow_fine": "штраф -{n}",
+    "report.ow_fine_part": "штраф -{n} из {asked} (больше не было)",
 
     # === веб-морда ===
     # --- the server (webui.py) ---
@@ -2146,7 +2146,7 @@ MESSAGES = {
     "web.hist.off_route": "не по маршруту",
     "web.hist.return": "брак: возврат в сборку",
     "web.marks.legend": ("приоритет 1 — ворота (у каждого строка, ни один не «нарушен»); приоритет 2 — балл: ок +1, "
-                         "не касается 0, нарушен −1"),
+                         "не касается 0, нарушен -1"),
     "web.marks.counts": "ок {ok} · не касается {na} · нарушен {bad} · не проверен {none}",
     "web.marks.h_principle": "принцип",
     "web.marks.h_priority": "приоритет",

@@ -174,7 +174,7 @@ class BrainstormTest(Base):
         self.assertIn("- Копилка: да: потому что yes", rep)
         self.assertIn("- Взнос: Строитель 5, Палитра, Краски 5, Счетовод 10, Перо, Летописец 5, Копилка 5 — списан", rep)
         self.assertIn("`depot2 round --kind brainstorm --brainstorm bs-0001`", rep)
-        self.assertEqual(self.rows(rep)["Счетовод"], ["Счетовод", "20", "—", "0", "0", "−10", "0", "0", "10"])
+        self.assertEqual(self.rows(rep)["Счетовод"], ["Счетовод", "20", "—", "0", "0", "-10", "0", "0", "10"])
         self.assertIn("Кроме ставок: взнос за мозговой штурм 30 ток. (не возвращается).", rep)
         self.assertIn("сходится с журналом (", rep)
         self.assertNotIn("НЕ СХОДИТСЯ", rep)
@@ -218,7 +218,7 @@ class BrainstormTest(Base):
     def test_an_incomplete_proposal_is_refused(self):
         r, runner = self.unanimous(n=2, vote=False)  # refused by code: nothing to vote on
         self.assertIn("**Поиск и фильтры** (предлагает Счетовод) — не прошло", r["report"])
-        self.assertIn("- Почему нет: предложение отклонено: вопросов 2, нужно 3–5", r["report"])
+        self.assertIn("- Почему нет: предложение отклонено: вопросов 2, нужно 3-5", r["report"])
         self.assertNotIn("brainstorm_votes", next(c[3] for c in runner.calls if c[1] == "r2").schema["properties"])
 
     def test_the_brainstorm_round_runs_on_its_topic(self):
@@ -294,9 +294,9 @@ class OrdersTest(Base):
                          ("queued", "builder", "tools/bench/run.mjs", "cpu"))
         rep = r["report"]
         self.assertIn("## Заказы", rep)
-        self.assertIn("- ord-0001 Строитель (−5 ток.): `node tools/bench/run.mjs --seeds 1-20`; seeds 1-20; cpu; "
+        self.assertIn("- ord-0001 Строитель (-5 ток.): `node tools/bench/run.mjs --seeds 1-20`; seeds 1-20; cpu; "
                       "порог: p90 < 8 мс; прогноз: 6 мс; зачем: B49.", rep)
-        self.assertEqual(self.rows(rep)["Строитель"], ["Строитель", "20", "B49: 20", "20", "20", "0", "−5", "0", "15"])
+        self.assertEqual(self.rows(rep)["Строитель"], ["Строитель", "20", "B49: 20", "20", "20", "0", "-5", "0", "15"])
         self.assertNotIn("НЕ СХОДИТСЯ", rep)
         self.assertEqual(changes_since(self.t.state, "builder"), ([], []))  # not an owner action
 

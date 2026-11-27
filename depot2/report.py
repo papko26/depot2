@@ -64,7 +64,7 @@ def turns_cell(rec, costs, cid):
 
 def stake_rows(rec, entries):
     """auto refunds, whenever they were written: `refund --auto` applies them to an older round
-    later), legacy (an old round's think transactions, net), left = before − staked + legacy +
+    later), legacy (an old round's think transactions, net), left = before - staked + legacy +
     back, the tx ids, and ok. ok says the ledger agrees: the stakes (and an old round's thinks)
     balance after its stakes (an older round).
     """
@@ -496,7 +496,7 @@ def _locks_section(rec):
 
 
 def _signed(n):
-    return "0" if not n else "%s%d" % ("+" if n > 0 else "−", abs(n))  # noqa: UP031
+    return "0" if not n else "%s%d" % ("+" if n > 0 else "-", abs(n))  # noqa: UP031
 
 
 def _owner_what(e):

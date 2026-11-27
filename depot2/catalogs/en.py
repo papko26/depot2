@@ -19,7 +19,7 @@ MESSAGES = {
                          "working to meet the condition); it holds until `stack unlock --met` or `--owner`"),
 
     # --- the priority (priority.py) ---
-    "priority.means": ("priority 1–10 (10 is the most important, 5 by default): `depot2 priority ID N` or `--priority N` "
+    "priority.means": ("priority 1-10 (10 is the most important, 5 by default): `depot2 priority ID N` or `--priority N` "
                        "on add/set; a free slot takes by the train's priority, then the car's, on a tie in order"),
 
     # --- the author's note (README's first lines; the end of `depot2 --help`) ---
@@ -53,7 +53,7 @@ MESSAGES = {
     "decisions.footer": "`depot2 decide` writes them; this command only reads (`--grep WORDS`, `--limit N`, `--json`).",
     # --- the effort (effort.py) ---
     "effort.legend": ("Effort — %UW, a share of the usage window; in brackets MTok, million tokens of «input "
-                      "equivalent» (input ×1, cache write ×1.25, cache read ×0.1, output ×5). 1%UW ≈ {per} MTok "
+                      "equivalent» (input x1, cache write x1.25, cache read x0.1, output x5). 1%UW ≈ {per} MTok "
                       "(usage.mtok_per_pct). Sizes, %UW: {sizes}."),
     # --- seeding (seed.py): a spec and the first portrait's prompt ---
     "seed.spec": "# {name} («{full}»)\n\nFrom the team's brief ({brief}).\n\n{spec}\n",
@@ -91,7 +91,7 @@ MESSAGES = {
     "migrate.queue.wishes": "wishes",
     "migrate.queue.think": "«to think over»",
     "migrate.queue.todo": "todo",
-    "migrate.head_4": ("depot data migration: schema 3 → 4 (the priority 1–10 on trains and cars in any of their "
+    "migrate.head_4": ("depot data migration: schema 3 → 4 (the priority 1-10 on trains and cars in any of their "
                        "forms: a train, a track's car, a stack and a team stack object, a wish, a to-think entry, a "
                        "todo; 10 — the most important)"),
     "migrate.queue_prio": "{queue}: prio → priority on {n} (high 8, normal 5, later 2; no word — 5)",
@@ -304,7 +304,7 @@ MESSAGES = {
     "cli.question_closed": "{car}: question {n} closed: {answer}",
     "cli.project_required": "{car}: the project is required: {why}",
     "cli.project_required_off": "{car}: the mark «project required» is lifted",
-    "cli.priority_show": "{ref}: priority {cell} ({min}–{max}, 10 is the most important; {default} by default)",
+    "cli.priority_show": "{ref}: priority {cell} ({min}-{max}, 10 is the most important; {default} by default)",
     "cli.agent_started": ("{id} — {role}, {car} ({by}): now start the agent; its run id — depot2 agents attach {id} "
                           "<run id>"),
     "cli.agent_attached": "{id} → {agent} ({path}): {state}, turns {turns}, spent {spent}",
@@ -476,7 +476,7 @@ MESSAGES = {
     "stages.questions": "Questions:",
     "stages.question_answered": "- {n}. {q} — answered ({at}): {answer}",
     "stages.question_open": "- {n}. {q} — open",
-    "stages.show_priority": "Priority: {p} (1–10, 10 is the most important; `depot2 priority {ref} N`).",
+    "stages.show_priority": "Priority: {p} (1-10, 10 is the most important; `depot2 priority {ref} N`).",
     "stages.show_track": "Track: {track} {title}. Train: {train}.",
     "stages.show_old_ref": "{ref} is an old ref: the car moved, now {now}.",
     "stages.show_moved": "Moved: {src} → {to} ({at}{why}).",
@@ -974,7 +974,7 @@ MESSAGES = {
     "queues.ov.principles_count": "{n} active",
     "queues.ov.heading": "## Queues ({ts})",
     "queues.ov.header": "| Queue | Open | Priority | On top | Command |",
-    "queues.ov.priority_legend": ("Priority: the open ones by priority 1–10 (P10 is the most important; `depot2 priority "
+    "queues.ov.priority_legend": ("Priority: the open ones by priority 1-10 (P10 is the most important; `depot2 priority "
                                   "ID N`); «On top» — by it too; for the principles «On top» is the principles of the "
                                   "third check (③, `depot2 principles checks`)."),
     "queues.ov.stages": ("The cars' stages (the stack, the trains' open cars, wishes, «to think over»; without the "
@@ -988,7 +988,7 @@ MESSAGES = {
     "extras.order.done": "run, waiting for a decision",
     "extras.order.settled": "settled",
     "extras.no_topic": "no topic",
-    "extras.questions_count": "{n} questions, {lo}–{hi} needed",
+    "extras.questions_count": "{n} questions, {lo}-{hi} needed",
     "extras.quorum_majority": "more than half «yes»: {need} of {n} (who did not vote — «no»)",
     "extras.quorum_unanimous": "the whole team takes part in round 2 and everyone says «yes»",
     "extras.no_part": "{who} did not take part in round 2",
@@ -1122,7 +1122,7 @@ MESSAGES = {
     "marks.format": "`- 20: ok — how it is done`, `- 26: n/a`, `- 4: violated — what; instead …`",
     "marks.legend": ("Marks by the principles (`depot2 tracks car check <car>`): priority 1 is the gates (a line for "
                      "each, none «violated»: else `stack post` and `merge add` refuse); priority 2 is the car's score: "
-                     "ok +1, n/a 0, violated −1; no line — «not checked». The source: the section «{section}» of the "
+                     "ok +1, n/a 0, violated -1; no line — «not checked». The source: the section «{section}» of the "
                      "PR's body."),
     "marks.gate_missing": "no line — {labels}",
     "marks.gate_bad": "violated — {labels}",
@@ -1182,7 +1182,7 @@ MESSAGES = {
     "in.principles.section.checks": r"checks|check|how we check",
     "in.principles.section.voice": r"voice|texts",
     "principles.means.1": "a line for each, and none «violated» — else the car goes neither to acceptance nor to the merge",
-    "principles.means.2": "ok +1, n/a 0, violated −1; no line — «not checked»",
+    "principles.means.2": "ok +1, n/a 0, violated -1; no line — «not checked»",
     "principles.banner": ("> Rendered from the depot (`depot2 principles render`); change it through `depot2 principles` "
                           "(add, set, replace, drop), not by hand: between renders the file is read-only."),
     "principles.banner_words": "Rendered from the depot",
@@ -1490,7 +1490,7 @@ MESSAGES = {
     "prompts.brainstorm": (
         "`brainstorm_proposal` (optional, else leave it empty): the team may call a brainstorm on any topic "
         "itself, without the owner calling it; the owner gets a ballot from it. Give the topic (topic), "
-        "why now (why) and {qmin}–{qmax} questions (questions). The fee: {fee_init} tokens from the initiator and "
+        "why now (why) and {qmin}-{qmax} questions (questions). The fee: {fee_init} tokens from the initiator and "
         "{fee_other} from each of the others; the fee does not come back. The brainstorm takes place only with the "
         "quorum in round 2 ({quorum}) and only if everyone can pay from the balance after the stakes come back. One "
         "brainstorm per round."),
@@ -1705,10 +1705,10 @@ MESSAGES = {
     "report.calls_approx": ("Calls {calls}, turns {turns} (with tools {tool_turns}), {secs} s; tokens {total}: input "
                             "{input}, cache read {cache_read}, cache write {cache_write}, output {output} (≈: the killed "
                             "calls counted from their stream)."),
-    "report.spend": ("Spent {spent}: the calls' tokens by weight (input ×1, cache write ×1.25, cache read ×0.1, output "
-                     "×5; 1%UW ≈ {per} MTok). Usage window: {window}. Model {models}, effort {effort}."),
-    "report.spend_by_cost": ("Spent {spent}: the calls' tokens by weight (input ×1, cache write ×1.25, cache read ×0.1, "
-                             "output ×5; 1%UW ≈ {per} MTok); {by_cost} calls without tokens by the CLI's estimate / "
+    "report.spend": ("Spent {spent}: the calls' tokens by weight (input x1, cache write x1.25, cache read x0.1, output "
+                     "x5; 1%UW ≈ {per} MTok). Usage window: {window}. Model {models}, effort {effort}."),
+    "report.spend_by_cost": ("Spent {spent}: the calls' tokens by weight (input x1, cache write x1.25, cache read x0.1, "
+                             "output x5; 1%UW ≈ {per} MTok); {by_cost} calls without tokens by the CLI's estimate / "
                              "usage.usd_per_mtok. Usage window: {window}. Model {models}, effort {effort}."),
     "report.na": "n/a",
     "report.effort_default": "default",
@@ -1777,14 +1777,14 @@ MESSAGES = {
     "report.bs_run": ("- Topic: `{file}`. Run (the orchestrator, right after this round): "
                       "`depot2 round --kind brainstorm --brainstorm {id}`"),
     "report.orders_head": "## Orders",
-    "report.order_placed": ("- {id} {name} (−{price} tokens): `{command}`; seeds {seeds}; {hardware}; threshold: "
+    "report.order_placed": ("- {id} {name} (-{price} tokens): `{command}`; seeds {seeds}; {hardware}; threshold: "
                             "{threshold}; forecast: {forecast}; why: {why}."),
     "report.order_refused": "- refused, {name}: `{command}` — {reason}.",
     "report.orders_shown": "- results in this round's bundle: {ids}.",
     "report.locks_head": "## Locks",
     "report.locks_ran": "The lock pass (round 3) ran: {n} calls. A lock: {means}.",
     "report.locks_skipped": "The lock pass (round 3) skipped: {why}.",
-    "report.lock_placed": ("- {id} {name} on {object} «{title}» (−{price} tokens): condition: {condition}; "
+    "report.lock_placed": ("- {id} {name} on {object} «{title}» (-{price} tokens): condition: {condition}; "
                            "why: {why}."),
     "report.lock_refused": "- refused, {name} — {reason}.",
     "report.lock_refused_obj": "- refused, {name}: {object} — {reason}.",
@@ -1795,8 +1795,8 @@ MESSAGES = {
     "report.ow_payout": "payout +{n}",
     "report.ow_forfeit": "stake {n} not returned",
     "report.ow_settle": "order {order}: {outcome}, {amount}",
-    "report.ow_fine": "fine −{n}",
-    "report.ow_fine_part": "fine −{n} of {asked} (there was no more)",
+    "report.ow_fine": "fine -{n}",
+    "report.ow_fine_part": "fine -{n} of {asked} (there was no more)",
 
     # === the web view ===
     # --- the server (webui.py) ---
@@ -2161,7 +2161,7 @@ MESSAGES = {
     "web.hist.off_route": "off the route",
     "web.hist.return": "defect: back to build",
     "web.marks.legend": ("priority 1: gates (each has a line, none is \"violated\"); priority 2: score: ok +1, n/a "
-                         "0, violated −1"),
+                         "0, violated -1"),
     "web.marks.counts": "ok {ok} · n/a {na} · violated {bad} · not checked {none}",
     "web.marks.h_principle": "principle",
     "web.marks.h_priority": "priority",

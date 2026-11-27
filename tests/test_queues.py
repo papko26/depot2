@@ -186,7 +186,7 @@ class TeamStackTest(QBase):
         self.assertTrue(os.path.exists(os.path.join(self.t.dir, "team-stack.json")))
         self.assertEqual(ts.command(ts.get("tm-0001")),
                          f"depot2 round --kind discuss --input {topic} --only keeper --item tm-0001 --dry-run")
-        # the spend from the round's own tokens: 10 + 200000 × 1.25 + 3e6 × 0.1 + 40000 × 5 = 0.75 MTok
+        # the spend from the round's own tokens: 10 + 200000 x 1.25 + 3e6 x 0.1 + 40000 x 5 = 0.75 MTok
         ts.record_round("tm-0001", "2015-11-06-discuss-solo-keeper", {"total_usd": 0.4321, "tokens": {
             "input": 10, "cache_write": 200000, "cache_read": 3000000, "output": 40000, "total": 3240010}})
         md = TeamStack(self.t.state, self.t.cfg).md()

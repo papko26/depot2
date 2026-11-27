@@ -197,12 +197,12 @@ def _one_pr(b, cfg, n, gh):
             "- state: {}{}; {} → {}; head {}".format(
                 pr.get("state"), " (draft)" if pr.get("isDraft") else "", pr.get("headRefName"),
                 pr.get("baseRefName"), pr.get("headRefOid")),
-            "- {} files, +{} −{}".format(pr.get("changedFiles", len(files)), pr.get("additions"), pr.get("deletions")),
+            "- {} files, +{} -{}".format(pr.get("changedFiles", len(files)), pr.get("additions"), pr.get("deletions")),
             "- {}".format(pr.get("url", ""))]
     b.add(t("bundle.pr_title", n=pr["number"]), "\n".join(head), 2000, t("bundle.pr_title_what"))
     b.add(t("bundle.pr_body", n=pr["number"]), pr.get("body") or t("bundle.empty"), bc["pr_body_max_chars"] * 4,
           t("bundle.pr_body_what", n=pr["number"]))
-    lines = ["- {} (+{} −{})".format(f.get("path"), f.get("additions"), f.get("deletions")) for f in files]
+    lines = ["- {} (+{} -{})".format(f.get("path"), f.get("additions"), f.get("deletions")) for f in files]
     b.add(t("bundle.pr_files", n=pr["number"], count=len(files)), "\n".join(lines) or t("prompts.none"),
           bc["context_max_chars"], t("bundle.pr_files_what"))
 

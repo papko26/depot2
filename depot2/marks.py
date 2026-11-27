@@ -51,8 +51,8 @@ RE_SUBLABEL = re.compile(r"(?i){}".format(rx("in.marks.sublabel")))  # a sub-hea
 RE_HEAD = re.compile(r"^\s{0,3}(#{1,6})\s+(.*?)\s*#*\s*$")
 RE_BOLD = re.compile(r"^\s{0,3}\*\*(.+?)\*\*")
 RE_FENCE = re.compile(r"^\s{0,3}(```|~~~)")
-RE_ITEM = re.compile(r"^\s*[-*+]\s+(?:{}\s+)?(\d+)((?:[a-z]|{})?)\b\s*[:.)—–-]?\s*(.*)$".format(rx("in.marks.principle"), rx("in.marks.suffix_a")), re.I)
-RE_MARK = re.compile(r"^({}|{}|{})(?![\w/])\s*[—–:,.;-]*\s*(.*)$".format(rx("in.marks.na"), rx("in.marks.bad"), rx("in.marks.ok")), re.I)
+RE_ITEM = re.compile(r"^\s*[-*+]\s+(?:{}\s+)?(\d+)((?:[a-z]|{})?)\b\s*[:.)—\u2013-]?\s*(.*)$".format(rx("in.marks.principle"), rx("in.marks.suffix_a")), re.I)
+RE_MARK = re.compile(r"^({}|{}|{})(?![\w/])\s*[—\u2013:,.;-]*\s*(.*)$".format(rx("in.marks.na"), rx("in.marks.bad"), rx("in.marks.ok")), re.I)
 
 
 class MarksError(ValueError):
@@ -148,7 +148,7 @@ def by_hand(old, label, mark, text=None, at=None):
 # --- the verdict: the gates and the score ----------------------------------------------------------------------
 
 def signed(n):
-    return "+%d" % n if n > 0 else ("−%d" % -n if n < 0 else "0")  # noqa: UP031
+    return "+%d" % n if n > 0 else ("-%d" % -n if n < 0 else "0")  # noqa: UP031
 
 
 def evaluate(marks, plist):

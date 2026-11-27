@@ -89,7 +89,7 @@ class SetTest(PBase):
         self.assertEqual([e["priority"] for q in (Wishes, Think, Todo) for e in q(self.t.state).entries()], [3, 5, 9])
         # out of range: the parser's error, nothing written
         before = slurp(self.t.state.path("tracks.json"))
-        self.assertIn("priority is 1–10", self.refused("tracks", "car", "set", "tr-0001:2", "--priority", "11"))
+        self.assertIn("priority is 1-10", self.refused("tracks", "car", "set", "tr-0001:2", "--priority", "11"))
         self.assertIn("priority is a whole number", self.refused("todo", "set", "td-0001", "--prio", "urgent"))
         self.assertEqual(slurp(self.t.state.path("tracks.json")), before)
         # the tables
@@ -104,7 +104,7 @@ class SetTest(PBase):
         out = self.ok("stack", "--md")
         self.assertIn("| № | Где | Задача | Приоритет | Ветка / PR |", out)
         self.assertIn("| 1 | очередь | st-0001 чужой | P10 |", out)
-        self.assertIn("Приоритет: приоритет 1–10 (10 — важнее всего", out)
+        self.assertIn("Приоритет: приоритет 1-10 (10 — важнее всего", out)
         self.assertIn("| 1 | очередь | tm-0001 вопрос команде | P1 |", self.ok("tstack", "--md"))
         self.assertIn("| 1 | td-0001 хвост | ", self.ok("todo", "--md"))
         self.assertIn("| P9 | открыт |", self.ok("todo", "--md"))
@@ -112,7 +112,7 @@ class SetTest(PBase):
         self.assertIn("| Хотелки | 1 | P3 1 |", self.ok("queues", "--md"))
         self.assertEqual([r["priority"] for r in json.loads(self.ok("queues", "--json"))][-4:-1],
                          [{"3": 1}, {"5": 1}, {"9": 1}])
-        self.assertIn("Приоритет: P7 (1–10, 10 — важнее всего; `depot2 priority tr-0001:1 N`).",
+        self.assertIn("Приоритет: P7 (1-10, 10 — важнее всего; `depot2 priority tr-0001:1 N`).",
                       self.ok("car", "show", "tr-0001:1"))
         self.assertEqual(json.loads(self.ok("car", "show", "wl-0001", "--json"))["priority"], 3)
         self.assertEqual(json.loads(self.ok("tracks", "--json"))["tracks"][0]["cars"][0]["priority"], 7)
@@ -136,10 +136,10 @@ class SetTest(PBase):
         for ref, n in (("katalog", 9), ("tr-0001:1", 8), ("st-0001", 7), ("tm-0001", 6), ("wl-0001", 4),
                        ("th-0001", 3), ("td-0001", 2)):
             self.assertIn(": приоритет P5 → P%d" % n, self.ok("priority", ref, str(n)))  # noqa: UP031
-            self.assertIn("%s: приоритет P%d (1–10" % (ref, n), self.ok("priority", ref))  # noqa: UP031
+            self.assertIn("%s: приоритет P%d (1-10" % (ref, n), self.ok("priority", ref))  # noqa: UP031
         self.assertIn("приоритет P2 (был тот же)", self.ok("priority", "td-0001", "2"))
         self.assertIn("трек (тема)", self.refused("priority", "tr-0001", "5"))
-        self.assertIn("priority is 1–10", self.refused("priority", "wl-0001", "0"))
+        self.assertIn("priority is 1-10", self.refused("priority", "wl-0001", "0"))
         self.assertIn("no train nope", self.refused("priority", "nope", "5"))
         # a car and its object: one car — whichever is named, both get it
         out = self.ok("tracks", "car", "stack", "tr-0001:1")

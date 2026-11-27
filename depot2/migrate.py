@@ -272,7 +272,7 @@ def queue_priority(entries):
 
 
 def step_priority(state, dry_run=False, planned=False):
-    """Schema 3 → 4: the priority 1–10 (the module's head). planned: a dry run of the steps before came first (the
+    """Schema 3 → 4: the priority 1-10 (the module's head). planned: a dry run of the steps before came first (the
     tracks and the trains on the disk are not today's yet)."""
     L = [t("migrate.head_4")]
     rows, counts = [], {}

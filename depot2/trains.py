@@ -397,7 +397,7 @@ class Trains:
 
     def set(self, name, new_name=None, title=None, after=None, no_after=False, not_before=None, owner=None, note=None,
             slots=None, est_mtok=None, clear_est=False, at=None, add_note=None, priority=None):
-        """new_name: the train's new name; the other trains' start rules that name it follow. priority: 1–10 — a free
+        """new_name: the train's new name; the other trains' start rules that name it follow. priority: 1-10 — a free
         slot asks the trains by it (`next`)."""
         tn = self.get(name)
         changed = {}

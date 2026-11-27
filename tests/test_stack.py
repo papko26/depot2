@@ -91,7 +91,7 @@ class StackTest(Base):
         self.assertIn("| С2 | слот | свободен | | | | | | | |", md)
         self.assertIn("| **Очередь — ждёт слота (1/3)** | | | | | | | | | |", md)
         self.assertIn("| 1 | очередь | st-0002 Обложки | P5 | — | ждёт слота | нет | — | st-0001 | lk-0001 Копилка: ответ "
-                      "владельца про лимиты (−10) |", md)
+                      "владельца про лимиты (-10) |", md)
         self.assertLess(md.index("в слотах"), md.index("ждёт слота"))
 
     def test_the_effort_column(self):
@@ -255,7 +255,7 @@ class LockPassTest(Base):
         self.assertEqual(seen, {"builder": 10, "painter": 15, "counter": 10, "chronicler": 15, "keeper": 15})
         r3 = [c[3] for c in runner.calls if c[1] == "r3"]
         self.assertEqual(r3[0].max_tool_turns, 2)
-        self.assertEqual(r3[0].budget_usd, 1.50)  # lock.budget_mtok 0.6 × usage.usd_per_mtok 2.5
+        self.assertEqual(r3[0].budget_usd, 1.50)  # lock.budget_mtok 0.6 x usage.usd_per_mtok 2.5
         self.assertEqual(r3[0].add_dirs, [self.snaps[0]])
         self.assertIn("У тебя 15 ток.", next(c.user for c in r3 if "keeper" in c.call_id))
         system = slurp(r3[0].system_path)
@@ -271,9 +271,9 @@ class LockPassTest(Base):
         self.assertEqual((lk["id"], lk["by"], lk["round"], lk["tx"]), ("lk-0001", "keeper", r["id"], locks[0]["id"]))
         rep = r["report"]
         self.assertIn("Проход замков (раунд 3) прошёл: 5 вызовов.", rep)
-        self.assertIn("- lk-0001 Копилка на st-0001 «Импорт 3» (−10 ток.): условие: тест «isbn-dedup-cap» зелёный; "
+        self.assertIn("- lk-0001 Копилка на st-0001 «Импорт 3» (-10 ток.): условие: тест «isbn-dedup-cap» зелёный; "
                       "зачем: иначе каталог двоится.", rep)
-        self.assertEqual(self.rows(rep)["Копилка"], ["Копилка", "20", "—", "0", "0", "−5", "0", "−10", "5"])
+        self.assertEqual(self.rows(rep)["Копилка"], ["Копилка", "20", "—", "0", "0", "-5", "0", "-10", "5"])
         self.assertIn("замки 10 ток. (не возвращаются)", rep)
         self.assertNotIn("НЕ СХОДИТСЯ", rep)
         self.assertEqual(changes_since(self.t.state, "keeper"), ([], []))  # the team's act

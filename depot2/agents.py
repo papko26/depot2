@@ -83,7 +83,7 @@ def parse_usage(text):
     if pct or v > 1:
         v = v / 100.0
     if not 0 <= v <= 1:
-        raise AgentError(f"--usage is the usage window's share, 0–100 %, got {text!r}")
+        raise AgentError(f"--usage is the usage window's share, 0-100 %, got {text!r}")
     return v
 
 

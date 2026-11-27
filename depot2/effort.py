@@ -1,7 +1,7 @@
 """The effort unit, everywhere: MTok, printed as a share of a usage window.
 
-- **MTok** is millions of price-weighted input-equivalent tokens: input ×1, cache write ×1.25, cache read ×0.1,
-  output ×5. It is what the depot stores, and every limit of the config is in it.
+- **MTok** is millions of price-weighted input-equivalent tokens: input x1, cache write x1.25, cache read x0.1,
+  output x5. It is what the depot stores, and every limit of the config is in it.
 - **%UW** is MTok / `usage.mtok_per_pct`: the share of the usage window the project budgets with. A car's size
   (`usage.sizes`: doc, S, M, L) is in %UW.
 - A call that reports a cost but no tokens is converted at `usage.usd_per_mtok`.
@@ -120,7 +120,7 @@ def check_size(size, cfg):
 
 
 def parse_mtok(text):
-    """'12', '12.5', '10-13' / '10–13' (a range) -> 12.0 / [10.0, 13.0]; None/'none' -> None."""
+    """'12', '12.5', '10-13' / '10-13' (a range) -> 12.0 / [10.0, 13.0]; None/'none' -> None."""
     if text is None or isinstance(text, (int, float)):
         return None if text is None else float(text)
     if isinstance(text, (list, tuple)):
@@ -128,7 +128,7 @@ def parse_mtok(text):
     t = str(text).strip().replace(",", ".")
     if t.lower() in ("", "none", "-", "—"):
         return None
-    m = re.match(r"^(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)$", t)
+    m = re.match(r"^(\d+(?:\.\d+)?)\s*[-\u2013]\s*(\d+(?:\.\d+)?)$", t)
     if m:
         return [float(m.group(1)), float(m.group(2))]
     try:
@@ -166,7 +166,7 @@ def fmt(mtok, cfg):
     k = per_pct(cfg)
     if isinstance(mtok, (list, tuple)):
         lo, hi = mtok
-        return f"{_small(lo / k, 2)}–{_small(hi / k, 2)}%UW ({_mt(lo)}–{_mt(hi)} MTok)"
+        return f"{_small(lo / k, 2)}-{_small(hi / k, 2)}%UW ({_mt(lo)}-{_mt(hi)} MTok)"
     return f"{_small(mtok / k, 2)}%UW ({_mt(mtok)} MTok)"
 
 

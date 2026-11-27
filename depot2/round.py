@@ -913,7 +913,7 @@ def _print_plan(out, cfg, kind, b, points, r1_prompts, balances, sch1, readable,
         out(f"  (read_dirs: {d} does not exist, left out)")
     out("  deny rules on top: %d (depot2 config lists them)" % len(cfg["deny_read"]))  # noqa: UP031
     out(f"planned calls, one after another (caps in %UW (MTok), 1%UW = {effort.per_pct(cfg):g} MTok; the CLI's --max-budget-usd "
-        f"gets the cap × usage.usd_per_mtok {effort.usd_per_mtok(cfg):g}):")
+        f"gets the cap x usage.usd_per_mtok {effort.usd_per_mtok(cfg):g}):")
     n = len(r1_prompts)
     out("  round 1: %d call%s, up to %d tool turns each, cap %s, %ds"  # noqa: UP031
         % (n, "" if n == 1 else "s", f["max_tool_turns_r1"], effort.fmt(f["budget_mtok_r1"], cfg), f["timeout_s"]))

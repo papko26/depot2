@@ -55,7 +55,7 @@ class SoloRoundTest(Base):
                       "журнал, выплаты, решения и рефлексия — как в полном раунде, только для неё. Капы — на одного: "
                       "0.076%UW (0.76 MTok), 2 вызова.", rep)
         self.assertEqual(list(self.rows(rep, "## Команда").keys()), ["Копилка"])
-        self.assertEqual(self.rows(rep), {"Копилка": ["Копилка", "20", "B49: 3, X1: 2", "5", "5", "0", "−5", "−10", "5"]})
+        self.assertEqual(self.rows(rep), {"Копилка": ["Копилка", "20", "B49: 3, X1: 2", "5", "5", "0", "-5", "-10", "5"]})
         self.assertIn("- Копилка: согласна (ставка токенов: 3): дорого, но да", rep)
         self.assertNotIn("Строитель", rep)
         self.assertNotIn("## Дебаты", rep)
@@ -156,7 +156,7 @@ class SoloCliTest(unittest.TestCase):
         item = json.loads(self.team("tstack", "--json").stdout)["in_slots"][0]
         self.assertEqual((item["id"], item["round"]), ("tm-0001", rid))
         self.assertGreater(item["cost_usd"], 0)  # the CLI's ≈$, kept as data
-        # from the round's own tokens (costs.json): 3 + 100 × 1.25 + 900 × 0.1 + 50 × 5 = 468 tokens
+        # from the round's own tokens (costs.json): 3 + 100 x 1.25 + 900 x 0.1 + 50 x 5 = 468 tokens
         self.assertEqual(item["spent_mtok"], 0.000468)
         self.assertIn(f"tm-0001: round {rid}, 0.000047%UW (0.00047 MTok)", out)
         self.assertNotIn("≈$", out)
