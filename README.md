@@ -501,6 +501,21 @@ No test reaches GitHub, a runner or the network: `tests/` has stand-ins for `gh`
 through `$DEPOT2_CONFIG`). `tests/test_demo.py` builds the demo depot and reads it back. `tests/test_cli_docs.py`
 checks that every command this README names exists, and that the «Commands» block above names every command.
 
+### Development checks
+
+From the repository root, use uv to create `.venv` and install the project and development tools from `uv.lock`.
+
+```sh
+make install      # uv sync --locked
+make check        # run lint, typecheck, and test
+```
+
+Run checks individually with `make lint`, `make typecheck`, or `make test`.
+`make format` formats all Python files under the repository with Ruff. Run
+`uv run --locked ruff format path/to/file.py` on files you edit, or add `--check` to preview which files need formatting.
+
+When changing dependencies in `pyproject.toml`, run `uv lock` and commit the updated `uv.lock` alongside it.
+
 ## Layout
 
 ```

@@ -23,3 +23,6 @@ packages = ["depot2", "depot2.catalogs", "depot2.executors"]
 
 [tool.setuptools.package-data]
 depot2 = ["web/*"]
+
+[dependency-groups]
+dev = ["ruff==0.17.6", "mypy==1.14.1"]
