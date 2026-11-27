@@ -5,6 +5,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from pathlib import Path
 
 from helpers import slurp
 from test_board import GateBase
@@ -275,7 +276,7 @@ class DepotBase(GateBase):
             os.environ["FAKE_GH_STATE"] = self.env0
         for d, _, names in os.walk(self.files):
             for n in names:
-                os.chmod(os.path.join(d, n), 0o644)
+                Path(d, n).chmod(0o644)
         shutil.rmtree(self.files, ignore_errors=True)
         super().tearDown()
 

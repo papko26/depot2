@@ -8,6 +8,7 @@ import subprocess
 import sys
 import tempfile
 import unittest
+from pathlib import Path
 
 from helpers import HERE, TempState
 
@@ -69,7 +70,7 @@ class MergeBase(unittest.TestCase):
         os.makedirs(b)
         with open(os.path.join(b, "gh"), "w") as f:
             f.write(f'#!/bin/sh\nexec {sys.executable} -S {FAKE_GH} "$@"\n')
-        os.chmod(os.path.join(b, "gh"), 0o755)
+        Path(b, "gh").chmod(0o755)
         os.symlink(FAKE_GIT, os.path.join(b, "git"))
         self.bare = os.path.join(self.tmp, "origin.git")
         self.seed = os.path.join(self.tmp, "seed")

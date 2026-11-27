@@ -16,6 +16,7 @@ import os
 import re
 import stat
 from collections.abc import Iterator
+from pathlib import Path
 
 from . import i18n
 from .i18n import rx, t
@@ -400,8 +401,9 @@ class Principles(Queue):
         if old != text:
             atomic_write(path, text)
         if locked:
-            mode = os.stat(path).st_mode
-            os.chmod(path, mode & ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH))
+            target = Path(path)
+            mode = target.stat().st_mode
+            target.chmod(mode & ~(stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH))
         return path, old != text
 
     # --- the views ---------------------------------------------------------------------------------

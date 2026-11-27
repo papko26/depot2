@@ -11,6 +11,7 @@ ballots.json        the ballot queue: the rounds' points waiting for the owner, 
 
 import datetime
 import os
+from pathlib import Path
 
 from . import characters, effort, i18n, stages
 from . import priority as pri
@@ -203,7 +204,9 @@ class Stack:
         clears a car's live link, a car stacked again gets a new object), the live link winning.
         """
         paths = [self.state.path("tracks.json"), self.state.path("tracks-history.jsonl")]
-        stamp = tuple((os.stat(p).st_mtime_ns, os.stat(p).st_size) if os.path.exists(p) else None for p in paths)
+        stamp = tuple(
+            (Path(p).stat().st_mtime_ns, Path(p).stat().st_size) if os.path.exists(p) else None for p in paths
+        )
         if self._links and self._links[0] == stamp:
             return self._links[1]
         data = read_json(paths[0]) or {}

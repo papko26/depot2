@@ -6,6 +6,7 @@ import shutil
 import stat
 import tempfile
 import unittest
+from pathlib import Path
 
 from helpers import BRIEF_TEXT, GATES_ALL, HERE, slurp
 from test_board import GateBase
@@ -60,7 +61,7 @@ def write(d, name, text):
 
 
 def writable(path):
-    return bool(os.stat(path).st_mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH))
+    return bool(Path(path).stat().st_mode & (stat.S_IWUSR | stat.S_IWGRP | stat.S_IWOTH))
 
 
 class PBase(Base):
@@ -71,7 +72,7 @@ class PBase(Base):
     def tearDown(self):
         for d, _, names in os.walk(self.files):
             for n in names:
-                os.chmod(os.path.join(d, n), 0o644)
+                Path(d, n).chmod(0o644)
         shutil.rmtree(self.files, ignore_errors=True)
         super().tearDown()
 
@@ -88,7 +89,7 @@ class ImportTest(PBase):
     def round_trip(self, src):
         path = os.path.join(self.files, "PRINCIPLES.md")
         shutil.copy(src, path)
-        os.chmod(path, 0o644)
+        Path(path).chmod(0o644)
         original = "\n".join(strip_banner(slurp(path))) + "\n"  # a file rendered before carries the banner already
         out = self.ok("principles", "import", path, "--dry-run")
         self.assertIn("DRY RUN: would import", out)
@@ -148,7 +149,7 @@ class ImportTest(PBase):
         self.assertEqual(p.data["next"], 19)
         self.assertEqual(p.target(), path)
         # a second import of the same file is refused, the depot as it was
-        os.chmod(path, 0o644)
+        Path(path).chmod(0o644)
         before = slurp(os.path.join(self.t.dir, "principles.json"))
         rc, _, err = self.team("principles", "import", path)
         self.assertEqual(rc, 1)
@@ -187,7 +188,7 @@ class ImportTest(PBase):
         )
         self.assertIn("## Основа", original.splitlines())
         self.assertIsNone(p.drift())  # rendered: no hand edit
-        os.chmod(path, 0o644)
+        Path(path).chmod(0o644)
         shutil.copy(FIXTURE_RENDERED, path)
         self.assertIsNone(p.drift())
         self.assertIn("rendered from the depot", self.ok("principles", "render"))
@@ -385,7 +386,7 @@ class QueueTest(PBase):
         )
 
     def test_the_file_is_never_edited_by_hand(self):
-        os.chmod(self.path, 0o644)
+        Path(self.path).chmod(0o644)
         write(self.files, "PRINCIPLES.md", slurp(self.path).replace("Без слов.", "Правка руками."))
         rc, _, err = self.team("principles", "set", "pc-0001", "--note", "x")
         self.assertEqual(rc, 1)
@@ -459,7 +460,7 @@ class QueueTest(PBase):
             self.assertIn(why, err)
         self.assertEqual(len([h for h in self.pc().history() if h["event"] == "head"]), 2)
         # a hand edit is refused, as with every command, until --overwrite
-        os.chmod(self.path, 0o644)
+        Path(self.path).chmod(0o644)
         write(self.files, "PRINCIPLES.md", slurp(self.path).replace("Абзац два.", "Правка руками."))
         rc, _, err = self.team("principles", "head", "--text", "Абзац три.")
         self.assertEqual(rc, 1)
@@ -794,7 +795,7 @@ class BundleTest(PBase):
         self.assertNotIn("Принципы", b.text(10**6))  # none in the depot yet: nothing, nothing said cut
         path = os.path.join(self.files, "PRINCIPLES.md")
         shutil.copy(FIXTURE, path)
-        os.chmod(path, 0o644)
+        Path(path).chmod(0o644)
         self.ok("principles", "import", path)
         b = bundle.build("discuss", self.t.cfg, self.input, state=self.t.state)
         text = b.text(10**6)

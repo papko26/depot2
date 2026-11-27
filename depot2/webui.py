@@ -23,6 +23,7 @@ import threading
 import time
 import urllib.parse
 from collections.abc import Callable
+from pathlib import Path
 
 from . import i18n
 
@@ -299,7 +300,7 @@ def code_stamp(root=CODE_ROOT):
     h = hashlib.sha256()
     for f in code_files(root):
         try:
-            st = os.stat(f)
+            st = Path(f).stat()
             h.update(("%s %d %d\n" % (os.path.relpath(f, root), st.st_size, st.st_mtime_ns)).encode("utf-8"))  # noqa: UP031
         except OSError:
             h.update((f"{f} gone\n").encode())

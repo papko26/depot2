@@ -3,6 +3,7 @@ import os
 import shutil
 import sys
 import tempfile
+from pathlib import Path
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 os.environ["DEPOT2_FSYNC"] = "0"  # before depot2.store is imported; subprocesses inherit it
@@ -36,7 +37,7 @@ with open(os.path.join(NO_NET, "gh"), "w") as _f:
             sys.executable, os.path.join(HERE, "fake_gh.py")
         )
     )
-os.chmod(os.path.join(NO_NET, "gh"), 0o755)
+Path(NO_NET, "gh").chmod(0o755)
 os.environ["PATH"] = NO_NET + os.pathsep + os.environ.get("PATH", "")
 
 

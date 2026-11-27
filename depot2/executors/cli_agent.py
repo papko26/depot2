@@ -22,6 +22,7 @@ import signal
 import subprocess
 import threading
 import time
+from pathlib import Path
 from typing import TypedDict
 
 from .. import effort
@@ -441,12 +442,12 @@ def read_transcript(path, tail=10):
     """
     path = os.path.expanduser(path)
     try:
-        st = os.stat(path)
+        st = os.stat(path)  # noqa: PTH116 - preserve empty paths and trailing slashes before open()
     except OSError:
         return None
     mp = meta_path(path)
     try:
-        mst = os.stat(mp)
+        mst = Path(mp).stat()
         mkey = (mst.st_size, mst.st_mtime_ns)
     except OSError:
         mkey = None

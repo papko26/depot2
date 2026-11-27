@@ -64,8 +64,10 @@ extend-select = [
     "D204", # incorrect-blank-line-after-class
     "D208", # over-indentation
     "D209", # new-line-after-last-paragraph
+    "PTH101", # os-chmod
     "PTH102", # os-mkdir
     "PTH104", # os-rename
+    "PTH116", # os-stat
     "PTH121", # os-path-samefile
     "PTH124", # py-path
     "PTH201", # path-constructor-current-directory
