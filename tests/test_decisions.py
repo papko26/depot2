@@ -16,7 +16,7 @@ def tree_hash(root):
     for d, _, files in os.walk(root):
         for n in files:
             with Path(d, n).open("rb") as f:
-                out[os.path.relpath(os.path.join(d, n), root)] = hashlib.sha256(f.read()).hexdigest()
+                out[os.path.relpath(Path(d, n), root)] = hashlib.sha256(f.read()).hexdigest()
     return out
 
 

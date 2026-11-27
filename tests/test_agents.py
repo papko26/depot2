@@ -2,7 +2,6 @@
 
 import datetime
 import json
-import os
 import shutil
 import tempfile
 from pathlib import Path
@@ -25,11 +24,11 @@ from depot2.stack import Stack
 from depot2.store import read_json, read_jsonl
 from depot2.tracks import Tracks
 
-HERE = os.path.dirname(os.path.abspath(__file__))
+HERE = str(Path(__file__).absolute().parent)
 FIXTURES = str(Path(HERE, "transcripts"))
 DONE = "a0f1c2d3e4b5a6978"  # finished: 4 turns (one message logged twice), 0.1525 MTok
 LIVE = "b1e2d3c4f5a6b7c80"  # still running: 2 turns, 0.0265 MTok
-SUB = os.path.join("-work-depot", "sess-0001", "subagents")
+SUB = str(Path("-work-depot", "sess-0001", "subagents"))
 AT = datetime.datetime(2015, 11, 20, 12, 3, 30, tzinfo=datetime.UTC)  # 61 min after LIVE's last line
 
 
@@ -68,7 +67,7 @@ class AgentsBase(Base):
         )
 
     def path(self, aid):
-        return os.path.join(self.projects, SUB, f"agent-{aid}.jsonl")
+        return str(Path(self.projects, SUB, f"agent-{aid}.jsonl"))
 
     def car(self, ref):
         return Tracks(self.t.state, self.t.cfg).car(ref)[1]
@@ -94,7 +93,7 @@ class StartGateTest(AgentsBase):
         self.assertIn("depot2 agents start tr-0001:0 --role plan --force --why «…»", err)
         rc, _, err = self.team("agents", "start", "tr-0001:1", "--role", "mergefix", "--usage", "0.5")
         self.assertIn("роль «починка к мерджу»: вагон на этапе «эскиз», а роль берёт этапы: «приёмка», «на путях»", err)
-        self.assertFalse(os.path.exists(self.t.state.path("agents.json")))  # nothing written by a refusal
+        self.assertFalse(Path(self.t.state.path("agents.json")).exists())  # nothing written by a refusal
         # the usage window: no reading, no pass; at or over usage.stop_at, no pass
         rc, _, err = self.team("agents", "start", "tr-0001:0", "--role", "sketch")
         self.assertEqual(rc, 1)
@@ -402,7 +401,7 @@ class SpendTest(AgentsBase):
         self.start("tr-0001:2", "sketch")
         self.team("agents", "attach", "ag-0001", LIVE)
         self.assertIsNone(self.car("tr-0001:2").get("spent_mtok"))
-        meta = os.path.join(self.projects, SUB, f"agent-{LIVE}.meta.json")
+        meta = str(Path(self.projects, SUB, f"agent-{LIVE}.meta.json"))
         with Path(meta).open("w") as f:
             json.dump({"finished": True}, f)
         rc, out, err = self.team("agents")

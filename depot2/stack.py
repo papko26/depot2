@@ -1032,7 +1032,7 @@ class Ballots:
             "round": rec["id"],
             "title": title,
             "kind": rec["kind"],
-            "report": os.path.join(self.state.rounds_dir(), rec["id"], "report.md"),
+            "report": str(Path(self.state.rounds_dir(), rec["id"], "report.md")),
             "created": rec.get("finished") or rec.get("created"),
             "status": "waiting",
             "at_point": None,

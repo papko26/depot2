@@ -1,7 +1,6 @@
 import argparse
 import contextlib
 import io
-import os
 import re
 import unittest
 from pathlib import Path
@@ -10,7 +9,7 @@ import helpers
 
 from depot2 import cli as team
 
-README = str(Path(os.path.dirname(helpers.HERE), "README.md"))
+README = str(Path(helpers.HERE).parent / "README.md")
 WORD = re.compile(r"^[a-z][a-z-]*(\|[a-z][a-z-]*)*$")
 
 

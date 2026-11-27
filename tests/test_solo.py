@@ -157,7 +157,7 @@ class SoloRoundTest(Base):
         self.assertIn("the lock pass (round 3): up to 1 call,", text)
         self.assertIn("not in a solo round", text)
         self.assertEqual(len([x for x in lines if "balance" in x and "system" in x]), 1)
-        self.assertFalse(os.path.isdir(self.t.state.rounds_dir()))  # nothing written
+        self.assertFalse(Path(self.t.state.rounds_dir()).is_dir())  # nothing written
 
     def test_a_full_round_is_unchanged(self):
         r, runner = self.play({("builder", "r1"): dict(ans(), brainstorm_proposal=proposal())})
@@ -187,7 +187,7 @@ class SoloCliTest(unittest.TestCase):
         self.assertIn("SOLO round: only Копилка", out)
         out = self.team("round", "--kind", "ballot", "--input", q, "--item", "tm-0001").stdout
         self.assertIn("# Команда: бюллетень, сольный раунд (Копилка)", out)
-        rid = next(d for d in os.listdir(Path(self.state, "rounds")) if d.endswith("-solo-keeper"))
+        rid = next(entry.name for entry in Path(self.state, "rounds").iterdir() if entry.name.endswith("-solo-keeper"))
         item = json.loads(self.team("tstack", "--json").stdout)["in_slots"][0]
         self.assertEqual((item["id"], item["round"]), ("tm-0001", rid))
         self.assertGreater(item["cost_usd"], 0)  # the CLI's ≈$, kept as data
@@ -196,5 +196,5 @@ class SoloCliTest(unittest.TestCase):
         self.assertIn(f"tm-0001: round {rid}, 0.000047%UW (0.00047 MTok)", out)
         self.assertNotIn("≈$", out)
         self.assertIn(f"tm-0001: round {rid}", out)
-        costs = json.loads(slurp(os.path.join(self.state, "rounds", rid, "costs.json")))
+        costs = json.loads(slurp(Path(self.state, "rounds", rid, "costs.json")))
         self.assertEqual(costs["calls"], 1)  # round 1 only: the stack of agents is empty, no lock pass

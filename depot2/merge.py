@@ -308,10 +308,10 @@ class Resolutions:
         Path(self.dir).mkdir(parents=True, exist_ok=True)
         dest = self.file_of(it)
         tmp = "%s.tmp-%d" % (dest, os.getpid())  # noqa: UP031
-        with open(tmp, "wb") as f:
+        with Path(tmp).open("wb") as f:
             f.write(body)
         Path(tmp).replace(dest)
-        with open(dest, "rb") as f:
+        with Path(dest).open("rb") as f:
             if f.read() != body:
                 raise MergeError(f"the resolution did not read back: {dest}")
         self.state.touch(dest)
@@ -1223,7 +1223,7 @@ class Rider(TrialsMixin, WorktreesMixin):
     @contextlib.contextmanager
     def scratch(self, repo, sha, what="merge"):
         tmp = tempfile.mkdtemp(prefix=f"merge-{what}-")
-        tw = os.path.join(tmp, "wt")
+        tw = str(Path(tmp, "wt"))
         code, out, err = self.git(repo, "worktree", "add", "-q", "--detach", tw, sha)
         if code != 0:
             shutil.rmtree(tmp, ignore_errors=True)
@@ -1231,14 +1231,10 @@ class Rider(TrialsMixin, WorktreesMixin):
                 "no throwaway worktree for the {} at {}: {}".format(what, (sha or "?")[:7], clip(err or out, 160))
             )
         nm = next(
-            (
-                p
-                for p in (os.path.join(self.clone, "node_modules"), os.path.join(repo, "node_modules"))
-                if os.path.isdir(p)
-            ),
+            (p for p in (str(Path(self.clone, "node_modules")), str(Path(repo, "node_modules"))) if os.path.isdir(p)),
             None,
         )
-        link = os.path.join(tw, "node_modules")
+        link = str(Path(tw, "node_modules"))
         if nm and not os.path.exists(link):
             os.symlink(os.path.realpath(nm), link)
         try:
@@ -2078,7 +2074,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         main_ref = f"{self.remote}/{self.base}"
         sim_main = self.rev(self.clone, main_ref)
         tmp = tempfile.mkdtemp(prefix="merge-plan-")
-        sim = os.path.join(tmp, "sim")
+        sim = str(Path(tmp, "sim"))
         ident = {
             "GIT_AUTHOR_NAME": "merge-plan",
             "GIT_AUTHOR_EMAIL": "merge-plan@localhost",
@@ -2717,9 +2713,9 @@ def run_dir(state):
     """.merge/: the runner's lock and log; its own .gitignore says *."""
     d = state.path(RUN_DIR)
     Path(d).mkdir(parents=True, exist_ok=True)
-    gi = os.path.join(d, ".gitignore")
+    gi = str(Path(d, ".gitignore"))
     if not os.path.exists(gi):
-        with open(gi, "w") as f:
+        with Path(gi).open("w") as f:
             f.write("*\n")
     return d
 
@@ -2744,7 +2740,7 @@ def lock_pid(state):
     the very moment a runner starts would refuse that runner.
     """
     try:
-        with open(state.path(RUN_DIR, RUN_LOCK)) as f:
+        with Path(state.path(RUN_DIR, RUN_LOCK)).open() as f:
             return f.read(32).strip() or None
     except OSError:
         return None
@@ -2774,7 +2770,7 @@ def runner_cell(state, s=None):
 
 def spawn_runner(argv, log, cwd):
     """The runner, detached: its own session, no tty, its output appended to the log."""
-    with open(log, "a") as out:
+    with Path(log).open("a") as out:
         return subprocess.Popen(
             argv, stdin=subprocess.DEVNULL, stdout=out, stderr=out, cwd=cwd, start_new_session=True, close_fds=True
         )
@@ -2810,12 +2806,12 @@ def ensure(state, cfg, sets=None, wait_s=None):
     log = os.path.join(run_dir(state), RUN_LOG)
     if os.path.exists(log) and Path(log).stat().st_size > RUN_LOG_MAX:
         Path(log).replace(log + ".1")
-    team = os.path.join(os.path.dirname(os.path.abspath(__file__)), "__main__.py")
+    team = str(Path(os.path.dirname(os.path.abspath(__file__)), "__main__.py"))
     argv = [sys.executable, team, "--state", state.root]
     for x in sets or []:
         argv += ["--set", x]
     argv += ["merge", "run"]
-    with open(log, "a") as f:
+    with Path(log).open("a") as f:
         f.write("== %s merge run --ensure: start, %d in the queue\n" % (stamp(), s["open"]))  # noqa: UP031
     clone = expand((cfg.get("merge") or {}).get("clone") or "")
     p = SPAWN(argv, log, clone if clone and os.path.isdir(clone) else state.root)

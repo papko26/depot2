@@ -111,9 +111,9 @@ def archive_name(host, t=None):
 def bdir(state):
     d = state.path(DIR)
     Path(d).mkdir(parents=True, exist_ok=True)
-    gi = os.path.join(d, ".gitignore")
+    gi = str(Path(d, ".gitignore"))
     if not os.path.exists(gi):
-        with open(gi, "w") as f:
+        with Path(gi).open("w") as f:
             f.write("*\n")
     return d
 
@@ -142,7 +142,7 @@ def backup_lock(state, name=LOCK):
     """The Drive run's lock (`lock`) or the push's (`git.lock`): a second run of the same kind
     finds it held and exits.
     """
-    fd = os.open(os.path.join(bdir(state), name), os.O_RDWR | os.O_CREAT, 0o644)
+    fd = os.open(Path(bdir(state), name), os.O_RDWR | os.O_CREAT, 0o644)
     try:
         try:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -246,7 +246,7 @@ class Runner:
         print(msg, flush=True)
         try:
             bdir(self.state)
-            with open(log_path(self.state), "a", encoding="utf-8") as f:
+            with Path(log_path(self.state)).open("a", encoding="utf-8") as f:
                 f.write(stamp + msg + "\n")
         except OSError:
             pass
@@ -367,7 +367,7 @@ class Runner:
     # --- the steps -------------------------------------------------------------------------
     def snapshot(self, tmp, name):
         parent, base = os.path.split(self.state.root)
-        tar_path = os.path.join(tmp, name[: -len(".gz")])
+        tar_path = str(Path(tmp, name[: -len(".gz")]))
         t0 = time.time()
         try:
             with self.state.lock(wait_s=float(self.b["lock_wait_s"])):
@@ -402,11 +402,11 @@ class Runner:
         p = subprocess.run(
             _nice(["gzip", "-6", "-n", tar_path]), stdin=subprocess.DEVNULL, capture_output=True, text=True
         )
-        local = os.path.join(tmp, name)
+        local = str(Path(tmp, name))
         if p.returncode != 0 or not os.path.isfile(local):
             raise BackupError(t("backup.gzip", code=p.returncode), "snapshot", p.stderr.strip()[-500:])
         h = hashlib.sha256()
-        with open(local, "rb") as f:
+        with Path(local).open("rb") as f:
             for chunk in iter(lambda: f.read(1 << 20), b""):
                 h.update(chunk)
         return local, Path(local).stat().st_size, h.hexdigest()
@@ -548,7 +548,7 @@ class Runner:
                     raise BackupError(t("backup.v_none", host=self.host), "verify")
                 name = max(ours, key=lambda n: NAME_RE.match(n).group("ts"))
             tmp = tempfile.mkdtemp(prefix="team-verify-")
-            local = os.path.join(tmp, name)
+            local = str(Path(tmp, name))
             self.say("download: %s (%d bytes) → %s" % (name, files[name], tmp))  # noqa: UP031
             p = self.rclone("copyto", "copyto", self.obj(name), local, *NET)
             if p.returncode != 0:
@@ -557,7 +557,7 @@ class Runner:
             if size != files[name]:
                 raise BackupError(t("backup.v_size", got=size, want=files[name]), "verify")
             h = hashlib.sha256()
-            with open(local, "rb") as f:
+            with Path(local).open("rb") as f:
                 for chunk in iter(lambda: f.read(1 << 20), b""):
                     h.update(chunk)
             sha = h.hexdigest()
@@ -571,7 +571,7 @@ class Runner:
             if len(tops) != 1 or any(e.startswith("/") or "/../" in "/" + e + "/" for e in entries):
                 raise BackupError(t("backup.v_tops", tops=sorted(tops)[:3]), "verify")
             top = tops.pop()
-            x = os.path.join(tmp, "x")
+            x = str(Path(tmp, "x"))
             Path(x).mkdir(parents=True)
             p = subprocess.run(
                 _nice(["tar", "-xzf", local, "-C", x]), stdin=subprocess.DEVNULL, capture_output=True, text=True
@@ -671,13 +671,13 @@ def spawn(state, sets, args=("--drive", "--auto"), marker=SPAWNED, log=LOG):
     """
     d = bdir(state)
     rotate_log(state, log)
-    with open(os.path.join(d, marker), "w") as f:
+    with Path(d, marker).open("w") as f:
         f.write(utc_iso() + "\n")
-    team = os.path.join(os.path.dirname(os.path.abspath(__file__)), "__main__.py")
+    team = str(Path(os.path.dirname(os.path.abspath(__file__)), "__main__.py"))
     argv = [sys.executable, team, "--state", state.root]
     for s in sets or []:
         argv += ["--set", s]
-    with open(log_path(state, log), "a") as out:
+    with Path(log_path(state, log)).open("a") as out:
         subprocess.Popen(
             [*argv, "backup", *list(args)],
             stdin=subprocess.DEVNULL,

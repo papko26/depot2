@@ -32,7 +32,7 @@ def tree_bytes(path):
     for root, dirs, files in os.walk(path, followlinks=False):
         for name in dirs + files:
             with contextlib.suppress(OSError):
-                total += os.lstat(os.path.join(root, name)).st_blocks * 512
+                total += Path(root, name).lstat().st_blocks * 512
     return total
 
 
@@ -71,7 +71,7 @@ def worktree_list(text):
 def locked(path):
     """`git worktree lock`: the file `locked` in the worktree's gitdir (its .git file names it) → its reason, or None."""
     try:
-        with open(os.path.join(path, ".git")) as f:
+        with Path(path, ".git").open() as f:
             line = f.read().strip()
     except OSError:
         return None
@@ -82,7 +82,7 @@ def locked(path):
     if not os.path.exists(p):
         return None
     try:
-        with open(p) as f:
+        with Path(p).open() as f:
             return f.read().strip() or t("mergewt.no_reason")
     except OSError:
         return t("mergewt.no_reason")
@@ -130,7 +130,7 @@ class WorktreesMixin:
         return None
 
     def wt_link_line(self, path, line):
-        return line.strip() == "?? " + NODE_MODULES and os.path.islink(os.path.join(path, NODE_MODULES))
+        return line.strip() == "?? " + NODE_MODULES and os.path.islink(Path(path, NODE_MODULES))
 
     def wt_verdict(self, path, branch, known):
         """None: the worktree at path may go; else why it stays, in one line."""
@@ -171,7 +171,7 @@ class WorktreesMixin:
         from .merge import clip
 
         size = tree_bytes(path)
-        link = os.path.join(path, NODE_MODULES)
+        link = str(Path(path, NODE_MODULES))
         target = None
         if os.path.islink(link) and self.git(path, "check-ignore", "-q", NODE_MODULES)[0] != 0:
             target = os.readlink(link)
@@ -282,7 +282,7 @@ class WorktreesMixin:
         others = 0
         if os.path.isdir(root):
             for d in sorted(os.listdir(root)):
-                p = os.path.realpath(os.path.join(root, d))
+                p = os.path.realpath(Path(root, d))
                 if p in known or not os.path.isdir(p) or any(k.startswith(p + os.sep) for k in under):
                     continue
                 kept.append((d, t("mergewt.not_a_worktree", clone=self.clone)))

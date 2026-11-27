@@ -53,7 +53,7 @@ def to_utc(ts):
 def new_round_id(state, kind, pr=None, only=None):
     base = f"{today()}-{kind}" + ("-pr%d" % int(pr) if pr is not None else "") + (f"-solo-{only}" if only else "")  # noqa: UP031
     rid, n = base, 2
-    while os.path.exists(os.path.join(state.rounds_dir(), rid)):
+    while os.path.exists(state.path("rounds", rid)):
         rid = "%s-%d" % (base, n)  # noqa: UP031
         n += 1
     return rid
@@ -64,7 +64,7 @@ def last_review_since(state):
     best = None
     if os.path.isdir(rd):
         for d in os.listdir(rd):
-            rj = read_json(os.path.join(rd, d, "round.json"))
+            rj = read_json(Path(rd, d, "round.json"))
             if (
                 rj and rj.get("kind") == "review" and rj.get("status") in ("done", "imported") and not rj.get("pr")
             ):  # a one-PR review does not move the merge window
@@ -304,8 +304,8 @@ def resumable(state, rid):
     (a fatal error in the lock pass keeps the round, done), before any stake, order or lock was debited, so going on
     debits nothing twice. A brainstorm is not resumed: its fee came back when it aborted (`_brainstorm_failed`).
     """
-    rdir = os.path.join(state.rounds_dir(), rid)
-    rec = read_json(os.path.join(rdir, "round.json"))
+    rdir = state.path("rounds", rid)
+    rec = read_json(Path(rdir, "round.json"))
     if rec is None:
         raise ValueError(f"no round {rid} in {state.rounds_dir()}")
     if rec.get("status") != "aborted":
@@ -319,7 +319,7 @@ def resumable(state, rid):
             f"round {rid} is a brainstorm: its fee came back when it aborted, so it is not resumed; the "
             "owner approves it again and it runs anew"
         )
-    if not os.path.isfile(os.path.join(rdir, "bundle.md")):
+    if not Path(rdir, "bundle.md").is_file():
         raise ValueError(f"round {rid} has no bundle.md: nothing to go on with")
     return rec
 
@@ -331,12 +331,12 @@ def quarantine_note(q):
 
 def saved_answers(rdir):
     """{(character, "r1"|"r2"): the answer} the round saved in answers/ (the lock pass's are never resumed)."""
-    d = os.path.join(rdir, "answers")
+    d = str(Path(rdir, "answers"))
     out = {}
     for f in sorted(os.listdir(d)) if os.path.isdir(d) else ():
         cid, _, stage = f[: -len(".json")].rpartition("-") if f.endswith(".json") else ("", "", "")
         if cid in characters.IDS and stage in ("r1", "r2"):
-            out[(cid, stage)] = read_json(os.path.join(d, f))
+            out[(cid, stage)] = read_json(Path(d, f))
     return out
 
 
@@ -383,7 +383,7 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
         b = None
         shown = [o for o in extras.Orders(state).unshown_done() if o["id"] in (resume.get("orders_shown") or ())]
         points = [dict(p) for p in resume["points"] if not (p.get("source") == "proposal" and p.get("author"))]
-        with open(os.path.join(state.rounds_dir(), resume["id"], "bundle.md"), encoding="utf-8") as f:
+        with Path(state.rounds_dir(), resume["id"], "bundle.md").open(encoding="utf-8") as f:
             context = f.read()
     lifted = _locks_lifted_since_last_round(state, stk)
     balances = ledger.balances()
@@ -479,10 +479,10 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
     saved = {}  # (character, stage) -> the answer an aborted pass saved (`round --resume`)
     if resume is None:
         rid = new_round_id(state, kind, pr, only)
-        rdir = os.path.join(state.rounds_dir(), rid)
+        rdir = state.path("rounds", rid)
         for sub in ("prompts", "raw", "answers"):
             Path(rdir, sub).mkdir(parents=True, exist_ok=True)
-        _w(state, os.path.join(rdir, "bundle.md"), context)
+        _w(state, str(Path(rdir, "bundle.md")), context)
         rec = {
             "id": rid,
             "kind": kind,
@@ -511,10 +511,10 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
         # The calls already made count against them: all their spend, and in the call cap those whose answers stay
         # (a failed or fatal call is asked again, so it takes no planned call's place: a solo round keeps its lock).
         rid = resume["id"]
-        rdir = os.path.join(state.rounds_dir(), rid)
+        rdir = state.path("rounds", rid)
         Path(rdir, "raw").mkdir(parents=True, exist_ok=True)
         saved = saved_answers(rdir)
-        old = read_json(os.path.join(rdir, "costs.json")) or {}
+        old = read_json(Path(rdir, "costs.json")) or {}
         costs.extend(old.get("items") or [])
         guard.spent = sum(c.get("mtok") or 0.0 for c in costs)
         guard.calls = sum(1 for c in costs if c.get("status") == "ok")
@@ -544,7 +544,7 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
         # the tree the kept answers read, without a fetch: it was fetched for them
         commit_wanted = resume.get("repo_commit")
         snap_cfg = dict(cfg, deep_repo=dict(cfg["deep_repo"], fetch=False))
-    _wj(state, os.path.join(rdir, "round.json"), rec)
+    _wj(state, str(Path(rdir, "round.json")), rec)
 
     # Every pass reads the same fresh snapshot (origin/main, or the PR's head), made once, and
     # the same read_dirs: round 1 and the debate get one --add-dir list.
@@ -555,12 +555,12 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
 
     def call(cid, stage, system_text, user_text, sch, budget, timeout, max_tool_turns):
         guard.check(budget)
-        sys_path = os.path.join(rdir, "prompts", f"system-{sha256_text(system_text)}.md")
+        sys_path = str(Path(rdir, "prompts", f"system-{sha256_text(system_text)}.md"))
         if not os.path.exists(sys_path):
             write_new(sys_path, system_text)
             state.touch(sys_path)
-        _w(state, os.path.join(rdir, "prompts", f"{cid}-{stage}.user.md"), user_text)
-        raw_path = os.path.join(rdir, "raw", f"{cid}-{stage}.jsonl")
+        _w(state, str(Path(rdir, "prompts", f"{cid}-{stage}.user.md")), user_text)
+        raw_path = str(Path(rdir, "raw", f"{cid}-{stage}.jsonl"))
         spec = CallSpec(
             f"{rid}/{cid}-{stage}",
             model,
@@ -603,7 +603,7 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
                 costs.append({k: v for k, v in res.items() if k not in ("structured", "rate_limit")})
                 guard.record(res)
                 out(describe(res, cfg))
-                _wj(state, os.path.join(rdir, "costs.json"), _cost_summary(costs, guard))
+                _wj(state, str(Path(rdir, "costs.json")), _cost_summary(costs, guard))
 
     point_ids = [p["id"] for p in points]
     answers = {}  # cid -> the round-1 answer
@@ -643,7 +643,7 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
                     notes.append(t("round.r1_skipped", name=characters.name(cid), error=e))
                     continue
                 a1 = res["structured"]
-                _wj(state, os.path.join(rdir, "answers", f"{cid}-r1.json"), a1)
+                _wj(state, str(Path(rdir, "answers", f"{cid}-r1.json")), a1)
                 personas[cid].add_thought(a1.get("inner_thought"), rid, res["call"])
             answers[cid] = a1
             prop, why_not = extras.check_proposal(a1.get("brainstorm_proposal"), cfg)
@@ -724,7 +724,7 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
                         notes.append(t("round.r2_skipped", name=characters.name(cid), error=e))
                         continue
                     a2 = res["structured"]
-                    _wj(state, os.path.join(rdir, "answers", f"{cid}-r2.json"), a2)
+                    _wj(state, str(Path(rdir, "answers", f"{cid}-r2.json")), a2)
                     personas[cid].add_thought(a2.get("inner_thought"), rid, res["call"])
                 took_part[cid] = True
                 for v in a2.get("brainstorm_votes") or []:
@@ -748,7 +748,7 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
             rec["brainstorm_refunds"] = _brainstorm_failed(
                 state, ledger, holder["brainstorm"], rid, f"fatal error in {rid}: {str(e)[:200]}"
             )
-        _wj(state, os.path.join(rdir, "round.json"), rec)
+        _wj(state, str(Path(rdir, "round.json")), rec)
         state.commit(f"team: round {rid} ABORTED: {str(e)[:120]}")
         raise RoundAborted(  # noqa: B904
             "round {} aborted, no stakes debited{}: {}{}".format(
@@ -830,7 +830,7 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
                 break
             locks["calls"] += 1
             a3 = res["structured"]
-            _wj(state, os.path.join(rdir, "answers", f"{cid}-r3.json"), a3)
+            _wj(state, str(Path(rdir, "answers", f"{cid}-r3.json")), a3)
             personas[cid].add_thought(a3.get("inner_thought"), rid, res["call"])
             if a3.get("lock"):
                 lock_asks.append((cid, a3["lock"]))
@@ -867,11 +867,11 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
         genders=genders,
         ledger_seq=ledger.last_seq(),
     )
-    _wj(state, os.path.join(rdir, "round.json"), rec)
-    _wj(state, os.path.join(rdir, "costs.json"), summary)
+    _wj(state, str(Path(rdir, "round.json")), rec)
+    _wj(state, str(Path(rdir, "costs.json")), summary)
     # The report reads only what was just saved, so `depot2 report --round` rebuilds it exactly.
     report = render_report(state, rid, cfg)
-    _w(state, os.path.join(rdir, "report.md"), report)
+    _w(state, str(Path(rdir, "report.md")), report)
     add_to_ballots(state, rec)  # the owner's ballot queue: every finished round, as waiting
     state.commit("team: round %s (%d calls, %s)" % (rid, summary["calls"], effort.fmt(summary["mtok"], cfg)))  # noqa: UP031
     out("")
@@ -885,7 +885,7 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
             summary["duration_s"],
             effort.fmt(summary["mtok"], cfg),
             _window(summary["utilization"]),
-            os.path.join(rdir, "report.md"),
+            str(Path(rdir, "report.md")),
         )
     )
     return {"id": rid, "dir": rdir, "report": report, "costs": summary, "fatal": fatal}
@@ -906,7 +906,7 @@ def _locks_lifted_since_last_round(state, stk):
     seen = 0
     rd = state.rounds_dir()
     for d in os.listdir(rd) if os.path.isdir(rd) else ():
-        rj = read_json(os.path.join(rd, d, "round.json")) or {}
+        rj = read_json(Path(rd, d, "round.json")) or {}
         if rj.get("status") == "done":
             seen = max(seen, rj.get("stack_history_n") or 0)
     out = []
@@ -1146,9 +1146,9 @@ def _wj(state, path, obj):
 
 def _print_resume_plan(out, state, cfg, rec, cast, stk):
     """`round --resume R --dry-run`: what the aborted pass kept, the calls still to make, the spend so far."""
-    rdir = os.path.join(state.rounds_dir(), rec["id"])
+    rdir = state.path("rounds", rec["id"])
     saved = saved_answers(rdir)
-    old = read_json(os.path.join(rdir, "costs.json")) or {}
+    old = read_json(Path(rdir, "costs.json")) or {}
 
     def names(ids):
         return ", ".join(characters.name(c) for c in ids)

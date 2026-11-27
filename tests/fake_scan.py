@@ -9,6 +9,7 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 
 def files_under(d, skip_git):
@@ -32,7 +33,7 @@ def move_head(state, n):
     p = os.path.join(state, "scan-moved-%d.txt" % n)  # noqa: UP031
     with open(p, "w") as f:
         f.write("written during the scan %d\n" % n)  # noqa: UP031
-    subprocess.run(["git", "-C", state, "add", "--", os.path.basename(p)], check=True)
+    subprocess.run(["git", "-C", state, "add", "--", Path(p).name], check=True)
     subprocess.run(
         [
             "git",

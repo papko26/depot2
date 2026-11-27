@@ -586,7 +586,11 @@ def old_depot(state):
 
 
 def files_of(d):
-    return {f: Path(d, f).read_bytes() for f in sorted(os.listdir(d)) if f.endswith((".json", ".jsonl"))}
+    return {
+        f: Path(d, f).read_bytes()
+        for f in sorted(entry.name for entry in Path(d).iterdir())
+        if f.endswith((".json", ".jsonl"))
+    }
 
 
 class MigrateTest(TracksBase):

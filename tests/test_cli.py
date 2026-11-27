@@ -10,7 +10,7 @@ from pathlib import Path
 import helpers
 from helpers import FAKE, HERE, slurp
 
-TEAM = str(Path(os.path.dirname(HERE), "depot2", "__main__.py"))
+TEAM = str(Path(HERE).parent / "depot2" / "__main__.py")
 BRIEF = """# Brief
 
 ## The five characters
@@ -94,7 +94,7 @@ class CliTest(unittest.TestCase):
         # A dry run calls nothing and writes nothing.
         out = self.team("round", "--kind", "ballot", "--input", str(Path(self.dir, "q.md")), "--dry-run").stdout
         self.assertIn("DRY RUN", out)
-        self.assertEqual(sorted(os.listdir(Path(self.state, "rounds"))), ["old-review"])
+        self.assertEqual(sorted(entry.name for entry in Path(self.state, "rounds").iterdir()), ["old-review"])
         out = self.team("round", "--kind", "ballot", "--input", str(Path(self.dir, "q.md"))).stdout
         self.assertIn("## Пункты по ставкам", out)
         self.assertIn("B49. Фильтры поиска", out)
@@ -124,8 +124,8 @@ class CliTest(unittest.TestCase):
     def test_report_round_rebuilds_without_a_model(self):
         self.team("seed", "--specs", str(Path(self.dir, "brief.md")), "--ledger", str(Path(self.dir, "seed.json")))
         self.team("round", "--kind", "ballot", "--input", str(Path(self.dir, "q.md")))
-        rid = next(d for d in os.listdir(Path(self.state, "rounds")) if d != "old-review")
-        path = os.path.join(self.state, "rounds", rid, "report.md")
+        rid = next(entry.name for entry in Path(self.state, "rounds").iterdir() if entry.name != "old-review")
+        path = str(Path(self.state, "rounds", rid, "report.md"))
         saved = slurp(path)
         self.assertIn("Ставок нет.", saved)
         self.assertNotIn("размышлени", saved)
@@ -176,7 +176,7 @@ class CliTest(unittest.TestCase):
         os.environ["FAKE_MODE"] = "quota"
         p = self.team("round", "--kind", "ballot", "--input", str(Path(self.dir, "q.md")), ok=False)
         self.assertEqual(p.returncode, 2)
-        rid = next(d for d in os.listdir(Path(self.state, "rounds")) if d != "old-review")
+        rid = next(entry.name for entry in Path(self.state, "rounds").iterdir() if entry.name != "old-review")
         self.assertIn(f"depot2 round --resume {rid}", p.stderr)
         os.environ["FAKE_MODE"] = "ok"
         p = self.team("round", "--resume", rid, "--kind", "ballot", ok=False)
@@ -189,7 +189,7 @@ class CliTest(unittest.TestCase):
         out = self.team("round", "--resume", rid).stdout
         self.assertIn("## Пункты по ставкам", out)
         self.assertIn("раунд продолжен после фатальной ошибки", out)
-        rj = json.loads(slurp(os.path.join(self.state, "rounds", rid, "round.json")))
+        rj = json.loads(slurp(Path(self.state, "rounds", rid, "round.json")))
         self.assertEqual(rj["status"], "done")
         st = subprocess.run(
             ["git", "-C", self.state, "status", "--porcelain"], stdout=subprocess.PIPE, text=True

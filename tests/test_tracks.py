@@ -1,6 +1,5 @@
 import datetime
 import json
-import os
 from pathlib import Path
 
 from test_extras import Base
@@ -381,7 +380,7 @@ class ImportTest(TracksBase):
         self.assertEqual(rc, 0, err)
         self.assertIn("DRY RUN: would import 3 tracks, 6 cars", out)
         self.assertIn("## Трек tr-0002 Читалка", out)
-        self.assertFalse(os.path.exists(Path(self.t.dir, "tracks.json")))
+        self.assertFalse(Path(self.t.dir, "tracks.json").exists())
         rc, out, err = self.team("tracks", "import", path)
         self.assertEqual(rc, 0, err)
         tr = self.tracks()
@@ -401,7 +400,7 @@ class ImportTest(TracksBase):
         rc, _, err = self.team("tracks", "import", self.write(spec))
         self.assertEqual(rc, 1)
         self.assertIn("tr-0002 Читалка: tr-0002 has no car R9", err)
-        self.assertFalse(os.path.exists(Path(self.t.dir, "tracks.json")))
+        self.assertFalse(Path(self.t.dir, "tracks.json").exists())
         spec = json.loads(json.dumps(self.SPEC))
         spec["tracks"][0]["status"] = "running"  # a planning key of before is refused, never dropped unseen
         rc, _, err = self.team("tracks", "import", self.write(spec))

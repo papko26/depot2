@@ -1,5 +1,4 @@
 import json
-import os
 import time
 import unittest
 from pathlib import Path
@@ -574,7 +573,7 @@ class MigrateArrivalsTest(Base):
 
         self.depot4()
         self.assertEqual(migrate.version(self.t.state), 4)
-        before = {f: slurp(self.t.state.path(f)) for f in self.FILES if os.path.exists(self.t.state.path(f))}
+        before = {f: slurp(self.t.state.path(f)) for f in self.FILES if Path(self.t.state.path(f)).exists()}
         lines, n = migrate.run(self.t.state, self.t.cfg, dry_run=True)
         self.assertEqual((n, lines[0]), (1, "DRY RUN: ничего не записано"))
         self.assertIn(

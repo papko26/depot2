@@ -103,7 +103,7 @@ def rounds_since(state, cid, since_iso):
         return out
     since = to_utc(since_iso) if since_iso else None
     for d in sorted(os.listdir(rd)):
-        rj = read_json(os.path.join(rd, d, "round.json"))
+        rj = read_json(Path(rd, d, "round.json"))
         if not rj or rj.get("status") != "done":
             continue
         if since and to_utc(rj["created"]) <= since:
@@ -177,14 +177,14 @@ def run_portrait_calls(state, cfg, jobs, label, out=print, runner=None, dry_run=
             except RoundStop as e:
                 status[cid] = f"skipped: {e}"
                 continue
-            sys_path = os.path.join(d, f"system-{sha256_text(system_text)}.md")
+            sys_path = str(Path(d, f"system-{sha256_text(system_text)}.md"))
             if not os.path.exists(sys_path):
                 write_new(sys_path, system_text)
                 state.touch(sys_path)
-            up = os.path.join(d, f"{cid}.user.md")
+            up = str(Path(d, f"{cid}.user.md"))
             atomic_write(up, user_text)
             state.touch(up)
-            raw = os.path.join(d, "raw", f"{cid}.jsonl")
+            raw = str(Path(d, "raw", f"{cid}.jsonl"))
             spec = CallSpec(
                 f"{os.path.basename(d)}/{cid}",
                 cfg["model"],
@@ -250,7 +250,7 @@ def run_portrait_calls(state, cfg, jobs, label, out=print, runner=None, dry_run=
         total = sum(c.get("cost_usd") or 0.0 for c in costs)
         tokens = sum(total_tokens(c.get("usage")) for c in costs)
         mtok = sum(c.get("mtok") or 0.0 for c in costs)
-        cpath = os.path.join(d, "costs.json")
+        cpath = str(Path(d, "costs.json"))
         write_json(
             cpath,
             {

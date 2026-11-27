@@ -6,7 +6,7 @@ report --round R` rebuilds it without a model call. Old rounds may carry the rem
 transactions still count in the balance check.
 """
 
-import os
+from pathlib import Path
 
 from . import characters, effort, i18n
 from .i18n import t
@@ -148,16 +148,15 @@ def load_round(state, rid):
     """(rec, costs, answers, entries, genders): everything the report reads, from the round's files
     and the ledger. No model call.
     """
-    rdir = os.path.join(state.rounds_dir(), rid)
-    rec = read_json(os.path.join(rdir, "round.json"))
+    rdir = state.path("rounds", rid)
+    rec = read_json(Path(rdir, "round.json"))
     if rec is None:
         raise ValueError(f"no round {rid} ({rdir})")
     if rec.get("status") != "done":
         raise ValueError("round {} is {}: only a finished round has a report".format(rid, rec.get("status")))
-    costs = read_json(os.path.join(rdir, "costs.json")) or dict(NO_COSTS)
+    costs = read_json(Path(rdir, "costs.json")) or dict(NO_COSTS)
     answers = {
-        cid: {st: read_json(os.path.join(rdir, "answers", f"{cid}-{st}.json")) for st in STAGES}
-        for cid in characters.IDS
+        cid: {st: read_json(Path(rdir, "answers", f"{cid}-{st}.json")) for st in STAGES} for cid in characters.IDS
     }
     genders = dict(personas_genders(state))
     genders.update(rec.get("genders") or {})  # the genders the round was played with

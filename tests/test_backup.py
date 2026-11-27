@@ -24,7 +24,7 @@ from helpers import HERE, TempState
 from depot2 import backup
 from depot2.store import write_json
 
-TEAM = str(Path(os.path.dirname(HERE), "depot2", "__main__.py"))
+TEAM = str(Path(HERE).parent / "depot2" / "__main__.py")
 FAKE_RCLONE = str(Path(HERE, "fake_rclone.py"))
 FAKE_PASS = str(Path(HERE, "fake_pass.py"))
 PW = "example/depot2-backup/crypt-password"
@@ -97,7 +97,7 @@ class BackupBase(unittest.TestCase):
         return p
 
     def calls(self):
-        if not os.path.exists(self.rlog):
+        if not Path(self.rlog).exists():
             return []
         with Path(self.rlog).open() as f:
             return [json.loads(ln) for ln in f if ln.strip()]
@@ -106,7 +106,7 @@ class BackupBase(unittest.TestCase):
         return [c["argv"] for c in self.calls() if name is None or c["argv"][0] == name]
 
     def pass_calls(self):
-        if not os.path.exists(self.plog):
+        if not Path(self.plog).exists():
             return []
         with Path(self.plog).open() as f:
             return [json.loads(ln) for ln in f if ln.strip()]
@@ -132,16 +132,16 @@ class BackupBase(unittest.TestCase):
     def spawned(self):
         """The mtime of the marker a start writes before it detaches, or None: no start."""
         p = self.t.state.path(backup.DIR, backup.SPAWNED)
-        return Path(p).stat().st_mtime if os.path.exists(p) else None
+        return Path(p).stat().st_mtime if Path(p).exists() else None
 
     def folder(self):
         d = str(Path(self.cloud, "depot2-backup"))
-        return sorted(os.listdir(d)) if os.path.isdir(d) else []
+        return sorted(entry.name for entry in Path(d).iterdir()) if Path(d).is_dir() else []
 
     def assert_no_secret(self):
         texts = list(self.outputs)
         for p in (self.rlog, self.plog, backup.log_path(self.t.state), self.t.state.path(backup.DIR, backup.STAMP)):
-            if os.path.exists(p):
+            if Path(p).exists():
                 with Path(p).open(encoding="utf-8") as f:
                     texts.append(f.read())
         for k in self.keys.values():
@@ -160,11 +160,11 @@ class BackupNowTest(BackupBase):
         name = st["archive"]
         self.assertRegex(name, r"^team-testhost-\d{8}T\d{6}Z\.tar\.gz$")
         self.assertEqual(self.folder(), [name])
-        path = os.path.join(self.cloud, "depot2-backup", name)
+        path = str(Path(self.cloud, "depot2-backup", name))
         self.assertEqual(Path(path).stat().st_size, st["size"])
         self.assertIsNone(st["last_error"])
         self.assertEqual(st["source"], self.t.state.root)
-        base = os.path.basename(self.root)
+        base = Path(self.root).name
         with tarfile.open(path) as tf:
             names = tf.getnames()
         self.assertIn(base + "/.git/HEAD", names)
@@ -189,7 +189,7 @@ class BackupNowTest(BackupBase):
         out = self.team("backup", "--drive", "--verify").stdout
         self.assertIn("git fsck --full ok", out)
         self.assertIn("(= the upload's)", out)
-        self.assertEqual(os.listdir(self.tmpdir), [])
+        self.assertEqual([entry.name for entry in Path(self.tmpdir).iterdir()], [])
         self.assertTrue(self.stamp()["last_verify"]["ok"])
         self.assertEqual(len(self.cmds("copyto")), 2)  # the upload, then the download
         self.assertTrue(self.cmds("copyto")[1][1].startswith("depot2backupcrypt:"))
@@ -421,7 +421,7 @@ class RetentionTest(BackupBase):
         self.assertEqual(len(keep), 14 + 3)  # 14 days + the first of Aug, Sep, Oct (Nov's is the new one)
         self.assertEqual(sorted(a[1] for a in self.cmds("deletefile")), sorted("depot2backupcrypt:" + n for n in drop))
         self.assertEqual(self.folder(), sorted(keep + foreign))
-        self.assertEqual(os.listdir(outside), ["team-testhost-20150801T030000Z.tar.gz"])
+        self.assertEqual([entry.name for entry in Path(outside).iterdir()], ["team-testhost-20150801T030000Z.tar.gz"])
         self.assertTrue({c[0] for c in self.cmds()} <= ALLOWED, self.cmds())
         self.assertEqual(len(self.cmds("copyto")), 1)
         st = self.stamp()
@@ -448,7 +448,7 @@ class RealRcloneTest(BackupBase):
         ]
         self.team("backup", "--drive", "--now")
         name = self.stamp()["archive"]
-        raw = os.listdir(Path(drive, "depot2-backup"))
+        raw = [entry.name for entry in Path(drive, "depot2-backup").iterdir()]
         self.assertEqual(len(raw), 1)
         self.assertNotEqual(raw[0], name)  # the name is encrypted too
         with Path(drive, "depot2-backup", raw[0]).open("rb") as f:

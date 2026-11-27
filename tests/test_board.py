@@ -5,7 +5,6 @@ board's views (`--md`, `--json`, `--view stack`), the stable `--json` formats, t
 """
 
 import json
-import os
 import unittest
 from pathlib import Path
 
@@ -290,7 +289,7 @@ class TrainGateTest(GateBase):
         )
         before = (
             Path(self.t.state.path("stack.json")).read_text()
-            if os.path.exists(self.t.state.path("stack.json"))
+            if Path(self.t.state.path("stack.json")).exists()
             else None
         )
         rc, _, err = self.team("tracks", "car", "stack", "tr-0001:0", "--start")
@@ -298,7 +297,7 @@ class TrainGateTest(GateBase):
         self.assertIn("ворота: tr-0001:0 → «сборка» не пройдены: DoR (вход в сборку) — нет брифа", err)
         self.assertEqual(
             Path(self.t.state.path("stack.json")).read_text()
-            if os.path.exists(self.t.state.path("stack.json"))
+            if Path(self.t.state.path("stack.json")).exists()
             else None,
             before,
         )

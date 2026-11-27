@@ -49,7 +49,7 @@ def now_z(minutes_ago=0):
     """
     path = os.environ.get("FAKE_GH_NOW")
     if path:
-        with open(path) as f:
+        with Path(path).open() as f:
             now = datetime.datetime.fromtimestamp(float(f.read()), datetime.UTC)
     else:
         now = datetime.datetime.now(datetime.UTC)
@@ -396,11 +396,11 @@ def api(d, argv):
 def main():
     argv = sys.argv[1:]
     path = os.environ["FAKE_GH_STATE"]
-    with open(path) as f:
+    with Path(path).open() as f:
         d = json.load(f)
     log = os.environ.get("FAKE_GH_LOG")
     if log:
-        with open(log, "a") as f:
+        with Path(log).open("a") as f:
             f.write(json.dumps(argv) + "\n")
     nf = d.get("net_fail", {})
     key = " ".join(argv[:2])
@@ -427,7 +427,7 @@ def main():
         rc = api(d, argv)
     else:
         rc = fail(f"fake gh: unknown command {argv}")
-    with open(path + ".tmp", "w") as f:
+    with Path(path + ".tmp").open("w") as f:
         json.dump(d, f)
     Path(path + ".tmp").replace(path)
     return rc

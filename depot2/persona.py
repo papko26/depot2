@@ -12,6 +12,7 @@ The CODE replaces a portrait; the model only proposes the text.
 """
 
 import os
+from pathlib import Path
 
 from .store import (
     WriteCheckError,
@@ -32,12 +33,12 @@ class Persona:
         self.state = state
         self.cid = cid
         self.dir = state.char_dir(cid)
-        self.spec_path = os.path.join(self.dir, "spec.md")
-        self.portrait_path = os.path.join(self.dir, "portrait.md")
-        self.history_dir = os.path.join(self.dir, "history")
-        self.index_path = os.path.join(self.dir, "portraits.jsonl")
-        self.thoughts_path = os.path.join(self.dir, "thoughts.jsonl")
-        self.meta_path = os.path.join(self.dir, "meta.json")
+        self.spec_path = str(Path(self.dir, "spec.md"))
+        self.portrait_path = str(Path(self.dir, "portrait.md"))
+        self.history_dir = str(Path(self.dir, "history"))
+        self.index_path = str(Path(self.dir, "portraits.jsonl"))
+        self.thoughts_path = str(Path(self.dir, "thoughts.jsonl"))
+        self.meta_path = str(Path(self.dir, "meta.json"))
 
     # --- spec ---------------------------------------------------------------------------------
 
@@ -83,13 +84,13 @@ class Persona:
         elif old:
             raise WriteCheckError(f"{self.cid}: portrait.md exists without an index")
         n = (versions[-1]["version"] if versions else 0) + 1
-        hist = os.path.join(self.history_dir, "v%04d.md" % n)  # noqa: UP031
+        hist = str(Path(self.history_dir, "v%04d.md" % n))  # noqa: UP031
         write_new(hist, text)
         self.state.touch(hist)
         en = None
         if summary_en and summary_en.strip():
             en_text = cut_text(summary_en, summary_cap)[0] + "\n"
-            en = os.path.join(self.history_dir, "v%04d.en.md" % n)  # noqa: UP031
+            en = str(Path(self.history_dir, "v%04d.en.md" % n))  # noqa: UP031
             write_new(en, en_text)
             self.state.touch(en)
         atomic_write(self.portrait_path, text)

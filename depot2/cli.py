@@ -98,7 +98,7 @@ def cmd_report(state, cfg, a):
     from .store import atomic_write
 
     text = render(state, a.round, cfg)
-    path = os.path.join(state.rounds_dir(), a.round, "report.md")
+    path = str(Path(state.rounds_dir(), a.round, "report.md"))
     atomic_write(path, text)
     state.touch(path)
     print(text, end="")
@@ -856,7 +856,7 @@ def cmd_ballots(state, cfg, a):
         from .round import add_to_ballots
         from .store import read_json
 
-        rec = read_json(os.path.join(state.rounds_dir(), a.round, "round.json"))
+        rec = read_json(Path(state.rounds_dir(), a.round, "round.json"))
         if not rec or rec.get("status") != "done":
             raise ValueError(f"no finished round {a.round}")
         add_to_ballots(state, rec)

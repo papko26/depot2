@@ -54,7 +54,7 @@ SAMPLE = """# Принципы (проба)
 
 
 def write(d, name, text):
-    path = os.path.join(d, name)
+    path = str(Path(d, name))
     with Path(path).open("w", encoding="utf-8") as f:
         f.write(text)
     return path
@@ -98,7 +98,7 @@ class ImportTest(PBase):
             "sections' headings in today's words" % len(original.splitlines()),
             out,
         )
-        self.assertFalse(os.path.exists(Path(self.t.dir, "principles.json")))  # the dry run wrote nothing
+        self.assertFalse(Path(self.t.dir, "principles.json").exists())  # the dry run wrote nothing
         self.assertEqual(strip_banner(slurp(path)), original.splitlines())
         self.assertTrue(writable(path))
         self.ok("principles", "import", path)
@@ -252,7 +252,7 @@ class ImportTest(PBase):
             rc, _, err = self.team("principles", "import", path)
             self.assertEqual(rc, 1, text)
             self.assertIn(why, err)
-            self.assertFalse(os.path.exists(Path(self.t.dir, "principles.json")))
+            self.assertFalse(Path(self.t.dir, "principles.json").exists())
             self.assertTrue(writable(path))
         # a render that would part from the file (no space after the bold title) is refused the same way
         path = write(self.files, "bad.md", SAMPLE.replace("**Первый.** Владелец", "**Первый.**Владелец"))

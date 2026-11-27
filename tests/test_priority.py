@@ -347,11 +347,11 @@ class MigrateTest(PBase):
         import subprocess
         import sys
 
-        here = os.path.dirname(os.path.abspath(__file__))
+        here = str(Path(__file__).absolute().parent)
         p = subprocess.run(
             [
                 sys.executable,
-                str(Path(os.path.dirname(here), "depot2")),
+                str(Path(here).parent / "depot2"),
                 "--state",
                 state_dir,
                 "--set",

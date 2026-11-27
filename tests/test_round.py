@@ -217,8 +217,8 @@ class RoundTest(unittest.TestCase):
             )
         led = Ledger(self.t.state)
         self.assertEqual([e for e in led.entries() if e["type"] == "stake"], [])
-        rounds = os.listdir(self.t.state.rounds_dir())
-        rj = json.loads(slurp(os.path.join(self.t.state.rounds_dir(), rounds[0], "round.json")))
+        rounds = [entry.name for entry in Path(self.t.state.rounds_dir()).iterdir()]
+        rj = json.loads(slurp(Path(self.t.state.rounds_dir(), rounds[0], "round.json")))
         self.assertEqual(rj["status"], "aborted")
 
     def test_round_budget_cap_skips_calls(self):
@@ -235,7 +235,7 @@ class RoundTest(unittest.TestCase):
         out = run_round(self.t.state, self.t.cfg, "ballot", self.input, dry_run=True, runner=runner, out=lines.append)
         self.assertIsNone(out)
         self.assertEqual(runner.calls, [])
-        self.assertFalse(os.path.exists(self.t.state.rounds_dir()))
+        self.assertFalse(Path(self.t.state.rounds_dir()).exists())
         self.assertTrue(any("identical for every character" in l for l in lines))  # noqa: E741
         self.assertIn("every pass reads the same --add-dir list (round 1 and round 2):", lines)
         self.assertIn("  --add-dir <a snapshot of origin/main>", lines)
@@ -320,7 +320,7 @@ class ResumeTest(unittest.TestCase):
         rid, _ = self.abort(
             {("builder", "r1"): ans([("B49", "agree", 2, "x")]), ("painter", "r2"): FatalError("API error 500")}
         )
-        rdir = os.path.join(self.t.state.rounds_dir(), rid)
+        rdir = str(Path(self.t.state.rounds_dir(), rid))
         asked = slurp(str(Path(rdir, "prompts", "painter-r2.user.md")))
         r, runner, _ = self.resume(rid)
         self.assertEqual([(c[0], c[1]) for c in runner.calls], [(c, "r2") for c in characters.IDS if c != "builder"])
@@ -343,7 +343,7 @@ class ResumeTest(unittest.TestCase):
 
     def test_the_dry_run_says_what_stays_and_what_is_called(self):
         rid, _ = self.abort({("builder", "r1"): ans(), ("painter", "r1"): FatalError("API error 500")})
-        path = os.path.join(self.t.state.rounds_dir(), rid, "round.json")
+        path = str(Path(self.t.state.rounds_dir(), rid, "round.json"))
         before = slurp(path)
         r, runner, lines = self.resume(rid, dry_run=True)
         self.assertIsNone(r)
@@ -359,7 +359,7 @@ class ResumeTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.resume("2015-01-01-ballot")
         rid, _ = self.abort({("builder", "r1"): FatalError("API error 500")})
-        path = os.path.join(self.t.state.rounds_dir(), rid, "round.json")
+        path = str(Path(self.t.state.rounds_dir(), rid, "round.json"))
         rj = json.loads(slurp(path))
         rj["brainstorm_of"] = {"id": "bs-0001", "initiator": "counter", "round": "x"}
         write_json(path, rj)
@@ -530,7 +530,7 @@ class OldRoundTest(unittest.TestCase):
             }
             rec.update(extra)
             append_jsonl(self.led.path, rec)
-        rdir = os.path.join(self.t.state.rounds_dir(), self.RID)
+        rdir = str(Path(self.t.state.rounds_dir(), self.RID))
         Path(rdir, "answers").mkdir(parents=True)
         write_json(
             str(Path(rdir, "round.json")),
@@ -913,7 +913,7 @@ class SnapshotAndCostTest(unittest.TestCase):
         )
         self.assertEqual(len(self.snap_dirs), 1)
         self.assertTrue(all(c[3].add_dirs == [self.snap_dirs[0]] for c in runner.calls))
-        self.assertFalse(os.path.exists(self.snap_dirs[0]))
+        self.assertFalse(Path(self.snap_dirs[0]).exists())
 
     def test_every_pass_has_the_same_add_dirs(self):
         import tempfile

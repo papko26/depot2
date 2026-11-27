@@ -41,7 +41,7 @@ RETRY_S = 0.25
 DOCS_BASE = None
 READ_DIRS = None
 DOC_BASE = None
-PAGE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web", "index.html")
+PAGE = str(Path(os.path.dirname(os.path.abspath(__file__)), "web", "index.html"))
 CODE_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FD_ENV = "DEPOT2_WEB_FD"
 CODE_CHECK_S = 1.0  # at most one look at the code's files a second
@@ -286,8 +286,8 @@ def code_files(root=CODE_ROOT):
     out = []
     for sub, keep in (
         ("depot2", lambda n: n.endswith(".py")),
-        (os.path.join("depot2", "executors"), lambda n: n.endswith(".py")),
-        (os.path.join("depot2", "web"), lambda n: True),
+        (str(Path("depot2", "executors")), lambda n: n.endswith(".py")),
+        (str(Path("depot2", "web")), lambda n: True),
     ):
         d = os.path.join(root, sub)
         if os.path.isdir(d):

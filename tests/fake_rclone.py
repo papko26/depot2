@@ -103,7 +103,7 @@ def main():
             return 3
         out = [
             {"Path": n, "Name": n, "Size": Path(folder, n).stat().st_size, "ModTime": "x", "IsDir": False}
-            for n in sorted(os.listdir(folder))
+            for n in sorted(entry.name for entry in Path(folder).iterdir())
         ]
         print(json.dumps(out))
         return 0
@@ -120,7 +120,7 @@ def main():
     if cmd == "cryptcheck":
         src = pos[0]
         bad = 0
-        for n in os.listdir(src):
+        for n in [entry.name for entry in Path(src).iterdir()]:
             if include and n != include:
                 continue
             r = os.path.join(folder, n)

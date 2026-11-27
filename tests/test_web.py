@@ -78,7 +78,7 @@ def tree_hash(root):
     out = {}
     for d, _, files in os.walk(root):
         for n in files:
-            p = os.path.join(d, n)
+            p = str(Path(d, n))
             with Path(p).open("rb") as f:
                 out[os.path.relpath(p, root)] = hashlib.sha256(f.read()).hexdigest()
     return out
@@ -491,7 +491,7 @@ class WebTest(WebBase):
 
     def test_the_agents_are_their_json_command_and_never_booked_here(self):
         fx = str(Path(HERE, "transcripts", "-work-depot", "sess-0001", "subagents"))
-        live, done = (os.path.join(self.scratch, n + ".jsonl") for n in ("live", "done"))
+        live, done = (str(Path(self.scratch, n + ".jsonl")) for n in ("live", "done"))
         shutil.copy(Path(fx, "agent-b1e2d3c4f5a6b7c80.jsonl"), live)
         shutil.copy(Path(fx, "agent-a0f1c2d3e4b5a6978.jsonl"), done)
         for ref, aid, path in (("tr-0001:0", "b1e2d3c4f5a6b7c80", live), ("tr-0001:1", "a0f1c2d3e4b5a6978", done)):
@@ -895,7 +895,7 @@ class ReexecTest(unittest.TestCase):
         try:
             code = str(Path(tmp, "code"))
             Path(code).mkdir(parents=True)
-            src = os.path.dirname(HERE)
+            src = str(Path(HERE).parent)
             shutil.copytree(Path(src, "depot2"), Path(code, "depot2"), ignore=shutil.ignore_patterns("__pycache__"))
             state = str(Path(tmp, "state"))
             Path(state).mkdir(parents=True)
@@ -1110,7 +1110,7 @@ class WebHostsTest(WebBase):
 
     def test_the_names_are_read_from_the_config_at_the_start(self):
         path = str(Path(self.t.dir, "config.json"))
-        self.assertFalse(os.path.exists(path))
+        self.assertFalse(Path(path).exists())
         with Path(path).open("w", encoding="utf-8") as f:
             json.dump({"web": {"hosts": ["mybox.local"]}}, f)
         w = self.served()
@@ -1130,7 +1130,7 @@ class WebCliTest(unittest.TestCase):
             p = subprocess.Popen(
                 [
                     sys.executable,
-                    str(Path(os.path.dirname(HERE), "depot2", "__main__.py")),
+                    str(Path(HERE).parent / "depot2" / "__main__.py"),
                     "--state",
                     d,
                     "web",
@@ -1165,7 +1165,7 @@ class WebCliTest(unittest.TestCase):
             p = subprocess.Popen(
                 [
                     sys.executable,
-                    str(Path(os.path.dirname(HERE), "depot2", "__main__.py")),
+                    str(Path(HERE).parent / "depot2" / "__main__.py"),
                     "--state",
                     d,
                     "--set",

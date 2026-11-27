@@ -1,7 +1,6 @@
 import contextlib
 import io
 import json
-import os
 import shutil
 import tempfile
 import unittest
@@ -187,7 +186,7 @@ class BrainstormTest(Base):
         self.assertEqual(b["votes"]["keeper"], ["yes", "потому что yes"])
         # The topic file, in the discuss format, signed: its questions become the next round's points.
         topic = slurp(b["topic_file"])
-        self.assertTrue(os.path.basename(b["topic_file"]).endswith("-brainstorm-poisk-i-filtry.md"))
+        self.assertTrue(Path(b["topic_file"]).name.endswith("-brainstorm-poisk-i-filtry.md"))
         self.assertIn("Созвал: Счетовод (bs-0001", topic)
         self.assertIn("## Вопросы для раунда\n\n1. Вопрос 1?\n2. Вопрос 2?\n3. Вопрос 3?", topic)
         self.assertIn("— Счетовод", topic)

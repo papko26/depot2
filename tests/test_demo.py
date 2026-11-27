@@ -14,7 +14,7 @@ from pathlib import Path
 
 import helpers
 
-ROOT = os.path.dirname(helpers.HERE)
+ROOT = str(Path(helpers.HERE).parent)
 SCRIPT = str(Path(ROOT, "examples", "demo", "make-demo.sh"))
 MAIN = str(Path(ROOT, "depot2", "__main__.py"))
 CYRILLIC = re.compile("[\u0400-\u04ff]")

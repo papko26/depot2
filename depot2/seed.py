@@ -70,9 +70,9 @@ def seed_ledger(state, seed):
         for cid in characters.IDS:
             for point, amount in sorted((r.get("stakes") or {}).get(cid, {}).items()):
                 led.stake(cid, int(amount), r["id"], point, reason=r["points"][point])
-        rdir = os.path.join(state.rounds_dir(), r["id"])
+        rdir = state.path("rounds", r["id"])
         Path(rdir).mkdir(parents=True, exist_ok=True)
-        rj = os.path.join(rdir, "round.json")
+        rj = str(Path(rdir, "round.json"))
         write_json(
             rj,
             {

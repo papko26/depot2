@@ -1,4 +1,3 @@
-import os
 import unittest
 from pathlib import Path
 
@@ -92,7 +91,7 @@ class PortraitTest(unittest.TestCase):
         self.assertEqual((v1["version"], v2["version"]), (1, 2))
         self.assertEqual(v2["previous"], 1)
         self.assertEqual(self.p.portrait(), "Я Краски. Вторая версия.\n")
-        old = slurp(os.path.join(self.p.dir, v1["path"]))
+        old = slurp(Path(self.p.dir, v1["path"]))
         self.assertEqual(old, "Я Краски. Первая версия.\n")
         self.assertEqual(len(v1["sha256"]), 64)
         self.assertEqual(v1["sha256"], sha256_text(old))

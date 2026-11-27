@@ -1,5 +1,4 @@
 import json
-import os
 import subprocess
 import tempfile
 from pathlib import Path
@@ -16,7 +15,7 @@ from depot2.tstack import TeamStack
 
 
 def write(d, name, text):
-    path = os.path.join(d, name)
+    path = str(Path(d, name))
     with Path(path).open("w", encoding="utf-8") as f:
         f.write(text)
     return path
@@ -235,7 +234,7 @@ class TeamStackTest(QBase):
             ts.start("tm-0004")
         # the agents' stack is a different file: untouched
         self.assertEqual(Stack(self.t.state, self.t.cfg).objects(), [])
-        self.assertTrue(os.path.exists(Path(self.t.dir, "team-stack.json")))
+        self.assertTrue(Path(self.t.dir, "team-stack.json").exists())
         self.assertEqual(
             ts.command(ts.get("tm-0001")),
             f"depot2 round --kind discuss --input {topic} --only keeper --item tm-0001 --dry-run",
@@ -456,7 +455,7 @@ class MigrateTest(QBase):
 
     def files(self):
         return {
-            n: slurp(os.path.join(self.t.dir, n))
+            n: slurp(Path(self.t.dir, n))
             for n in ("todo.json", "todo-history.jsonl", "think.json", "stack.json", "stack-history.jsonl")
         }
 

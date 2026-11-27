@@ -536,9 +536,7 @@ class ViewsTest(DepotBase):
         from depot2 import webui
 
         page = webui.page_html(
-            slurp(
-                str(Path(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "depot2", "web", "index.html"))
-            ),
+            slurp(str(Path(__file__).absolute().parent.parent / "depot2" / "web" / "index.html")),
             "ru",
         )
         for label in ("Оценка по принципам", "marksTable", '"marks", "principles"', "принципы: "):

@@ -10,6 +10,7 @@ Every entry can be taken into a car (`take`: a new car on a track, an existing c
 import os
 import re
 import subprocess
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from . import i18n, stages
@@ -560,7 +561,7 @@ class Think(Queue):
 
             if rid not in TeamStack(state, cfg).known_ids():
                 raise QueueError(f"no {rid} in the team stack")
-        elif not os.path.isfile(os.path.join(state.rounds_dir(), rid, "round.json")):
+        elif not Path(state.rounds_dir(), rid, "round.json").is_file():
             raise QueueError(f"no round {rid}")
         return self.to_status(eid, "in_round", round=rid)
 
@@ -753,7 +754,7 @@ def repo_version(cfg):
     if not clone or not os.path.isdir(clone):
         return None
     ver = None
-    pkg = read_json(os.path.join(clone, "package.json"))
+    pkg = read_json(Path(clone, "package.json"))
     if pkg:
         ver = pkg.get("version")
     r = subprocess.run(

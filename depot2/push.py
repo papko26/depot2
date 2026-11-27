@@ -357,10 +357,10 @@ def export_range(root, base, head, dest, spec=None):
         if sha and path and sha not in paths:
             paths[sha] = os.fsdecode(path)
     blobs, size = 0, 0
-    lst = os.path.join(dest, "objects.txt")
-    with open(lst, "wb") as f:
+    lst = str(Path(dest, "objects.txt"))
+    with Path(lst).open("wb") as f:
         f.write(b"".join(s + b"\n" for s in paths))
-    with open(lst, "rb") as inp:
+    with Path(lst).open("rb") as inp:
         cat = subprocess.Popen(
             ["git", "-C", root, "cat-file", "--batch"], stdin=inp, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
         )
@@ -379,7 +379,7 @@ def export_range(root, base, head, dest, spec=None):
                     continue
                 out = os.path.join(dest, "blobs", parts[0][:12].decode(), _safe_rel(paths.get(parts[0], "blob")))
                 Path(out).parent.mkdir(parents=True, exist_ok=True)
-                with open(out, "wb") as f:
+                with Path(out).open("wb") as f:
                     f.write(body)
                 blobs += 1
                 size += n
@@ -392,7 +392,7 @@ def export_range(root, base, head, dest, spec=None):
     )
     if p.returncode != 0:
         raise PushError(t("push.git_log", code=p.returncode), "scan")
-    with open(os.path.join(dest, "commits.txt"), "wb") as f:
+    with Path(dest, "commits.txt").open("wb") as f:
         f.write(p.stdout)
     return blobs, size
 
@@ -464,7 +464,7 @@ class Pusher:
         print(msg, flush=True)
         try:
             backup.bdir(self.state)
-            with open(log_path(self.state), "a", encoding="utf-8") as f:
+            with Path(log_path(self.state)).open("a", encoding="utf-8") as f:
                 f.write(stamp + msg + "\n")
         except OSError:
             pass

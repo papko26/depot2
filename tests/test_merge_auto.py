@@ -44,7 +44,7 @@ class AutoBase(MergeBase):
         return [p for p in self.pushes() if any(a.endswith("refs/heads/" + name) or a == name for a in p["argv"])]
 
     def gens(self, what):
-        if not os.path.exists(self.genlog):
+        if not Path(self.genlog).exists():
             return []
         with Path(self.genlog).open() as f:
             return [json.loads(ln) for ln in f if json.loads(ln)["argv"][0] == what]
@@ -104,7 +104,7 @@ class GeneratedTest(AutoBase):
         self.assertEqual(self.show("main", "docs/GENERATED.md"), "files: 5\n\na.txt\nb.txt\nc.txt\nc2.txt\nd.txt")
         self.assertIn("docs/GENERATED.md: main's side, rebuilt (`", self.log(301))
         self.assertEqual(len(self.gens("generated")), 1)
-        self.assertFalse(os.path.exists(self.marker))
+        self.assertFalse(Path(self.marker).exists())
 
     def test_a_map_git_merged_stale_is_rebuilt_in_the_same_commit(self):
         self.main_commit({"docs/GENERATED.md": MAP0})

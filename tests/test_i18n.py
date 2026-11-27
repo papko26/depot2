@@ -16,7 +16,7 @@ import helpers
 import depot2
 from depot2 import config, i18n
 
-ROOT = os.path.dirname(helpers.HERE)
+ROOT = str(Path(helpers.HERE).parent)
 PKG = str(Path(ROOT, "depot2"))
 CYRILLIC = re.compile("[Ѐ-ӿ]")
 # t("key"), i18n.t("key"), rx("in.key"), is_word(x, "in.key"), matches(x, "key"), forms("key"), message("key")

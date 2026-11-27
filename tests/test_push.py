@@ -19,7 +19,7 @@ from helpers import BALLOT, HERE, TempState, slurp
 
 from depot2 import backup, push
 
-TEAM = str(Path(os.path.dirname(HERE), "depot2", "__main__.py"))
+TEAM = str(Path(HERE).parent / "depot2" / "__main__.py")
 FAKE_SCAN = str(Path(HERE, "fake_scan.py"))
 HIT = "zz-private-word-zz"
 FORCE = ("--force", "-f", "--force-with-lease", "--mirror", "--delete", "-d", "--tags", "--all", "--prune")
@@ -93,7 +93,7 @@ class PushBase(unittest.TestCase):
         return p.stdout.strip() or None
 
     def scans(self):
-        if not os.path.exists(self.slog):
+        if not Path(self.slog).exists():
             return []
         with Path(self.slog).open() as f:
             return [json.loads(ln) for ln in f if ln.strip()]
@@ -103,7 +103,7 @@ class PushBase(unittest.TestCase):
 
     def spawned(self):
         p = self.t.state.path(backup.DIR, push.SPAWNED)
-        return Path(p).stat().st_mtime if os.path.exists(p) else None
+        return Path(p).stat().st_mtime if Path(p).exists() else None
 
     def age_marker(self, minutes):
         p = self.t.state.path(backup.DIR, push.SPAWNED)
@@ -125,7 +125,7 @@ class PushBase(unittest.TestCase):
 
     def log(self):
         p = push.log_path(self.t.state)
-        if not os.path.exists(p):
+        if not Path(p).exists():
             return ""
         with Path(p).open(encoding="utf-8") as f:
             return f.read()
@@ -133,7 +133,7 @@ class PushBase(unittest.TestCase):
     def assert_never_shown(self, *secrets):
         texts = [*list(self.outputs), self.log()]
         sp = self.t.state.path(backup.DIR, push.STAMP)
-        if os.path.exists(sp):
+        if Path(sp).exists():
             with Path(sp).open(encoding="utf-8") as f:
                 texts.append(f.read())
         for s in secrets:
@@ -179,7 +179,7 @@ class FirstPushTest(PushBase):
         blobs = [f for f in s[0]["files"] if f.startswith("blobs/")]
         self.assertTrue([f for f in blobs if f.endswith("/ledger.jsonl")])
         self.assertTrue([f for f in blobs if f.endswith("/note-012.txt")])
-        self.assertFalse(os.path.exists(s[0]["argv"][1]))  # the export is gone
+        self.assertFalse(Path(s[0]["argv"][1]).exists())  # the export is gone
         self.assertEqual(s[1]["argv"], ["--repo", self.root])
         st = self.stamp()
         self.assertEqual(st["commit"], self.head())
@@ -214,7 +214,7 @@ class EveryTenTest(PushBase):
         self.wait_done()
         # The push scanned only what it carried: the 10 new notes' blobs, not the old history.
         s = self.scans()[2]
-        blobs = sorted(os.path.basename(f) for f in s["files"] if f.startswith("blobs/"))
+        blobs = sorted(Path(f).name for f in s["files"] if f.startswith("blobs/"))
         self.assertEqual(blobs, ["note-%03d.txt" % i for i in range(1, 11)])  # noqa: UP031
         started = self.spawned()
         self.assertEqual(self.team("stack").stderr, "")
@@ -252,7 +252,7 @@ class EveryTenTest(PushBase):
         self.team("backup", "--push")
         self.assertEqual(self.remote_head(), self.head())
         s = self.scans()[2]
-        self.assertEqual([os.path.basename(f) for f in s["files"] if f.startswith("blobs/")], ["scan-moved-0.txt"])
+        self.assertEqual([Path(f).name for f in s["files"] if f.startswith("blobs/")], ["scan-moved-0.txt"])
 
 
 class FailureTest(PushBase):
@@ -485,7 +485,7 @@ class RawGateTest(unittest.TestCase):
         shutil.rmtree(self.tmp, ignore_errors=True)
 
     def raw(self, name, text):
-        p = os.path.join(self.t.state.rounds_dir(), "r", "raw", name)
+        p = str(Path(self.t.state.rounds_dir(), "r", "raw", name))
         Path(p).parent.mkdir(parents=True, exist_ok=True)
         with Path(p).open("w") as f:
             f.write(text)
@@ -502,13 +502,13 @@ class RawGateTest(unittest.TestCase):
         self.assertEqual((slurp(p), lines), ('{"type": "assistant"}\n', []))
         s = self.scans()
         self.assertEqual((len(s), s[0]["argv"][0], s[0]["files"]), (1, "--root", ["builder-r1.jsonl"]))
-        self.assertFalse(os.path.exists(self.q))
+        self.assertFalse(Path(self.q).exists())
 
     def test_a_dirty_stream_goes_to_the_quarantine_and_a_marker_stays(self):
         p = self.raw("chronicler-r1.jsonl", f'{{"text": "a {HIT} here"}}\n')
         lines = []
         q = push.gate_raw(self.t.state, self.t.cfg, p, lines.append)
-        self.assertEqual(q["file"], os.path.join("rounds", "r", "raw", "chronicler-r1.jsonl"))
+        self.assertEqual(q["file"], str(Path("rounds", "r", "raw", "chronicler-r1.jsonl")))
         self.assertEqual(q["to"], str(Path(self.q, "rounds", "r", "raw", "chronicler-r1.jsonl")))
         self.assertIn(HIT, slurp(q["to"]))
         marker = json.loads(slurp(p))
@@ -532,13 +532,13 @@ class RawGateTest(unittest.TestCase):
         self.t.cfg["backup"]["git"]["scan"] = str(Path(self.tmp, "no-such-scan.sh"))
         q = push.gate_raw(self.t.state, self.t.cfg, self.raw("painter-r1.jsonl", "{}\n"), lambda *a: None)
         self.assertIn("нет скана", q["why"])
-        self.assertTrue(os.path.isfile(q["to"]))
+        self.assertTrue(Path(q["to"]).is_file())
 
     def test_off_scans_nothing(self):
         os.environ["DEPOT2_RAW_SCAN"] = "off"
         p = self.raw("x-r1.jsonl", HIT + "\n")
         self.assertIsNone(push.gate_raw(self.t.state, self.t.cfg, p, lambda *a: None))
-        self.assertFalse(os.path.exists(self.slog))
+        self.assertFalse(Path(self.slog).exists())
 
     def test_a_round_commits_the_marker_never_the_stream(self):
         from test_round import FakeRunner
@@ -560,8 +560,8 @@ class RawGateTest(unittest.TestCase):
         with self.assertRaises(RoundAborted):
             run_round(self.t.state, self.t.cfg, "ballot", inp, runner=runner, out=lines.append)
         rid = os.listdir(self.t.state.rounds_dir())[0]
-        rel = os.path.join("rounds", rid, "raw", "chronicler-r1.jsonl")
-        rj = json.loads(slurp(os.path.join(self.t.state.rounds_dir(), rid, "round.json")))
+        rel = str(Path("rounds", rid, "raw", "chronicler-r1.jsonl"))
+        rj = json.loads(slurp(Path(self.t.state.rounds_dir(), rid, "round.json")))
         self.assertEqual([q["file"] for q in rj["quarantined"]], [rel])
         self.assertEqual(len(self.scans()), 4)  # every call's stream, scanned alone
         self.assertTrue(any("в карантине" in x for x in lines))
@@ -569,7 +569,7 @@ class RawGateTest(unittest.TestCase):
         self.assertIn("quarantined", history)
         self.assertNotIn(HIT, history)
         self.assertEqual(git(self.t.state.root, "status", "--porcelain").stdout.strip(), "")
-        self.assertIn(HIT, slurp(os.path.join(self.q, rel)))
+        self.assertIn(HIT, slurp(Path(self.q, rel)))
         # the round goes on (`round --resume`); its report names the stream in the quarantine
         r = run_round(
             self.t.state, self.t.cfg, None, resume=rid, runner=FakeRunner(self.t.state, {}), out=lambda *a: None

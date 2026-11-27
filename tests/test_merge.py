@@ -22,7 +22,7 @@ FAKE_GH = str(Path(HERE, "fake_gh.py"))
 FAKE_GIT = str(Path(HERE, "fake_git.sh"))
 FAKE_SCAN = str(Path(HERE, "fake_scan.py"))
 SMOKE_OK = '{"check": "home page", "ok": true}'
-EXAMPLE_PLUGIN = str(Path(os.path.dirname(HERE), "examples", "plugins", "example_checks.py"))
+EXAMPLE_PLUGIN = str(Path(HERE).parent / "examples" / "plugins" / "example_checks.py")
 
 
 def sh(cwd, *argv, check=True):
@@ -168,10 +168,10 @@ class MergeBase(unittest.TestCase):
             "isDraft": False,
         }
         self.save_gh()
-        if not os.path.isdir(self.clone):
+        if not Path(self.clone).is_dir():
             self.g(self.tmp, "clone", "-q", self.bare, self.clone)
         self.g(self.clone, "fetch", "-q", "origin")
-        self.g(self.clone, "worktree", "add", "-q", "-b", branch, os.path.join(self.wt, branch), "origin/" + branch)
+        self.g(self.clone, "worktree", "add", "-q", "-b", branch, str(Path(self.wt, branch)), "origin/" + branch)
         if stack:
             s = Stack(self.t.state, self.t.cfg)
             o = s.add(title or "PR %d" % n, branch=branch, pr=n)  # noqa: UP031
@@ -196,14 +196,14 @@ class MergeBase(unittest.TestCase):
         self.save_gh()
 
     def gh_calls(self, *prefix):
-        if not os.path.exists(self.ghlog):
+        if not Path(self.ghlog).exists():
             return []
         with Path(self.ghlog).open() as f:
             calls = [json.loads(ln) for ln in f if ln.strip()]
         return [c for c in calls if c[: len(prefix)] == list(prefix)]
 
     def pushes(self):
-        if not os.path.exists(self.gitlog):
+        if not Path(self.gitlog).exists():
             return []
         with Path(self.gitlog).open() as f:
             calls = [ln.rstrip("\n").split("\t", 1) for ln in f if ln.strip()]
@@ -241,7 +241,7 @@ class AddTest(MergeBase):
             rc, out, err = self.team(*argv)
             self.assertEqual(rc, 1, out)
             self.assertIn("мердж только по слову владельца", err)
-        self.assertFalse(os.path.exists(self.t.state.path(merge.FILE)))
+        self.assertFalse(Path(self.t.state.path(merge.FILE)).exists())
         self.assertEqual(Stack(self.t.state, self.t.cfg).get("st-0001")["status"], "PR #301: CI green")
         rc, out, err = self.team("merge", "add", "301", "--word", "301 — мердж")
         self.assertEqual(rc, 0, err)
@@ -426,7 +426,7 @@ class EnsureTest(unittest.TestCase):
         self.assertEqual(
             argv[1:],
             [
-                str(Path(os.path.dirname(HERE), "depot2", "__main__.py")),
+                str(Path(HERE).parent / "depot2" / "__main__.py"),
                 "--state",
                 self.t.dir,
                 "--set",
@@ -1006,13 +1006,13 @@ class ConflictTest(MergeBase):
         self.assertEqual(self.g(self.wt_a, "rev-parse", "HEAD"), head)  # the merge was aborted
         self.assertEqual(self.g(self.wt_a, "status", "--porcelain"), "")
         self.assertFalse(
-            os.path.exists(Path(self.wt_a, ".git"))
+            Path(self.wt_a, ".git").exists()
             and os.path.exists(self.g(self.wt_a, "rev-parse", "--git-path", "MERGE_HEAD"))
         )
         self.assertEqual(self.pushes(), [])
         self.assertEqual(self.gh_calls("pr", "merge"), [])
         self.assertEqual(self.entry(302)["status"], "waiting")
-        self.assertFalse(os.path.exists(self.marker))
+        self.assertFalse(Path(self.marker).exists())
 
     def test_a_prepared_resolution_by_the_blobs_is_applied(self):
         f = str(Path(self.tmp, "a.resolved"))
@@ -1045,7 +1045,7 @@ class ConflictTest(MergeBase):
         )
         self.assertEqual(rc, 0, err)
         self.assertIn("added a prepared resolution for a.txt", out)
-        self.assertTrue(os.path.isfile(self.t.state.path(merge.RES_DIR, f"{self.ours}-{self.theirs}")))
+        self.assertTrue(Path(self.t.state.path(merge.RES_DIR, f"{self.ours}-{self.theirs}")).is_file())
         self.assertIn("a.txt", self.team("merge", "resolve", "list")[1])
         rc, out, err = self.team("merge", "run")
         self.assertEqual(rc, 0, out + err)
@@ -1057,7 +1057,7 @@ class ConflictTest(MergeBase):
         rc, out, err = self.team("merge", "resolve", "drop", self.ours[:16], "--reason", "landed")
         self.assertEqual(rc, 0, err)
         self.assertEqual(merge.Resolutions(self.t.state).items(), [])
-        self.assertFalse(os.path.exists(self.t.state.path(merge.RES_DIR, f"{self.ours}-{self.theirs}")))
+        self.assertFalse(Path(self.t.state.path(merge.RES_DIR, f"{self.ours}-{self.theirs}")).exists())
 
     def test_a_resolutions_path_is_the_repos(self):
         f = str(Path(self.tmp, "ci.resolved"))
@@ -1188,7 +1188,7 @@ class CarTest(MergeBase):
         rc, _, err = self.team("trains", "state", "search-n-export", "merge", "--word", "поезд — мердж")
         self.assertEqual(rc, 1)
         self.assertIn("PR — tr-0001:1: сборка", err)
-        self.assertFalse(os.path.exists(self.t.state.path(merge.FILE)))
+        self.assertFalse(Path(self.t.state.path(merge.FILE)).exists())
         self.assertEqual(self.team("stack", "post", "st-0002")[0], 0)
         rc, _, err = self.team("trains", "state", "search-n-export", "merge")  # the owner's word is required
         self.assertEqual(rc, 1)
@@ -1256,7 +1256,7 @@ class CarTest(MergeBase):
         )
         self.assertIn("- tr-0001:3: PR #301 — тот же, что у tr-0001:1", err)
         self.assertIn("Ничего не записано", err)
-        self.assertFalse(os.path.exists(self.t.state.path(merge.FILE)))
+        self.assertFalse(Path(self.t.state.path(merge.FILE)).exists())
         self.assertEqual(Trains(self.t.state, self.t.cfg).get("search")["state"], "impl")
 
     def test_a_closed_and_a_draft_pr_refuse_the_train_before_the_first_write(self):
@@ -1274,7 +1274,7 @@ class CarTest(MergeBase):
         )
         self.assertIn("- tr-0001:3: PR #303 is a draft — поправить PR или вагон", err)
         self.assertNotIn("tr-0001:1", err)
-        self.assertFalse(os.path.exists(self.t.state.path(merge.FILE)))
+        self.assertFalse(Path(self.t.state.path(merge.FILE)).exists())
         self.assertEqual(Trains(self.t.state, self.t.cfg).get("search")["state"], "impl")
         tk = Tracks(self.t.state, self.t.cfg)
         self.assertEqual(tk.stage_of(tk.car("tr-0001:1")[1]), "acceptance")
@@ -1319,7 +1319,7 @@ class CarTest(MergeBase):
 
 class WorktreeTest(MergeBase):
     def wt_of(self, branch):
-        return os.path.join(self.wt, branch)
+        return str(Path(self.wt, branch))
 
     def test_after_the_merge_a_clean_worktree_goes_a_dirty_one_stays_with_the_reason(self):
         self.pr(301, "feat-a", {"a.txt": "A\n"}, title="Чистая")
@@ -1339,7 +1339,7 @@ class WorktreeTest(MergeBase):
         self.assertEqual([e["status"] for e in self.q().entries()], ["merged", "merged"])
         # feat-a: gone; what its link points at and the branch stay
         self.assertFalse(os.path.lexists(self.wt_of("feat-a")))
-        self.assertTrue(os.path.exists(Path(nm, "pkg.js")))
+        self.assertTrue(Path(nm, "pkg.js").exists())
         self.assertEqual(self.g(self.clone, "rev-parse", "refs/heads/feat-a"), self.entry(301)["head"])
         self.assertNotIn(self.wt_of("feat-a"), self.g(self.clone, "worktree", "list"))
         w = self.entry(301)["wt"]
@@ -1348,7 +1348,7 @@ class WorktreeTest(MergeBase):
         self.assertIn("рабочая копия {} удалена: освобождено ".format(self.wt_of("feat-a")), out)
         self.assertIn("(ветка feat-a осталась)", out)
         # feat-b: as it was, the reason in the runner's output, the entry's log and its `wt`
-        self.assertTrue(os.path.exists(Path(self.wt_of("feat-b"), "notes.txt")))
+        self.assertTrue(Path(self.wt_of("feat-b"), "notes.txt").exists())
         w = self.entry(302)["wt"]
         self.assertFalse(w["removed"])
         self.assertEqual(w["reason"], "грязная: ?? notes.txt")
@@ -1391,17 +1391,17 @@ class WorktreeTest(MergeBase):
         s = Stack(self.t.state, self.t.cfg)
         o = s.add("follow-up", branch="feat-f")
         s.start(o["id"])
-        before = sorted(os.listdir(self.wt))
+        before = sorted(entry.name for entry in Path(self.wt).iterdir())
         rc, out, err = self.team("merge", "prune-worktrees", "--dry-run")
         self.assertEqual(rc, 0, out + err)
-        self.assertEqual(sorted(os.listdir(self.wt)), before)  # nothing touched
+        self.assertEqual(sorted(entry.name for entry in Path(self.wt).iterdir()), before)  # nothing touched
         self.assertIn("--dry-run (ничего не трогаю)", out)
         self.assertIn("удалю (1, освободится ", out)
         self.assertIn("  - feat-a: PR #301 слит; ", out)
         self.assertEqual([h for h in self.q().history() if h["event"] == "prune_worktrees"], [])
         rc, out, err = self.team("merge", "prune-worktrees")
         self.assertEqual(rc, 0, out + err)
-        self.assertEqual(sorted(os.listdir(self.wt)), [d for d in before if d != "feat-a"])
+        self.assertEqual(sorted(entry.name for entry in Path(self.wt).iterdir()), [d for d in before if d != "feat-a"])
         self.assertIn(f"каталогов 9 (рабочих копий {self.clone} 8)", out)
         self.assertIn("удалены (1, освобождено ", out)
         self.assertIn("  - feat-a: PR #301 слит; ", out)
@@ -1438,7 +1438,7 @@ class DryRunTest(MergeBase):
             self.team("merge", "add", str(n), "--word", "мердж %d" % n)  # noqa: UP031
         files = (merge.FILE, merge.HISTORY, "stack.json")
         before = {p: self.bytes(p) for p in files}
-        heads = {b: self.g(os.path.join(self.wt, b), "rev-parse", "HEAD") for b in ("feat-a", "feat-b", "feat-c")}
+        heads = {b: self.g(str(Path(self.wt, b)), "rev-parse", "HEAD") for b in ("feat-a", "feat-b", "feat-c")}
         rc, out, err = self.team("merge", "run", "--dry-run")
         self.assertEqual(rc, 0, err)
         self.assertIn("DRY RUN: the merge queue's plan (no push, no merge, the depot unchanged)", out)
@@ -1454,7 +1454,7 @@ class DryRunTest(MergeBase):
         self.assertEqual(self.pushes(), [])
         self.assertEqual(self.gh_calls("pr", "merge"), [])
         self.assertEqual({p: self.bytes(p) for p in files}, before)
-        self.assertEqual({b: self.g(os.path.join(self.wt, b), "rev-parse", "HEAD") for b in heads}, heads)
+        self.assertEqual({b: self.g(str(Path(self.wt, b)), "rev-parse", "HEAD") for b in heads}, heads)
         self.assertEqual(len(self.g(self.clone, "worktree", "list").splitlines()), 4)  # the throwaway one is gone
 
 
