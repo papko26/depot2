@@ -358,7 +358,7 @@ class DocsTest(GateBase):
         self.team("tracks", "add", "--title", "Каталог")
         self.team("tracks", "car", "add", "tr-0001", "--title", "доки", "--brief", self.docs_brief)
         self.team("tracks", "car", "add", "tr-0001", "--title", "без доков", "--brief", self.brief)
-        for ref, pr in (("tr-0001:0", "501"), ("tr-0001:1", "502")):
+        for ref, _pr in (("tr-0001:0", "501"), ("tr-0001:1", "502")):
             rc, _, err = self.team("tracks", "car", "stack", ref, "--start")
             self.assertEqual(rc, 0, err)
         self.team("stack", "set", "st-0001", "--pr", "501")

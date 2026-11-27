@@ -30,7 +30,7 @@ PLANNING_FIELDS = ("status", "start", "slots", "started", "finished")
 CYRILLIC_ABC = "".join(chr(c) for c in range(0x430, 0x436)) + chr(0x451) + "".join(chr(c) for c in range(0x436, 0x450))
 TRANSLIT = dict(zip(CYRILLIC_ABC,
                     ["a", "b", "v", "g", "d", "e", "yo", "zh", "z", "i", "y", "k", "l", "m", "n", "o", "p", "r", "s",
-                     "t", "u", "f", "kh", "ts", "ch", "sh", "shch", "", "y", "", "e", "yu", "ya"]))
+                     "t", "u", "f", "kh", "ts", "ch", "sh", "shch", "", "y", "", "e", "yu", "ya"], strict=False))
 NAME_WORDS = 3
 OLD_STATUS = i18n.Labels("migrate.old_status", ("paused", "done"))  # a schema-1 train's status, in the step's lines
 NAME_CHARS = 32

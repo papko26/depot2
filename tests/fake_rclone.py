@@ -59,7 +59,7 @@ def main():
         return 0
     flags = [a for a in rest if a.startswith("-")]
     pos, skip = [], False
-    for i, a in enumerate(rest):
+    for _i, a in enumerate(rest):
         if skip:
             skip = False
             continue

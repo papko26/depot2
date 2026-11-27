@@ -304,6 +304,7 @@ class Car:
         for r in (self.car, self.obj, self.entry, self.left):
             if r is not None:
                 return r
+        return None
 
     def stage(self):
         if self.car is not None:

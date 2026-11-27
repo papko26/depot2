@@ -49,7 +49,7 @@ def read_bugs(cfg):
                 continue
             cells = [c.strip() for c in line.strip().strip("|").split("|")] + [""] * 5
             if cells[0] != "id" and RE_BUG.match(cells[0]):
-                out.setdefault(cells[0], dict(zip(("id", "who", "what", "where", "status"), cells)))
+                out.setdefault(cells[0], dict(zip(("id", "who", "what", "where", "status"), cells, strict=False)))
     return out
 
 

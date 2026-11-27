@@ -1007,7 +1007,7 @@ class CarTest(MergeBase):
                                    "--car", "tr-0002:1", "--car", "tr-0001:1", "--slots", "max 2")[0], 0)
         rc, out, err = self.team("trains", "state", "search-n-export", "impl")
         self.assertEqual(rc, 0, err)
-        for ref, n in (("tr-0002:1", 302), ("tr-0001:1", 301)):
+        for ref, _n in (("tr-0002:1", 302), ("tr-0001:1", 301)):
             self.assertEqual(self.team("tracks", "car", "stack", ref, "--start")[0], 0)
         self.assertEqual(self.team("stack", "set", "st-0001", "--pr", "302")[0], 0)
         self.assertEqual(self.team("stack", "set", "st-0002", "--pr", "301")[0], 0)
@@ -1050,7 +1050,7 @@ class CarTest(MergeBase):
         self.assertEqual(self.team(*args)[0], 0)
         self.assertEqual(self.team("trains", "state", name, "impl")[0], 0)
         k = 0
-        for r, n in zip(refs, prs):
+        for r, n in zip(refs, prs, strict=False):
             if not n:
                 continue
             k += 1

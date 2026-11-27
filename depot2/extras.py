@@ -172,7 +172,7 @@ def evaluate(proposals, votes, took_part, balances, cfg, history, genders):
 RU_ALPHABET = "".join(chr(c) for c in range(0x430, 0x436)) + chr(0x451) + "".join(chr(c) for c in range(0x436, 0x450))
 TRANSLIT = dict(zip(RU_ALPHABET,
                     ["a", "b", "v", "g", "d", "e", "e", "zh", "z", "i", "y", "k", "l", "m", "n", "o", "p",
-                     "r", "s", "t", "u", "f", "kh", "ts", "ch", "sh", "shch", "", "y", "", "e", "yu", "ya"]))
+                     "r", "s", "t", "u", "f", "kh", "ts", "ch", "sh", "shch", "", "y", "", "e", "yu", "ya"], strict=False))
 
 
 def slugify(text, n=40):

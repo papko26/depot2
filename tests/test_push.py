@@ -112,6 +112,7 @@ class PushBase(unittest.TestCase):
                 return True
             time.sleep(0.1)
         self.fail("timed out waiting")
+        return None
 
     def wait_done(self):
         time.sleep(0.2)

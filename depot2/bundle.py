@@ -87,7 +87,7 @@ def _numbered_points(text):
             if bm:
                 title, rest = bm.group(1).strip().rstrip(".:"), bm.group(2).strip()
             else:
-                first = re.split(r"(?<=[.?!:])\s", body, 1)
+                first = re.split(r"(?<=[.?!:])\s", body, 1)  # noqa: B034
                 title = first[0].rstrip(".:")[:100]
                 rest = first[1].strip() if len(first) > 1 else ""
             cur = {"id": f"Q{m.group(1)}", "title": title,

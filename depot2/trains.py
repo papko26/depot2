@@ -199,7 +199,7 @@ class Trains:
             return {"start": self.start_blockers(tn, now), "DoR": dor}
         if to == "merge":
             out = []
-            for ref, t, c in open_:
+            for ref, t, c in open_:  # noqa: B007
                 s = self.tracks.stage_of(c)
                 if s not in GREEN:
                     out.append(f"{ref}: {stages.ru(s)}")
@@ -291,7 +291,7 @@ class Trains:
                                   "command": "depot2 trains state {} impl".format(tn["name"])})
                 continue
             cars = []
-            for ref, t, c in pri.ordered(self.cars_of(tn), lambda x: x[2]):
+            for _ref, t, c in pri.ordered(self.cars_of(tn), lambda x: x[2]):
                 if not tracks.startable(t, c):
                     continue
                 dor = tracks.dor_of(t, c)  # a car its DoR holds is not taken: it waits for its brief, its answers
@@ -516,7 +516,7 @@ class Trains:
         from . import merge
         queued = {e["pr"] for e in merge.MergeQueue(self.state).entries(open_only=True)}
         plan, bad, seen = [], [], {}
-        for ref, t, c in self.open_cars(tn):
+        for ref, _t, c in self.open_cars(tn):
             n = c.get("pr")
             off = i18n.t("trains.off_hint", name=tn["name"], ref=ref)
             if not n:

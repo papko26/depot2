@@ -117,6 +117,7 @@ class BackupBase(unittest.TestCase):
                 return True
             time.sleep(0.1)
         self.fail("timed out waiting")
+        return None
 
     def spawned(self):
         """The mtime of the marker a start writes before it detaches, or None: no start."""

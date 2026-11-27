@@ -470,6 +470,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
             return self.send_json(404, {"error": i18n.t("webui.no_page", path=path)})
         code, data = self.server.answer(urllib.parse.unquote(path[5:]), q)
         self.send_json(code, data)
+        return None
 
 
 class Server(http.server.ThreadingHTTPServer):
