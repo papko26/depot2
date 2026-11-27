@@ -22,5 +22,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
       - run: make install
       - run: uv run --locked ruff check .
+      - run: make format-check
       - run: make typecheck
       - run: make test

@@ -508,7 +508,7 @@ From the repository root, use uv to create `.venv` and install the project and d
 
 ```sh
 make install      # uv sync --locked
-make check        # run lint, typecheck, and test
+make check        # check lint, formatting, types, and tests
 ```
 
 Run checks individually with `make lint`, `make typecheck`, or `make test`.
