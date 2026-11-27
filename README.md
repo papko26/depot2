@@ -492,8 +492,9 @@ depot2 seed                        # one-off: state, specs, ledger, first portra
 ## Tests
 
 ```sh
-python3 -m unittest discover -s tests            # the standard library only, no network
-python3 -m unittest discover -s tests -p 'test_merge*.py'
+make test                                   # full suite with pytest-xdist
+uv run --locked pytest tests/test_merge.py  # one module, serially
+python3 -m unittest discover -s tests       # standard-library runner
 ```
 
 No test reaches GitHub, a runner or the network: `tests/` has stand-ins for `gh`, `git` (a logging wrapper), `rclone`,

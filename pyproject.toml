@@ -25,4 +25,9 @@ packages = ["depot2", "depot2.catalogs", "depot2.executors"]
 depot2 = ["web/*"]
 
 [dependency-groups]
-dev = ["ruff==0.17.6", "mypy==1.14.1"]
+dev = [
+    "ruff==0.17.6",
+    "mypy==1.14.1",
+    "pytest>=9.2.0",
+    "pytest-xdist>=3.8.0",
+]

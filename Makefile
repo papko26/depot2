@@ -15,7 +15,7 @@ lint:  ## Check Python files with Ruff
 typecheck:  ## Check package types with mypy
 	uv run --locked mypy --python-version 3.11 -p depot2
 
-test:  ## Run the test suite
-	uv run --locked python -m unittest discover -s tests
+test:  ## Run the test suite in parallel
+	uv run --locked pytest -q -n auto tests
 
 check: lint typecheck test  ## Run lint, typecheck, and test
