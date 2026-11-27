@@ -54,7 +54,7 @@ class PushError(Exception):
     only a person can fix it, so no background retry.
     """
 
-    def __init__(self, reason, step, detail="", person=False):
+    def __init__(self, reason, step, detail="", person=False) -> None:
         Exception.__init__(self, reason)
         self.reason, self.step, self.detail, self.person = reason, step, detail, person
 
@@ -402,7 +402,7 @@ def classify(code, err, tail):
 
 
 class Pusher:
-    def __init__(self, state, cfg, auto=False):
+    def __init__(self, state, cfg, auto=False) -> None:
         self.state, self.g, self.auto = state, cfg["backup"]["git"], auto
         self.secrets = backup.Secrets()
 

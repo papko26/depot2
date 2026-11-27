@@ -25,7 +25,7 @@ DEFAULT = "depot2.executors.cli_agent"
 class FatalError(RuntimeError):
     """Stop everything: auth, quota, API, or a broken runner. Never retried."""
 
-    def __init__(self, msg, result=None):
+    def __init__(self, msg, result=None) -> None:
         RuntimeError.__init__(self, msg)
         self.result = result
 
@@ -33,7 +33,7 @@ class FatalError(RuntimeError):
 class CallFailed(RuntimeError):
     """This call failed (its cap, timeout, or a bad answer). Refund it; the round goes on."""
 
-    def __init__(self, msg, result=None):
+    def __init__(self, msg, result=None) -> None:
         RuntimeError.__init__(self, msg)
         self.result = result
 
@@ -43,7 +43,7 @@ class CallSpec:
 
     def __init__(self, call_id, model, effort, system_path, user, schema, tools=(),
                  max_tool_turns=0, budget_usd=1.0, timeout_s=300, cwd=None, add_dirs=(),
-                 deny=(), raw_path=None, budget_mtok=None):
+                 deny=(), raw_path=None, budget_mtok=None) -> None:
         self.call_id = call_id
         self.model = model
         self.effort = effort

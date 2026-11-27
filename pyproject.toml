@@ -35,6 +35,7 @@ dev = [
 [tool.ruff.lint]
 select = ["B", "C4", "E4", "E7", "E9", "F", "FA", "FURB", "G", "I", "PIE", "RET", "RUF", "SIM", "TC", "UP"]
 extend-select = [
+    "ANN204", # missing-return-type-special-method
     "D204", # incorrect-blank-line-after-class
     "D208", # over-indentation
     "D209", # new-line-after-last-paragraph

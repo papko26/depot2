@@ -45,7 +45,7 @@ AUTH_HINTS = ("invalid_grant", "couldn't fetch token", "oauth2: ", "token expire
 class BackupError(Exception):
     """A run that cannot go on. `reason` is the short Russian line of the ⚠ warning."""
 
-    def __init__(self, reason, step, detail=""):
+    def __init__(self, reason, step, detail="") -> None:
         Exception.__init__(self, reason)
         self.reason, self.step, self.detail = reason, step, detail
 
@@ -57,8 +57,8 @@ class Busy(Exception):
 class Secrets:
     """The keys and their obscured forms of one run: never printed, logged or passed in argv."""
 
-    def __init__(self):
-        self.values = []
+    def __init__(self) -> None:
+        self.values: list[str] = []
 
     def add(self, value):
         if value and value not in self.values:
@@ -213,7 +213,7 @@ def _nice(argv):
 
 
 class Runner:
-    def __init__(self, state, cfg, auto=False):
+    def __init__(self, state, cfg, auto=False) -> None:
         self.state, self.b, self.auto = state, cfg["backup"], auto
         self.secrets = Secrets()
         self.crypt = self.b["crypt_name"]

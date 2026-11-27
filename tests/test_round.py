@@ -26,13 +26,13 @@ class FakeRunner:
     turns each (character, stage) reports having used (default 0).
     """
 
-    def __init__(self, state, script, turns=None):
+    def __init__(self, state, script, turns=None) -> None:
         self.state = state
         self.script = script
         self.turns = turns or {}
         self.calls = []
 
-    def __call__(self, spec):
+    def __call__(self, spec) -> dict[str, object]:
         cid, stage = spec.call_id.split("/")[1].rsplit("-", 1)
         self.calls.append((cid, stage, Ledger(self.state).balance(cid), spec))
         item = self.script.get((cid, stage))

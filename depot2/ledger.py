@@ -30,7 +30,7 @@ class LedgerError(ValueError):
 
 
 class Ledger:
-    def __init__(self, state):
+    def __init__(self, state) -> None:
         self.state = state
         self.path = state.ledger_path
 
@@ -231,7 +231,7 @@ class Ledger:
 class Pending:
     """Conditional awards whose amount is not known yet (amount null). Open, then closed."""
 
-    def __init__(self, state):
+    def __init__(self, state) -> None:
         self.state = state
         self.path = state.pending_path
 
@@ -268,7 +268,7 @@ class Pending:
 class Decisions:
     """The owner's decisions about a character (or 'all'). They gate the reflection too."""
 
-    def __init__(self, state):
+    def __init__(self, state) -> None:
         self.state = state
         self.path = state.decisions_path
 

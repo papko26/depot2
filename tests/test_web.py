@@ -34,7 +34,7 @@ def page_messages(html):
 class Served:
     """A server on port 0 in a thread; get() returns (status, headers, body)."""
 
-    def __init__(self, state, sets, **kw):
+    def __init__(self, state, sets, **kw) -> None:
         kw.setdefault("follow_code", False)  # a server in a thread never re-executes the test run (ReexecTest does)
         self.srv = webui.Server(state, sets=sets, port=0, **kw)
         self.port = self.srv.server_address[1]
@@ -67,7 +67,7 @@ class Served:
 class Peer:
     """A request as `Server.authorize` sees it, from any address: the one gate, asked without a socket."""
 
-    def __init__(self, addr, host):
+    def __init__(self, addr, host) -> None:
         self.client_address, self.headers, self.sent = (addr, 50000), {"Host": host}, []
 
     def send_json(self, code, data, allow=False):

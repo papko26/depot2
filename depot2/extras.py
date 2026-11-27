@@ -35,7 +35,7 @@ class EventLog:
     prefix: str | None = None
     filename: str | None = None
 
-    def __init__(self, state):
+    def __init__(self, state) -> None:
         self.state = state
         self.path = state.path(self.filename)
 
@@ -68,7 +68,7 @@ class EventLog:
 
 
     OPEN: tuple[str, ...] = ()
-    STATUS_RU: dict[str, str] | i18n.Labels = {}  # noqa: RUF012
+    STATUS_RU: dict[str, str] | i18n.Labels[str] = {}  # noqa: RUF012
 
     def listing(self, all_=False):
         return [it for it in self.items() if all_ or it["status"] in self.OPEN]

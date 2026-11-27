@@ -77,7 +77,7 @@ class Guard:
     call when that would reach the stop.
     """
 
-    def __init__(self, cfg):
+    def __init__(self, cfg) -> None:
         self.cfg = cfg
         self.budget = float(cfg["round"]["budget_mtok"])
         self.max_calls = int(cfg["round"]["max_calls"])

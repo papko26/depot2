@@ -129,9 +129,9 @@ def read_jsonl(path):
 class State:
     """The state dir (a local git repo). Collects the paths a command touched, then commits them."""
 
-    def __init__(self, root):
+    def __init__(self, root) -> None:
         self.root = os.path.abspath(os.path.expanduser(root))
-        self.touched = set()
+        self.touched: set[str] = set()
 
     def path(self, *parts):
         return os.path.join(self.root, *parts)

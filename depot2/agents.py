@@ -94,14 +94,14 @@ def _pct(u):
 # --- the agents ----------------------------------------------------------------------------------------------------
 
 class Agents:
-    def __init__(self, state, cfg, tracks=None):
+    def __init__(self, state, cfg, tracks=None) -> None:
         self.state = state
         self.cfg = cfg
         self.path = state.path("agents.json")
         self.history_path = state.path("agents-history.jsonl")
         self.data = read_json(self.path) or {"schema": SCHEMA, "next": 1, "agents": []}
         self._tracks = tracks
-        self.lines = []  # what a command prints besides its table: the spend booked, the stack's lines
+        self.lines: list[str] = []  # what a command prints besides its table: the spend booked, the stack's lines
 
     @property
     def tracks(self):

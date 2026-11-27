@@ -318,7 +318,7 @@ class Reading:
     body: the PR's body when the caller has it, else read with gh; fetch=False: no read (the marks as they are).
     """
 
-    def __init__(self, state, cfg, ref, pr=None, body=None, fetch=True, pl=None):
+    def __init__(self, state, cfg, ref, pr=None, body=None, fetch=True, pl=None) -> None:
         self.state, self.cfg, self.ref, self.pr = state, cfg, ref, pr
         self.plist = plist(state, cfg) if pl is None else pl
         self.old = dict(holder(state, cfg, ref)[1].get("marks") or {}) if ref else {}

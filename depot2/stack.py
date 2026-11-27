@@ -67,7 +67,7 @@ class Stack:
     POST = True  # the agents' stack has a post-stack; the team stack (tstack.py) has none
     STAGES = True  # the agents' objects are cars with stages (stages.py); a team item is not
 
-    def __init__(self, state, cfg):
+    def __init__(self, state, cfg) -> None:
         self.state = state
         self.cfg = cfg
         self.path = state.path(self.FILE)
@@ -75,7 +75,7 @@ class Stack:
         self.data = read_json(self.path) or {"next": 1, "next_lock": 1, "objects": []}
         self._links = None  # (the tracks files' stamps, {st: car})
         self._mq = None  # the merge queue's open entries (stages.merge_index), read once
-        self.notes = []  # the lines a command prints: a stage moved off the route
+        self.notes: list[str] = []  # the lines a command prints: a stage moved off the route
         self.last_forced = None  # what the last start or post forced past its gate (gates.py)
 
     # --- reading ----------------------------------------------------------------------------
@@ -806,7 +806,7 @@ BALLOT_RU = i18n.Labels("stack.ballot", BALLOT_STATUSES)
 class Ballots:
     """The owner's ballot queue: every finished round, in order."""
 
-    def __init__(self, state):
+    def __init__(self, state) -> None:
         self.state = state
         self.path = state.path("ballots.json")
         self.data = read_json(self.path) or {"entries": []}

@@ -26,11 +26,11 @@ QUESTION_FIELDS = (re.compile(i18n.rx("in.bundle.question_full"), re.IGNORECASE)
 
 
 class Bundle:
-    def __init__(self):
-        self.parts = []      # (title, text)
-        self.cuts = []       # human-readable notes of what was cut
-        self.points = []     # [{"id", "title", "question", "recommendation", "source"}]
-        self.sources = []    # paths and commands read
+    def __init__(self) -> None:
+        self.parts: list[tuple[str, str]] = []      # (title, text)
+        self.cuts: list[str] = []       # human-readable notes of what was cut
+        self.points: list[dict[str, str]] = []     # [{"id", "title", "question", "recommendation", "source"}]
+        self.sources: list[str] = []    # paths and commands read
         self.pr = None       # `--pr`: the PR's gh view
 
     def add(self, title, text, cap, what):

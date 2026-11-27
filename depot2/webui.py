@@ -22,6 +22,7 @@ import sys
 import threading
 import time
 import urllib.parse
+from collections.abc import Callable
 
 from . import i18n
 
@@ -399,7 +400,7 @@ class Handler(http.server.BaseHTTPRequestHandler):
     server_version = NAME
     sys_version = ""
 
-    def __getattr__(self, name):  # every method but GET: 405
+    def __getattr__(self, name: str) -> Callable[[], None]:  # every method but GET: 405
         if name.startswith("do_"):
             return self.not_allowed
         raise AttributeError(name)
@@ -484,7 +485,7 @@ class Server(http.server.ThreadingHTTPServer):
     daemon_threads = True
 
     def __init__(self, state, sets=None, port=PORT, host=HOST, read_dirs=READ_DIRS, doc_base=DOC_BASE,
-                 docs_base=DOCS_BASE, verbose=False, code_root=CODE_ROOT, follow_code=True):
+                 docs_base=DOCS_BASE, verbose=False, code_root=CODE_ROOT, follow_code=True) -> None:
         if host not in LOOPBACK:  # no flag opens it: there is no authorization yet
             raise ValueError("{} web listens on loopback only ({}), not {!r}".format(NAME, ", ".join(LOOPBACK), host))
         if host == "::1":
@@ -507,7 +508,7 @@ class Server(http.server.ThreadingHTTPServer):
         fd = os.environ.pop(FD_ENV, None)  # a re-exec: the socket the server before it listened on
         self.resumed = fd is not None
         super().__init__((host, port), Handler, bind_and_activate=not self.resumed)
-        if self.resumed:
+        if fd is not None:
             self.socket.close()
             self.socket = socket.socket(fileno=int(fd))
             os.set_inheritable(self.socket.fileno(), False)

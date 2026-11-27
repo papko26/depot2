@@ -258,7 +258,7 @@ class Car:
     and its twin (a car's live stack object, an object's car).
     """
 
-    def __init__(self, state, cfg, ref, stack=None, tracks=None):
+    def __init__(self, state, cfg, ref, stack=None, tracks=None) -> None:
         from .queues import Think, Wishes
         from .stack import Stack
         from .tracks import RE_CAR, Tracks
@@ -266,7 +266,8 @@ class Car:
         self.stack = stack or Stack(state, cfg)
         self.tracks = tracks or Tracks(state, cfg)
         self.tracks._stack = self.stack
-        self.obj = self.left = self.track = self.car = self.entry = self.queue = None
+        self.queue: Wishes | Think | None = None
+        self.obj = self.left = self.track = self.car = self.entry = None
         if ref.startswith("st-"):
             if not self.stack._known(ref):
                 raise StageError(i18n.t("stages.no_object", ref=ref))

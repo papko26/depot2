@@ -10,12 +10,17 @@ Every entry can be taken into a car (`take`: a new car on a track, an existing c
 import os
 import re
 import subprocess
+from typing import TYPE_CHECKING
 
 from . import i18n, stages
 from . import priority as pri
 from .i18n import t
 from .stack import _cell
 from .store import append_jsonl, now_iso, read_json, read_jsonl, today, write_json
+
+if TYPE_CHECKING:
+    from .stack import Stack
+    from .tracks import Tracks
 
 
 class QueueError(ValueError):
@@ -27,11 +32,11 @@ class Text:
     Text(k1, k2, …, many=True) a tuple of them (a table's columns).
     """
 
-    def __init__(self, *keys, **kw):
+    def __init__(self, *keys, **kw) -> None:
         self.keys = keys
         self.many = kw.get("many", len(keys) > 1)
 
-    def __get__(self, obj, cls=None):
+    def __get__(self, obj, cls=None) -> str | tuple[str, ...]:
         words = tuple(t(k) for k in self.keys)
         return words if self.many else words[0]
 
@@ -40,7 +45,7 @@ class Queue:
     NAME: str | None = None  # the file's name: <NAME>.json, <NAME>-history.jsonl
     PREFIX: str | None = None  # the id's prefix
     TITLE: Text | None = None  # the table's heading (a Text)
-    STATUS_RU: dict[str, str] | i18n.Labels = {}  # status -> its word (an i18n.Labels)  # noqa: RUF012
+    STATUS_RU: dict[str, str] | i18n.Labels[str] = {}  # status -> its word (an i18n.Labels)  # noqa: RUF012
     OPEN: tuple[str, ...] = ()  # the statuses of an open entry
     ALSO_FROM: dict[str, tuple[str, ...]] = {}  # target status -> closed statuses allowed to move there  # noqa: RUF012
     FIELDS: tuple[str, ...] = ()  # the fields `set` may change (lists: LIST_FIELDS append)
@@ -49,14 +54,16 @@ class Queue:
     STATUS_STAGE: dict[str, str] = {}  # a status move -> the stage it means (to_status)  # noqa: RUF012
     KIND_RU: Text | str | None = None  # entry kind for the car's source note
 
-    def __init__(self, state, cfg=None):
+    def __init__(self, state, cfg=None) -> None:
         self.state = state
         self.cfg = cfg
+        if self.NAME is None:
+            raise TypeError("Queue subclasses must define NAME")
         self.path = state.path(self.NAME + ".json")
         self.history_path = state.path(self.NAME + "-history.jsonl")
         self.data = read_json(self.path) or {"next": 1, "entries": []}
-        self.notes = []  # the lines a command prints: a stage moved off the route
-        self._ctx = {}  # the stack and the tracks, read once for a table's rows (a taken wish's target)
+        self.notes: list[str] = []  # the lines a command prints: a stage moved off the route
+        self._ctx: dict[str, Stack | Tracks] = {}  # the stack and the tracks, read once for a table's rows (a taken wish's target)
 
     # --- reading ---------------------------------------------------------------------------------
 

@@ -17,6 +17,8 @@ import importlib
 import os
 import re
 import string
+from collections.abc import Iterable, Iterator
+from typing import Generic, TypeVar
 
 LANGS = ("en", "ru")
 DEFAULT = "en"
@@ -129,16 +131,19 @@ def fold(text):
     return " ".join(str(text or "").strip().lower().replace("\u0451", "\u0435").split())
 
 
-class Labels:
+LabelKey = TypeVar("LabelKey")
+
+
+class Labels(Generic[LabelKey]):
     """A family of messages read like a dict: Labels("stage", STAGES)[k] is t("stage." + k), in the language of
     the moment.
     """
 
-    def __init__(self, prefix, keys):
+    def __init__(self, prefix: str, keys: Iterable[LabelKey]) -> None:
         self.prefix = prefix
         self._keys = tuple(keys)
 
-    def __getitem__(self, k):
+    def __getitem__(self, k: LabelKey) -> str:
         if k not in self._keys:
             raise KeyError(k)
         return t(f"{self.prefix}.{k}")
@@ -146,13 +151,13 @@ class Labels:
     def get(self, k, default=None):
         return self[k] if k in self._keys else default
 
-    def __contains__(self, k):
+    def __contains__(self, k) -> bool:
         return k in self._keys
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[LabelKey]:
         return iter(self._keys)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._keys)
 
     def keys(self):

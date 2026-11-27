@@ -44,7 +44,7 @@ def slurp(path):
 class TempState:
     """A throwaway state dir with five characters, specs and balances."""
 
-    def __init__(self, balances=None, git=False):
+    def __init__(self, balances=None, git=False) -> None:
         self.dir = tempfile.mkdtemp(prefix="team-test-")
         self.state = State(self.dir)
         if git:

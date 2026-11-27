@@ -41,7 +41,7 @@ class FakeClock:
     reads the same time ($FAKE_GH_NOW). No test hangs on the real time or on how fast the machine is.
     """
 
-    def __init__(self, path, start=START):
+    def __init__(self, path, start=START) -> None:
         self.path, self.t = path, float(start)
         self.write()
 

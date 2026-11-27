@@ -91,7 +91,7 @@ class MergeError(ValueError):
 class Stop(Exception):
     """The PR's ride failed: the queue stops here. files: the conflicting files no rule resolved (a conflict)."""
 
-    def __init__(self, reason, files=None):
+    def __init__(self, reason, files=None) -> None:
         Exception.__init__(self, reason)
         self.reason = reason
         self.files = list(files or [])
@@ -144,7 +144,7 @@ def argv_of(cmd, **subs):
 
 class Sh:
 
-    def __init__(self, env=None):
+    def __init__(self, env=None) -> None:
         self.env = env
 
     def run(self, argv, cwd=None, timeout=None, env_extra=None, input_text=None):
@@ -161,7 +161,7 @@ class Sh:
 # --- the queue's file ----------------------------------------------------------------------------------
 
 class MergeQueue:
-    def __init__(self, state):
+    def __init__(self, state) -> None:
         self.state = state
         self.path = state.path(FILE)
         self.history_path = state.path(HISTORY)
@@ -233,7 +233,7 @@ class Resolutions:
     sides' blobs (ours = the branch's, theirs = main's) and checked against the file's path.
     """
 
-    def __init__(self, state):
+    def __init__(self, state) -> None:
         self.state = state
         self.path = state.path(RES_INDEX)
         self.dir = state.path(RES_DIR)
@@ -448,7 +448,7 @@ NET_GIT = ("fetch", "push", "ls-remote")
 
 
 class Rider(TrialsMixin, WorktreesMixin):
-    def __init__(self, state, cfg, sh=None, out=None, clock=None, sleep=None):
+    def __init__(self, state, cfg, sh=None, out=None, clock=None, sleep=None) -> None:
         self.state, self.cfg = state, cfg
         self.m = cfg["merge"]
         self.repo = cfg.get("repo") or ""

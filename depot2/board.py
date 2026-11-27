@@ -30,7 +30,7 @@ def _since(rec, fallback=None):
 
 
 class Board:
-    def __init__(self, state, cfg):
+    def __init__(self, state, cfg) -> None:
         from .merge import MergeQueue
         self.state, self.cfg = state, cfg
         self.stk = Stack(state, cfg)

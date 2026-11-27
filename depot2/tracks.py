@@ -76,13 +76,13 @@ def _known_keys(obj, allowed, where):
 
 
 class Tracks:
-    def __init__(self, state, cfg, trains=None):
+    def __init__(self, state, cfg, trains=None) -> None:
         self.state = state
         self.cfg = cfg
         self.path = state.path("tracks.json")
         self.history_path = state.path("tracks-history.jsonl")
         self.data = read_json(self.path) or {"schema": SCHEMA, "next": 1, "tracks": []}
-        self._stack = None
+        self._stack: Stack | None = None
         self._tstack = None
         self._trains = trains
         self._links = None  # {st: (track, car)} from the history; `_save` drops it

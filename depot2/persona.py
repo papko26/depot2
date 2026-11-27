@@ -28,7 +28,7 @@ from .store import (
 
 
 class Persona:
-    def __init__(self, state, cid):
+    def __init__(self, state, cid) -> None:
         self.state = state
         self.cid = cid
         self.dir = state.char_dir(cid)

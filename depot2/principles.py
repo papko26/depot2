@@ -16,6 +16,7 @@ import contextlib
 import os
 import re
 import stat
+from collections.abc import Iterator
 
 from . import i18n
 from .i18n import rx, t
@@ -30,13 +31,13 @@ SECTION_TITLE = i18n.Labels("principles.section", SECTION_CODES)
 class _Sections:
     """SECTIONS: the (code, title) pairs in their order, each title in the language of the moment."""
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[tuple[str, str]]:
         return iter([(k, SECTION_TITLE[k]) for k in SECTION_CODES])
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(SECTION_CODES)
 
-    def __getitem__(self, i):
+    def __getitem__(self, i: int | slice) -> tuple[str, str] | list[tuple[str, str]]:
         return list(self)[i]
 
 
@@ -89,7 +90,7 @@ class Principles(Queue):
     FIELDS = ("date", "section", "title", "text", "order", "gap", "check")
     LIST_FIELDS = ("links", "notes")
 
-    def __init__(self, state, cfg=None):
+    def __init__(self, state, cfg=None) -> None:
         super().__init__(state, cfg)
         self.data.setdefault("next", 1)
         for e in self.data.get("entries") or []:  # an older depot's section codes: read as today's

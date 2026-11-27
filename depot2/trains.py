@@ -124,7 +124,7 @@ def _now(now):
 
 
 class Trains:
-    def __init__(self, state, cfg, tracks=None):
+    def __init__(self, state, cfg, tracks=None) -> None:
         self.state = state
         self.cfg = cfg
         self.path = state.path("trains.json")

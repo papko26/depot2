@@ -19,7 +19,7 @@ TRIAL_OK = ("pushed", "same")
 class Hold(Exception):
     """A trial not built: why, under its status."""
 
-    def __init__(self, status, reason):
+    def __init__(self, status, reason) -> None:
         Exception.__init__(self, reason)
         self.status, self.reason = status, reason
 
