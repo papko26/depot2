@@ -85,7 +85,7 @@ def forms(key):
     out = []
     for lang in LANGS:
         m = catalog(lang).get(key)
-        for f in (m.values() if isinstance(m, dict) else [m] if m is not None else []):
+        for f in m.values() if isinstance(m, dict) else [m] if m is not None else []:
             if f not in out:
                 out.append(f)
     return out
@@ -174,7 +174,7 @@ def web_messages(lang=None):
     """The web view's messages (the `web.` keys, without the prefix), English filling what the language lacks."""
     lang = lang or language()
     out = {}
-    for src in ((DEFAULT, lang) if lang != DEFAULT else (DEFAULT,)):
+    for src in (DEFAULT, lang) if lang != DEFAULT else (DEFAULT,):
         for k, v in catalog(src).items():
             if k.startswith("web."):
                 out[k[4:]] = v

@@ -19,8 +19,10 @@ ROOT = os.path.dirname(helpers.HERE)
 PKG = os.path.join(ROOT, "depot2")
 CYRILLIC = re.compile("[Ѐ-ӿ]")
 # t("key"), i18n.t("key"), rx("in.key"), is_word(x, "in.key"), matches(x, "key"), forms("key"), message("key")
-RE_KEY = re.compile(r"""(?:\bt|\bi18n\.t|\brx|\bforms|\bmessage)\(\s*["']([a-z0-9_.\-]*[a-z0-9_\-])["']\s*[,)]|"""
-                    r"""(?:\bis_word|\bmatches)\([^()]*?,\s*["']([a-z0-9_.\-]*[a-z0-9_\-])["']\)""")
+RE_KEY = re.compile(
+    r"""(?:\bt|\bi18n\.t|\brx|\bforms|\bmessage)\(\s*["']([a-z0-9_.\-]*[a-z0-9_\-])["']\s*[,)]|"""
+    r"""(?:\bis_word|\bmatches)\([^()]*?,\s*["']([a-z0-9_.\-]*[a-z0-9_\-])["']\)"""
+)
 RE_WEB_KEY = re.compile(r"""\bT\(\s*["']([A-Za-z0-9_.\-]+)["']""")
 
 
@@ -141,8 +143,9 @@ class LanguageTest(unittest.TestCase):
         self.assertEqual(i18n.t("team.agree", gender="m", lang="en"), i18n.t("team.agree", gender="f", lang="en"))
 
     def test_words_are_read_in_every_language(self):
-        self.assertTrue(i18n.is_word("Род: мужской", "in.spec_gender") or
-                        re.search(i18n.rx("in.spec_gender"), "Род: мужской"))
+        self.assertTrue(
+            i18n.is_word("Род: мужской", "in.spec_gender") or re.search(i18n.rx("in.spec_gender"), "Род: мужской")
+        )
         self.assertTrue(re.search(i18n.rx("in.spec_gender"), "Grammatical gender: f"))
 
 
