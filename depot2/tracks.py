@@ -582,7 +582,7 @@ class Tracks(object):
     def take_object(self, oid, tid, n=None, size=None, title=None, by=None):
         if not RE_TRACK.match(tid or ""):
             raise TrackError(i18n.t("tracks.to_not_track", tid=tid))
-        t = self.get(tid)
+        self.get(tid)
         team = oid.startswith("tm-")
         stk = self.tstack if team else self.stack
         by = by or ("tstack take" if team else "stack take")

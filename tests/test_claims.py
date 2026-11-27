@@ -11,7 +11,7 @@ from test_extras import Base
 
 from depot2 import claims, stages
 from depot2.stack import Stack
-from depot2.store import append_jsonl, read_json, write_json
+from depot2.store import append_jsonl, write_json
 from depot2.tracks import Tracks
 from depot2.trains import Trains
 

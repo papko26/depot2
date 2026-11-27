@@ -4,13 +4,13 @@ import os
 
 from helpers import slurp
 from test_extras import Base, order, proposal, r2
-from test_round import FakeRunner, ans
+from test_round import ans
 
 from depot2 import characters
 from depot2.executors import FatalError
 from depot2.ledger import Ledger
 from depot2.reflect import changes_since
-from depot2.round import _place_locks, run_round
+from depot2.round import _place_locks
 from depot2.stack import Ballots, Stack, StackError
 from depot2.store import read_jsonl
 from depot2.tstack import TeamStack

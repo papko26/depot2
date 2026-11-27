@@ -21,8 +21,6 @@ jobs:
           version: "0.13.10"
           python-version: ${{ matrix.python-version }}
       - run: make install
-      - name: Lint
-        run: make lint
-        continue-on-error: true
+      - run: make lint
       - run: make typecheck
       - run: make test

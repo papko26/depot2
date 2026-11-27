@@ -253,19 +253,19 @@ def universe(stk, tr):
     """Every car that can hold returns and claims, once: [{ref, kind, rec, track, objects}] — the tracks' cars (with
     every object each had), the live stack objects that are no car's, the objects that left and are no car's."""
     objs_of = {}
-    for t in tr.data["tracks"]:
-        for c in t["cars"]:
+    for track in tr.data["tracks"]:
+        for c in track["cars"]:
             if c.get("st"):
-                objs_of.setdefault("%s:%s" % (t["id"], c["n"]), set()).add(c["st"])
+                objs_of.setdefault("%s:%s" % (track["id"], c["n"]), set()).add(c["st"])
     for h in tr.history():
         if h.get("st") and h.get("track") and h.get("car") is not None:
             objs_of.setdefault("%s:%s" % (h["track"], h["car"]), set()).add(h["st"])
     car_st = set().union(*objs_of.values()) if objs_of else set()
     out = []
-    for t in tr.data["tracks"]:
-        for c in t["cars"]:
-            ref = "%s:%s" % (t["id"], c["n"])
-            out.append({"ref": ref, "kind": "car", "rec": c, "track": t, "objects": sorted(objs_of.get(ref, ()))})
+    for track in tr.data["tracks"]:
+        for c in track["cars"]:
+            ref = "%s:%s" % (track["id"], c["n"])
+            out.append({"ref": ref, "kind": "car", "rec": c, "track": track, "objects": sorted(objs_of.get(ref, ()))})
     live = set()
     for o in stk.objects():
         live.add(o["id"])

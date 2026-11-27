@@ -731,8 +731,8 @@ def cmd_show(state, cfg, a):
     print("portrait v%04d, %d versions in history (verified)\n" % (p.version(), p.verify()))
     print(p.portrait().strip() or "(no portrait)")
     print("\n## last thoughts")
-    for t in p.thoughts(cfg["thoughts_in_prompt"]):
-        print("- [%s] %s" % (t.get("round", ""), t["thought"]))
+    for thought in p.thoughts(cfg["thoughts_in_prompt"]):
+        print("- [%s] %s" % (thought.get("round", ""), thought["thought"]))
     st = led.open_stakes(cid=cid)
     if st:
         print("\n## open stakes")

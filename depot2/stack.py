@@ -173,12 +173,12 @@ class Stack(object):
         live = {r: tn for tn in trains.get("trains") or [] if tn.get("state") in ("design", "impl", "merge")
                 for r in tn.get("cars") or []}
         out = {}
-        for t in tracks.get("tracks") or []:
-            for c in t.get("cars") or []:
+        for track in tracks.get("tracks") or []:
+            for c in track.get("cars") or []:
                 if c.get("st"):
-                    ref = "%s:%s" % (t["id"], c["n"])
+                    ref = "%s:%s" % (track["id"], c["n"])
                     tn = live.get(ref)
-                    out[c["st"]] = {"car": ref, "track": t["id"], "track_title": t["title"],
+                    out[c["st"]] = {"car": ref, "track": track["id"], "track_title": track["title"],
                                     "train": tn["name"] if tn else None, "train_title": tn["title"] if tn else None}
         return out
 

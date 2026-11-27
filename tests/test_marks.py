@@ -9,9 +9,9 @@ import unittest
 from helpers import slurp
 from test_board import GateBase
 
-from depot2 import gates, marks, migrate
+from depot2 import marks, migrate
 from depot2.stack import Stack
-from depot2.store import State, read_json, read_jsonl, write_json
+from depot2.store import read_json, read_jsonl, write_json
 from depot2.tracks import SCHEMA, Tracks
 
 LABELS = {"5", "26", "1", "20", "11", "19", "4", "5a", "23"}

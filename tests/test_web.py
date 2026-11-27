@@ -1,8 +1,6 @@
 
-import contextlib
 import hashlib
 import http.client
-import io
 import json
 import os
 import re
@@ -19,7 +17,6 @@ import helpers
 from helpers import HERE
 from test_board import ALL, GateBase
 
-from depot2 import cli as team  # noqa: E402
 
 from depot2 import board as board_mod
 from depot2 import characters, i18n, webui

@@ -1,7 +1,6 @@
 
 import json
 import os
-import stat
 import subprocess
 import tempfile
 

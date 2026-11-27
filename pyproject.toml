@@ -31,3 +31,6 @@ dev = [
     "pytest>=9.2.0",
     "pytest-xdist>=3.8.0",
 ]
+
+[tool.ruff.lint]
+select = ["E9", "F", "FA", "G", "TC"]

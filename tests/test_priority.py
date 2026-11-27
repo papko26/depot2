@@ -1,8 +1,6 @@
 
 import json
 import os
-import shutil
-import tempfile
 
 from helpers import slurp
 from test_tracks import PAST, TracksBase
@@ -11,7 +9,7 @@ from depot2 import migrate
 from depot2 import priority as pri
 from depot2.queues import Think, Todo, Wishes
 from depot2.stack import Stack
-from depot2.store import State, read_json, read_jsonl, write_json
+from depot2.store import read_json, read_jsonl, write_json
 from depot2.tracks import SCHEMA, Tracks
 from depot2.tstack import TeamStack
 

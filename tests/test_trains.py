@@ -4,14 +4,13 @@ import fcntl
 import json
 import os
 import shutil
-import tempfile
 
 from helpers import BRIEF_TEXT
 from test_tracks import FUTURE, PAST, TracksBase
 
 from depot2 import config, merge, migrate
 from depot2.stack import Stack
-from depot2.store import State, read_json, read_jsonl, write_json
+from depot2.store import read_json, read_jsonl, write_json
 from depot2.tracks import Tracks
 from depot2.trains import TrainError, Trains, check_name, parse_slots
 

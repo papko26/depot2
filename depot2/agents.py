@@ -9,10 +9,7 @@ agents.json          {"schema": 1, "next": n, "agents": [...]}: every run, in th
 agents-history.jsonl every change of a run ({"agent": ag-NNNN, "event": start|attach|finish|stop, ...})
 """
 
-import collections
 import datetime
-import glob
-import json
 import os
 import re
 

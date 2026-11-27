@@ -21,7 +21,7 @@ import unittest
 from helpers import HERE, TempState
 
 from depot2 import backup
-from depot2.store import read_json, write_json
+from depot2.store import write_json
 
 TEAM = os.path.join(os.path.dirname(HERE), "depot2", "__main__.py")
 FAKE_RCLONE = os.path.join(HERE, "fake_rclone.py")

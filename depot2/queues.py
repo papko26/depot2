@@ -17,7 +17,7 @@ from . import priority as pri
 from . import stages
 from .i18n import t
 from .stack import _cell
-from .store import append_jsonl, now_iso, read_json, read_jsonl, sha256_text, today, write_json
+from .store import append_jsonl, now_iso, read_json, read_jsonl, today, write_json
 
 
 class QueueError(ValueError):

@@ -241,7 +241,6 @@ class TranscriptTest(AgentsBase):
         self.assertEqual(ags.status(ag, None)[0], "lost")
 
     def test_a_grown_transcript_is_read_on_from_where_it_stopped(self):
-        import depot2.agents as agents_mod
         with open(self.path(DONE), "rb") as f:
             lines = f.read().splitlines(keepends=True)
         path = os.path.join(self.projects, "growing.jsonl")

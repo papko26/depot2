@@ -12,14 +12,10 @@ from helpers import BRIEF_TEXT, GATES_ALL
 from test_extras import Base
 from test_merge import MergeBase
 
-from depot2 import cli as team  # noqa: E402
 
 from depot2 import gates, marks, stages
-from depot2.board import Board
 from depot2.stack import Stack, StackError
-from depot2.store import read_json
 from depot2.tracks import Tracks
-from depot2.trains import Trains
 
 ALL = ["--set", "gates.dor=" + json.dumps(GATES_ALL["dor"]), "--set", "gates.dod=" + json.dumps(GATES_ALL["dod"])]
 

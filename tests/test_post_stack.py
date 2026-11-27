@@ -5,8 +5,7 @@ import json
 from test_tracks import PAST, TracksBase
 
 from depot2.stack import Stack, StackError, age_ru
-from depot2.tracks import Tracks, reads_dropped
-from depot2.trains import Trains
+from depot2.tracks import reads_dropped
 
 THEN = "2015-11-08T13:00:00+02:00"
 LATER = datetime.datetime.fromisoformat("2015-11-08T15:05:00+02:00")
