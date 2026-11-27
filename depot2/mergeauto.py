@@ -137,10 +137,10 @@ NET_RE = re.compile(
     r"Connection reset|Connection refused|Connection closed|connection was closed|unexpected disconnect|early EOF|"
     r"RPC failed|unexpected EOF|\": EOF|error connecting to|i/o timeout|no such host|network is unreachable|"
     r"Temporary failure in name resolution|deadline exceeded|HTTP 50[0234]|50[234] (Bad Gateway|Service Unavailable|Gateway Time)|"
-    r"Could not read from remote repository|remote end hung up", re.I)
+    r"Could not read from remote repository|remote end hung up", re.IGNORECASE)
 NOT_NET_RE = re.compile(
     r"Permission denied|Authentication failed|Bad credentials|could not read Username|HTTP 40[0-9]|non-fast-forward|"
-    r"\[rejected\]|protected branch|not found|does not exist|no such pull request", re.I)
+    r"\[rejected\]|protected branch|not found|does not exist|no such pull request", re.IGNORECASE)
 
 
 def is_net(code, text):

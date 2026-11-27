@@ -625,7 +625,7 @@ def repo_version(cfg):
 
 # --- the one-shot migration ------------------------------------------------------------------------
 
-PRIO_NOTE = re.compile(r"^\s*(?:\d{4}-\d{2}-\d{2}:\s*)?prio:\s*(high|normal|later)\b", re.I)
+PRIO_NOTE = re.compile(r"^\s*(?:\d{4}-\d{2}-\d{2}:\s*)?prio:\s*(high|normal|later)\b", re.IGNORECASE)
 
 
 def note_prio(e):

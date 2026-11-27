@@ -636,7 +636,7 @@ def drive_check(state, a, b):
 def status(state, cfg):
     from . import push
     push.status(state, cfg)
-    print("")
+    print()
     drive_status(state, cfg)
     return 0
 

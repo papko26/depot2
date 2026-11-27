@@ -75,7 +75,7 @@ def checks_frame():
 
 
 FRAME = re.compile(r"(?i)^\*\*[^*]*{}".format(rx("in.principles.frame")))
-RE_THIRD = re.compile(rx("in.principles.third_check"), re.I)
+RE_THIRD = re.compile(rx("in.principles.third_check"), re.IGNORECASE)
 
 STATUS_RU = i18n.Labels("principles.status", ("active", "replaced", "dropped"))
 
@@ -635,7 +635,7 @@ def _item(m, section, order, ref):
         close = rest.find("**", 2)
         if close > 2:
             title, text = rest[2:close], rest[close + 2:]
-            text = text[1:] if text.startswith(" ") else text
+            text = text.removeprefix(" ")
     d = DATE.search(title + " " + text)
     return {"n": n, "suffix": suffix, "section": section, "order": order, "title": title, "text": text,
             "date": d.group(1) if d else None, "subs": [], "gap": 0, "source_ref": ref}

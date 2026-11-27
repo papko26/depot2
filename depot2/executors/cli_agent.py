@@ -42,7 +42,7 @@ def _error(msg):
 FATAL_TEXT = re.compile(
     r"not logged in|/login|usage limit|rate.?limit|quota|credit balance|billing|overloaded|"
     r"authenticat|unauthori[sz]ed|invalid api key|issue with the selected model",
-    re.I)
+    re.IGNORECASE)
 
 STRIP_ENV_PREFIXES = ("CLAUDE_CODE_",)
 STRIP_ENV = ("CLAUDECODE", "ANTHROPIC_API_KEY", "ANTHROPIC_AUTH_TOKEN")

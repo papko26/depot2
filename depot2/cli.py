@@ -54,7 +54,7 @@ def cmd_round(state, cfg, a):
         print("{}: round {}, {}".format(a.item, r["id"], effort.fmt(o["spent_mtok"], cfg)))
         state.commit("team: tstack {} ← round {}".format(a.item, r["id"]))
     if r:
-        print("")
+        print()
         print(r["report"])
         if r.get("fatal"):  # the round is done and saved; its lock pass hit a fatal error
             print("FATAL: {}".format(r["fatal"]), file=sys.stderr)
@@ -349,7 +349,7 @@ def cmd_stack(state, cfg, a):
         trk, c, lines = tr.take_object(a.id, a.to, n=a.n, size=a.size, title=a.title)
         for line in lines:
             print(line)
-        print("")
+        print()
         print(tr.car_md(trk["id"]), end="")
     elif act == "done":
         tr = Tracks(state, cfg)
@@ -402,7 +402,7 @@ def cmd_stack(state, cfg, a):
             print("%s %s +%d (the lock's price back)" % (tx["id"], characters.name(tx["character"]), tx["amount"]))  # noqa: UP031
     for line in stk.notes + link:
         print(line)
-    print("")
+    print()
     print(stk.md(), end="")
     state.commit("team: stack {} {}{}".format(act, getattr(a, "id", None) or getattr(a, "title", "")[:60],
                                            " → {}:{}".format(trk["id"], c["n"]) if act == "take" else ""))
@@ -469,7 +469,7 @@ def cmd_car(state, cfg, a):
             need = car.needs_project(a.why, off=a.off, by=by)
             print(t("cli.project_required", car=car.label, why=need["why"]) if need else
                   t("cli.project_required_off", car=car.label))
-        print("")
+        print()
         print(stages.Car(state, cfg, a.id).show(), end="")
         state.commit(f"team: car {a.action} {a.id}")
         return 0
@@ -481,7 +481,7 @@ def cmd_car(state, cfg, a):
             print(line)
     print("{}: {} → {}{}{}".format(car.label, stages.ru(was), stages.ru(stage), (f" ({a.why})") if a.why else "",
                               " [--force]" if a.force else ""))
-    print("")
+    print()
     print(stages.Car(state, cfg, a.id).show(), end="")
     state.commit(f"team: car stage {a.id} {stage}")
     return 0
@@ -707,7 +707,7 @@ def cmd_ledger(state, cfg, a):
             print("%s %s %-12s %-10s %+4d → %3d  %s %s %s" % (  # noqa: UP031
                 e["id"], e["ts"][:16], e["type"], characters.name(e["character"]), e["amount"],
                 e["balance_after"], e.get("round") or "", e.get("point") or "", e.get("reason") or ""))
-        print("")
+        print()
     bal = led.balances(entries)
     print("%-17s %7s  %s" % ("", "balance", "open stakes"))  # noqa: UP031
     for cid in characters.IDS:
@@ -829,9 +829,9 @@ def cmd_tstack(state, cfg, a):
         t, c, lines = tr.take_object(a.id, a.to, n=a.n, size=a.size, title=a.title)
         for line in lines:
             print(line)
-        print("")
+        print()
         print(tr.car_md(t["id"]), end="")
-    print("")
+    print()
     print(ts.md(), end="")
     state.commit("team: tstack {} {}{}".format(act, getattr(a, "id", None) or (a.title or a.kind or "")[:60],
                                             " → {}:{}".format(t["id"], c["n"]) if act == "take" else ""))
@@ -853,10 +853,10 @@ def cmd_tracks(state, cfg, a):
         made = tr.import_json(a.file, dry_run=a.dry_run)
         print("%s %d tracks, %d cars from %s" % ("DRY RUN: would import" if a.dry_run else "imported", len(made),  # noqa: UP031
                                                   sum(len(t["cars"]) for t in made), a.file))
-        print("")
+        print()
         print(tr.md(include_done=True), end="")
         for t in made:
-            print("")
+            print()
             print(tr.car_md(t["id"]), end="")
         if not a.dry_run:
             state.commit("team: tracks import (%d tracks)" % len(made))  # noqa: UP031
@@ -872,7 +872,7 @@ def cmd_tracks(state, cfg, a):
                add_note=a.note)
         print(f"{a.id} updated")
         tid = a.id
-    print("")
+    print()
     print(tr.md(include_done=True), end="")
     state.commit(f"team: tracks {act} {tid}")
     return 0
@@ -902,7 +902,7 @@ def _cmd_check(state, cfg, a):
         pl = marks.plist(state, cfg)
         n, word = a.rest[0], " ".join(a.rest[1:])
         labels = [p["label"] for p in pl]
-        m = re.match(r"^(\d+)({}?)$".format(i18n.rx("in.cli.principle_letter")), n, re.I)
+        m = re.match(r"^(\d+)({}?)$".format(i18n.rx("in.cli.principle_letter")), n, re.IGNORECASE)
         label = marks.norm_label(m.group(1), m.group(2)) if m else None
         if label not in labels:
             raise ValueError(t("cli.no_principle", n=n, labels=", ".join(labels) or t("cli.none_word")))
@@ -920,7 +920,7 @@ def _cmd_check(state, cfg, a):
             raise ValueError(t("cli.line_pr_only"))
         wrote = False
     car, rec = marks.holder(state, cfg, a.ref)
-    print("")
+    print()
     print(marks.md(ref, marks.of(rec, marks.plist(state, cfg))), end="")
     if wrote:
         state.commit(f"team: tracks car check {ref} ({what})")
@@ -955,7 +955,7 @@ def _cmd_car(state, cfg, tr, a):
         for line in lines:
             print(line)
         for x in [t] + ([src] if src is not t else []):  # the new track's table, then the old one's with its pointer
-            print("")
+            print()
             print(tr.car_md(x["id"]), end="")
         state.commit("team: tracks car move {} → {}:{}".format(a.ref, t["id"], c["n"]))
         return 0
@@ -971,7 +971,7 @@ def _cmd_car(state, cfg, tr, a):
         _obj, msgs = tr.car_stack(a.ref, start=a.start, force=a.force, why=a.why)
         for m in tr.stack.notes + msgs:
             print(m)
-    print("")
+    print()
     print(tr.car_md(t["id"]), end="")
     state.commit("team: tracks car {} {}:{}".format(act, t["id"], c["n"]))
     return 0
@@ -1043,7 +1043,7 @@ def cmd_trains(state, cfg, a):
         act = f"car {a.car_action} {a.ref}"
     for line in lines:
         print(line)
-    print("")
+    print()
     print(tr.car_md(name), end="")
     state.commit(f"team: trains {act} {name}")
     return 0
@@ -1089,7 +1089,7 @@ def cmd_web(state, cfg, a):
     try:
         srv.serve_forever()
     except KeyboardInterrupt:
-        print("")
+        print()
     finally:
         if not srv.restarting:
             srv.server_close()
@@ -1149,7 +1149,7 @@ def cmd_queue(state, cfg, a):
         for line in lines:
             print(line)
         if ":" in ref:  # the car on its track
-            print("")
+            print()
             print(tr.car_md(ref.split(":")[0]), end="")
         ids = [a.id, "→", ref]
     elif act == "round":
@@ -1183,7 +1183,7 @@ def cmd_queue(state, cfg, a):
         ids = list(a.ids)
     for line in q.notes:
         print(line)
-    print("")
+    print()
     print(q.md(), end="")
     state.commit("team: {} {} {}".format(name, act, " ".join(ids)[:80]))
     return 0
@@ -1231,7 +1231,7 @@ def cmd_principles(state, cfg, a):
               "headings" % (n, a.file))
         if changed is not None:
             print(f"{path} is rendered from the depot now and read-only (chmod a-w): change it with depot2 principles")
-        print("")
+        print()
         print(p.md(), end="")
         state.commit("team: principles import (%d principles)" % n)  # noqa: UP031
         return 0
@@ -1260,7 +1260,7 @@ def cmd_principles(state, cfg, a):
         if p.target():
             path, changed = p.write()
             print(f"{path}: {_rendered(state, changed)}")
-        print("")
+        print()
         print("\n".join(p.head()).rstrip("\n") + "\n", end="")
         state.commit("team: principles head")
         return 0
@@ -1283,7 +1283,7 @@ def cmd_principles(state, cfg, a):
     if p.target():
         path, changed = p.write()
         print(f"{path}: {_rendered(state, changed)}")
-    print("")
+    print()
     print(p.show(e["id"]), end="")
     state.commit("team: principles {} {}".format(act, e["id"]))
     return 0
@@ -1365,7 +1365,7 @@ def cmd_merge(state, cfg, a):
         e, lines = merge.rerun(state, cfg, a.ref)
     for line in lines:
         print(line)
-    print("")
+    print()
     print(merge.md(state, cfg), end="")
     state.commit("team: merge %s %s #%d" % (act, e["id"], e["pr"]))  # noqa: UP031
     return 0

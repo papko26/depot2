@@ -27,7 +27,7 @@ CYRILLIC = re.compile("[\u0400-\u04ff]")
 
 def page_messages(html):
     """The page's messages, as the served page carries them in its #messages block."""
-    m = re.search(r'<script type="application/json" id="messages">(.*?)</script>', html, re.S)
+    m = re.search(r'<script type="application/json" id="messages">(.*?)</script>', html, re.DOTALL)
     return json.loads(m.group(1))
 
 
@@ -450,7 +450,7 @@ class WebTest(WebBase):
         self.assertEqual([e["pr"] for e in self.web.json("/api/merge/report")[1]], [404])  # one, as the command
         rc, md, err = self.team("merge", "report", "--last", "10")  # the Markdown report: the same merges
         self.assertEqual(rc, 0, err)
-        self.assertEqual(re.findall(r"^#(\d+) PR \d+ — смерджен", md, re.M), ["401", "402", "404"])
+        self.assertEqual(re.findall(r"^#(\d+) PR \d+ — смерджен", md, re.MULTILINE), ["401", "402", "404"])
         self.assertNotIn("#407", md)
         _, m = self.web.json("/api/meta")
         mm = m["merge"]

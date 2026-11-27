@@ -20,9 +20,9 @@ from .store import read_text
 HEADING = re.compile(r"^(#{2,4})\s+([A-Za-z\u0410-\u044f]{0,3}\d+[a-z]?)[.:)]\s*(.*)$")
 FIELD = re.compile(r"^\*\*([^*]+?):?\*\*:?\s*(.*)$")
 # A point's fields, in every language: the recommendation, the question in full (preferred), the question.
-REC_FIELD = re.compile(i18n.rx("in.bundle.rec"), re.I)
-QUESTION_FIELDS = (re.compile(i18n.rx("in.bundle.question_full"), re.I),
-                   re.compile(i18n.rx("in.bundle.question"), re.I))
+REC_FIELD = re.compile(i18n.rx("in.bundle.rec"), re.IGNORECASE)
+QUESTION_FIELDS = (re.compile(i18n.rx("in.bundle.question_full"), re.IGNORECASE),
+                   re.compile(i18n.rx("in.bundle.question"), re.IGNORECASE))
 
 
 class Bundle:
@@ -57,7 +57,7 @@ class Bundle:
 TITLE = i18n.Labels("bundle.title", ("ballot", "discuss", "brainstorm", "review"))  # the input's section title
 NUMBERED = re.compile(r"^(\d+)[.)]\s+(.*)$")
 BOLD_TITLE = re.compile(r"^\*\*(.+?)\*\*[:.]?\s*(.*)$")
-QUESTION_SECTION = re.compile(i18n.rx("in.bundle.question"), re.I)
+QUESTION_SECTION = re.compile(i18n.rx("in.bundle.question"), re.IGNORECASE)
 
 
 def parse_points(text):
@@ -66,7 +66,7 @@ def parse_points(text):
 
     """
     points = _heading_points(text)
-    return points if points else _numbered_points(text)
+    return points or _numbered_points(text)
 
 
 def _numbered_points(text):

@@ -53,7 +53,7 @@ QUEUES = (("todo", "webui.queue.todo", "todo"), ("think", "webui.queue.think", "
           ("wishes", "webui.queue.wishes", "wishes"), ("ballots", "webui.queue.ballots", "ballots"),
           ("tstack", "webui.queue.tstack", "tstack"), ("orders", "webui.queue.orders", "orders"),
           ("brainstorms", "webui.queue.brainstorms", "brainstorm list"))
-RE_MESSAGES = re.compile(r'(<script type="application/json" id="messages">)(.*?)(</script>)', re.S)
+RE_MESSAGES = re.compile(r'(<script type="application/json" id="messages">)(.*?)(</script>)', re.DOTALL)
 RE_LANG = re.compile(r'<html lang="[^"]*">')
 
 
@@ -346,7 +346,7 @@ def csp_for(html):
     """The page's Content-Security-Policy: its own inline script and style by their hashes, nothing else."""
     def hashes(tag):
         out = []
-        for m in re.finditer(rf"<{tag}>(.*?)</{tag}>", html, re.S):
+        for m in re.finditer(rf"<{tag}>(.*?)</{tag}>", html, re.DOTALL):
             h = base64.b64encode(hashlib.sha256(m.group(1).encode("utf-8")).digest()).decode()
             out.append(f"'sha256-{h}'")
         return " ".join(out) or "'none'"

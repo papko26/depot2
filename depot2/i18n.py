@@ -101,7 +101,7 @@ def _template_rx(template):
 def matches(text, key):
     """Whether a stored or typed text is the message `key` in any language (any value in its fields)."""
     text = str(text or "")
-    return any(re.fullmatch(_template_rx(f), text, re.S) for f in forms(key))
+    return any(re.fullmatch(_template_rx(f), text, re.DOTALL) for f in forms(key))
 
 
 def retell(text, *keys):
@@ -120,7 +120,7 @@ def rx(key):
 
 def is_word(text, key):
     """Whether the typed word is one of the words `key` (an `in.` key) of any language, any case."""
-    return re.fullmatch(rx(key), " ".join(str(text or "").split()), re.I) is not None
+    return re.fullmatch(rx(key), " ".join(str(text or "").split()), re.IGNORECASE) is not None
 
 
 def fold(text):

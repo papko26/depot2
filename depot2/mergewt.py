@@ -61,7 +61,7 @@ def worktree_list(text):
         elif key == "HEAD":
             cur["head"] = val
         elif key == "branch":
-            cur["branch"] = val[len("refs/heads/"):] if val.startswith("refs/heads/") else val
+            cur["branch"] = val.removeprefix("refs/heads/")
         elif key == "bare":
             cur["bare"] = True
     return out

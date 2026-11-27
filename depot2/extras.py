@@ -231,7 +231,7 @@ def check_order(o, snap_dir, cfg):
     scripts = [tok for tok in tokens if tok.startswith(("tools/", "./tools/"))]
     if not scripts:
         return None, t("extras.order_no_script")
-    rel = os.path.normpath(scripts[0][2:] if scripts[0].startswith("./") else scripts[0])
+    rel = os.path.normpath(scripts[0].removeprefix("./"))
     if not rel.startswith("tools" + os.sep) or ".." in rel.split(os.sep):
         return None, t("extras.order_outside", script=scripts[0])
     if not snap_dir:
