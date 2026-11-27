@@ -71,7 +71,7 @@ class Ledger:
                 raise LedgerError("%s needs an amount >= 0, got %d" % (typ, amount))
         elif typ not in DEBITS + CREDITS:
             raise LedgerError("unknown transaction type %r" % typ)
-        elif typ in DEBITS and amount >= 0 or typ in CREDITS and amount <= 0:
+        elif (typ in DEBITS and amount >= 0) or (typ in CREDITS and amount <= 0):
             raise LedgerError("%s needs a %s amount, got %d"
                               % (typ, "negative" if typ in DEBITS else "positive", amount))
         entries = self.entries()
