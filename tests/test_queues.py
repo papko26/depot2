@@ -1,4 +1,3 @@
-
 import json
 import os
 import subprocess
@@ -32,7 +31,9 @@ class WishesTest(QBase):
         w = Wishes(self.t.state)
         a = w.add("обложки видны сразу", words="обложки должны быть заметнее в выдаче", date="2015-11-05")
         b = w.add("автоимпорт", date="2015-11-04", priority="later")
-        c = w.add("пустая полка", words="пустые полки выглядят как ошибка", priority=8, date="2015-11-05", area="product")
+        c = w.add(
+            "пустая полка", words="пустые полки выглядят как ошибка", priority=8, date="2015-11-05", area="product"
+        )
         with self.assertRaises(QueueError):
             w.add("x", area="kitchen")
         md = Wishes(self.t.state).md()
@@ -40,7 +41,9 @@ class WishesTest(QBase):
         self.assertIn("| № | Хотелка | Дата | Слова владельца | Область | Приоритет | Статус |", md)
         self.assertLess(md.index(c["id"]), md.index(a["id"]))  # high first, later last
         self.assertLess(md.index(a["id"]), md.index(b["id"]))
-        self.assertIn("| 1 | wl-0003 пустая полка | 2015-11-05 | пустые полки выглядят как ошибка | продукт | P8 | ждёт |", md)
+        self.assertIn(
+            "| 1 | wl-0003 пустая полка | 2015-11-05 | пустые полки выглядят как ошибка | продукт | P8 | ждёт |", md
+        )
         Stack(self.t.state, self.t.cfg).add("Полка")
         tr = Tracks(self.t.state, self.t.cfg)
         tr.add("Поиск")
@@ -57,7 +60,9 @@ class WishesTest(QBase):
         rc, out, _ = self.team("wishes", "--all")
         self.assertIn("взята → tr-0001:0", out)
         self.assertIn("отклонена", out)
-        rc, out, _ = self.team("wishes", "add", "--title", "кнопка экспорта", "--words", "значок «CSV»", "--area", "product")
+        rc, out, _ = self.team(
+            "wishes", "add", "--title", "кнопка экспорта", "--words", "значок «CSV»", "--area", "product"
+        )
         self.assertIn("wl-0004 added", out)
         rc, out, _ = self.team("wishes", "set", "wl-0004", "--prio", "high", "--note", "в вагон 4")
         self.assertEqual(Wishes(self.t.state).get("wl-0004")["priority"], 8)
@@ -67,8 +72,18 @@ class WishesTest(QBase):
 
 class ThinkTest(QBase):
     def test_add_round_decide_drop(self):
-        rc, out, err = self.team("think", "add", "--topic", "подсказки по мере нужды", "--question", "Показывать сразу?",
-                                 "--by", "Краски", "--related", "X1")
+        rc, out, err = self.team(
+            "think",
+            "add",
+            "--topic",
+            "подсказки по мере нужды",
+            "--question",
+            "Показывать сразу?",
+            "--by",
+            "Краски",
+            "--related",
+            "X1",
+        )
         self.assertEqual(rc, 0, err)
         self.assertIn("| 1 | th-0001 подсказки по мере нужды |", out)
         self.assertIn("| 1: Показывать сразу? | Краски | X1 | P5 | ждёт |", out)
@@ -92,14 +107,40 @@ class ThinkTest(QBase):
 
 class TodoTest(QBase):
     def test_add_pr_done_wont(self):
-        rc, out, err = self.team("todo", "add", "--text", "maxQueryMs не сбрасывается", "--where", "lib/search.ts:1029",
-                                 "--version", "2.4.0, main 3c9e1d7", "--source", "агент slow-search", "--kind", "perf",
-                                 "--date", "2015-11-05")
+        rc, out, err = self.team(
+            "todo",
+            "add",
+            "--text",
+            "maxQueryMs не сбрасывается",
+            "--where",
+            "lib/search.ts:1029",
+            "--version",
+            "2.4.0, main 3c9e1d7",
+            "--source",
+            "агент slow-search",
+            "--kind",
+            "perf",
+            "--date",
+            "2015-11-05",
+        )
         self.assertEqual(rc, 0, err)
-        self.assertIn("| 1 | td-0001 maxQueryMs не сбрасывается | 2015-11-05 | 2.4.0, main 3c9e1d7 | lib/search.ts:1029 | "
-                      "агент slow-search | перф | P5 | открыт |", out)
-        self.team("todo", "add", "--text", "напомнить про повторный импорт", "--kind", "reminder",
-                  "--trigger", "после выкатки поиска", "--version", "2.4.0")
+        self.assertIn(
+            "| 1 | td-0001 maxQueryMs не сбрасывается | 2015-11-05 | 2.4.0, main 3c9e1d7 | lib/search.ts:1029 | "
+            "агент slow-search | перф | P5 | открыт |",
+            out,
+        )
+        self.team(
+            "todo",
+            "add",
+            "--text",
+            "напомнить про повторный импорт",
+            "--kind",
+            "reminder",
+            "--trigger",
+            "после выкатки поиска",
+            "--version",
+            "2.4.0",
+        )
         self.assertIn("(когда: после выкатки поиска)", self.team("todo")[1])
         with self.assertRaises(SystemExit):  # argparse refuses a kind it does not know
             self.team("todo", "add", "--text", "x", "--kind", "nope")
@@ -118,18 +159,26 @@ class TodoTest(QBase):
         for text in ("первый", "второй"):
             self.team("todo", "add", "--text", text, "--version", "v")
         self.assertEqual(self.team("todo", "done", "td-0001", "--reason", "слит")[0], 0)
-        for argv in (("todo", "pr", "td-0001", "--pr", "9"), ("todo", "wont", "td-0001", "--reason", "x"),
-                     ("todo", "done", "td-0001", "--reason", "ещё раз")):
+        for argv in (
+            ("todo", "pr", "td-0001", "--pr", "9"),
+            ("todo", "wont", "td-0001", "--reason", "x"),
+            ("todo", "done", "td-0001", "--reason", "ещё раз"),
+        ):
             rc, out, err = self.team(*argv)
             self.assertEqual(rc, 1, argv)
-            self.assertIn("error: td-0001 is «сделан»: it is closed and stays so (only an open one — открыт, в PR — "
-                          "changes); the history keeps it, new work is a new entry: depot2 todo add …", err)
+            self.assertIn(
+                "error: td-0001 is «сделан»: it is closed and stays so (only an open one — открыт, в PR — "
+                "changes); the history keeps it, new work is a new entry: depot2 todo add …",
+                err,
+            )
         self.assertEqual(Todo(self.t.state).get("td-0001")["status"], "done")
         rows = len(Todo(self.t.state).history())
         rc, out, err = self.team("todo", "done", "td-0002", "td-0009", "--reason", "частично")
         self.assertEqual((rc, out), (1, ""))
         self.assertIn("no td-0009 in todo", err)
-        self.assertEqual((Todo(self.t.state).get("td-0002")["status"], len(Todo(self.t.state).history())), ("open", rows))
+        self.assertEqual(
+            (Todo(self.t.state).get("td-0002")["status"], len(Todo(self.t.state).history())), ("open", rows)
+        )
         th = Think(self.t.state).add("вопрос")
         Think(self.t.state).decide(th["id"], reason="решили")
         self.assertEqual(self.team("think", "round", th["id"], "--round", "r1")[0], 1)
@@ -147,12 +196,14 @@ class TodoTest(QBase):
 
         def git(*a):
             subprocess.run(["git", "-C", d, *list(a)], check=True, capture_output=True)
+
         git("init", "-q")
         git("add", "package.json")
         git("-c", "user.name=t", "-c", "user.email=t@localhost", "commit", "-q", "-m", "x")
         git("update-ref", "refs/remotes/origin/main", "HEAD")
-        sha = subprocess.run(["git", "-C", d, "rev-parse", "--short=7", "HEAD"], stdout=subprocess.PIPE,
-                             text=True).stdout.strip()
+        sha = subprocess.run(
+            ["git", "-C", d, "rev-parse", "--short=7", "HEAD"], stdout=subprocess.PIPE, text=True
+        ).stdout.strip()
         self.assertEqual(repo_version({"deep_repo": {"clone": d}}), f"2.4.0, main {sha}")
         self.assertIsNone(repo_version({"deep_repo": {"clone": ""}}))
         rc, _out, err = super(QBase, self).team("--set", "deep_repo.clone=" + d, "todo", "add", "--text", "x")
@@ -184,17 +235,37 @@ class TeamStackTest(QBase):
         # the agents' stack is a different file: untouched
         self.assertEqual(Stack(self.t.state, self.t.cfg).objects(), [])
         self.assertTrue(os.path.exists(os.path.join(self.t.dir, "team-stack.json")))
-        self.assertEqual(ts.command(ts.get("tm-0001")),
-                         f"depot2 round --kind discuss --input {topic} --only keeper --item tm-0001 --dry-run")
+        self.assertEqual(
+            ts.command(ts.get("tm-0001")),
+            f"depot2 round --kind discuss --input {topic} --only keeper --item tm-0001 --dry-run",
+        )
         # the spend from the round's own tokens: 10 + 200000 x 1.25 + 3e6 x 0.1 + 40000 x 5 = 0.75 MTok
-        ts.record_round("tm-0001", "2015-11-06-discuss-solo-keeper", {"total_usd": 0.4321, "tokens": {
-            "input": 10, "cache_write": 200000, "cache_read": 3000000, "output": 40000, "total": 3240010}})
+        ts.record_round(
+            "tm-0001",
+            "2015-11-06-discuss-solo-keeper",
+            {
+                "total_usd": 0.4321,
+                "tokens": {
+                    "input": 10,
+                    "cache_write": 200000,
+                    "cache_read": 3000000,
+                    "output": 40000,
+                    "total": 3240010,
+                },
+            },
+        )
         md = TeamStack(self.t.state, self.t.cfg).md()
-        self.assertIn("| № | Где | Что | Приоритет | Вид | Кто | Вход | Раунд | Статус | Effort (ожидаемо / потрачено) | "
-                      "Зависит от |", md)
-        self.assertIn("| С1 | слот | tm-0001 обсуждение: topic.md | P5 | обсуждение | Копилка | topic.md | "
-                      "2015-11-06-discuss-solo-keeper | раунд прошёл: 2015-11-06-discuss-solo-keeper | "
-                      "≈ 0.3%UW (3 MTok) / 0.075%UW (0.75 MTok) | — |", md)
+        self.assertIn(
+            "| № | Где | Что | Приоритет | Вид | Кто | Вход | Раунд | Статус | Effort (ожидаемо / потрачено) | "
+            "Зависит от |",
+            md,
+        )
+        self.assertIn(
+            "| С1 | слот | tm-0001 обсуждение: topic.md | P5 | обсуждение | Копилка | topic.md | "
+            "2015-11-06-discuss-solo-keeper | раунд прошёл: 2015-11-06-discuss-solo-keeper | "
+            "≈ 0.3%UW (3 MTok) / 0.075%UW (0.75 MTok) | — |",
+            md,
+        )
         self.assertNotIn("$", md)
         self.assertIn("| **Ждёт слота (2/4)** |", md)
         ts.done("tm-0001", "отчёт показан")
@@ -202,7 +273,9 @@ class TeamStackTest(QBase):
 
     def test_the_cli_and_a_dependency_on_the_agents_stack(self):
         self.team("stack", "add", "--title", "PR импорта")
-        rc, out, err = self.team("tstack", "add", "--kind", "review", "--depends", "st-0001", "--title", "обзор импорта")
+        rc, out, err = self.team(
+            "tstack", "add", "--kind", "review", "--depends", "st-0001", "--title", "обзор импорта"
+        )
         self.assertEqual(rc, 0, err)
         self.assertIn("tm-0001 added to the team queue (1/4)", out)
         rc, _, err = self.team("tstack", "start", "tm-0001")
@@ -215,8 +288,11 @@ class TeamStackTest(QBase):
         rc, out, err = self.team("tstack", "set", "tm-0001", "--who", "counter", "--cost", "0.5")
         self.assertEqual(rc, 0, err)
         # the old ≈$ flag: converted once into the spend, 0.5 / 2.5 = 0.2 MTok, with a deprecation note
-        self.assertIn("warning: --cost is deprecated (the spend is in MTok now): read as --spent-mtok 0.2, "
-                      "0.02%UW (0.2 MTok) (0.5 / usage.usd_per_mtok 2.5)", err)
+        self.assertIn(
+            "warning: --cost is deprecated (the spend is in MTok now): read as --spent-mtok 0.2, "
+            "0.02%UW (0.2 MTok) (0.5 / usage.usd_per_mtok 2.5)",
+            err,
+        )
         self.assertEqual(TeamStack(self.t.state, self.t.cfg).get("tm-0001")["who"], "counter")
         self.assertEqual(TeamStack(self.t.state, self.t.cfg).get("tm-0001")["spent_mtok"], 0.2)
         self.assertEqual(self.team("tstack", "set", "tm-0001", "--cost", "0.5", "--spent-mtok", "1")[0], 1)
@@ -242,10 +318,15 @@ class OverviewTest(QBase):
         rc, out, err = self.team("queues", "--md")
         self.assertEqual(rc, 0, err)
         self.assertIn("| Очередь | Открыто | Приоритет | Сверху | Команда |", out)
-        self.assertIn("| Стек агентов | слоты 0/4, пост-стек 0/4, ждёт 1/10 | — | st-0001 Импорт 3 | `depot2 stack --md` |", out)
+        self.assertIn(
+            "| Стек агентов | слоты 0/4, пост-стек 0/4, ждёт 1/10 | — | st-0001 Импорт 3 | `depot2 stack --md` |", out
+        )
         self.assertIn("| Стек команды | слоты 0/2, ждёт 1/4 | — | tm-0001 лимиты | `depot2 tstack --md` |", out)
-        self.assertIn("| Поезда | 1 (имплементация 1) | — | можно сейчас: tr-0001:0; poisk (имплементация) | "
-                      "`depot2 trains --md` |", out)
+        self.assertIn(
+            "| Поезда | 1 (имплементация 1) | — | можно сейчас: tr-0001:0; poisk (имплементация) | "
+            "`depot2 trains --md` |",
+            out,
+        )
         self.assertIn("| Треки | 1 открыто из 1 | — | tr-0001 Поиск | `depot2 tracks --md` |", out)
         self.assertIn("| Бюллетени | 0 | — | — |", out)
         self.assertIn("| Мердж-очередь | 0 | — | — | `depot2 merge --md` |", out)  # right under the agents' stack
@@ -253,17 +334,30 @@ class OverviewTest(QBase):
         self.assertIn("| На подумать | 1 | P5 1 | th-0001 подсказки |", out)
         self.assertIn("| Todo | 1 (перф 1) | P5 1 | td-0001 maxQueryMs |", out)
         self.assertEqual(self.team("queues")[1], out)
-        self.assertEqual([r["queue"] for r in json.loads(self.team("queues", "--json")[1])],
-                         ["Стек агентов", "Мердж-очередь", "Стек команды", "Поезда", "Треки", "Бюллетени", "Хотелки",
-                          "На подумать", "Todo", "Принципы"])
+        self.assertEqual(
+            [r["queue"] for r in json.loads(self.team("queues", "--json")[1])],
+            [
+                "Стек агентов",
+                "Мердж-очередь",
+                "Стек команды",
+                "Поезда",
+                "Треки",
+                "Бюллетени",
+                "Хотелки",
+                "На подумать",
+                "Todo",
+                "Принципы",
+            ],
+        )
 
 
 class PrioTest(QBase):
-
     def test_todo_and_think_get_a_priority_sorted_the_most_important_first(self):
         self.team("todo", "add", "--text", "первый", "--version", "v")
         self.team("todo", "add", "--text", "второй", "--version", "v", "--prio", "later")
-        rc, out, err = self.team("todo", "add", "--text", "третий", "--version", "v", "--prio", "high", "--kind", "text")
+        rc, out, err = self.team(
+            "todo", "add", "--text", "третий", "--version", "v", "--prio", "high", "--kind", "text"
+        )
         self.assertEqual(rc, 0, err)
         self.assertEqual([e["priority"] for e in Todo(self.t.state).entries()], [5, 2, 8])
         self.assertIn("| № | Что | Дата | Версия | Где | Источник | Вид | Приоритет | Статус |", out)
@@ -284,15 +378,19 @@ class PrioTest(QBase):
         rc, out, err = self.team("think", "add", "--topic", "подсказки", "--prio", "high")
         self.assertEqual(rc, 0, err)
         self.assertIn("| № | Тема | Дата | Вопросы | Поднял | Связано | Приоритет | Статус |", out)
-        self.assertIn("| 1 | th-0002 подсказки | {} | — | — | — | P8 | ждёт |".format(Think(self.t.state).get("th-0002")["date"]),
-                      out)
+        self.assertIn(
+            "| 1 | th-0002 подсказки | {} | — | — | — | P8 | ждёт |".format(Think(self.t.state).get("th-0002")["date"]),
+            out,
+        )
         self.assertEqual(self.team("think", "set", "th-0001", "--prio", "later")[0], 0)
         self.assertEqual(Think(self.t.state).get("th-0001")["priority"], 2)
         rc, out, _ = self.team("queues", "--md")
         self.assertIn("| На подумать | 2 | P8 1 · P2 1 | th-0002 подсказки; th-0001 обложки |", out)
         self.assertIn("| Todo | 2 (баг 2) | P8 1 · P5 1 | td-0002 второй; td-0001 x |", out)
-        self.assertEqual([r["priority"] for r in json.loads(self.team("queues", "--json")[1])][-3:],
-                         [{"8": 1, "2": 1}, {"8": 1, "5": 1}, None])  # the principles have none
+        self.assertEqual(
+            [r["priority"] for r in json.loads(self.team("queues", "--json")[1])][-3:],
+            [{"8": 1, "2": 1}, {"8": 1, "5": 1}, None],
+        )  # the principles have none
 
 
 class WishDoneTest(QBase):
@@ -308,7 +406,7 @@ class WishDoneTest(QBase):
         e = Wishes(self.t.state).get("wl-0001")
         self.assertEqual(e["status"], "done")
         self.assertTrue(e["notes"][-1].endswith("#205 слит"))
-        self.assertNotIn("wl-0001", self.team("wishes")[1])          # off the open table
+        self.assertNotIn("wl-0001", self.team("wishes")[1])  # off the open table
         self.assertIn("| wl-0001 автоимпорт |", self.team("wishes", "--all")[1].replace("| 2 ", "| "))
         self.assertIn("| сделано |", self.team("wishes", "--all")[1])
         self.assertEqual(self.team("wishes", "done", "wl-0001", "--reason", "ещё раз")[0], 1)
@@ -318,7 +416,6 @@ class WishDoneTest(QBase):
 
 
 class MigrateTest(QBase):
-
     def setUp(self):
         super().setUp()
         td = Todo(self.t.state)
@@ -329,7 +426,7 @@ class MigrateTest(QBase):
         th.add("обложки")
         self.team("todo", "set", "td-0001", "--note", "prio: high — текст на проде")
         self.team("todo", "set", "td-0002", "--note", "prio: later — по заголовку")
-        self.team("todo", "set", "td-0002", "--note", "prio: Normal — передумали")    # the newest wins
+        self.team("todo", "set", "td-0002", "--note", "prio: Normal — передумали")  # the newest wins
         self.team("todo", "set", "td-0003", "--note", "см. td-0001; prio: high тут не в начале")
         self.team("todo", "set", "td-0005", "--note", "prio: later — закрыт")
         self.team("todo", "done", "td-0005", "--reason", "сделан")
@@ -357,17 +454,25 @@ class MigrateTest(QBase):
         write_json(self.t.state.path("trains.json"), {"schema": 3, "trains": []})
 
     def files(self):
-        return {n: slurp(os.path.join(self.t.dir, n)) for n in ("todo.json", "todo-history.jsonl", "think.json",
-                                                                 "stack.json", "stack-history.jsonl")}
+        return {
+            n: slurp(os.path.join(self.t.dir, n))
+            for n in ("todo.json", "todo-history.jsonl", "think.json", "stack.json", "stack-history.jsonl")
+        }
 
     def test_dry_run_then_once_and_idempotent(self):
         before = self.files()
         rc, out, err = self.team("migrate", "--dry-run")
         self.assertEqual(rc, 0, err)
-        self.assertIn("todo: prio → priority у 5 (high 8, normal 5, later 2; без слова — 5): P8 2 · P5 2 · P2 1; "
-                      "из заметки «prio: …»: td-0001, td-0002, td-0005", out)
-        self.assertIn("«подумать»: prio → priority у 2 (high 8, normal 5, later 2; без слова — 5): P5 1 · P2 1; "
-                      "из заметки «prio: …»: th-0002", out)
+        self.assertIn(
+            "todo: prio → priority у 5 (high 8, normal 5, later 2; без слова — 5): P8 2 · P5 2 · P2 1; "
+            "из заметки «prio: …»: td-0001, td-0002, td-0005",
+            out,
+        )
+        self.assertIn(
+            "«подумать»: prio → priority у 2 (high 8, normal 5, later 2; без слова — 5): P5 1 · P2 1; "
+            "из заметки «prio: …»: th-0002",
+            out,
+        )
         self.assertIn("хотелки: prio → priority у 1 (high 8, normal 5, later 2; без слова — 5): P8 1", out)
         self.assertEqual(self.files(), before)  # wrote nothing
         rc, out, err = self.team("queues", "migrate", "--dry-run")  # any command migrates the data first
@@ -379,17 +484,26 @@ class MigrateTest(QBase):
         self.assertEqual(rc, 0, err)
         self.assertIn("перенесено: 1 записей и объектов", out)
         td = Todo(self.t.state)
-        self.assertEqual({e["id"]: e["priority"] for e in td.entries()}, {
-            "td-0001": 8, "td-0002": 5, "td-0003": 5, "td-0004": 8, "td-0005": 2})
-        self.assertEqual([n[12:] for n in td.get("td-0002")["notes"]], ["prio: later — по заголовку",
-                                                                        "prio: Normal — передумали"])  # the notes stay
+        self.assertEqual(
+            {e["id"]: e["priority"] for e in td.entries()},
+            {"td-0001": 8, "td-0002": 5, "td-0003": 5, "td-0004": 8, "td-0005": 2},
+        )
+        self.assertEqual(
+            [n[12:] for n in td.get("td-0002")["notes"]], ["prio: later — по заголовку", "prio: Normal — передумали"]
+        )  # the notes stay
         self.assertEqual(Think(self.t.state).get("th-0002")["priority"], 2)
         self.assertEqual(Wishes(self.t.state).get("wl-0001")["priority"], 8)
         self.assertIs(Stack(self.t.state, self.t.cfg).get("st-0001")["autostart"], False)
         h = [h for h in td.history() if h["event"] == "migrate_priority"]
-        self.assertEqual([(x["prio"], x["from_notes"]) for x in h], [(
-            {"td-0001": "high", "td-0002": "normal", "td-0003": None, "td-0004": "high", "td-0005": "later"},
-            ["td-0001", "td-0002", "td-0005"])])
+        self.assertEqual(
+            [(x["prio"], x["from_notes"]) for x in h],
+            [
+                (
+                    {"td-0001": "high", "td-0002": "normal", "td-0003": None, "td-0004": "high", "td-0005": "later"},
+                    ["td-0001", "td-0002", "td-0005"],
+                )
+            ],
+        )
         after = self.files()
         rc, out, _ = self.team("queues", "migrate")
         self.assertIn("перенесено: 0 записей и объектов", out)

@@ -1,4 +1,3 @@
-
 import json
 import os
 
@@ -26,10 +25,21 @@ class PBase(TracksBase):
         import io
 
         from depot2 import cli as team
+
         out, err = io.StringIO(), io.StringIO()
         with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             try:
-                rc = team.main(["--state", self.t.dir, "--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent", *list(argv)])
+                rc = team.main(
+                    [
+                        "--state",
+                        self.t.dir,
+                        "--set",
+                        "deep_repo.clone=",
+                        "--set",
+                        "executor_bin=/nonexistent",
+                        *list(argv),
+                    ]
+                )
             except SystemExit as x:
                 rc = x.code
         self.assertIn(rc, (1, 2), out.getvalue())
@@ -38,16 +48,21 @@ class PBase(TracksBase):
 
 class ParseTest(PBase):
     def test_the_range_the_words_and_the_default(self):
-        self.assertEqual([pri.parse(x) for x in (1, "10", "P7", "p3", " 5 ", "high", "normal", "later", "высокий")],
-                         [1, 10, 7, 3, 5, 8, 5, 2, 8])
+        self.assertEqual(
+            [pri.parse(x) for x in (1, "10", "P7", "p3", " 5 ", "high", "normal", "later", "высокий")],
+            [1, 10, 7, 3, 5, 8, 5, 2, 8],
+        )
         for bad in (0, 11, "11", "P0", "urgent", "", "5.5", True):
             with self.assertRaises(pri.PriorityError):
                 pri.parse(bad)
         self.assertEqual((pri.of({}), pri.of({"priority": 9}), pri.cell({"priority": 9})), (5, 9, "P9"))
-        self.assertEqual(pri.counts_cell(pri.counts([{"priority": 2}, {"priority": 8}, {}, {"priority": 8}])),
-                         "P8 2 · P5 1 · P2 1")
-        self.assertEqual(pri.ordered([{"id": 1}, {"id": 2, "priority": 9}, {"id": 3}, {"id": 4, "priority": 9}]),
-                         [{"id": 2, "priority": 9}, {"id": 4, "priority": 9}, {"id": 1}, {"id": 3}])  # ties: in order
+        self.assertEqual(
+            pri.counts_cell(pri.counts([{"priority": 2}, {"priority": 8}, {}, {"priority": 8}])), "P8 2 · P5 1 · P2 1"
+        )
+        self.assertEqual(
+            pri.ordered([{"id": 1}, {"id": 2, "priority": 9}, {"id": 3}, {"id": 4, "priority": 9}]),
+            [{"id": 2, "priority": 9}, {"id": 4, "priority": 9}, {"id": 1}, {"id": 3}],
+        )  # ties: in order
 
 
 class SetTest(PBase):
@@ -58,16 +73,26 @@ class SetTest(PBase):
         tk.add("Второй")
 
     def test_every_add_and_set_takes_it_and_every_table_shows_it(self):
-        self.assertIn("tr-0001:1 added, P7", self.ok("tracks", "car", "add", "tr-0001", "--title", "приоритет",
-                                                    "--n", "1", "--priority", "7"))
+        self.assertIn(
+            "tr-0001:1 added, P7",
+            self.ok("tracks", "car", "add", "tr-0001", "--title", "приоритет", "--n", "1", "--priority", "7"),
+        )
         self.assertIn("tr-0001:2 added, P5", self.ok("tracks", "car", "add", "tr-0001", "--title", "без"))
-        self.assertIn("katalog added (position 1, «дизайн», P9)", self.ok(
-            "trains", "add", "--name", "katalog", "--title", "Каталог", "--car", "tr-0001:1", "--priority", "9"))
-        self.assertIn("st-0001 added to the queue (1/10), autostart no, P3",
-                      self.ok("stack", "add", "--title", "чужой", "--priority", "P3"))
-        self.assertIn("tm-0001 added to the team queue (1/4), P6",
-                      self.ok("tstack", "add", "--kind", "question", "--priority", "6"))
-        self.ok("wishes", "add", "--title", "обложки", "--prio", "high")      # the old word: a synonym
+        self.assertIn(
+            "katalog added (position 1, «дизайн», P9)",
+            self.ok(
+                "trains", "add", "--name", "katalog", "--title", "Каталог", "--car", "tr-0001:1", "--priority", "9"
+            ),
+        )
+        self.assertIn(
+            "st-0001 added to the queue (1/10), autostart no, P3",
+            self.ok("stack", "add", "--title", "чужой", "--priority", "P3"),
+        )
+        self.assertIn(
+            "tm-0001 added to the team queue (1/4), P6",
+            self.ok("tstack", "add", "--kind", "question", "--priority", "6"),
+        )
+        self.ok("wishes", "add", "--title", "обложки", "--prio", "high")  # the old word: a synonym
         self.ok("think", "add", "--topic", "подсказки", "--priority", "4")
         self.ok("todo", "add", "--text", "хвост", "--version", "v", "--prio", "later")
         self.assertEqual([e["priority"] for q in (Wishes, Think, Todo) for e in q(self.t.state).entries()], [8, 4, 2])
@@ -110,18 +135,22 @@ class SetTest(PBase):
         self.assertIn("| P9 | открыт |", self.ok("todo", "--md"))
         self.assertIn("| P3 | ждёт |", self.ok("wishes", "--md"))
         self.assertIn("| Хотелки | 1 | P3 1 |", self.ok("queues", "--md"))
-        self.assertEqual([r["priority"] for r in json.loads(self.ok("queues", "--json"))][-4:-1],
-                         [{"3": 1}, {"5": 1}, {"9": 1}])
-        self.assertIn("Приоритет: P7 (1-10, 10 — важнее всего; `depot2 priority tr-0001:1 N`).",
-                      self.ok("car", "show", "tr-0001:1"))
+        self.assertEqual(
+            [r["priority"] for r in json.loads(self.ok("queues", "--json"))][-4:-1], [{"3": 1}, {"5": 1}, {"9": 1}]
+        )
+        self.assertIn(
+            "Приоритет: P7 (1-10, 10 — важнее всего; `depot2 priority tr-0001:1 N`).",
+            self.ok("car", "show", "tr-0001:1"),
+        )
         self.assertEqual(json.loads(self.ok("car", "show", "wl-0001", "--json"))["priority"], 3)
         self.assertEqual(json.loads(self.ok("tracks", "--json"))["tracks"][0]["cars"][0]["priority"], 7)
         self.assertEqual(json.loads(self.ok("trains", "--json"))["trains"][0]["priority"], 1)
         self.assertEqual(json.loads(self.ok("stack", "--json"))["queue"][0]["priority"], 10)
         board = json.loads(self.ok("board", "--json"))
         items = {it["ref"]: it for c in board["columns"] for it in c["items"]}
-        self.assertEqual((items["tr-0001:1"]["priority"], items["st-0001"]["priority"], items["wl-0001"]["priority"]),
-                         (7, 10, 3))
+        self.assertEqual(
+            (items["tr-0001:1"]["priority"], items["st-0001"]["priority"], items["wl-0001"]["priority"]), (7, 10, 3)
+        )
         self.assertIn("| Вагон | Приоритет | Что |", self.ok("board", "--md"))
 
     def test_the_one_command_for_every_kind_and_one_car_one_priority(self):
@@ -133,8 +162,15 @@ class SetTest(PBase):
         Wishes(self.t.state).add("обложки")
         Think(self.t.state).add("подсказки")
         Todo(self.t.state).add("хвост", version="v")
-        for ref, n in (("katalog", 9), ("tr-0001:1", 8), ("st-0001", 7), ("tm-0001", 6), ("wl-0001", 4),
-                       ("th-0001", 3), ("td-0001", 2)):
+        for ref, n in (
+            ("katalog", 9),
+            ("tr-0001:1", 8),
+            ("st-0001", 7),
+            ("tm-0001", 6),
+            ("wl-0001", 4),
+            ("th-0001", 3),
+            ("td-0001", 2),
+        ):
             self.assertIn(": приоритет P5 → P%d" % n, self.ok("priority", ref, str(n)))  # noqa: UP031
             self.assertIn("%s: приоритет P%d (1-10" % (ref, n), self.ok("priority", ref))  # noqa: UP031
         self.assertIn("приоритет P2 (был тот же)", self.ok("priority", "td-0001", "2"))
@@ -147,8 +183,10 @@ class SetTest(PBase):
         stk = Stack(self.t.state, self.t.cfg)
         self.assertEqual(stk.get("st-0002")["priority"], 8)  # the new object takes its car's
         self.assertIn("tr-0001:1 (объект st-0002): приоритет P8 → P10", self.ok("priority", "st-0002", "10"))
-        self.assertEqual((self.tracks().car("tr-0001:1")[1]["priority"],
-                          Stack(self.t.state, self.t.cfg).get("st-0002")["priority"]), (10, 10))
+        self.assertEqual(
+            (self.tracks().car("tr-0001:1")[1]["priority"], Stack(self.t.state, self.t.cfg).get("st-0002")["priority"]),
+            (10, 10),
+        )
         self.ok("tracks", "car", "set", "tr-0001:1", "--priority", "4")
         self.assertEqual(Stack(self.t.state, self.t.cfg).get("st-0002")["priority"], 4)
         out = self.ok("stack", "set", "st-0002", "--priority", "6")
@@ -192,15 +230,19 @@ class NextByPriorityTest(PBase):
         self.ride("tr-0001", "first", slots="all-free")
         self.ride("tr-0002", "second", slots="all-free")
         nx = self.trains().next(PAST)  # all at 5: as before, the queue order and the train's order
-        self.assertEqual(["{}:{}".format(p["track"]["id"], p["car"]["n"]) for p in nx["picks"]],
-                         ["tr-0001:0", "tr-0001:1", "tr-0001:2", "tr-0001:3"])
-        self.trains().set("second", priority=8)        # the second train is more important: it goes first
+        self.assertEqual(
+            ["{}:{}".format(p["track"]["id"], p["car"]["n"]) for p in nx["picks"]],
+            ["tr-0001:0", "tr-0001:1", "tr-0001:2", "tr-0001:3"],
+        )
+        self.trains().set("second", priority=8)  # the second train is more important: it goes first
         tk = self.tracks()
-        tk.car_set("tr-0001:2", priority=7)           # within a train, by the car's priority
+        tk.car_set("tr-0001:2", priority=7)  # within a train, by the car's priority
         tk.car_set("tr-0001:3", priority=7)
         nx = self.trains().next(PAST)
-        self.assertEqual(["{}:{}".format(p["track"]["id"], p["car"]["n"]) for p in nx["picks"]],
-                         ["tr-0002:0", "tr-0001:2", "tr-0001:3", "tr-0001:0"])
+        self.assertEqual(
+            ["{}:{}".format(p["track"]["id"], p["car"]["n"]) for p in nx["picks"]],
+            ["tr-0002:0", "tr-0001:2", "tr-0001:3", "tr-0001:0"],
+        )
         lines = "\n".join(self.trains().next_lines(PAST))
         self.assertIn("tr-0002:0 «b0» (поезд second P8, вагон P5)", lines)
         self.assertIn("Порядок: ремонт вне очереди, потом поезда в «имплементации» по приоритету поезда", lines)
@@ -210,8 +252,10 @@ class NextByPriorityTest(PBase):
         self.trains().set_state("second", "design")
         nx = self.trains().next(PAST)
         self.assertEqual([o["id"] for o in nx["stack"]], ["st-0002", "st-0001"])
-        self.assertIn("st-0002 (P9) — `depot2 stack start st-0002`", "\n".join(
-            __import__("depot2.trains", fromlist=["x"]).freed_slot_lines(self.t.state, self.t.cfg)))
+        self.assertIn(
+            "st-0002 (P9) — `depot2 stack start st-0002`",
+            "\n".join(__import__("depot2.trains", fromlist=["x"]).freed_slot_lines(self.t.state, self.t.cfg)),
+        )
 
 
 class MigrateTest(PBase):
@@ -258,10 +302,16 @@ class MigrateTest(PBase):
         before = {f: slurp(self.t.state.path(f)) for f in self.FILES}
         lines, n = migrate.run(self.t.state, self.t.cfg, dry_run=True)
         self.assertEqual((n, lines[0]), (1, "DRY RUN: ничего не записано"))
-        self.assertIn("todo: prio → priority у 4 (high 8, normal 5, later 2; без слова — 5): P8 2 · P5 1 · P2 1; "
-                      "из заметки «prio: …»: td-0002", lines)
-        self.assertIn("приоритет 5 (по умолчанию): поездов 1, вагонов треков 1, объектов стека 2, стека команды 1 "
-                      "(объект вагона — как у его вагона)", lines)
+        self.assertIn(
+            "todo: prio → priority у 4 (high 8, normal 5, later 2; без слова — 5): P8 2 · P5 1 · P2 1; "
+            "из заметки «prio: …»: td-0002",
+            lines,
+        )
+        self.assertIn(
+            "приоритет 5 (по умолчанию): поездов 1, вагонов треков 1, объектов стека 2, стека команды 1 "
+            "(объект вагона — как у его вагона)",
+            lines,
+        )
         self.assertEqual({f: slurp(self.t.state.path(f)) for f in self.FILES}, before)  # a dry run writes nothing
         rc, out, err = self.team("todo", "--md")  # any command migrates first
         self.assertEqual(rc, 0, err)
@@ -269,33 +319,54 @@ class MigrateTest(PBase):
         self.assertEqual(migrate.version(self.t.state), SCHEMA)
         self.assertEqual(read_json(self.t.state.path("tracks.json"))["schema"], SCHEMA)
         got = {e["id"]: e["priority"] for q in (Wishes, Think, Todo) for e in q(self.t.state).entries()}
-        self.assertEqual(got, {"wl-0001": 8, "wl-0002": 2, "th-0001": 5, "td-0001": 2, "td-0002": 8, "td-0003": 5,
-                               "td-0004": 8})
+        self.assertEqual(
+            got, {"wl-0001": 8, "wl-0002": 2, "th-0001": 5, "td-0001": 2, "td-0002": 8, "td-0003": 5, "td-0004": 8}
+        )
         self.assertFalse(any("prio" in e for q in (Wishes, Think, Todo) for e in q(self.t.state).entries()))
         tk = self.tracks()
         self.assertEqual((tk.car("tr-0001:0")[1]["priority"], tk.trains.get("katalog")["priority"]), (5, 5))
         self.assertEqual([o["priority"] for o in Stack(self.t.state, self.t.cfg).objects()], [5, 5])
         self.assertEqual(TeamStack(self.t.state, self.t.cfg).get("tm-0001")["priority"], 5)
         rows = [h for h in read_jsonl(self.t.state.path("todo-history.jsonl")) if h["event"] == "migrate_priority"]
-        self.assertEqual([(h["prio"], h["from_notes"]) for h in rows],
-                         [({"td-0001": "later", "td-0002": "high", "td-0003": None, "td-0004": "high"}, ["td-0002"])])
+        self.assertEqual(
+            [(h["prio"], h["from_notes"]) for h in rows],
+            [({"td-0001": "later", "td-0002": "high", "td-0003": None, "td-0004": "high"}, ["td-0002"])],
+        )
         row = [h for h in read_jsonl(self.t.state.path("tracks-history.jsonl")) if h.get("schema") == 4]
         self.assertEqual([h["priority"]["todo"] for h in row], [4])
         self.assertIn("| P8 | открыт |", out)
         snap = {f: slurp(self.t.state.path(f)) for f in self.FILES}
-        self.assertEqual(migrate.run(self.t.state, self.t.cfg),
-                         (["миграция данных депо: нечего переносить (схема %d)" % SCHEMA], 0))  # noqa: UP031
+        self.assertEqual(
+            migrate.run(self.t.state, self.t.cfg),
+            (["миграция данных депо: нечего переносить (схема %d)" % SCHEMA], 0),  # noqa: UP031
+        )
         self.assertEqual({f: slurp(self.t.state.path(f)) for f in self.FILES}, snap)
 
     def run_team(self, state_dir, *argv):
         import subprocess
         import sys
+
         here = os.path.dirname(os.path.abspath(__file__))
-        p = subprocess.run([sys.executable, os.path.join(os.path.dirname(here), "depot2"), "--state", state_dir, "--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent", *list(argv)],
-                           capture_output=True, text=True, env=dict(os.environ, DEPOT2_BACKUP="off"))
+        p = subprocess.run(
+            [
+                sys.executable,
+                os.path.join(os.path.dirname(here), "depot2"),
+                "--state",
+                state_dir,
+                "--set",
+                "deep_repo.clone=",
+                "--set",
+                "executor_bin=/nonexistent",
+                *list(argv),
+            ],
+            capture_output=True,
+            text=True,
+            env=dict(os.environ, DEPOT2_BACKUP="off"),
+        )
         return p.returncode, p.stdout, p.stderr
 
 
 if __name__ == "__main__":
     import unittest
+
     unittest.main()

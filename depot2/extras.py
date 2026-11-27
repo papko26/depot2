@@ -22,12 +22,16 @@ YES, NO = "yes", "no"
 
 # --- the standing questions ------------------------------------------------------------------
 
+
 def standing_points(cfg):
-    return [{"id": q["id"], "title": q["title"], "question": q["question"], "recommendation": "",
-             "source": "standing"} for q in cfg["standing_questions"]]
+    return [
+        {"id": q["id"], "title": q["title"], "question": q["question"], "recommendation": "", "source": "standing"}
+        for q in cfg["standing_questions"]
+    ]
 
 
 # --- the event logs --------------------------------------------------------------------------
+
 
 class EventLog:
     """Append-only records {id, status, ts, …}; an item is the merge of its records in order."""
@@ -66,7 +70,6 @@ class EventLog:
         self.state.touch(self.path)
         return rec
 
-
     OPEN: tuple[str, ...] = ()
     STATUS_RU: dict[str, str] | i18n.Labels[str] = {}  # noqa: RUF012
 
@@ -90,11 +93,13 @@ class Orders(EventLog):
     STATUS_RU = i18n.Labels("extras.order", ("queued", "done", "settled"))
 
     def unshown_done(self):
-        return [o for o in self.items() if o["status"] in ("done", "settled") and not o.get("shown_in")
-                and o.get("results")]
+        return [
+            o for o in self.items() if o["status"] in ("done", "settled") and not o.get("shown_in") and o.get("results")
+        ]
 
 
 # --- the brainstorm --------------------------------------------------------------------------
+
 
 def check_proposal(p, cfg):
     """A round-1 brainstorm_proposal → (normalized or None, why not). None, None: no proposal."""
@@ -155,8 +160,9 @@ def evaluate(proposals, votes, took_part, balances, cfg, history, genders):
             reasons.append(t("extras.yes_count", yes=len(yes), n=len(characters.IDS), need=majority()))
         for cid in characters.IDS:
             if balances[cid] < r["fees"][cid]:
-                reasons.append(t("extras.cannot_pay", who=characters.name(cid), balance=balances[cid],
-                                 fee=r["fees"][cid]))
+                reasons.append(
+                    t("extras.cannot_pay", who=characters.name(cid), balance=balances[cid], fee=r["fees"][cid])
+                )
         r["yes"] = len(yes)
         r["status"] = "passed" if not reasons else "failed"
         r["reasons"] = reasons
@@ -172,9 +178,47 @@ def evaluate(proposals, votes, took_part, balances, cfg, history, genders):
 
 # The Russian alphabet (U+0430..U+044F, with the yo U+0451 after the ye) in Latin letters, for a topic's file name.
 RU_ALPHABET = "".join(chr(c) for c in range(0x430, 0x436)) + chr(0x451) + "".join(chr(c) for c in range(0x436, 0x450))
-TRANSLIT = dict(zip(RU_ALPHABET,
-                    ["a", "b", "v", "g", "d", "e", "e", "zh", "z", "i", "y", "k", "l", "m", "n", "o", "p",
-                     "r", "s", "t", "u", "f", "kh", "ts", "ch", "sh", "shch", "", "y", "", "e", "yu", "ya"], strict=False))
+TRANSLIT = dict(
+    zip(
+        RU_ALPHABET,
+        [
+            "a",
+            "b",
+            "v",
+            "g",
+            "d",
+            "e",
+            "e",
+            "zh",
+            "z",
+            "i",
+            "y",
+            "k",
+            "l",
+            "m",
+            "n",
+            "o",
+            "p",
+            "r",
+            "s",
+            "t",
+            "u",
+            "f",
+            "kh",
+            "ts",
+            "ch",
+            "sh",
+            "shch",
+            "",
+            "y",
+            "",
+            "e",
+            "yu",
+            "ya",
+        ],
+        strict=False,
+    )
+)
 
 
 def slugify(text, n=40):
@@ -186,11 +230,18 @@ def slugify(text, n=40):
 def topic_text(entry, gender):
     """The topic file, in the discuss format, from the initiator's proposal verbatim."""
     who = characters.name(entry["initiator"])
-    lines = [t("extras.topic_heading", topic=entry["topic"]), "",
-             t("extras.topic_called", gender=gender, who=who, id=entry["id"],
-               round=entry["round"]), "",
-             t("extras.topic_why"), "", entry.get("why") or "—", "",
-             t("extras.topic_questions"), ""]
+    lines = [
+        t("extras.topic_heading", topic=entry["topic"]),
+        "",
+        t("extras.topic_called", gender=gender, who=who, id=entry["id"], round=entry["round"]),
+        "",
+        t("extras.topic_why"),
+        "",
+        entry.get("why") or "—",
+        "",
+        t("extras.topic_questions"),
+        "",
+    ]
     lines += ["%d. %s" % (i, q) for i, q in enumerate(entry["questions"], 1)]  # noqa: UP031
     lines += ["", f"— {who}", ""]
     return "\n".join(lines)

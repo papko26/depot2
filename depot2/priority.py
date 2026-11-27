@@ -36,8 +36,10 @@ def parse(value):
                 return p
         m = RE_P.match(s)
         if not m:
-            raise PriorityError("priority is a whole number %d-%d (10 — the most important; or high 8, normal 5, "  # noqa: UP031
-                                "later 2), got %r" % (MIN, MAX, value))
+            raise PriorityError(
+                "priority is a whole number %d-%d (10 — the most important; or high 8, normal 5, "  # noqa: UP031
+                "later 2), got %r" % (MIN, MAX, value)
+            )
         n = int(m.group(1))
     if not MIN <= n <= MAX:
         raise PriorityError("priority is %d-%d (10 — the most important), got %d" % (MIN, MAX, n))  # noqa: UP031
@@ -47,6 +49,7 @@ def parse(value):
 def arg(text):
     """argparse's `type` for --priority (and --prio): a bad value is the parser's error, with the range."""
     import argparse
+
     try:
         return parse(text)
     except PriorityError as e:
@@ -56,9 +59,19 @@ def arg(text):
 def add_arg(parser, synonym=False):
     """--priority N on an add or a set (and --prio, its synonym, where the queues had it)."""
     flags = ("--priority", "--prio") if synonym else ("--priority",)
-    parser.add_argument(*flags, dest="priority", type=arg, metavar="N",
-                        help="priority %d-%d, 10 — the most important (default %d)%s" % (  # noqa: UP031
-                            MIN, MAX, DEFAULT, "; --prio high|normal|later = 8 / 5 / 2" if synonym else ""))
+    parser.add_argument(
+        *flags,
+        dest="priority",
+        type=arg,
+        metavar="N",
+        help="priority %d-%d, 10 — the most important (default %d)%s"  # noqa: UP031
+        % (
+            MIN,
+            MAX,
+            DEFAULT,
+            "; --prio high|normal|later = 8 / 5 / 2" if synonym else "",
+        ),
+    )
 
 
 def of(rec):
@@ -91,10 +104,12 @@ def ordered(rows, rec=lambda x: x):
 
 # --- `depot2 priority ID [N]`: any train or car --------------------------------------------------------------
 
+
 def kind_of(ref):
     """What a ref names: train, car, stack, tstack, wishes, think, todo; a track is refused (a theme has none)."""
     from .tracks import RE_CAR, RE_TRACK
     from .trains import RE_NAME
+
     ref = (ref or "").strip()
     if RE_CAR.match(ref):
         return "car"
@@ -111,6 +126,7 @@ def kind_of(ref):
 
 def _queue(state, cfg, kind):
     from . import queues
+
     return {"wishes": queues.Wishes, "think": queues.Think, "todo": queues.Todo}[kind](state, cfg)
 
 
@@ -119,6 +135,7 @@ def get_any(state, cfg, ref):
     from .stack import Stack
     from .trains import Trains
     from .tstack import TeamStack
+
     kind = kind_of(ref)
     if kind == "train":
         return kind, ref, Trains(state, cfg).get(ref)
@@ -143,6 +160,7 @@ def set_any(state, cfg, ref, n, by="priority"):
     (one car, one priority). Returns the lines to print.
     """
     from .trains import Trains
+
     n = parse(n)
     kind, now_ref, rec = get_any(state, cfg, ref)
     before = of(rec)
@@ -161,10 +179,10 @@ def set_any(state, cfg, ref, n, by="priority"):
     elif kind in ("stack", "tstack"):
         from .stack import Stack
         from .tstack import TeamStack
+
         (Stack if kind == "stack" else TeamStack)(state, cfg).set(ref, priority=n)
         label = ref
     else:
         _queue(state, cfg, kind).set(ref, priority=n)
         label = ref
-    return [t("priority.set", label=label, before=before, n=n) if before != n else
-            t("priority.same", label=label, n=n)]
+    return [t("priority.set", label=label, before=before, n=n) if before != n else t("priority.same", label=label, n=n)]
