@@ -20,7 +20,7 @@ def _subs(p):
 
 
 def _paths(p, path=()):
-    """Every command and subcommand path, aliases left out (`wish` is `wishes`)."""
+    """Every command and subcommand path, aliases left out (`agent` is `agents`)."""
     s = _subs(p)
     if s is None:
         return
@@ -34,7 +34,7 @@ def _paths(p, path=()):
 
 
 def _resolve(ap, words):
-    """The command paths a README line names: `wishes|think|todo take ID …` gives three. A plain word where a
+    """The command paths a README line names: `stack|tstack take ID …` gives two. A plain word where a
     subcommand stands that is none is returned in `bad`."""
     live, done, bad = [()], [], []
     for w in words:

@@ -164,7 +164,7 @@ class RepairTest(ClaimBase):
         self.assertTrue(r["stages"][0]["forced"])
         self.assertIn("рекламация", r["stages"][0]["gates"])
         self.assertIn("рекламация", self.stk().get("st-0001")["claim_links"][0]["forced"])
-        for argv, text in ((("--of", "nope_q9"), "нет бага nope_q9 в "), (("--of", "wl-0001"), "не выехавший вагон"),
+        for argv, text in ((("--of", "nope_q9"), "нет бага nope_q9 в "), (("--of", "wl-0001"), "нет бага wl-0001 в "),
                            (("--of", "st-0001", "--bug", "x", "--of", "y_q"), "баг — один"),
                            (("--of", "#999"), "#999: ни вагона, ни объекта стека с этим PR")):
             rc, _, err = self.team("repair", "add", *argv)
