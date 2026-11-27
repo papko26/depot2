@@ -347,7 +347,8 @@ class Trains:
 
     def check_start_refs(self, refs, tn):
         """A train's start waits for tracks, cars, other trains, stack objects or PRs: never for itself or a car
-        of its own."""
+        of its own.
+        """
         for r in refs or ():
             if r == tn["name"] or r in tn["cars"]:
                 raise TrainError(f"a train cannot wait for itself or its own car ({r})")
@@ -398,7 +399,8 @@ class Trains:
     def set(self, name, new_name=None, title=None, after=None, no_after=False, not_before=None, owner=None, note=None,
             slots=None, est_mtok=None, clear_est=False, at=None, add_note=None, priority=None):
         """new_name: the train's new name; the other trains' start rules that name it follow. priority: 1-10 — a free
-        slot asks the trains by it (`next`)."""
+        slot asks the trains by it (`next`).
+        """
         tn = self.get(name)
         changed = {}
         if new_name is not None and new_name != name:
@@ -512,7 +514,8 @@ class Trains:
     def _merge_plan(self, tn, word, sh=None):
         """[(ref, PR, kept: in the queue already)] in the train's order, once every open car passed: it has a PR, no
         other car of the train has it, `merge.check` passes it (gh read as `merge add` reads it). Any refusal: one
-        TrainError, each car with what to do; nothing is written."""
+        TrainError, each car with what to do; nothing is written.
+        """
         from . import merge
         queued = {e["pr"] for e in merge.MergeQueue(self.state).entries(open_only=True)}
         plan, bad, seen = [], [], {}
@@ -638,7 +641,8 @@ class Trains:
 
     def car_closed(self, ref, by):
         """A car was merged or dropped: when it was its live train's last open car, the train arrives (or, with no car
-        merged, it is scrapped) by itself."""
+        merged, it is scrapped) by itself.
+        """
         tn = self.of_car(ref)
         if tn is None or self.open_cars(tn):
             return []
@@ -654,7 +658,8 @@ class Trains:
 
     def effort_parts(self, tn):
         """A train's (expected, spent, unpriced): `effort_of` over its cars (its own estimate first), and its cars with
-        no estimate and no spend, which neither sum holds (none when the train has its own estimate)."""
+        no estimate and no spend, which neither sum holds (none when the train has its own estimate).
+        """
         cars = [c for r, t, c in self.cars_of(tn)]
         exp, spent, _ = effort_of(self.tracks, cars, tn.get("est_mtok"))
         unpriced = 0 if tn.get("est_mtok") is not None else sum(
@@ -667,7 +672,8 @@ class Trains:
 
     def effort_total(self, trains):
         """A group of trains' price: the expected summed over the trains that have one (a train's own range adds as a
-        range), the spent over those that have it, their cars with neither; `text` as a train's cell prints it."""
+        range), the spent over those that have it, their cars with neither; `text` as a train's cell prints it.
+        """
         exp = spent = None
         unpriced = 0
         for tn in trains:
@@ -820,7 +826,8 @@ class Trains:
 
     def train_json(self, tn, now=None):
         """A train as data: its cars in order (each as the tracks' `car_json`), its state and what the way on waits
-        for, as `--md` prints them."""
+        for, as `--md` prints them.
+        """
         cars = [self.tracks.car_json(t, c) for r, t, c in self.cars_of(tn)]
         exp, spent, unpriced = self.effort_parts(tn)
         to = self.next_state(tn)

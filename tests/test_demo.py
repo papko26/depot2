@@ -1,5 +1,6 @@
 """The demo depot (examples/demo/make-demo.sh) builds and reads back: its board, trains, stack and queues; its command
-line speaks English by default and Russian on request."""
+line speaks English by default and Russian on request.
+"""
 
 import json
 import os

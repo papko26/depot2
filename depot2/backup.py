@@ -128,7 +128,8 @@ def rotate_log(state, name=LOG):
 @contextlib.contextmanager
 def backup_lock(state, name=LOCK):
     """The Drive run's lock (`lock`) or the push's (`git.lock`): a second run of the same kind
-    finds it held and exits."""
+    finds it held and exits.
+    """
     fd = os.open(os.path.join(bdir(state), name), os.O_RDWR | os.O_CREAT, 0o644)
     try:
         try:
@@ -187,7 +188,8 @@ def plan_retention(names, host, keep_daily=14):
 
     Kept: the newest archive of each of the `keep_daily` latest UTC days that have one, and the
     first archive of every UTC month. Every other archive of this host is deleted; other hosts'
-    archives and names that don't match are never touched."""
+    archives and names that don't match are never touched.
+    """
     mine = {}
     for n in names:
         m = NAME_RE.match(n)
@@ -572,7 +574,8 @@ def due(state, st, b, now):
 
 def spawn(state, sets, args=("--drive", "--auto"), marker=SPAWNED, log=LOG):
     """`depot2 backup <args>`, detached: its own session, no tty, its output into the log. The
-    Drive run by default; the push passes `--push --auto` and its own marker and log."""
+    Drive run by default; the push passes `--push --auto` and its own marker and log.
+    """
     d = bdir(state)
     rotate_log(state, log)
     with open(os.path.join(d, marker), "w") as f:
@@ -588,7 +591,8 @@ def spawn(state, sets, args=("--drive", "--auto"), marker=SPAWNED, log=LOG):
 
 def after_command(state, a):
     """depot2 calls this after every command but `backup` and `seed`. Never raises, never waits.
-    The Drive part only with `backup.drive` true; the push part only when its remote exists."""
+    The Drive part only with `backup.drive` true; the push part only when its remote exists.
+    """
     if os.environ.get("DEPOT2_BACKUP", "").lower() in ("0", "off", "no", "false"):
         return
     if getattr(a, "cmd", None) in ("backup", "seed") or not os.path.isdir(state.root):

@@ -38,7 +38,8 @@ def rule_of(path, auto, cfg=None):
 
 def snapshot_test(path, cfg=None):
     """The test a snapshot file belongs to: the plugins' snapshot_test first, else the common layout
-    <dir>/__snapshots__/<test>.snap → <dir>/<test>."""
+    <dir>/__snapshots__/<test>.snap → <dir>/<test>.
+    """
     if cfg:
         from . import hooks
         got = hooks.call_first(cfg, "snapshot_test", path)
@@ -57,7 +58,8 @@ def markers(tag=TAG):
 
 def union(text, tag=TAG):
     """git merge-file --diff3 --marker-size=MARK -L <tag>ours -L <tag>base -L <tag>theirs output → (the joined
-    text, the number of places), or (None, why) when at some place a side changed or took away common text."""
+    text, the number of places), or (None, why) when at some place a side changed or took away common text.
+    """
     o, b, s, t = markers(tag)
     lines = text.split("\n")
     out, i, n = [], 0, 0
@@ -85,7 +87,8 @@ def union(text, tag=TAG):
 
 def join_hunk(base, ours, theirs):
     """One conflict → its lines, or None. An empty (or blank) base: both sides only added; a base both sides only
-    inserted into, by lines or, for one line, by characters (a running list both appended to)."""
+    inserted into, by lines or, for one line, by characters (a running list both appended to).
+    """
     if not any(x.strip() for x in base):
         return join_adds(ours, theirs)
     got = both_inserts(base, ours, theirs)
@@ -97,7 +100,8 @@ def join_hunk(base, ours, theirs):
 
 def join_adds(ours, theirs):
     """Two additions at one place: the lines both added alike at their start and end once, the branch's lines, then
-    main's; a blank line between two paragraphs (not between two rows of a table or two items of a list)."""
+    main's; a blank line between two paragraphs (not between two rows of a table or two items of a list).
+    """
     p = 0
     while p < min(len(ours), len(theirs)) and ours[p] == theirs[p]:
         p += 1
@@ -120,7 +124,8 @@ def inserts(x, y):
 
 def both_inserts(base, ours, theirs):
     """ours and theirs each only insert into base (a list of lines or a string) → base with both sides' insertions
-    (at one place the branch's first, then main's); None when either side deleted or changed any of base."""
+    (at one place the branch's first, then main's); None when either side deleted or changed any of base.
+    """
     a, t = inserts(base, ours), inserts(base, theirs)
     if a is None or t is None:
         return None
@@ -146,7 +151,8 @@ NOT_NET_RE = re.compile(
 def is_net(code, text):
     """A failed git fetch/push/ls-remote or gh call that the network failed (a timeout, a hang-up, TLS, a 50x):
     worth a pause and another try. A hang past the command's own timeout (code None) is one too. An auth failure,
-    a rejected push, a 40x are not, whatever else the text says."""
+    a rejected push, a 40x are not, whatever else the text says.
+    """
     if code == 0:
         return False
     if code is None:

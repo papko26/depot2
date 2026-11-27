@@ -230,7 +230,8 @@ def log_line(e, text):
 
 class Resolutions:
     """A conflict is resolved only from a resolution worked out and tested beforehand, keyed by the two
-    sides' blobs (ours = the branch's, theirs = main's) and checked against the file's path."""
+    sides' blobs (ours = the branch's, theirs = main's) and checked against the file's path.
+    """
 
     def __init__(self, state):
         self.state = state
@@ -319,7 +320,8 @@ def classify(runs, jobs_of, now, queued_max_min):
     """The CI/CD runs of one sha → (kind, text, run id, rerunnable). kind: none (no run yet), pending, green,
     failed, github (GitHub did not start a job: a job left queued in a finished run, a job that failed or
     was cancelled without ever running, a startup failure, or a job queued with no runner for
-    queued_max_min). jobs_of(run id) gives a run's jobs (the REST API's: runner_name, steps, created_at)."""
+    queued_max_min). jobs_of(run id) gives a run's jobs (the REST API's: runner_name, steps, created_at).
+    """
     if not runs:
         return "none", i18n.t("merge.ci_no_run"), None, False
     verdicts = []
@@ -421,7 +423,8 @@ def json_objects(text):
 
 def smoke_verdict(cfg, code, out):
     """The smoke check's verdict → (ok, summary): the first plugin's smoke_verdict that answers, else its exit code
-    (0 passes) with its last line of output."""
+    (0 passes) with its last line of output.
+    """
     got = hooks.call_first(cfg, "smoke_verdict", code, out)
     if got is not None:
         return bool(got[0]), str(got[1])
@@ -543,7 +546,8 @@ class Rider(TrialsMixin, WorktreesMixin):
 
     def update(self, eid, event, say=None, **fields):
         """Every change is written and in the history at once; the state's git commits at the status changes
-        (COMMIT_ON) and when the run ends."""
+        (COMMIT_ON) and when the run ends.
+        """
         with self.edit() as q:
             e = q.get(eid)
             if e["status"] == "dropped":
@@ -874,7 +878,8 @@ class Rider(TrialsMixin, WorktreesMixin):
 
     def union_file(self, wt, f):
         """A doc both sides only added to (mergeauto.union): joined, written, added. → (None, the journal's part) or
-        (why not, None)."""
+        (why not, None).
+        """
         code, out, err = self.git(wt, "checkout-index", "--stage=all", "--temp", "--", f)
         names = (out.split("\t")[0].split() if code == 0 else [])
         tmps = [os.path.join(wt, x) for x in names if x != "."]
@@ -974,7 +979,8 @@ class Rider(TrialsMixin, WorktreesMixin):
 
     def sync(self, wt, br, main_ref):
         """Main into the branch checked out in wt: merged in a throwaway worktree of its head (merge_in), then
-        fast-forwarded into wt. → merge_in's result."""
+        fast-forwarded into wt. → merge_in's result.
+        """
         pre = self.rev(wt, "HEAD")
         if self.is_ancestor(wt, main_ref, "HEAD"):
             return {"head": pre, "push": False, "note": f"{main_ref} is in {br} already: its head stays",
@@ -1261,7 +1267,8 @@ class Rider(TrialsMixin, WorktreesMixin):
 
     def fallback(self, eid, key, runs, kind, now):
         """One poll of the runs for one fallback → True while it holds the poll (its cancel not landed, its rerun
-        not seen yet): the runs' verdict waits for it."""
+        not seen yet): the runs' verdict waits for it.
+        """
         c = self.m.get(FALLBACKS[key][0])
         if not c:
             return False
@@ -1420,7 +1427,8 @@ class Rider(TrialsMixin, WorktreesMixin):
 
     def pr_merge(self, n, head):
         """gh pr merge; when the network fails it, the PR is looked at first (merged after all: done), then the merge
-        is tried again (net_retry's count and pause)."""
+        is tried again (net_retry's count and pause).
+        """
         tries, pause = int(self.m.get("net_retries") or 0), float(self.m.get("net_retry_s") or 0)
         for i in range(tries + 1):
             code, out, err = self.gh("pr", "merge", str(n), "-R", self.repo, "--merge", "--match-head-commit", head)
@@ -1552,7 +1560,8 @@ class Rider(TrialsMixin, WorktreesMixin):
     # --- the dry run ---
     def plan(self):
         """`merge run --dry-run`: the plan, nothing pushed, merged or written. Each PR is tried on top of the ones
-        before it in a throwaway worktree (main + the PRs ahead, as the real run would see it)."""
+        before it in a throwaway worktree (main + the PRs ahead, as the real run would see it).
+        """
         q = MergeQueue(self.state)
         items = q.entries(open_only=True)
         L = ["DRY RUN: the merge queue's plan (no push, no merge, the depot unchanged)"]
@@ -1727,7 +1736,8 @@ def find_object(state, cfg, n):
 def place(q, e, at):
     """Put entry e at place `at` (from 1) among the open entries, in memory: never ahead of one that rides or
     waits for GitHub (the runner holds it), ahead of a stopped one (a fix rides first; the stopped one waits for
-    its `merge resume`). → its place among the open entries."""
+    its `merge resume`). → its place among the open entries.
+    """
     rest = [x for x in q.data["entries"] if x is not e]
     op = [x for x in rest if x["status"] in OPEN]
     held = 0
@@ -1847,7 +1857,8 @@ def check(state, cfg, pr_n, word, sh=None, force=False, why=None):
 def add(state, cfg, pr_n, word, sh=None, at=None, force=False, why=None):
     """The owner's word puts a PR into the queue (at: its place among the open entries, from 1; default the
     end), once `check` passed it: the DoD's principles read into its car's marks, `force` with `why` recorded on the
-    entry and its stage rows. → (entry, lines)."""
+    entry and its stage rows. → (entry, lines).
+    """
     from . import gates, marks
     from .stack import Stack
     if at is not None and int(at) < 1:
@@ -2023,7 +2034,8 @@ def lock_held(state):
 
 def lock_pid(state):
     """The pid the last runner wrote into its lock (it may be gone): only read, never locked — a probe's flock in
-    the very moment a runner starts would refuse that runner."""
+    the very moment a runner starts would refuse that runner.
+    """
     try:
         with open(state.path(RUN_DIR, RUN_LOCK)) as f:
             return f.read(32).strip() or None
@@ -2209,7 +2221,8 @@ def merges(q):
     """The one rule for what the views call the merges: `merge report`, `merge report --json` (the web view's merge
     tab) and the last merge of `merge`, `merge --json` and `queues`. The entries the queue merged, in its order, the
     newest last; one dropped after its merge is not among them (the drop stops watching it), one that waits again for
-    its deploy after `merge resume` is."""
+    its deploy after `merge resume` is.
+    """
     return [e for e in q.entries() if e.get("merged") and e["status"] != "dropped"]
 
 
@@ -2271,7 +2284,8 @@ def to_json(state, all_=False):
 
 def report_json(state, last=1):
     """`merge report --json` and the web view's merge tab: the entries of the last `last` merges (`merges`, the ones
-    `merge report` shows) as the queue keeps them, with their deploy, smoke and the plugins' after_merge lines."""
+    `merge report` shows) as the queue keeps them, with their deploy, smoke and the plugins' after_merge lines.
+    """
     return merges(MergeQueue(state))[-max(1, int(last)):]
 
 

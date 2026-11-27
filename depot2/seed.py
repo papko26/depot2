@@ -19,7 +19,8 @@ VOTE_HEAD = re.compile(r"^(B\d+)\.\s+(.*)$")
 
 def init_state(state, brief_path):
     """Create the state repo, an empty config.json (the owner's overrides; `depot2 config`
-    prints the effective values) and the specs."""
+    prints the effective values) and the specs.
+    """
     state.init_git()
     cfg_path = state.path("config.json")
     if not os.path.exists(cfg_path):
@@ -37,7 +38,8 @@ def init_state(state, brief_path):
 
 def init_empty(state, balance=5):
     """A new depot: its git, an empty config.json, a spec per character of the config's team (from its names and
-    role) and their opening balances. Refused when the depot has a ledger already."""
+    role) and their opening balances. Refused when the depot has a ledger already.
+    """
     led = Ledger(state)
     if os.path.isdir(state.root) and led.entries():
         raise ValueError(f"{state.root} is a depot already (its ledger has entries)")
@@ -119,7 +121,8 @@ def vote_lines(text, cid):
 
 def mention_lines(text, cid, line_max=500, section_max=1500):
     """Lines that name the character, plus the body of any heading that names it (a rounds
-    draft keeps each character's own view under a heading of its name)."""
+    draft keeps each character's own view under a heading of its name).
+    """
     out = []
     section_left = 0
     for l in text.splitlines():  # noqa: E741

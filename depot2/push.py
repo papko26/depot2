@@ -50,7 +50,8 @@ BACKOFF_MAX_MIN = 360
 
 class PushError(Exception):
     """A push that cannot go on. `reason` is the short Russian line of the ⚠ warning; `person`:
-    only a person can fix it, so no background retry."""
+    only a person can fix it, so no background retry.
+    """
 
     def __init__(self, reason, step, detail="", person=False):
         Exception.__init__(self, reason)
@@ -147,7 +148,8 @@ def _count(state, base, tip="HEAD"):
 
 def base_of(state, remote, branch, st):
     """The remote's commit as this repo knows it, without the network: the remote-tracking ref, else
-    the last push's commit; None: never pushed (the push carries all of HEAD's history)."""
+    the last push's commit; None: never pushed (the push carries all of HEAD's history).
+    """
     b = rev(state, tracking(remote, branch))
     if b:
         return b
@@ -303,7 +305,8 @@ def _safe_rel(path):
 def export_range(root, base, head, dest, spec=None):
     """What a push of `head` carries beyond `base` (None: all of head's history), as files for the
     scan: each blob at <dest>/blobs/<sha12>/<its path>, the commit messages in <dest>/commits.txt.
-    spec: the revisions instead (the merge queue's trial: [head, "--not", its parents]). → (blobs, bytes)."""
+    spec: the revisions instead (the merge queue's trial: [head, "--not", its parents]). → (blobs, bytes).
+    """
     spec = list(spec) if spec else [base + ".." + head] if base else [head]
     p = subprocess.run(["git", "-C", root, "rev-list", "--objects", *spec], stdin=subprocess.DEVNULL,
                        capture_output=True)
@@ -355,7 +358,8 @@ def export_range(root, base, head, dest, spec=None):
 
 def push_argv(remote, branch, sha):
     """The only push there is: the scanned commit onto the branch. No force, no mirror, no delete,
-    no tag (a global push.followTags would add tags, so it is off for this call)."""
+    no tag (a global push.followTags would add tags, so it is off for this call).
+    """
     if not NAME_RE.match(remote or "") or not BRANCH_RE.match(branch or "") or ".." in remote + branch:
         raise PushError(t("push.bad_names"), "config", person=True)
     if not SHA_RE.match(sha or ""):

@@ -51,7 +51,8 @@ def _norm(text):
 
 def verdict(text):
     """'ok', 'na' (not needed), 'bad', or 'other' (shown as it is, not passed); None: nothing handed in. What the agent
-    handed in, as words of every language: in.gates.ok, in.gates.na, in.gates.bad (the whole text or its first word)."""
+    handed in, as words of every language: in.gates.ok, in.gates.na, in.gates.bad (the whole text or its first word).
+    """
     w = _norm(text)
     if not w:
         return None
@@ -126,7 +127,8 @@ def brief_docs(path):
 
 def docs_need(recs):
     """Why the car's docs are needed, or None: its flag `docs` (`tracks car set --docs yes|no`, the car's first, then
-    its object's) wins; with none set, its sketch's line, read as it is now."""
+    its object's) wins; with none set, its sketch's line, read as it is now.
+    """
     for r in recs:
         if r.get("docs") is not None:
             return t("gates.docs_flag") if r["docs"] else None
@@ -185,14 +187,16 @@ def checks_since(cfg):
 
 def added_day(car=None, obj=None):
     """The day a car came in: the track's car record's `added`, else (a stack object that is no car) the
-    object's own; None when the record has none."""
+    object's own; None when the record has none.
+    """
     rec = car if car is not None else obj
     return str((rec or {}).get("added") or "")[:10] or None
 
 
 def checks_old(cfg, car=None, obj=None):
     """The car (or the stack object that is no car) came in before the rule: the `checks` item does not count.
-    A record without a date counts as old (it predates the dates). No rule day (null): no car is old."""
+    A record without a date counts as old (it predates the dates). No rule day (null): no car is old.
+    """
     since = checks_since(cfg)
     if since is None:
         return False
@@ -213,7 +217,8 @@ def _checks_unmet(items, brief):
 
 def dor_notes(stack, obj=None, car=None, items=None):
     """The DoR's quiet notes, not counted: a car older than the rule whose brief lacks the three checks'
-    sections (or has no brief to check)."""
+    sections (or has no brief to check).
+    """
     items = dor_items(stack.cfg) if items is None else tuple(items)
     if "checks" not in items or not checks_old(stack.cfg, car=car, obj=obj):
         return []
@@ -283,7 +288,8 @@ def limits(stack):
 def check(unmet, force, why, ref, target, cmd, error=GateError):
     """The soft gate: nothing missing -> None; missing and no --force -> error (what is missing, how to pass
     anyway; the stack's and the trains' own error classes); --force with a reason -> {gate: [what was missing]}
-    for the history row (`gates`)."""
+    for the history row (`gates`).
+    """
     unmet = {k: list(v) for k, v in unmet.items() if v}
     if not unmet:
         return None

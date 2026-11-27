@@ -26,7 +26,8 @@ def project_line(cfg):
 
 def team_list(genders):
     """The team, each with its role (and, in a language with grammatical gender, the gender it speaks of itself in,
-    from the state)."""
+    from the state).
+    """
     return "\n".join(t("prompts.team_line", gender=characters.check_gender(genders[c["id"]]),
                         label=characters.label(c["id"]), role=characters.role(c["id"]))
                       for c in characters.CHARACTERS)

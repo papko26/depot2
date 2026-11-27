@@ -191,7 +191,8 @@ def plain(words):
 
 def queue_meta():
     """What the page needs to draw the queues: each one's open statuses and their names, its labels (/api/meta).
-    No team (characters.IDS empty): the who-list is `all` alone."""
+    No team (characters.IDS empty): the who-list is `all` alone.
+    """
     from . import characters, extras, prompts, queues, tstack
     from .stack import BALLOT_RU
     who = dict({"all": i18n.t("webui.who_all")}, **{c: characters.name(c) for c in characters.IDS})
@@ -209,7 +210,8 @@ def queue_meta():
 
 def merge_meta():
     """What the page needs to draw the merge queue's tab (/api/meta): what the queue is, its steps in their order and
-    the names of the steps, the statuses and the smoke's verdicts, as `merge --md` writes them."""
+    the names of the steps, the statuses and the smoke's verdicts, as `merge --md` writes them.
+    """
     from . import merge
     return {"means": merge.means(cap=True), "steps": list(merge.STEPS), "step_ru": plain(merge.STEP_RU),
             "status_ru": plain(merge.STATUS_RU), "smoke_ru": plain(merge.SMOKE_RU)}
@@ -287,7 +289,8 @@ def code_broken(root=CODE_ROOT):
 
 def reexec(srv):
     """The same process on the new code: the listening socket kept open across exec, its number in DEPOT2_WEB_FD.
-    Never returns."""
+    Never returns.
+    """
     srv.wait_answers()
     fd = srv.socket.fileno()
     os.set_inheritable(fd, True)
@@ -324,7 +327,8 @@ def safe_md(path, dirs, base=DOCS_BASE):
 
 def url_doc(rel, dirs, base=DOC_BASE):
     """`/api/doc?path=`: a relative path under web.docs.base; never absolute, never `..`, and the real path inside
-    the read dirs (web.docs.dirs)."""
+    the read dirs (web.docs.dirs).
+    """
     if not base or not isinstance(rel, str) or not rel or rel.startswith(("/", "~", "\\")) or "\\" in rel or "\0" in rel:
         return None
     parts = rel.split("/")
@@ -357,7 +361,8 @@ def csp_for(html):
 def page_html(html, lang=None):
     """The page as served: the run's language in <html lang> and its messages (the catalogs' `web.` keys, English
     filling a gap) in the #messages block. That block is JSON data, never run, so the CSP's script hashes leave it out;
-    every `<` in it is written \\u003c, so no text in a message can end or open a tag there."""
+    every `<` in it is written \\u003c, so no text in a message can end or open a tag there.
+    """
     lang = lang or i18n.language()
     msgs = json.dumps(i18n.web_messages(lang), ensure_ascii=False, sort_keys=True).replace("<", "\\u003c")
     html = RE_LANG.sub(f'<html lang="{lang}">', html, count=1)
@@ -370,7 +375,8 @@ def extra_hosts(value):
     """The config's `web.hosts` → (the names to let in besides OWN_NAMES, lower case, in the list's order; what was
     dropped). A name is a host name and nothing else: an empty string, a space, a slash, a colon (so a port, a URL,
     an IPv6 address), a `*` or anything that is not a string is dropped, never repaired. A lone string is a list of
-    one (`--set web.hosts=mybox.local`)."""
+    one (`--set web.hosts=mybox.local`).
+    """
     if value is None:
         return [], []
     if isinstance(value, str):
@@ -426,7 +432,8 @@ class Handler(http.server.BaseHTTPRequestHandler):
 
     def send_restart(self):
         """307 to the same path: the browser asks again and the listening socket, kept across the re-exec, hands the
-        request to the new code."""
+        request to the new code.
+        """
         body = json.dumps({"restart": True, "error": i18n.t("webui.restart")}, ensure_ascii=False).encode("utf-8")
         self.server.request_restart()
         with self.server.answering():
@@ -520,7 +527,8 @@ class Server(http.server.ThreadingHTTPServer):
 
     def authorize(self, h):
         """The one place a request is let in (a login goes here later): a loopback peer, a Host that names this
-        server (OWN_NAMES and the config's `web.hosts`, with its port). Refused: 403, and nothing is read."""
+        server (OWN_NAMES and the config's `web.hosts`, with its port). Refused: 403, and nothing is read.
+        """
         peer = h.client_address[0]
         host = (h.headers.get("Host") or "").strip().lower()
         if not (peer in LOOPBACK or peer.startswith("::ffff:127.")) or host not in self.hosts:
@@ -536,7 +544,8 @@ class Server(http.server.ThreadingHTTPServer):
 
     def code_changed(self):
         """True once the code on disk differs from what this process runs and compiles (looked at once a second);
-        code that does not compile is kept out (`broken`, shown in /api/meta)."""
+        code that does not compile is kept out (`broken`, shown in /api/meta).
+        """
         if not self.follow_code or self.restarting:
             return self.restarting
         with self._check_lock:

@@ -130,7 +130,8 @@ def parse(body, labels=None):
 
 def from_pr(old, parsed, pr, at=None):
     """The marks after a read of PR `pr`: the hand marks stay, every other mark is the read's (a number the read has
-    no line for loses the mark an earlier read gave)."""
+    no line for loses the mark an earlier read gave).
+    """
     at = at or now_iso()
     new = {k: dict(v) for k, v in (old or {}).items() if is_hand(v.get("by"))}
     for label, m in parsed["marks"].items():
@@ -153,7 +154,8 @@ def signed(n):
 
 def evaluate(marks, plist):
     """The marks against the third check (plist: `Principles.check_list()`): every principle with its mark, the gate of
-    priority 1 (passed: each has a line, none is bad), the score of priority 2 and what is not checked."""
+    priority 1 (passed: each has a line, none is bad), the score of priority 2 and what is not checked.
+    """
     marks = marks or {}
     items = []
     for p in plist or ():
@@ -313,7 +315,8 @@ def pr_body(state, cfg, n):
 class Reading:
     """One command's reading of a car's PR: the marks it has, the PR's section read into them (saved by `save`), and
     the verdict. ref: the car (tr-NNNN:N) or the stack object (st-NNNN), None for a PR with neither (its verdict only);
-    body: the PR's body when the caller has it, else read with gh; fetch=False: no read (the marks as they are)."""
+    body: the PR's body when the caller has it, else read with gh; fetch=False: no read (the marks as they are).
+    """
 
     def __init__(self, state, cfg, ref, pr=None, body=None, fetch=True, pl=None):
         self.state, self.cfg, self.ref, self.pr = state, cfg, ref, pr
@@ -371,7 +374,8 @@ class Reading:
 
     def save(self, by):
         """Write the new marks on the car (or the object), read fresh from the disk; nothing when they did not change
-        (or there is no car or object to hold them). → whether it wrote."""
+        (or there is no car or object to hold them). → whether it wrote.
+        """
         if not self.ref or not self.changed:
             return False
         save(self.state, self.cfg, self.ref, self.new, by=by, **self.row())

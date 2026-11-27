@@ -340,7 +340,8 @@ def meta_path(transcript):
 
 def _acc(tail):
     """What a reading sums as it goes: the message ids seen (the spend once per message), the tool calls seen, the
-    tokens by kind, the last `tail` actions, the first and last times."""
+    tokens by kind, the last `tail` actions, the first and last times.
+    """
     return {"seen": set(), "tok": dict.fromkeys(effort.WEIGHTS, 0), "acts": collections.deque(maxlen=tail),
             "calls": set(), "n_calls": 0, "first": None, "last": None}
 
@@ -384,7 +385,8 @@ def read_transcript(path, tail=10):
     """One pass over a transcript: {turns, mtok, first_at, last_at, actions: [{at, name, arg}] (the last `tail`),
     actions_n, finished, stopped_by_user, model, effort}; None when the file is not there. Only the numbers, the
     times and the tool calls' names and short arguments are read. A file read before and grown since is read on
-    from where that read stopped (_CACHE); a last line without its end is read only when it is whole JSON."""
+    from where that read stopped (_CACHE); a last line without its end is read only when it is whole JSON.
+    """
     path = os.path.expanduser(path)
     try:
         st = os.stat(path)

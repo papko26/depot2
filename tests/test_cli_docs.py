@@ -35,7 +35,8 @@ def _paths(p, path=()):
 
 def _resolve(ap, words):
     """The command paths a README line names: `wishes|think|todo take ID …` gives three. A plain word where a
-    subcommand stands that is none is returned in `bad`."""
+    subcommand stands that is none is returned in `bad`.
+    """
     live, done, bad = [()], [], []
     for w in words:
         w = w.strip("`.,;:)»")

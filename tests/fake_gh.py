@@ -38,7 +38,8 @@ CI_LABELS = ["self-hosted", "primary"]
 
 def now_z(minutes_ago=0):
     """The tests' clock ($FAKE_GH_NOW: a file with the epoch seconds the merge queue's fake clock shows), never
-    the real one: a job's age is then exactly what the test says, on any machine."""
+    the real one: a job's age is then exactly what the test says, on any machine.
+    """
     path = os.environ.get("FAKE_GH_NOW")
     if path:
         with open(path) as f:

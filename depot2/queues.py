@@ -24,7 +24,8 @@ class QueueError(ValueError):
 
 class Text:
     """A class attribute that reads as its message in the language of the moment: Text(key) is a string;
-    Text(k1, k2, …, many=True) a tuple of them (a table's columns)."""
+    Text(k1, k2, …, many=True) a tuple of them (a table's columns).
+    """
 
     def __init__(self, *keys, **kw):
         self.keys = keys
@@ -433,7 +434,8 @@ class Think(Queue):
 
     def stage_default_why(self, e):
         """A to-think entry is a bogie with a question (`question`); answered, it stays one, closed (any work
-        it led to is a car of its own); taken into a car (`take`), it lives on there; dropped, scrapped."""
+        it led to is a car of its own); taken into a car (`take`), it lives on there; dropped, scrapped.
+        """
         s = e["status"]
         if s == "dropped":
             return "scrapped", self.STATUS_RU["dropped"]
@@ -581,7 +583,8 @@ SOURCE_RU = i18n.Labels("queues.source", ("wish", "think", "todo", "stack", "tst
 
 def source(state, cfg, ref):
     """A ref of a car's `from` as data: {ref, kind, kind_ru, title, status_ru} (title and status None when it names
-    nothing the depot keeps)."""
+    nothing the depot keeps).
+    """
     kind = SOURCE_KIND.get((ref or "")[:2])
     kind_ru = SOURCE_RU.get(kind)
     out = {"ref": ref, "kind": kind, "kind_ru": kind_ru, "title": None, "status_ru": None}
@@ -643,7 +646,8 @@ def migrate(state, cfg, dry_run=False):
     without `stage` gets its stage (stages.migrate); every entry taken into a car is named in the car's `from`
     (migrate_from). An entry or object that has the field is never touched, so a second run changes nothing. The
     priority of a todo or to-think entry from its newest `prio: …` note, that this command wrote once, is the depot's
-    data migration's now (migrate.py, schema 3 → 4: `priority` 1-10 for every entry). Returns (lines, changed)."""
+    data migration's now (migrate.py, schema 3 → 4: `priority` 1-10 for every entry). Returns (lines, changed).
+    """
     from .stack import Stack
     L, changed = [], 0
     stk = Stack(state, cfg)

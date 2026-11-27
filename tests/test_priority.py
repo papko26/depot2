@@ -216,7 +216,8 @@ class NextByPriorityTest(PBase):
 
 class MigrateTest(PBase):
     """Schema 3 → 4: every record gets `priority`; the queues' `prio` words 8 / 5 / 2 (a `prio:` note, else 5), the
-    field off, kept in the queues' history rows; the gate last; a second run changes nothing."""
+    field off, kept in the queues' history rows; the gate last; a second run changes nothing.
+    """
 
     FILES = ("tracks.json", "trains.json", "stack.json", "team-stack.json", "wishes.json", "think.json", "todo.json")
 

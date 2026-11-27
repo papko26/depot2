@@ -51,7 +51,8 @@ def weighted_mtok(tokens):
 
 def call_mtok(res, cfg):
     """One call's spend in MTok: its own token usage, weighted (a killed call's is summed from the
-    stream). A call that reports no tokens but a cost: that ≈$ / usage.usd_per_mtok. Else 0."""
+    stream). A call that reports no tokens but a cost: that ≈$ / usage.usd_per_mtok. Else 0.
+    """
     m = weighted_mtok((res or {}).get("usage") or {})
     if m > 0:
         return m
@@ -66,7 +67,8 @@ def by_cost_only(res):
 
 def costs_mtok(costs, cfg):
     """A run's spend in MTok from its costs.json (a round's or a reflection's): its own "mtok"; for a
-    file from before it, the sum over its calls, else its token counts, else total_usd / usd_per_mtok."""
+    file from before it, the sum over its calls, else its token counts, else total_usd / usd_per_mtok.
+    """
     c = costs or {}
     if c.get("mtok") is not None:
         return float(c["mtok"])
@@ -79,7 +81,8 @@ def costs_mtok(costs, cfg):
 
 def from_transcript(path):
     """It sums the per-message `usage` with the weights, deduped by message id: a streamed message is
-    logged once per content block with the same usage."""
+    logged once per content block with the same usage.
+    """
     seen = set()
     tok = dict.fromkeys(WEIGHTS, 0)
     n = 0

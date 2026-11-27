@@ -245,7 +245,8 @@ class Agents:
 
     def start_unmet(self, trk, c, ref, role, usage):
         """What the gates of `agents start` miss: {"role"|"window"|"agent"|"DoR"|"limit": [text]}; and whether a build
-        goes into a slot first."""
+        goes into a slot first.
+        """
         tr = self.tracks
         stk = tr.stack
         stage = tr.stage_of(c)
@@ -283,7 +284,8 @@ class Agents:
 
     def start(self, ref, role, by=None, usage=None, force=False, why=None):
         """The gates (soft), then the record; a build not in a slot goes into one first (`tracks car stack --start`).
-        Returns the new agent."""
+        Returns the new agent.
+        """
         if role not in ROLES:
             raise AgentError("a role is one of {}".format(", ".join(ROLES)))
         self.settle(by="agents start")  # an agent that finished meanwhile no longer holds the car
@@ -400,7 +402,8 @@ class Agents:
 
 def live_by_object(state, cfg, places):
     """{st: the newest live agent on that object's car, short} for `stack --json` (places: Stack.car_places()).
-    Read only: a finished one is booked by the next `agents` command."""
+    Read only: a finished one is booked by the next `agents` command.
+    """
     if not os.path.exists(state.path("agents.json")):
         return {}
     ags = Agents(state, cfg)

@@ -127,7 +127,8 @@ class Guard:
 def repo_snapshot(cfg, out=print, commit_wanted=None):
     """A fresh read-only copy of origin/main (or, for a one-PR review, the PR's head commit) for
     every pass: git fetch, then git archive into a temp dir. Returns (dir, commit), or
-    (None, None) when there is no clone."""
+    (None, None) when there is no clone.
+    """
     r = cfg.get("deep_repo") or {}
     clone = os.path.expanduser(r.get("clone") or "")
     if not clone or not os.path.isdir(clone):
@@ -174,7 +175,8 @@ def positions_from(answer, point_ids, free_max):
 
 def trim_to(positions, available, order, free_max):
     """Keep the total stake within the balance: cut the smallest stakes first (the later point
-    first on a tie). Returns notes of what the code cut."""
+    first on a tie). Returns notes of what the code cut.
+    """
     total = sum(a["stake"] for a in positions.values())
     excess = total - max(0, available)
     notes = []
@@ -206,7 +208,8 @@ SOLO_KINDS = ("ballot", "review", "discuss")
 def solo_caps(cfg, lock_calls):
     """A solo round's caps, scaled to one character: solo.budget_mtok, or round.budget_mtok / 5 raised
     to the caps of the calls it plans (round 1 + the lock pass), so the scaling never refuses a
-    planned call; and one call per pass. MTok."""
+    planned call; and one call per pass. MTok.
+    """
     planned = float(cfg["free"]["budget_mtok_r1"]) + (float(cfg["lock"]["budget_mtok"]) if lock_calls else 0.0)
     given = cfg["solo"]["budget_mtok"]
     budget = float(given) if given is not None else max(float(cfg["round"]["budget_mtok"]) / len(characters.IDS), planned)
@@ -257,7 +260,8 @@ def run_round(state, cfg, kind, input_path=None, contexts=(), since=None, dry_ru
 def resumable(state, rid):
     """The saved round `round --resume` goes on with: only an aborted one. It stopped on a fatal error in round 1 or 2
     (a fatal error in the lock pass keeps the round, done), before any stake, order or lock was debited, so going on
-    debits nothing twice. A brainstorm is not resumed: its fee came back when it aborted (`_brainstorm_failed`)."""
+    debits nothing twice. A brainstorm is not resumed: its fee came back when it aborted (`_brainstorm_failed`).
+    """
     rdir = os.path.join(state.rounds_dir(), rid)
     rec = read_json(os.path.join(rdir, "round.json"))
     if rec is None:
@@ -675,7 +679,8 @@ def add_to_ballots(state, rec):
 
 def _locks_lifted_since_last_round(state, stk):
     """The unlocks since the last finished round (each round saves how long stack-history.jsonl
-    was when it ended): the report lists them."""
+    was when it ended): the report lists them.
+    """
     seen = 0
     rd = state.rounds_dir()
     for d in os.listdir(rd) if os.path.isdir(rd) else ():
@@ -693,7 +698,8 @@ def _locks_lifted_since_last_round(state, stk):
 
 def _place_locks(state, cfg, ledger, stk, rid, asks):
     """Validate the locks by code, then debit the price (not returned): one per object, one per
-    character per round, only on an object in the stack, only with the money."""
+    character per round, only on an object in the stack, only with the money.
+    """
     price = int(cfg["lock"]["price"])
     placed, refused, seen = [], [], set()
     for cid, ask in asks:
@@ -738,7 +744,8 @@ def _orders_text(orders):
 
 def _brainstorm_check(state, cfg, ledger, rid, proposals, invalid, votes, took_part, genders):
     """The quorum decides every proposal; the one approved is paid at once (the fee is not
-    returned), its topic file written and its entry queued. Returns what the report shows."""
+    returned), its topic file written and its entry queued. Returns what the report shows.
+    """
     if not proposals and not invalid:
         return None
     log = extras.Brainstorms(state)

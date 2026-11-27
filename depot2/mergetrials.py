@@ -40,7 +40,8 @@ class TrialsMixin:
     # --- the poll's hook ---
     def presync(self, eid):
         """Called by wait_runs before it sleeps: build (or rebuild) at most one trial. → True when it did (the poll
-        needs no sleep then: the build took the time). Never raises: a trial never stops the queue."""
+        needs no sleep then: the build took the time). Never raises: a trial never stops the queue.
+        """
         if self.depth() <= 0:
             return False
         try:
@@ -52,7 +53,8 @@ class TrialsMixin:
 
     def trial_chain(self, q, cur):
         """The entries tried behind cur: the next waiting ones in the queue's order, presync_depth of them; the chain
-        ends at one that is not plainly waiting for its sync (resumed past it, merged already)."""
+        ends at one that is not plainly waiting for its sync (resumed past it, merged already).
+        """
         es = q.entries(open_only=True)
         ids = [x["id"] for x in es]
         if cur["id"] not in ids:
@@ -106,7 +108,8 @@ class TrialsMixin:
     # --- one trial ---
     def build_trial(self, e2, own, base, base_tree, label, bases):
         """The trial of e2 on top of base (main + the PRs ahead) → the record put on e2, or None (e2 rides already,
-        or left the queue)."""
+        or left the queue).
+        """
         from .merge import Stop, clip, stamp
         n, br = e2["pr"], e2["branch"]
         name = self.trial_branch(n)
@@ -156,7 +159,8 @@ class TrialsMixin:
         """The private scan of what the trial's push carries that GitHub has not: its merge commit and the files the
         merge made (push.export_range, scanned with merge.trial_scan_args, as the depot's own push does); the rest of
         its tree is on GitHub already, in the two branches it merges (each pushed after its scan). The whole tree's
-        scan (merge.scan_args) is the PR's own, at its turn. Stop when not CLEAN."""
+        scan (merge.scan_args) is the PR's own, at its turn. Stop when not CLEAN.
+        """
         from .backup import _nice
         from .merge import Stop
         from .push import export_range, is_clean
@@ -180,7 +184,8 @@ class TrialsMixin:
 
     def attribute(self, tw, files, bases, own):
         """Who each file a trial stopped on conflicts with: the first of bases (main, then main with each PR ahead)
-        whose merge into the PR's head already conflicts in it. → [{"file", "with"}]."""
+        whose merge into the PR's head already conflicts in it. → [{"file", "with"}].
+        """
         files = list(files or [])
         who_of = {}
         for who, ref in bases[:-1]:
@@ -197,7 +202,8 @@ class TrialsMixin:
 
     def push_trial(self, tw, name, head):
         """mq/<PR> → head: a plain push; when the branch holds an older trial that head does not contain, that old
-        branch is deleted first (the queue's own throwaway branch: never forced, never a PR's). → (ok, why)."""
+        branch is deleted first (the queue's own throwaway branch: never forced, never a PR's). → (ok, why).
+        """
         from .merge import clip
         remote = self.remote_head(tw, name)
         if remote == head:

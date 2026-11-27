@@ -76,6 +76,7 @@ class EventLog:
 
 class Brainstorms(EventLog):
     """approved → done | failed (a fatal error, the fee back) | cancelled (never ran, the fee back)."""
+
     prefix, filename = "bs", "brainstorms.jsonl"
     OPEN = ("approved",)
     STATUS_RU = i18n.Labels("extras.brainstorm", ("approved", "done", "failed", "cancelled"))
@@ -83,6 +84,7 @@ class Brainstorms(EventLog):
 
 class Orders(EventLog):
     """queued → done → settled; `shown` marks the round whose bundle listed the results."""
+
     prefix, filename = "ord", "orders.jsonl"
     OPEN = ("queued", "done")
     STATUS_RU = i18n.Labels("extras.order", ("queued", "done", "settled"))
@@ -213,7 +215,8 @@ SHELL_META = re.compile(r"[;|&<>`$\n]")
 def check_order(o, snap_dir, cfg):
     """An order → (normalized or None, why not). None, None: no order. Code checks only: every
     field filled, one call of a script that exists under tools/ in the round's snapshot, headless
-    hardware."""
+    hardware.
+    """
     if not o:
         return None, None
     o = {k: " ".join(str(o.get(k) or "").split()) for k in ORDER_FIELDS}

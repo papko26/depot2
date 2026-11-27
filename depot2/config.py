@@ -281,7 +281,8 @@ def parse_set(items):
 
 def drop_obsolete(over, where, warn=None):
     """Remove OBSOLETE keys from one override dict (config.json or --set), in place. An old name
-    passes its value to the new one unless the new one is set too. Returns the warnings."""
+    passes its value to the new one unless the new one is set too. Returns the warnings.
+    """
     msgs = []
     for key, new in OBSOLETE.items():
         if key not in over:
@@ -311,7 +312,8 @@ def _rate(usage):
 def convert_usd(over, where, usage, warn=None):
     """The old $ caps (USD_KEYS) of one override dict (config.json or --set), in place: each becomes
     its MTok key, value / usage.usd_per_mtok, unless that key is set in the same dict too. Returns
-    the warnings."""
+    the warnings.
+    """
     rate, per_pct = _rate(usage)
     msgs = []
     for sect, old, new in USD_KEYS:
@@ -347,7 +349,8 @@ def _warn_once(msg):
 
 def load(state_root, sets=None, warn=_warn_once):
     """DEFAULTS, then the project's config file ($DEPOT2_CONFIG, when set: it can live in the project's repo), then
-    the depot's own config.json, then each --set."""
+    the depot's own config.json, then each --set.
+    """
     layers = []
     project = os.environ.get("DEPOT2_CONFIG")
     if project:

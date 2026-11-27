@@ -1,6 +1,7 @@
 """A depot without a team (the config's `characters` null, the default), in English: a car goes the whole way from
 its track to production through the stack, the post-stack and the merge queue; the team's commands answer «no team
-configured»; and nothing it prints is Russian."""
+configured»; and nothing it prints is Russian.
+"""
 
 import os
 import re

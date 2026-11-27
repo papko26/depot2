@@ -1,6 +1,7 @@
 """Defects and claims (claims.py): `returns` on a return to the build, the returns from before the stages written
 by `queues migrate`, `repair add` (a repair car out of turn: the head of the queue, autostart, ahead of the trains),
-`repair link`, the culprit's `claims`, the bug table, the report `claims`, the views."""
+`repair link`, the culprit's `claims`, the bug table, the report `claims`, the views.
+"""
 
 import json
 import os

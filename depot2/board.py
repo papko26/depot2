@@ -96,7 +96,8 @@ class Board:
     def items(self, all_=False, with_gates=True):
         """Every car on the board, in order: the stack (slots, post-stack, queue), the tracks' cars in the tracks'
         order, the objects that left still on their way, the merge queue's PRs with no car, the wishes, the
-        to-think entries. all_: the terminal stages too."""
+        to-think entries. all_: the terminal stages too.
+        """
         from .queues import Think, Wishes
         out = []
         objs = self.stk.objects()

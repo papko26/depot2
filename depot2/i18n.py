@@ -106,7 +106,8 @@ def matches(text, key):
 
 def retell(text, *keys):
     """A stored word shown in the run's language: when `text` is one of the field-less messages `keys` in any
-    language (a default status written by an older run, a CI word), that message now; any other text as it is."""
+    language (a default status written by an older run, a CI word), that message now; any other text as it is.
+    """
     for key in keys:
         if text in forms(key) and "{" not in message(key):
             return t(key)
@@ -130,7 +131,8 @@ def fold(text):
 
 class Labels:
     """A family of messages read like a dict: Labels("stage", STAGES)[k] is t("stage." + k), in the language of
-    the moment."""
+    the moment.
+    """
 
     def __init__(self, prefix, keys):
         self.prefix = prefix

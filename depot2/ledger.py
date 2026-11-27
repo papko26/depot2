@@ -112,7 +112,8 @@ class Ledger:
     def fine(self, cid, amount, reason, round_id=None, point=None):
         """The owner's fine of `amount` tokens. The balance never goes below zero: the code takes
         what is there, up to `amount`. The transaction keeps the fine imposed (`asked`); what was
-        taken is -tx["amount"]."""
+        taken is -tx["amount"].
+        """
         if not isinstance(amount, int) or isinstance(amount, bool) or amount < 1:
             raise LedgerError("a fine is at least 1")
         taken = min(amount, max(0, self.balance(cid)))
@@ -202,7 +203,8 @@ class Ledger:
 
     def auto_refund_round(self, round_id, reason=None):
         """Return every open stake of a round, by the code: the stakes come back when the round
-        ends. One auto_refund per stake, naming it (ref). Not an owner action. [] when nothing is open."""
+        ends. One auto_refund per stake, naming it (ref). Not an owner action. [] when nothing is open.
+        """
         return [self._append("auto_refund", s["character"], -s["amount"], ref=s["id"],
                              round=s.get("round"), point=s.get("point"), reason=reason or AUTO_REASON)
                 for s in self.open_stakes(round_id=round_id)]

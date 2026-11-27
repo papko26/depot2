@@ -23,7 +23,8 @@ def ans(points=(), main="главное", thought="мысль"):
 
 class FakeRunner:
     """Answers per (character, stage); records what the ledger said at each call. turns: the tool
-    turns each (character, stage) reports having used (default 0)."""
+    turns each (character, stage) reports having used (default 0).
+    """
 
     def __init__(self, state, script, turns=None):
         self.state = state

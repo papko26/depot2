@@ -209,7 +209,8 @@ def entry_default(e):
 
 def rides(state):
     """The merge queue's rides that ended, oldest first: [(its merge's time, entry)] — its `merged` entries but the
-    handoffs (a handoff's deploy rode with another ride). What merged into main before a ride's merge is in it."""
+    handoffs (a handoff's deploy rode with another ride). What merged into main before a ride's merge is in it.
+    """
     from .merge import MergeQueue, epoch
     out = [(e["merged"]["ts"], e) for e in MergeQueue(state).entries()
            if e["status"] == "merged" and not e.get("handoff") and (e.get("merged") or {}).get("ts")]
@@ -254,7 +255,8 @@ def arrive_hint(ref):
 
 class Car:
     """What a ref names: a stack object (live, or one that left), a track's car, a wish, a to-think entry;
-    and its twin (a car's live stack object, an object's car)."""
+    and its twin (a car's live stack object, an object's car).
+    """
 
     def __init__(self, state, cfg, ref, stack=None, tracks=None):
         from .queues import Think, Wishes
@@ -414,7 +416,8 @@ class Car:
 
     def primary(self):
         """Where a car's own records live (its questions, `needs_project`): the track's car, else the object, else
-        the wish or the to-think entry; an object that left the stack has none."""
+        the wish or the to-think entry; an object that left the stack has none.
+        """
         for r in (self.car, self.obj, self.entry):
             if r is not None:
                 return r
@@ -471,7 +474,8 @@ class Car:
 
     def gate(self):
         """The next gate, as it stands: the DoR for a planning stage, the DoD for the build (by what the agent
-        handed in to its stack object); None where no gate is next (a wish, a to-think entry, past the build)."""
+        handed in to its stack object); None where no gate is next (a wish, a to-think entry, past the build).
+        """
         from . import gates
         s = self.stage()
         if self.entry is not None or self.left is not None:
@@ -495,7 +499,8 @@ class Car:
 
     def verdict(self):
         """The verdict on its marks by the principles (marks.py): a track's car's, else its live stack object's; None
-        for a wish, a to-think entry or an object that left the stack."""
+        for a wish, a to-think entry or an object that left the stack.
+        """
         from . import marks
         rec = self.car if self.car is not None else self.obj
         if rec is None:
@@ -640,7 +645,8 @@ class Car:
 
 def stage_of_ref(state, cfg, ref, ctx=None):
     """The live stage of what a wish was taken to (st-, tr-NNNN:N); None for a track or a team item. ctx: a
-    dict that keeps the stack and the tracks read once for a table's rows."""
+    dict that keeps the stack and the tracks read once for a table's rows.
+    """
     from .stack import Stack
     from .tracks import Tracks
     if not (ref.startswith("st-") or ":" in ref):
@@ -719,7 +725,8 @@ def question_of(e):
 
 def summary(state, cfg):
     """{stage: n} over the live cars: the stack's objects, the tracks' cars (a car with a
-    live object counts once), the open wishes and to-think entries; the terminal stages left out."""
+    live object counts once), the open wishes and to-think entries; the terminal stages left out.
+    """
     from .queues import Think, Wishes
     from .stack import Stack
     from .tracks import Tracks

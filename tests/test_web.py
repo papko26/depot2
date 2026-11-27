@@ -170,7 +170,8 @@ class WebTest(WebBase):
 
     def test_the_page_takes_its_texts_from_the_catalog(self):
         """The served page: <html lang> and the #messages block in the run's language (the catalogs' `web.` keys), no
-        Russian outside that block, and the CSP hashes the one script that runs, not the data block."""
+        Russian outside that block, and the CSP hashes the one script that runs, not the data block.
+        """
         _code, h, body = self.web.get("/")
         html = body.decode("utf-8")
         self.assertIn('<html lang="ru">', html)
@@ -401,7 +402,8 @@ class WebTest(WebBase):
 
     def fill_merge(self):
         """A merge queue of every kind (made up): two merged ones (the second with the plugin's lines), one riding (merged,
-        its deploy on the way), one stopped at CI, one waiting; one dropped before its merge, one dropped after it."""
+        its deploy on the way), one stopped at CI, one waiting; one dropped before its merge, one dropped after it.
+        """
         from depot2 import merge
         q = merge.MergeQueue(self.t.state)
 
@@ -427,7 +429,8 @@ class WebTest(WebBase):
 
     def test_the_merge_queue_tab_is_its_json_commands(self):
         """The tab's data: `merge --json` (the open entries in their order, the runner, the last merge) and `merge report
-        --json --last N` (the last merges with the project's after_merge lines, as written); its words in /api/meta."""
+        --json --last N` (the last merges with the project's after_merge lines, as written); its words in /api/meta.
+        """
         self.fill_merge()
         for path, argv in (("/api/merge", ["merge", "--json"]), ("/api/merge/report", ["merge", "report", "--json"]),
                            ("/api/merge/report?last=10", ["merge", "report", "--last", "10", "--json"]),
@@ -664,7 +667,8 @@ class ReexecTest(unittest.TestCase):
 
 class WebHostsTest(WebBase):
     """The config's `web.hosts`: more names of this computer for the Host check, each with the server's port. The
-    peer check and the socket stay as they were: loopback only."""
+    peer check and the socket stay as they were: loopback only.
+    """
 
     def served(self, *sets):
         w = Served(self.t.state, self.sets + list(sets), read_dirs=self.dirs, doc_base=self.scratch,

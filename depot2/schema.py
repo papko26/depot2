@@ -146,7 +146,8 @@ def round2(point_ids, cfg, char_ids, proposal_ids=()):
 
 def lock_pass(object_ids):
     """Round 3, the lock pass: an optional lock on one stack object. The ids are the stack's, the
-    same for every character; the code still checks the object and the rest."""
+    same for every character; the code still checks the object and the rest.
+    """
     return _obj({
         "lock": _obj({"object": {"type": "string", "enum": list(object_ids)}, "condition": _str(300),
                       "why": _str(300)}),

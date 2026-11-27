@@ -199,7 +199,8 @@ BROKEN = "## Проверка по принципам\n- 5: нарушен — �
 
 class DepotBase(GateBase):
     """Every gate item on (test_board.GateBase), a depot with five principles of the third check (5, 26 of priority 1;
-    11, 4, 5a of priority 2) and 6 outside it, and gh's PRs in $FAKE_GH_STATE."""
+    11, 4, 5a of priority 2) and 6 outside it, and gh's PRs in $FAKE_GH_STATE.
+    """
 
     def setUp(self):
         super().setUp()

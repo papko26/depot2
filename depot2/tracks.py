@@ -193,7 +193,8 @@ class Tracks:
 
     def car_of_stack(self, oid):
         """The car whose object this is, or was: the live link, else the history's last row that names it
-        (a car sent back with `stack done --car back` has no link; stacked again, a new object)."""
+        (a car sent back with `stack done --car back` has no link; stacked again, a new object).
+        """
         t, c = self.car_by_stack(oid)
         if c is not None:
             return t, c
@@ -221,7 +222,8 @@ class Tracks:
 
     def marks_lines(self, cars):
         """Under a track's or a train's table: the cars' marks by the principles — those with marks, and those whose
-        PR is open (`pr`: the gates wait for its lines); nothing when the third check is empty. cars: [(label, c)]."""
+        PR is open (`pr`: the gates wait for its lines); nothing when the third check is empty. cars: [(label, c)].
+        """
         if not self.plist:
             return []
         rows = [(n, c) for n, c in cars if c.get("marks") or c["status"] == "pr"]
@@ -304,7 +306,8 @@ class Tracks:
 
     def ref_state(self, ref, track=None):
         """(met, text) for a ref; raises TrackError for one that names nothing. track: the track whose car's
-        `after` this is (a bare name is a car of it); none: a train's start rule (a bare name is a train)."""
+        `after` this is (a bare name is a car of it); none: a train's start rule (a bare name is a train).
+        """
         ref = str(ref).strip()
         if RE_TRACK.match(ref):
             t = self.get(ref)
@@ -396,7 +399,8 @@ class Tracks:
 
     def car_blockers(self, t, c, after=True, lock=True):
         """What holds a car (t: its track). after=False: only the lock (a parked car brought back for work: its
-        `after` gates the merge); lock=False: only the `after`."""
+        `after` gates the merge); lock=False: only the `after`.
+        """
         out = []
         for r in (c.get("after") or []) if after else []:
             met, text = self.ref_state(r, t)
@@ -410,7 +414,8 @@ class Tracks:
 
     def parked(self, c):
         """Status `pr` and its stack object in no slot and not in the post-stack: the PR waits on its track,
-        it holds no slot."""
+        it holds no slot.
+        """
         return c["status"] == "pr" and bool(c.get("st")) and not any(
             o["id"] == c["st"] for o in self.stack.in_slots() + self.stack.posted())
 
@@ -420,7 +425,8 @@ class Tracks:
 
     def busy_cars(self, cars):
         """The cars of [(track, car)] that hold a slot: running, or a PR not parked and not in the post-stack (a car
-        with no stack link is counted)."""
+        with no stack link is counted).
+        """
         return [(t, c) for t, c in cars if c["status"] in CAR_BUSY and not self.parked(c) and not self.posted(c)]
 
     def parked_cars(self, track=None):
@@ -549,7 +555,8 @@ class Tracks:
 
     def after_ref(self, r, t):
         """An `after` ref as it is written (t: the track of the car that waits): a moved car's old ref, bare or full,
-        becomes its ref now — bare when it stands on t, else full; any other ref as given."""
+        becomes its ref now — bare when it stands on t, else full; any other ref as given.
+        """
         r = str(r).strip()
         m = RE_CAR.match(r)
         src, n = (self.get(m.group(1)), m.group(2)) if m else (t, r)
@@ -741,7 +748,8 @@ class Tracks:
     def move_blocker(self, t, c):
         """Why a car may not move to another track or name, or None: it has arrived or rolls out (its PR landed under
         its ref), or its PR is in the merge queue (an open entry names it). A car in a slot, a parked one, one in the
-        post-stack or a scrapped one moves."""
+        post-stack or a scrapped one moves.
+        """
         s = self.stage_of(c)
         if s == "rolling":
             return i18n.t("tracks.blocker_rolling")
@@ -824,7 +832,8 @@ class Tracks:
     @staticmethod
     def _rename_in(rec, old, new):
         """A moved car's ref in a record's repair and claims fields (claims.py: `repairs`, `claim_links[].repair`,
-        `claim_links[].moved.to`) follows it. True when something changed."""
+        `claim_links[].moved.to`) follows it. True when something changed.
+        """
         changed = False
         if rec.get("repairs") == old:
             rec["repairs"], changed = new, True
@@ -916,7 +925,8 @@ class Tracks:
 
     def build_gate(self, t, c, obj, back, force=False, why=None, ref=None):
         """`tracks car stack --start`, before anything is written: the DoR (from a planning stage; a parked PR
-        brought back for work was in the build: none) and the slots. None, or what --force passed."""
+        brought back for work was in the build: none) and the slots. None, or what --force passed.
+        """
         unmet = self.build_unmet(t, c, obj, back)
         ref = ref or "{}:{}".format(t["id"], c["n"])
         return gates.check(unmet, force, why, ref, stages.ru("build"), f"depot2 tracks car stack {ref} --start",
@@ -924,7 +934,8 @@ class Tracks:
 
     def build_unmet(self, t, c, obj, back):
         """What the gate into the build misses, {"DoR": [...], "limit": [...]}: `build_gate`'s, and `agents start
-        --role build` shows it beside its own (agents.py)."""
+        --role build` shows it beside its own (agents.py).
+        """
         stk = self.stack
         items = gates.dor_items(self.cfg)
         if back:
@@ -947,7 +958,8 @@ class Tracks:
         """The stack link: what a stack command means for the car whose object it is. Returns lines
         to print; nothing when the object is no track's car. The car's stage follows its object's (the
         stack moved it first): one car. forced: what the object's move forced past its gate (gates.py). A car
-        merged or dropped may bring its train in (trains.py `car_closed`)."""
+        merged or dropped may bring its train in (trains.py `car_closed`).
+        """
         t, c = self.car_by_stack(oid)
         if c is None:
             return []
@@ -1062,7 +1074,8 @@ class Tracks:
 
     def effort(self, t):
         """(expected, spent, cars_sum) in MTok: the cars' estimates (a car's actual when it has no
-        estimate) unless the track has its own estimate; the spent is the sum of the actuals."""
+        estimate) unless the track has its own estimate; the spent is the sum of the actuals.
+        """
         return effort_of(self, t["cars"], t.get("est_mtok"))
 
     def effort_cell(self, t):
@@ -1157,7 +1170,8 @@ class Tracks:
 
     def docs_need(self, c):
         """Why the car's docs are needed (gates.docs_need: its flag, else its sketch's line; its live object's
-        flag after its own), or None."""
+        flag after its own), or None.
+        """
         obj = self.stack.get(c["st"]) if c.get("st") and self.stack._dep_open(c["st"]) else None
         return gates.docs_need([r for r in (c, obj) if r is not None])
 
@@ -1196,7 +1210,8 @@ class Tracks:
     def car_json(self, t, c):
         """A car as data: its stage (a car from before the field: the default) and history, its status and effort
         as `--md` prints them, the train it is in (if any), and the verdict on its marks by the principles
-        (`principles`, marks.py; None when the third check is empty)."""
+        (`principles`, marks.py; None when the third check is empty).
+        """
         from .marks import compact
         est = self.car_est(c)
         tn = self.train_of("{}:{}".format(t["id"], c["n"]))
@@ -1237,7 +1252,8 @@ def object_note(o, team=False):
 def effort_of(tracks, cars, own=None):
     """(expected, spent, cars_sum) in MTok over cars (a track's, a train's): the cars' estimates (a car's actual when it
     has no estimate) unless `own` is given; the spent is the sum of the actuals; a dropped car counts for neither sum
-    of the estimates."""
+    of the estimates.
+    """
     est = [tracks.car_est(c) if tracks.car_est(c) is not None else c.get("spent_mtok") for c in cars
            if c["status"] != "dropped"]
     known = [e for e in est if e is not None]

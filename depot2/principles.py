@@ -164,7 +164,8 @@ class Principles(Queue):
 
     def add(self, section, title=None, text=None, words=(), subs=(), date=None, links=(), check=False, order=None):
         """A new principle, numbered from `next` (one past the highest number so far): at the end of its section unless
-        --order, with the blank lines that closed the section."""
+        --order, with the blank lines that closed the section.
+        """
         section = section_key(section)
         last = self.last_in(section)
         date = date or today()
@@ -179,7 +180,8 @@ class Principles(Queue):
 
     def set(self, eid, words=(), subs=(), sub_set=None, sub_drop=None, **fields):
         """Change a principle: the fields replaced (the history row keeps what they were), `--words` and `--sub`
-        appended, `--sub-set N TEXT` and `--sub-drop N` (from 1) on one sub."""
+        appended, `--sub-set N TEXT` and `--sub-drop N` (from 1) on one sub.
+        """
         e = self.get(eid)
         if e["status"] != "active":
             raise QueueError("{} is {}: only an active principle changes".format(eid, STATUS_RU[e["status"]]))
@@ -254,7 +256,8 @@ class Principles(Queue):
 
     def head(self):
         """The file's head as the depot keeps it: the lines before the first section (the banner is added by the
-        render)."""
+        render).
+        """
         return list(default_head() if self.data.get("head") is None else self.data["head"])
 
     def set_head(self, text):
@@ -287,7 +290,8 @@ class Principles(Queue):
     def import_file(self, path, dry_run=False):
         """Today's PRINCIPLES.md into the depot, without loss: refused for a file imported before, for a number
         the depot has, and when the render of what was read is not the file line for line (but the banner). A real
-        import writes the entries, then renders the file in place (read-only)."""
+        import writes the entries, then renders the file in place (read-only).
+        """
         path = os.path.abspath(os.path.expanduser(path))
         if self.imported(path):
             raise QueueError("{} was imported already ({})".format(path, self.imported(path)[0]["ts"]))
@@ -334,7 +338,8 @@ class Principles(Queue):
     def write(self, out=None):
         """Render into `out`, else into the target; the target is read-only between renders (the render takes the
         write bit off again). Returns (path, changed); changed is None when the target is the live depot's and this
-        depot another (live_target): nothing written."""
+        depot another (live_target): nothing written.
+        """
         path = os.path.abspath(os.path.expanduser(out)) if out else self.target()
         if not path:
             raise QueueError("no PRINCIPLES.md yet: `depot2 principles import FILE` first, or `render --out PATH`")
@@ -407,7 +412,8 @@ class Principles(Queue):
 
     def checks(self):
         """The three checks as data: [{n, title, text}], the third with its principles (`check: true`), each {id,
-        label, title, section, priority}, and its priorities [{priority, title, means, labels}]."""
+        label, title, section, priority}, and its priorities [{priority, title, means, labels}].
+        """
         out = [{"n": i, "title": title, "text": x} for i, (title, x) in enumerate(checks_frame(), 1)]
         third = self.check_list()
         pri = [{"priority": n, "title": SECTION_TITLE["core" if n == 1 else "mechanics"], "means": PRIORITY_MEANS[n],
@@ -461,7 +467,8 @@ CHECK_MARK = i18n.Labels("principles.check_mark", (1, 2))
 
 def section_key(name):
     """A typed section (its code, its title or another name of it, in any language; an older depot's code) → its
-    code."""
+    code.
+    """
     k = " ".join(str(name or "").strip().lower().split())
     for key in SECTION_CODES:
         if k == key or k in [f.lower() for f in i18n.forms("principles.section." + key)]:
@@ -665,7 +672,8 @@ def render_item(e):
 
 def render_text(head, items, banner=True):
     """The whole file: the head (with the banner after its first line), then the sections in their order, each
-    principle in its `order`, with its blank lines after it."""
+    principle in its `order`, with its blank lines after it.
+    """
     head = list(default_head() if head is None else head)
     if banner:
         at = 2 if len(head) > 1 and not head[1].strip() else 1

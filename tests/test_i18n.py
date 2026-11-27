@@ -1,5 +1,6 @@
 """The message catalogs (depot2/i18n.py): en and ru hold the same keys with the same fields, every key the code names
-is in them, no Russian text is left outside the Russian catalog, and the language follows the config and $DEPOT2_LANG."""
+is in them, no Russian text is left outside the Russian catalog, and the language follows the config and $DEPOT2_LANG.
+"""
 
 import glob
 import importlib

@@ -163,7 +163,8 @@ class State:
     @contextlib.contextmanager
     def lock(self, wait_s=None):
         """The state's lock. A command waits up to LOCK_WAIT_S for it (the backup's snapshot holds
-        it for about a second), then fails."""
+        it for about a second), then fails.
+        """
         os.makedirs(self.root, exist_ok=True)
         fd = os.open(self.path(".lock"), os.O_RDWR | os.O_CREAT, 0o644)
         try:

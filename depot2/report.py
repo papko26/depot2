@@ -120,7 +120,8 @@ def stakes_said(rows):
 
 def load_round(state, rid):
     """(rec, costs, answers, entries, genders): everything the report reads, from the round's files
-    and the ledger. No model call."""
+    and the ledger. No model call.
+    """
     rdir = os.path.join(state.rounds_dir(), rid)
     rec = read_json(os.path.join(rdir, "round.json"))
     if rec is None:
@@ -137,7 +138,8 @@ def load_round(state, rid):
 
 def render(state, rid, cfg=None):
     """The report of a saved round, rebuilt from its files and the ledger. cfg: the calibration the
-    spend prints with (else the one the round saved)."""
+    spend prints with (else the one the round saved).
+    """
     return build_report(*load_round(state, rid), cfg=cfg)
 
 
@@ -391,7 +393,8 @@ def _after_round(rec, entries, rows):
 
 def _end_seq(rec, entries):
     """The ledger's last transaction when the round ended: saved by the round, else its own last
-    stake (or an old round's think transaction), else the last one written before it finished."""
+    stake (or an old round's think transaction), else the last one written before it finished.
+    """
     if rec.get("ledger_seq") is not None:
         return rec["ledger_seq"]
     own = [e["seq"] for e in entries if e.get("round") == rec["id"] and e["type"] in ("stake", *LEGACY)]

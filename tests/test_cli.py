@@ -172,7 +172,8 @@ class CliTest(unittest.TestCase):
 
     def test_refund_auto_on_an_old_round(self):
         """`refund all --round R --auto`: an older round's open stakes come back as a round's do
-        now. auto_refund, not an owner action: nobody reflects; refund and forfeit then find nothing."""
+        now. auto_refund, not an owner action: nobody reflects; refund and forfeit then find nothing.
+        """
         self.team("seed", "--specs", os.path.join(self.dir, "brief.md"), "--ledger", os.path.join(self.dir, "seed.json"))
         self.team("seed", "--portraits")
         self.assertEqual(self.team("refund", "painter", "--round", "old-review", "--auto", ok=False).returncode, 1)
@@ -216,7 +217,8 @@ class CliTest(unittest.TestCase):
 
     def test_old_config_keys_are_ignored_with_a_warning(self):
         """An older state config may still have deep_levels and deep_dirs: no crash, one warning each;
-        deep_dirs is the old name of read_dirs and keeps working until it is renamed."""
+        deep_dirs is the old name of read_dirs and keeps working until it is renamed.
+        """
         self.team("seed", "--specs", os.path.join(self.dir, "brief.md"), "--ledger", os.path.join(self.dir, "seed.json"))
         with open(os.path.join(self.state, "config.json"), "w") as f:
             json.dump({"deep_levels": {"1": {"price": 1, "max_tool_turns": 11}},

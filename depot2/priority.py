@@ -63,7 +63,8 @@ def add_arg(parser, synonym=False):
 
 def of(rec):
     """A record's priority (every record has it since the data's migration; a record built by hand in a test reads as
-    the default)."""
+    the default).
+    """
     return (rec or {}).get("priority", DEFAULT)
 
 
@@ -139,7 +140,8 @@ def get_any(state, cfg, ref):
 
 def set_any(state, cfg, ref, n, by="priority"):
     """`depot2 priority ID N`: the one setter for every kind; a car's live stack object and the object's car follow
-    (one car, one priority). Returns the lines to print."""
+    (one car, one priority). Returns the lines to print.
+    """
     from .trains import Trains
     n = parse(n)
     kind, now_ref, rec = get_any(state, cfg, ref)

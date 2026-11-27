@@ -348,7 +348,8 @@ class ImportTest(TracksBase):
 
 class ParkCarTest(TracksBase):
     """`stack park` of a car's object: the object leaves the stack, the car waits on its track with its
-    PR (status pr), its slot is free; when its `after` is met its PR is ready to merge."""
+    PR (status pr), its slot is free; when its `after` is met its PR is ready to merge.
+    """
 
     def setUp(self):
         super().setUp()

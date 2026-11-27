@@ -38,7 +38,8 @@ START = 1447329600.0  # 2015-11-12T12:00:00Z
 class FakeClock:
     """The merge queue's clock in these tests (merge.CLOCK, merge.SLEEP): it stands still between the queue's
     sleeps and moves a second (or the sleep's length) on each, so one poll's readings agree, and the fake gh
-    reads the same time ($FAKE_GH_NOW). No test hangs on the real time or on how fast the machine is."""
+    reads the same time ($FAKE_GH_NOW). No test hangs on the real time or on how fast the machine is.
+    """
 
     def __init__(self, path, start=START):
         self.path, self.t = path, float(start)
@@ -545,7 +546,8 @@ class RideTest(MergeBase):
 
     def test_a_pr_dropped_after_its_merge_is_in_no_view_of_the_merges(self):
         """Merged, its deploy failed, resumed, then dropped: `merge report`, its --json and the last merge show it alike
-        while it is watched and leave it out alike once it is dropped."""
+        while it is watched and leave it out alike once it is dropped.
+        """
         self.pr(301, "feat-a", {"a.txt": "A\n"}, title="Первый")
         self.pr(302, "feat-b", {"b.txt": "B\n"}, title="Второй")
         self.ci(main=["failure", "success"])

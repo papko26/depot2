@@ -136,7 +136,8 @@ class Stack:
     def dep_waiting(self, oid):
         """A dependency is not done while it is in the stack, or while it is or was the object of a track's
         car that is neither merged nor dropped (a parked car's object left the stack, its PR did not land;
-        a car sent back to its track with `stack done --car back` did no work that landed)."""
+        a car sent back to its track with `stack done --car back` did no work that landed).
+        """
         return self._dep_open(oid) or oid in self.open_car_objects()
 
     def _cars(self):
@@ -182,7 +183,8 @@ class Stack:
 
     def car_links(self):
         """{st: car} for every object that is or was a track's car: from the tracks' history (`--car back`
-        clears a car's live link, a car stacked again gets a new object), the live link winning."""
+        clears a car's live link, a car stacked again gets a new object), the live link winning.
+        """
         paths = [self.state.path("tracks.json"), self.state.path("tracks-history.jsonl")]
         stamp = tuple((os.stat(p).st_mtime_ns, os.stat(p).st_size) if os.path.exists(p) else None for p in paths)
         if self._links and self._links[0] == stamp:
@@ -351,7 +353,8 @@ class Stack:
         head of the queue when none is free; its PR, branch and brief stay, and a lock does not hold it
         (a lock holds the merge; its agent may work to meet the condition). The way into the build is a soft
         gate (gates.py): the DoR and the slots; `force` with `why` passes it, recorded. passed: the caller
-        checked the gate already (`tracks car stack --start`): what it forced, or {}."""
+        checked the gate already (`tracks car stack --start`): what it forced, or {}.
+        """
         o = self.get(oid)
         if o["where"] == "post":
             return self._unpost(o, branch, reason, by)
@@ -373,7 +376,8 @@ class Stack:
 
     def start_gate(self, o, force=False, why=None, cmd=None):
         """The way into the build for an object in the queue: the DoR (from a planning stage; the `after` from
-        any, as before the gates) and the slots. None, or what --force passed ({gate: [items]})."""
+        any, as before the gates) and the slots. None, or what --force passed ({gate: [items]}).
+        """
         from . import gates
         if not self.STAGES:  # a team item has no stage and no gate: the old refusals
             waiting = [d for d in o.get("depends_on") or [] if self.dep_waiting(d)]
@@ -478,7 +482,8 @@ class Stack:
         """A slot whose PR waits (blocked, e.g. by a train) and no agent works: it frees the slot.
         leave=True (a track's car): the object leaves the stack; the car goes back to its track with
         its PR (tracks.py on_stack "park"). Else: slot → the head of the queue, with its branch, PR
-        and status; a freed slot never takes it by itself, `stack start` brings it back."""
+        and status; a freed slot never takes it by itself, `stack start` brings it back.
+        """
         o = self.get(oid)
         if o["where"] != "slot":
             raise StackError(f"{oid} is not in a slot: only an object in a slot is parked")
@@ -547,7 +552,8 @@ class Stack:
 
     def restore(self, obj, check_queue=True, **fields):
         """A parked car's object comes back (`tracks car stack`): the same id, at the end of the queue,
-        so whatever waits for it keeps waiting for it."""
+        so whatever waits for it keeps waiting for it.
+        """
         oid = obj["id"]
         if self._dep_open(oid):
             raise StackError(f"{oid} is in the stack already")
@@ -663,7 +669,8 @@ class Stack:
 
     def marks_lines(self, rows, places):
         """Under the table: the marks by the principles (marks.py) of the objects in the slots and the post-stack, each
-        its car's (a stack object that is no car: its own); nothing when the third check is empty."""
+        its car's (a stack object that is no car: its own); nothing when the third check is empty.
+        """
         from . import marks
         pl = marks.plist(self.state, self.cfg)
         busy = [(num, o) for num, w, o in rows if o is not None and w in ("slot", "post")]

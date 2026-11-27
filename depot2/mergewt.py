@@ -45,7 +45,8 @@ def size_text(n):
 
 def worktree_list(text):
     """`git worktree list --porcelain` → [{path, head, branch (None: a detached HEAD), bare}], the main one first.
-    (git 2.25 says nothing of a lock there: locked() reads it.)"""
+    (git 2.25 says nothing of a lock there: locked() reads it.)
+    """
     out, cur = [], None
     for ln in [*text.splitlines(), ""]:
         if not ln.strip():
@@ -177,7 +178,8 @@ class WorktreesMixin:
     # --- after the merge (step_merge) ---
     def after_merge_worktree(self, eid):
         """The merged PR's worktree goes when nothing in it can be lost; else it stays, and the line says why. Never
-        raises (but the entry dropped meanwhile: update's Dropped)."""
+        raises (but the entry dropped meanwhile: update's Dropped).
+        """
         from .merge import clip, expand, stamp
         e = self.entry(eid)
         path = e.get("worktree") or os.path.join(expand(self.m["worktrees"]), e["branch"])

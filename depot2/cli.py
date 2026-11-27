@@ -118,7 +118,8 @@ def cmd_refund(state, cfg, a):
 
 def cmd_auto_refund(state, cfg, a):
     """`refund all --round R --auto`: what a round does as it ends, applied to an older round that
-    still has open stakes. auto_refund transactions, not an owner action: no reflection."""
+    still has open stakes. auto_refund transactions, not an owner action: no reflection.
+    """
     from .ledger import AUTO_REASON
     if a.character != "all" or a.point:
         raise ValueError("--auto returns every open stake of the round: use `refund all --round R --auto`, "
@@ -1462,7 +1463,8 @@ def _effort_args(q, spent=False):
 
 def _migrate_first(state, cfg, a):
     """The depot's data from before today's form are brought to it once, before any command (migrate.py); the web
-    view never writes (it says the depot waits), `migrate` runs it itself."""
+    view never writes (it says the depot waits), `migrate` runs it itself.
+    """
     from . import migrate
     if a.cmd in ("seed", "init", "web", "migrate") or not migrate.pending(state):
         return
@@ -1515,7 +1517,8 @@ ARG_HELP = {
 
 def _fill_help(ap, cmd=None):
     """Every argument of every command and subcommand gets a help (ARG_HELP), every subcommand its line; the test
-    `tests/test_cli_docs.py` holds both."""
+    `tests/test_cli_docs.py` holds both.
+    """
     for a in ap._actions:
         if isinstance(a, argparse._SubParsersAction):
             for name, sp in a.choices.items():

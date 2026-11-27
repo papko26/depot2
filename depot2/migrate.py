@@ -83,7 +83,8 @@ def has_build(c):
 
 def plan(old, names=None):
     """(tracks.json, trains.json, the new trains' history rows, the migration row, lines) from an old trains.json.
-    names: {tr-NNNN: name} to use instead of the slugs."""
+    names: {tr-NNNN: name} to use instead of the slugs.
+    """
     names = names or {}
     tracks, trains, rows, skipped = [], [], [], []
     taken = set()
@@ -141,7 +142,8 @@ def cars_of(tracks_or_trains):
 
 def verify(old, track_data, train_data):
     """The tracks hold every car as it was (status, stage, PR); every train's car is an open car of a track, in one
-    train at most."""
+    train at most.
+    """
     before, after = cars_of(old["trains"]), cars_of(track_data["tracks"])
     if before != after:
         lost = sorted(set(before) - set(after))
@@ -273,7 +275,8 @@ def queue_priority(entries):
 
 def step_priority(state, dry_run=False, planned=False):
     """Schema 3 → 4: the priority 1-10 (the module's head). planned: a dry run of the steps before came first (the
-    tracks and the trains on the disk are not today's yet)."""
+    tracks and the trains on the disk are not today's yet).
+    """
     L = [t("migrate.head_4")]
     rows, counts = [], {}
     for name in QUEUE_FILES:

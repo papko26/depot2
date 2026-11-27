@@ -1,10 +1,10 @@
 """Returns and claims: `depot2 repair` and `depot2 claims`.
 
-  defect  a car handed in and sent back to the build (from the acceptance, or dropped from the merge queue): the
-          same car, `returns` += 1 on its record and `return: true` on its history row;
-  claim   a defect found in production after the car arrived: a new repair car (`repair add --of <culprit>`),
-          optionally linked to a bug's id in the bug table (`repair.bugs`, a Markdown table the tool only reads);
-  repair  the repair car itself: a free slot takes it out of turn (`trains next`).
+defect  a car handed in and sent back to the build (from the acceptance, or dropped from the merge queue): the
+same car, `returns` += 1 on its record and `return: true` on its history row;
+claim   a defect found in production after the car arrived: a new repair car (`repair add --of <culprit>`),
+optionally linked to a bug's id in the bug table (`repair.bugs`, a Markdown table the tool only reads);
+repair  the repair car itself: a free slot takes it out of turn (`trains next`).
 """
 
 import os
@@ -151,7 +151,8 @@ def _on_prod(car, ref):
 def add(state, cfg, of, bug=None, title=None, brief=None, why=None, size=None, by="repair add", force=False):
     """A claim: a new repair car, out of turn. of: the culprit (st-, tr-…:N, #PR) or, when it is not known, the
     bug's id in BUGS.md. Soft checks (the culprit on production, the bug in BUGS.md): --force with --why passes
-    them, recorded. Returns (the repair object, the culprit's ref or None, the claim or None, lines)."""
+    them, recorded. Returns (the repair object, the culprit's ref or None, the claim or None, lines).
+    """
     from .stack import Stack
     from .tracks import Tracks
     stk = Stack(state, cfg)
@@ -201,7 +202,8 @@ def add(state, cfg, of, bug=None, title=None, brief=None, why=None, size=None, b
 def link(state, cfg, repair, of, why=None, by="repair link", force=False):
     """The culprit of a repair, found later; or a defect repaired inside another car (not a repair car: --why says
     what the defect was). The culprit's claims += 1. A repair car that has a culprit already moves to another
-    only with --force --why (the old culprit's claim is kept, marked `moved`). Returns (claim, lines)."""
+    only with --force --why (the old culprit's claim is kept, marked `moved`). Returns (claim, lines).
+    """
     from .stack import Stack
     from .tracks import Tracks
     stk = Stack(state, cfg)
@@ -251,7 +253,8 @@ def link(state, cfg, repair, of, why=None, by="repair link", force=False):
 
 def universe(stk, tr):
     """Every car that can hold returns and claims, once: [{ref, kind, rec, track, objects}] — the tracks' cars (with
-    every object each had), the live stack objects that are no car's, the objects that left and are no car's."""
+    every object each had), the live stack objects that are no car's, the objects that left and are no car's.
+    """
     objs_of = {}
     for track in tr.data["tracks"]:
         for c in track["cars"]:
@@ -283,7 +286,8 @@ def universe(stk, tr):
 
 def pre_stage_returns(stk):
     """{object: [row]}: the stack's rows back from the post-stack (`start` with `unposted`) that moved no stage —
-    the returns from before the stages."""
+    the returns from before the stages.
+    """
     out = {}
     for h in stk.history():
         if h.get("event") == "start" and h.get("unposted") and not h.get("stage"):
@@ -309,7 +313,8 @@ def events(stk, tr):
 
 def migrate(state, cfg, stk, tr, dry_run=False):
     """`queues migrate`: every car's `returns` = its returns in the history (the ones before the stages too), written
-    where it differs (absent reads 0); a second run changes nothing. Returns (lines, changed)."""
+    where it differs (absent reads 0); a second run changes nothing. Returns (lines, changed).
+    """
     fix = {"car": {}, "stack": {}, "left": {}}
     for u, ret, _ in events(stk, tr):
         if len(ret) != int(u["rec"].get("returns") or 0):
