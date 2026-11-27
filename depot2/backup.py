@@ -54,7 +54,7 @@ class Busy(Exception):
     """Another backup run holds the backup lock."""
 
 
-class Secrets(object):
+class Secrets:
     """The keys and their obscured forms of one run: never printed, logged or passed in argv."""
 
     def __init__(self):
@@ -210,7 +210,7 @@ def _nice(argv):
     return (["nice", "-n", "10"] if shutil.which("nice") else []) + argv
 
 
-class Runner(object):
+class Runner:
     def __init__(self, state, cfg, auto=False):
         self.state, self.b, self.auto = state, cfg["backup"], auto
         self.secrets = Secrets()
@@ -241,7 +241,7 @@ class Runner(object):
             env["PASSWORD_STORE_GPG_OPTS"] = (env.get("PASSWORD_STORE_GPG_OPTS", "") +
                                               " --batch --pinentry-mode=error").strip()
         try:
-            p = subprocess.run([self.b["pass_bin"], "show", entry], env=env, universal_newlines=True,
+            p = subprocess.run([self.b["pass_bin"], "show", entry], env=env, text=True,
                                stdin=subprocess.DEVNULL if self.auto else None,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60 if self.auto else 300)
         except FileNotFoundError:
@@ -260,7 +260,7 @@ class Runner(object):
 
     def obscure(self, key):
         try:
-            p = subprocess.run([self.b["rclone_bin"], "obscure", "-"], input=key + "\n", universal_newlines=True,
+            p = subprocess.run([self.b["rclone_bin"], "obscure", "-"], input=key + "\n", text=True,
                                stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=60)
         except FileNotFoundError:
             raise BackupError(t("backup.no_rclone"), "rclone")
@@ -291,7 +291,7 @@ class Runner(object):
         argv = [self.b["rclone_bin"]] + list(args)
         self.secrets.check_argv(argv)
         try:
-            return subprocess.run(argv, env=self.env, stdin=subprocess.DEVNULL, universal_newlines=True,
+            return subprocess.run(argv, env=self.env, stdin=subprocess.DEVNULL, text=True,
                                   stdout=subprocess.PIPE, stderr=subprocess.PIPE, timeout=int(self.b["timeout_s"]))
         except FileNotFoundError:
             raise BackupError(t("backup.no_rclone"), step)
@@ -338,7 +338,7 @@ class Runner(object):
                 p = subprocess.run(["tar", "-C", parent, "-cf", tar_path, "--exclude=%s/.lock" % base,
                                     "--exclude=%s/%s" % (base, DIR), "--exclude=*.tmp-*", base],
                                    stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                                   universal_newlines=True)
+                                   text=True)
                 held = time.time() - held
         except RuntimeError:
             w = int(self.b["lock_wait_s"])
@@ -349,7 +349,7 @@ class Runner(object):
         self.say("snapshot: %s, %.1f MB, the state lock held %.1f s (waited %.1f s)"
                  % (os.path.basename(tar_path), os.path.getsize(tar_path) / 1e6, held, time.time() - t0 - held))
         p = subprocess.run(_nice(["gzip", "-6", "-n", tar_path]), stdin=subprocess.DEVNULL,
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         local = os.path.join(tmp, name)
         if p.returncode != 0 or not os.path.isfile(local):
             raise BackupError(t("backup.gzip", code=p.returncode), "snapshot", p.stderr.strip()[-500:])
@@ -493,7 +493,7 @@ class Runner(object):
             if st.get("archive") == name and st.get("sha256") and st["sha256"] != sha:
                 raise BackupError(t("backup.v_sha"), "verify")
             p = subprocess.run(_nice(["tar", "-tzf", local]), stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                               stderr=subprocess.PIPE, universal_newlines=True)
+                               stderr=subprocess.PIPE, text=True)
             if p.returncode != 0:
                 raise BackupError(t("backup.v_tar_t", code=p.returncode), "verify", p.stderr.strip()[-500:])
             entries = [ln for ln in p.stdout.split("\n") if ln]
@@ -504,19 +504,19 @@ class Runner(object):
             x = os.path.join(tmp, "x")
             os.makedirs(x)
             p = subprocess.run(_nice(["tar", "-xzf", local, "-C", x]), stdin=subprocess.DEVNULL,
-                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                               stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
             if p.returncode != 0:
                 raise BackupError(t("backup.v_tar_x", code=p.returncode), "verify", p.stderr.strip()[-500:])
             repo = os.path.join(x, top)
             p = subprocess.run(_nice(["git", "-C", repo, "fsck", "--full", "--no-progress"]),
                                stdin=subprocess.DEVNULL, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                               universal_newlines=True)
+                               text=True)
             if p.returncode != 0:
                 raise BackupError(t("backup.v_fsck", code=p.returncode), "verify", (p.stdout + p.stderr).strip()[-800:])
             commits = subprocess.run(["git", "-C", repo, "rev-list", "--count", "HEAD"], stdout=subprocess.PIPE,
-                                     stderr=subprocess.PIPE, universal_newlines=True).stdout.strip()
+                                     stderr=subprocess.PIPE, text=True).stdout.strip()
             head = subprocess.run(["git", "-C", repo, "log", "-1", "--format=%cI %s"], stdout=subprocess.PIPE,
-                                  stderr=subprocess.PIPE, universal_newlines=True).stdout.strip()
+                                  stderr=subprocess.PIPE, text=True).stdout.strip()
             self.say("verified: %s, sha256 %s%s" % (name, sha, " (= the upload's)" if st.get("archive") == name else ""))
             self.say("  %d entries under %s/; git fsck --full ok; %s commits; HEAD %s" % (len(entries), top, commits,
                                                                                          head))

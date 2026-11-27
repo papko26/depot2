@@ -38,7 +38,7 @@ def to_utc(ts):
     d = datetime.datetime.fromisoformat(ts)
     if d.tzinfo is None:
         d = d.astimezone()  # local time
-    return d.astimezone(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    return d.astimezone(datetime.UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def new_round_id(state, kind, pr=None, only=None):
@@ -63,7 +63,7 @@ def last_review_since(state):
     return best
 
 
-class Guard(object):
+class Guard:
     """The fuse stays a share: a call stops the round when any window it saw is round.stop_at_utilization
     full. Before each call it also adds, to the window's last reading, the spend since that reading and
     call when that would reach the stop.

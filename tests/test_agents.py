@@ -23,12 +23,12 @@ FIXTURES = os.path.join(HERE, "transcripts")
 DONE = "a0f1c2d3e4b5a6978"   # finished: 4 turns (one message logged twice), 0.1525 MTok
 LIVE = "b1e2d3c4f5a6b7c80"   # still running: 2 turns, 0.0265 MTok
 SUB = os.path.join("-work-depot", "sess-0001", "subagents")
-AT = datetime.datetime(2015, 11, 20, 12, 3, 30, tzinfo=datetime.timezone.utc)  # 61 min after LIVE's last line
+AT = datetime.datetime(2015, 11, 20, 12, 3, 30, tzinfo=datetime.UTC)  # 61 min after LIVE's last line
 
 
 class AgentsBase(Base):
     def setUp(self):
-        super(AgentsBase, self).setUp()
+        super().setUp()
         self.t.cfg["stack"].update(slots=2, queue_max=10)
         self.projects = tempfile.mkdtemp(prefix="team-agents-")
         shutil.copytree(os.path.join(FIXTURES, "-work-depot"), os.path.join(self.projects, "-work-depot"))
@@ -44,11 +44,11 @@ class AgentsBase(Base):
         tr.car_add("tr-0001", "без брифа", stage="sketch")               # 3
 
     def tearDown(self):
-        super(AgentsBase, self).tearDown()
+        super().tearDown()
         shutil.rmtree(self.projects, ignore_errors=True)
 
     def team(self, *argv):
-        return super(AgentsBase, self).team("--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent",
+        return super().team("--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent",
                                             "--set", "agents.projects=" + self.projects, "--set", "stack.slots=2",
                                             *argv)
 

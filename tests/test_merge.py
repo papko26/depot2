@@ -26,7 +26,7 @@ EXAMPLE_PLUGIN = os.path.join(os.path.dirname(HERE), "examples", "plugins", "exa
 
 
 def sh(cwd, *argv, check=True):
-    p = subprocess.run(list(argv), cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+    p = subprocess.run(list(argv), cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     if check and p.returncode != 0:
         raise AssertionError("%s failed: %s %s" % (argv, p.stdout, p.stderr))
     return p.stdout.strip()
@@ -35,7 +35,7 @@ def sh(cwd, *argv, check=True):
 START = 1447329600.0  # 2015-11-12T12:00:00Z
 
 
-class FakeClock(object):
+class FakeClock:
     """The merge queue's clock in these tests (merge.CLOCK, merge.SLEEP): it stands still between the queue's
     sleeps and moves a second (or the sleep's length) on each, so one poll's readings agree, and the fake gh
     reads the same time ($FAKE_GH_NOW). No test hangs on the real time or on how fast the machine is."""
@@ -636,7 +636,7 @@ def runner(name, status, *labels):
 class CdRunnerTest(MergeBase):
 
     def setUp(self):
-        super(CdRunnerTest, self).setUp()
+        super().setUp()
         self.sets += ["repo=test-owner/no-such-repo", "merge.github_wait_max_min=60"]
         self.pr(301, "feat-a", {"a.txt": "A\n"})
         self.team("merge", "add", "301", "--word", "мердж")
@@ -764,7 +764,7 @@ class CdRunnerTest(MergeBase):
 class CiRunnerTest(MergeBase):
 
     def setUp(self):
-        super(CiRunnerTest, self).setUp()
+        super().setUp()
         self.sets += ["repo=test-owner/no-such-repo", "merge.github_wait_max_min=60"]
         self.pr(301, "feat-a", {"a.txt": "A\n"})
         self.team("merge", "add", "301", "--word", "мердж")
@@ -849,7 +849,7 @@ class CiRunnerTest(MergeBase):
 
 class ConflictTest(MergeBase):
     def setUp(self):
-        super(ConflictTest, self).setUp()
+        super().setUp()
         self.pr(301, "feat-a", {"a.txt": "branch\n"})
         self.pr(302, "feat-b", {"b.txt": "B\n"})
         self.main_commit({"a.txt": "main\n"})

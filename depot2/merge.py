@@ -142,7 +142,7 @@ def argv_of(cmd, **subs):
     return out
 
 
-class Sh(object):
+class Sh:
 
     def __init__(self, env=None):
         self.env = env
@@ -160,7 +160,7 @@ class Sh(object):
 
 # --- the queue's file ----------------------------------------------------------------------------------
 
-class MergeQueue(object):
+class MergeQueue:
     def __init__(self, state):
         self.state = state
         self.path = state.path(FILE)
@@ -228,7 +228,7 @@ def log_line(e, text):
 
 # --- prepared conflict resolutions ---------------------------------------------------------------------
 
-class Resolutions(object):
+class Resolutions:
     """A conflict is resolved only from a resolution worked out and tested beforehand, keyed by the two
     sides' blobs (ours = the branch's, theirs = main's) and checked against the file's path."""
 

@@ -15,7 +15,7 @@ MAP0 = "files: 3\n\na.txt\nb.txt\nc.txt\n"
 
 class AutoBase(MergeBase):
     def setUp(self):
-        super(AutoBase, self).setUp()
+        super().setUp()
         self.genlog = os.path.join(self.tmp, "gen.jsonl")
         os.environ["FAKE_GEN_LOG"] = self.genlog
         self.sets += ["merge.auto.generated.cmd=" + json.dumps([sys.executable, FAKE_GEN, "generated"]),

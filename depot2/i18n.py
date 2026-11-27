@@ -128,7 +128,7 @@ def fold(text):
     return " ".join(str(text or "").strip().lower().replace("\u0451", "\u0435").split())
 
 
-class Labels(object):
+class Labels:
     """A family of messages read like a dict: Labels("stage", STAGES)[k] is t("stage." + k), in the language of
     the moment."""
 

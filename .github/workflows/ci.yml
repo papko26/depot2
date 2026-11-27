@@ -21,6 +21,6 @@ jobs:
           version: "0.13.10"
           python-version: ${{ matrix.python-version }}
       - run: make install
-      - run: make lint
+      - run: uv run --locked ruff check .
       - run: make typecheck
       - run: make test

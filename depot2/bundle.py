@@ -25,7 +25,7 @@ QUESTION_FIELDS = (re.compile(i18n.rx("in.bundle.question_full"), re.I),
                    re.compile(i18n.rx("in.bundle.question"), re.I))
 
 
-class Bundle(object):
+class Bundle:
     def __init__(self):
         self.parts = []      # (title, text)
         self.cuts = []       # human-readable notes of what was cut
@@ -166,7 +166,7 @@ def gh_json(args):
     if args[0] not in ("pr",) or args[1] not in ("list", "view", "diff"):
         raise ValueError("gh: read-only pr list/view only")
     p = subprocess.run(["gh"] + args, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                       universal_newlines=True, timeout=120)
+                       text=True, timeout=120)
     if p.returncode != 0:
         raise RuntimeError("gh %s failed: %s" % (" ".join(args[:2]), p.stderr.strip()[:300]))
     return json.loads(p.stdout or "[]")

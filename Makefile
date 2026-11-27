@@ -9,8 +9,8 @@ install:  ## Install locked development dependencies
 format:  ## Format Python files with Ruff
 	uv run --locked ruff format .
 
-lint:  ## Check Python files with Ruff
-	uv run --locked ruff check .
+lint:  ## Apply safe Ruff fixes and report remaining issues
+	uv run --locked ruff check --fix .
 
 typecheck:  ## Check package types with mypy
 	uv run --locked mypy --python-version 3.11 -p depot2

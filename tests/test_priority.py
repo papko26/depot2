@@ -53,7 +53,7 @@ class ParseTest(PBase):
 
 class SetTest(PBase):
     def setUp(self):
-        super(SetTest, self).setUp()
+        super().setUp()
         tk = self.tracks()
         tk.add("Каталог")
         tk.add("Второй")

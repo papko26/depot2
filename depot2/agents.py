@@ -96,7 +96,7 @@ def _pct(u):
 
 # --- the agents ----------------------------------------------------------------------------------------------------
 
-class Agents(object):
+class Agents:
     def __init__(self, state, cfg, tracks=None):
         self.state = state
         self.cfg = cfg

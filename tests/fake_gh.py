@@ -42,9 +42,9 @@ def now_z(minutes_ago=0):
     path = os.environ.get("FAKE_GH_NOW")
     if path:
         with open(path) as f:
-            now = datetime.datetime.fromtimestamp(float(f.read()), datetime.timezone.utc)
+            now = datetime.datetime.fromtimestamp(float(f.read()), datetime.UTC)
     else:
-        now = datetime.datetime.now(datetime.timezone.utc)
+        now = datetime.datetime.now(datetime.UTC)
     return (now - datetime.timedelta(minutes=minutes_ago)).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
@@ -97,7 +97,7 @@ def opt(argv, name):
 
 def git(d, *args, cwd=None):
     return subprocess.run([d["git"]] + list(args), cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                          universal_newlines=True)
+                          text=True)
 
 
 def head_of(d, branch):

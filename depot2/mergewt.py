@@ -103,7 +103,7 @@ def wt_line(path, branch, res):
     return t("mergewt.line_kept", path=path, reason=res.get("reason"))
 
 
-class WorktreesMixin(object):
+class WorktreesMixin:
     # --- the rules ---
     def wt_known(self):
         """The main clone's worktrees by their real path, the main one left out."""

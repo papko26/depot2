@@ -18,7 +18,7 @@ from depot2.trains import TrainError, Trains, check_name, parse_slots
 
 class ModelTest(TracksBase):
     def setUp(self):
-        super(ModelTest, self).setUp()
+        super().setUp()
         tk = self.tracks()
         for title in ("Экспорт", "Печать"):
             t = tk.add(title)

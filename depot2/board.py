@@ -31,7 +31,7 @@ def _since(rec, fallback=None):
     return rows[-1].get("at") if rows else fallback
 
 
-class Board(object):
+class Board:
     def __init__(self, state, cfg):
         from .merge import MergeQueue
         self.state, self.cfg = state, cfg

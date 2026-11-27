@@ -24,10 +24,9 @@ import importlib
 import importlib.util
 import os
 from types import ModuleType
-from typing import Dict
 
 HOOKS = ("smoke_verdict", "after_merge", "snapshot_test", "round_context")
-_cache: Dict[str, ModuleType] = {}
+_cache: dict[str, ModuleType] = {}
 
 
 class HookError(RuntimeError):

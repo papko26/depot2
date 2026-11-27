@@ -512,6 +512,7 @@ make check        # run lint, typecheck, and test
 ```
 
 Run checks individually with `make lint`, `make typecheck`, or `make test`.
+`make lint` applies safe Ruff fixes and reports any remaining violations.
 `make format` formats all Python files under the repository with Ruff. Run
 `uv run --locked ruff format path/to/file.py` on files you edit, or add `--check` to preview which files need formatting.
 

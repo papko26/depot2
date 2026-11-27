@@ -77,7 +77,7 @@ def _known_keys(obj, allowed, where):
                                                                ", ".join(sorted(allowed))))
 
 
-class Tracks(object):
+class Tracks:
     def __init__(self, state, cfg, trains=None):
         self.state = state
         self.cfg = cfg

@@ -33,4 +33,5 @@ dev = [
 ]
 
 [tool.ruff.lint]
-select = ["E9", "F", "FA", "G", "TC"]
+select = ["E9", "F", "FA", "G", "TC", "UP"]
+ignore = ["UP022", "UP028", "UP031"]

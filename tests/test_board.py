@@ -22,14 +22,14 @@ ALL = ["--set", "gates.dor=" + json.dumps(GATES_ALL["dor"]), "--set", "gates.dod
 
 class GateBase(Base):
     def setUp(self):
-        super(GateBase, self).setUp()
+        super().setUp()
         self.t.cfg["gates"] = json.loads(json.dumps(GATES_ALL))
         self.brief = os.path.join(self.t.dir, "brief.md")
         with open(self.brief, "w") as f:
             f.write(BRIEF_TEXT)
 
     def team(self, *argv):
-        return super(GateBase, self).team(*(ALL + list(argv)))
+        return super().team(*(ALL + list(argv)))
 
     def stk(self):
         return Stack(self.t.state, self.t.cfg)
@@ -183,7 +183,7 @@ class LimitTest(GateBase):
 
 class TrainGateTest(GateBase):
     def setUp(self):
-        super(TrainGateTest, self).setUp()
+        super().setUp()
         self.team("tracks", "add", "--title", "Импорт")
         self.team("tracks", "car", "add", "tr-0001", "--title", "парсер", "--size", "M")
         self.team("tracks", "car", "add", "tr-0001", "--title", "экран", "--size", "M", "--brief", self.brief)
@@ -221,7 +221,7 @@ class TrainGateTest(GateBase):
 
 class BoardTest(GateBase):
     def setUp(self):
-        super(BoardTest, self).setUp()
+        super().setUp()
         self.team("stack", "add", "--title", "Импорт", "--brief", self.brief, "--size", "M")
         self.team("stack", "add", "--title", "Мысль")
         self.team("tracks", "add", "--title", "Поезд")
@@ -352,7 +352,7 @@ class DocsTest(GateBase):
     HANDED = ["--ci", "green", "--heavy", "n/a", "--scan", "CLEAN", "--shots", "n/a"]
 
     def setUp(self):
-        super(DocsTest, self).setUp()
+        super().setUp()
         self.docs_brief = os.path.join(self.t.dir, "docs-brief.md")
         with open(self.docs_brief, "w") as f:
             f.write(BRIEF_TEXT + "\n## Тесты\n- **Документация:** нужна\n")

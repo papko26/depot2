@@ -10,7 +10,6 @@ Every entry can be taken into a car (`take`: a new car on a track, an existing c
 import os
 import re
 import subprocess
-from typing import Dict, Optional, Tuple, Union
 
 from . import i18n
 from . import priority as pri
@@ -24,7 +23,7 @@ class QueueError(ValueError):
     pass
 
 
-class Text(object):
+class Text:
     """A class attribute that reads as its message in the language of the moment: Text(key) is a string;
     Text(k1, k2, …, many=True) a tuple of them (a table's columns)."""
 
@@ -37,18 +36,18 @@ class Text(object):
         return words if self.many else words[0]
 
 
-class Queue(object):
-    NAME: Optional[str] = None  # the file's name: <NAME>.json, <NAME>-history.jsonl
-    PREFIX: Optional[str] = None  # the id's prefix
-    TITLE: Optional[Text] = None  # the table's heading (a Text)
-    STATUS_RU: Union[Dict[str, str], i18n.Labels] = {}  # status -> its word (an i18n.Labels)
-    OPEN: Tuple[str, ...] = ()  # the statuses of an open entry
-    ALSO_FROM: Dict[str, Tuple[str, ...]] = {}  # target status -> closed statuses allowed to move there
-    FIELDS: Tuple[str, ...] = ()  # the fields `set` may change (lists: LIST_FIELDS append)
-    LIST_FIELDS: Tuple[str, ...] = ("links", "notes")
+class Queue:
+    NAME: str | None = None  # the file's name: <NAME>.json, <NAME>-history.jsonl
+    PREFIX: str | None = None  # the id's prefix
+    TITLE: Text | None = None  # the table's heading (a Text)
+    STATUS_RU: dict[str, str] | i18n.Labels = {}  # status -> its word (an i18n.Labels)
+    OPEN: tuple[str, ...] = ()  # the statuses of an open entry
+    ALSO_FROM: dict[str, tuple[str, ...]] = {}  # target status -> closed statuses allowed to move there
+    FIELDS: tuple[str, ...] = ()  # the fields `set` may change (lists: LIST_FIELDS append)
+    LIST_FIELDS: tuple[str, ...] = ("links", "notes")
     STAGES = False  # a wish and a to-think entry are cars with stages (stages.py); a todo is not
-    STATUS_STAGE: Dict[str, str] = {}  # a status move -> the stage it means (to_status)
-    KIND_RU: Union[Text, str, None] = None  # entry kind for the car's source note
+    STATUS_STAGE: dict[str, str] = {}  # a status move -> the stage it means (to_status)
+    KIND_RU: Text | str | None = None  # entry kind for the car's source note
 
     def __init__(self, state, cfg=None):
         self.state = state
@@ -251,7 +250,7 @@ class Queue(object):
 
     # --- the table -------------------------------------------------------------------------------
 
-    COLUMNS: Union[Text, Tuple[str, ...]] = ()
+    COLUMNS: Text | tuple[str, ...] = ()
 
     def row(self, e):
         raise NotImplementedError
@@ -372,7 +371,7 @@ class Wishes(Queue):
         return "bogie", self.KIND_RU
 
     def check(self, e):
-        super(Wishes, self).check(e)
+        super().check(e)
         if not (e.get("title") or "").strip():
             raise QueueError("a wish needs a title")
         if e.get("area") not in AREAS:
@@ -380,7 +379,7 @@ class Wishes(Queue):
         check_priority(e)
 
     def add(self, title, words=None, date=None, area="product", priority=None, links=(), text=None):
-        return super(Wishes, self).add(title=title, words=words, date=date or today(), area=area,
+        return super().add(title=title, words=words, date=date or today(), area=area,
                                        priority=pri.DEFAULT if priority is None else pri.parse(priority),
                                        status="waiting", taken_to=None, links=list(links or ()), text=text)
 
@@ -459,13 +458,13 @@ class Think(Queue):
         return fields
 
     def check(self, e):
-        super(Think, self).check(e)
+        super().check(e)
         if not (e.get("topic") or "").strip():
             raise QueueError("a to-think entry needs a topic")
         check_priority(e)
 
     def add(self, topic, questions=(), by=None, related=(), date=None, links=(), text=None, priority=None):
-        return super(Think, self).add(topic=topic, questions=list(questions or ()), by=by,
+        return super().add(topic=topic, questions=list(questions or ()), by=by,
                                       related=list(related or ()), date=date or today(), status="waiting",
                                       round=None, decision=None, links=list(links or ()), text=text,
                                       priority=pri.DEFAULT if priority is None else pri.parse(priority))
@@ -538,7 +537,7 @@ class Todo(Queue):
         return what + " (%s)" % "; ".join(bits)
 
     def check(self, e):
-        super(Todo, self).check(e)
+        super().check(e)
         if not (e.get("text") or e.get("title") or "").strip():
             raise QueueError("a todo needs a text")
         if e.get("kind") not in KINDS:
@@ -547,7 +546,7 @@ class Todo(Queue):
 
     def add(self, text, title=None, where=(), version=None, date=None, source=None, kind="bug", trigger=None,
             links=(), priority=None):
-        return super(Todo, self).add(text=text, title=title, where=list(where or ()), version=version,
+        return super().add(text=text, title=title, where=list(where or ()), version=version,
                                      date=date or today(), source=source, kind=kind, trigger=trigger,
                                      status="open", pr=None, links=list(links or ()),
                                      priority=pri.DEFAULT if priority is None else pri.parse(priority))
@@ -619,7 +618,7 @@ def repo_version(cfg):
     if pkg:
         ver = pkg.get("version")
     r = subprocess.run(["git", "-C", clone, "rev-parse", "--short=7", "origin/main"], stdout=subprocess.PIPE,
-                       stderr=subprocess.PIPE, universal_newlines=True, timeout=30)
+                       stderr=subprocess.PIPE, text=True, timeout=30)
     commit = r.stdout.strip() if r.returncode == 0 else None
     parts = [x for x in (ver, ("main " + commit) if commit else None) if x]
     return ", ".join(parts) or None

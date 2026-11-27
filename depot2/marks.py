@@ -312,7 +312,7 @@ def pr_body(state, cfg, n):
     return str((d or {}).get("body") or "")
 
 
-class Reading(object):
+class Reading:
     """One command's reading of a car's PR: the marks it has, the PR's section read into them (saved by `save`), and
     the verdict. ref: the car (tr-NNNN:N) or the stack object (st-NNNN), None for a PR with neither (its verdict only);
     body: the PR's body when the caller has it, else read with gh; fetch=False: no read (the marks as they are)."""

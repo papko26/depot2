@@ -32,7 +32,7 @@ def page_messages(html):
     return json.loads(m.group(1))
 
 
-class Served(object):
+class Served:
     """A server on port 0 in a thread; get() returns (status, headers, body)."""
 
     def __init__(self, state, sets, **kw):
@@ -65,7 +65,7 @@ class Served(object):
         self.srv.server_close()
 
 
-class Peer(object):
+class Peer:
     """A request as `Server.authorize` sees it, from any address: the one gate, asked without a socket."""
 
     def __init__(self, addr, host):
@@ -87,7 +87,7 @@ def tree_hash(root):
 
 class WebBase(GateBase):
     def setUp(self):
-        super(WebBase, self).setUp()
+        super().setUp()
         self.scratch = tempfile.mkdtemp(prefix="team-web-scratch-")
         for d in ("briefs", "design", "notes", "drafts"):
             os.makedirs(os.path.join(self.scratch, d))
@@ -117,7 +117,7 @@ class WebBase(GateBase):
     def tearDown(self):
         self.web.close()
         shutil.rmtree(self.scratch, ignore_errors=True)
-        super(WebBase, self).tearDown()
+        super().tearDown()
 
 
 class WebTest(WebBase):

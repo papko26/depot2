@@ -21,7 +21,7 @@ def ans(points=(), main="главное", thought="мысль"):
             "main_point": main, "inner_thought": thought}
 
 
-class FakeRunner(object):
+class FakeRunner:
     """Answers per (character, stage); records what the ledger said at each call. turns: the tool
     turns each (character, stage) reports having used (default 0)."""
 

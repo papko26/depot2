@@ -16,7 +16,7 @@ FUTURE = datetime.datetime(2015, 11, 9, 12, 0).astimezone()
 class TracksBase(Base):
 
     def setUp(self):
-        super(TracksBase, self).setUp()
+        super().setUp()
         self.t.cfg["stack"].update(slots=4, queue_max=10)
         self.t.cfg["usage"]["mtok_per_pct"] = 12.0
 
@@ -37,7 +37,7 @@ class TracksBase(Base):
         return name
 
     def team(self, *argv):  # never the main clone (repo_version), never a real model
-        return super(TracksBase, self).team("--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent",
+        return super().team("--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent",
                                             "--set", "usage.mtok_per_pct=12", *argv)
 
 
@@ -117,7 +117,7 @@ class TracksTest(TracksBase):
 
 class StackLinkTest(TracksBase):
     def setUp(self):
-        super(StackLinkTest, self).setUp()
+        super().setUp()
         tr = self.tracks()
         a = tr.add("Поиск")
         tr.car_add(a["id"], "индекс", size="L", branch="search-index")
@@ -351,7 +351,7 @@ class ParkCarTest(TracksBase):
     PR (status pr), its slot is free; when its `after` is met its PR is ready to merge."""
 
     def setUp(self):
-        super(ParkCarTest, self).setUp()
+        super().setUp()
         tr = self.tracks()
         a = tr.add("Аккаунты")
         tr.car_add(a["id"], "док v2", n="0b", size="doc")
@@ -479,7 +479,7 @@ class CarNotesTest(TracksBase):
 class CarMoveTest(TracksBase):
 
     def setUp(self):
-        super(CarMoveTest, self).setUp()
+        super().setUp()
         tr = self.tracks()
         a = tr.add("Каталог")
         tr.car_add(a["id"], "a", size="S")

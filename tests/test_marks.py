@@ -202,7 +202,7 @@ class DepotBase(GateBase):
     11, 4, 5a of priority 2) and 6 outside it, and gh's PRs in $FAKE_GH_STATE."""
 
     def setUp(self):
-        super(DepotBase, self).setUp()
+        super().setUp()
         self.files = tempfile.mkdtemp(prefix="team-marks-")
         path = os.path.join(self.files, "PRINCIPLES.md")
         with open(path, "w", encoding="utf-8") as f:
@@ -224,7 +224,7 @@ class DepotBase(GateBase):
             for n in names:
                 os.chmod(os.path.join(d, n), 0o644)
         shutil.rmtree(self.files, ignore_errors=True)
-        super(DepotBase, self).tearDown()
+        super().tearDown()
 
     def prs(self, bodies, branch="feat"):
         write_json(self.gh, {"prs": {str(n): {"number": n, "title": "PR %d" % n, "state": "OPEN", "headRefName": branch,
@@ -232,7 +232,7 @@ class DepotBase(GateBase):
                                      for n, b in bodies.items()}})
 
     def team(self, *argv):
-        return super(DepotBase, self).team("--set", "merge.worktrees=" + self.files, *argv)
+        return super().team("--set", "merge.worktrees=" + self.files, *argv)
 
     def ok(self, *argv):
         rc, out, err = self.team(*argv)

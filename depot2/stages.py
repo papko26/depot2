@@ -252,7 +252,7 @@ def arrive_hint(ref):
 
 # --- one car, by its id ------------------------------------------------------------------------------
 
-class Car(object):
+class Car:
     """What a ref names: a stack object (live, or one that left), a track's car, a wish, a to-think entry;
     and its twin (a car's live stack object, an object's car)."""
 

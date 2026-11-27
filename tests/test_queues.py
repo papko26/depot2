@@ -23,7 +23,7 @@ def write(d, name, text):
 
 class QBase(Base):
     def team(self, *argv):
-        return super(QBase, self).team("--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent", *argv)
+        return super().team("--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent", *argv)
 
 
 class WishesTest(QBase):
@@ -151,7 +151,7 @@ class TodoTest(QBase):
         git("-c", "user.name=t", "-c", "user.email=t@localhost", "commit", "-q", "-m", "x")
         git("update-ref", "refs/remotes/origin/main", "HEAD")
         sha = subprocess.run(["git", "-C", d, "rev-parse", "--short=7", "HEAD"], stdout=subprocess.PIPE,
-                             universal_newlines=True).stdout.strip()
+                             text=True).stdout.strip()
         self.assertEqual(repo_version({"deep_repo": {"clone": d}}), "2.4.0, main %s" % sha)
         self.assertIsNone(repo_version({"deep_repo": {"clone": ""}}))
         rc, out, err = super(QBase, self).team("--set", "deep_repo.clone=" + d, "todo", "add", "--text", "x")
@@ -319,7 +319,7 @@ class WishDoneTest(QBase):
 class MigrateTest(QBase):
 
     def setUp(self):
-        super(MigrateTest, self).setUp()
+        super().setUp()
         td = Todo(self.t.state)
         for text in ("один", "два", "три", "четыре", "пять"):
             td.add(text, version="v")

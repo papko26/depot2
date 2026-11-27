@@ -26,7 +26,7 @@ SECTION_CODES = ("core", "mechanics", "work", "checks", "voice")
 SECTION_TITLE = i18n.Labels("principles.section", SECTION_CODES)
 
 
-class _Sections(object):
+class _Sections:
     """SECTIONS: the (code, title) pairs in their order, each title in the language of the moment."""
 
     def __iter__(self):
@@ -89,7 +89,7 @@ class Principles(Queue):
     LIST_FIELDS = ("links", "notes")
 
     def __init__(self, state, cfg=None):
-        super(Principles, self).__init__(state, cfg)
+        super().__init__(state, cfg)
         self.data.setdefault("next", 1)
         for e in self.data.get("entries") or []:  # an older depot's section codes: read as today's
             if e.get("section") not in SECTION_RANK:
@@ -122,7 +122,7 @@ class Principles(Queue):
     # --- checking --------------------------------------------------------------------------------
 
     def check(self, e):
-        super(Principles, self).check(e)
+        super().check(e)
         if e.get("section") not in SECTION_TITLE:
             raise QueueError("%s: section must be one of %s" % (e["id"], ", ".join(SECTION_TITLE)))
         if not ((e.get("title") or "").strip() or (e.get("text") or "").strip()):

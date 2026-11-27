@@ -57,7 +57,7 @@ def writable(path):
 
 class PBase(Base):
     def setUp(self):
-        super(PBase, self).setUp()
+        super().setUp()
         self.files = tempfile.mkdtemp(prefix="team-principles-")
 
     def tearDown(self):
@@ -65,7 +65,7 @@ class PBase(Base):
             for n in names:
                 os.chmod(os.path.join(d, n), 0o644)
         shutil.rmtree(self.files, ignore_errors=True)
-        super(PBase, self).tearDown()
+        super().tearDown()
 
     def ok(self, *argv):
         rc, out, err = self.team(*argv)
@@ -225,7 +225,7 @@ class ImportTest(PBase):
 
 class QueueTest(PBase):
     def setUp(self):
-        super(QueueTest, self).setUp()
+        super().setUp()
         self.path = write(self.files, "PRINCIPLES.md", SAMPLE)
         self.ok("principles", "import", self.path)
 
@@ -454,7 +454,7 @@ class QueueTest(PBase):
 
 class GatesTest(GateBase):
     def setUp(self):
-        super(GatesTest, self).setUp()
+        super().setUp()
         # the rule's day, set explicitly (the config's default is null): in-process, and for the commands by the
         # state's config.json (a --set or another config.json overrides it)
         self.t.cfg["gates"]["checks_since"] = GATES_DAY

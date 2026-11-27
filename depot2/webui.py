@@ -261,7 +261,7 @@ def code_commit(root=CODE_ROOT):
     """{commit, date, dirty} of the git checkout the code is in, or None outside git."""
     def git(*args):
         return subprocess.run(["git", "-C", root] + list(args), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL,
-                              universal_newlines=True, timeout=5)
+                              text=True, timeout=5)
     try:
         r = git("log", "-1", "--format=%h %cI")
         if r.returncode != 0 or not r.stdout.strip():
@@ -498,7 +498,7 @@ class Server(http.server.ThreadingHTTPServer):
         self.names, self.dropped = extra_hosts(web.get("hosts") if isinstance(web, dict) else None)
         fd = os.environ.pop(FD_ENV, None)  # a re-exec: the socket the server before it listened on
         self.resumed = fd is not None
-        super(Server, self).__init__((host, port), Handler, bind_and_activate=not self.resumed)
+        super().__init__((host, port), Handler, bind_and_activate=not self.resumed)
         if self.resumed:
             self.socket.close()
             self.socket = socket.socket(fileno=int(fd))

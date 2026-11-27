@@ -28,7 +28,7 @@ class DemoTest(unittest.TestCase):
         cls.tmp = tempfile.mkdtemp(prefix="depot2-demo-test-")
         cls.state = os.path.join(cls.tmp, "demo")
         p = subprocess.run(["sh", SCRIPT, cls.state], stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                           universal_newlines=True)
+                           text=True)
         if p.returncode != 0:
             raise AssertionError("make-demo.sh failed: %s %s" % (p.stdout, p.stderr))
 
@@ -43,7 +43,7 @@ class DemoTest(unittest.TestCase):
         else:
             env.pop("DEPOT2_LANG", None)
         p = subprocess.run([sys.executable, MAIN, "--state", self.state] + list(args), stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE, universal_newlines=True, env=env)
+                           stderr=subprocess.PIPE, text=True, env=env)
         self.assertEqual(p.returncode, 0, p.stderr)
         return p.stdout
 

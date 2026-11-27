@@ -40,7 +40,7 @@ class TeamStack(Stack):
     def _dep_open(self, oid):
         if oid.startswith("st-"):
             return any(x["id"] == oid for x in self.agents().objects())
-        return super(TeamStack, self)._dep_open(oid)
+        return super()._dep_open(oid)
 
     def add(self, kind, title=None, input_path=None, who="all", depends=(), at=None, status=None, size=None,
             est_mtok=None, priority=None):
@@ -70,10 +70,10 @@ class TeamStack(Stack):
             fields["who"] = _who(fields["who"])
         if fields.get("input"):
             fields["input"] = os.path.abspath(os.path.expanduser(fields["input"]))
-        return super(TeamStack, self).set(oid, **fields)
+        return super().set(oid, **fields)
 
     def record_round(self, oid, rid, costs):
-        return super(TeamStack, self).set(oid, round=rid, cost_usd=round(float(costs.get("total_usd") or 0.0), 4),
+        return super().set(oid, round=rid, cost_usd=round(float(costs.get("total_usd") or 0.0), 4),
                                           spent_mtok=round(effort.costs_mtok(costs, self.cfg), 6),
                                           status=t("tstack.round_done", rid=rid))
 
@@ -120,7 +120,7 @@ class TeamStack(Stack):
         return "\n".join(L) + "\n"
 
     def to_json(self):
-        out = super(TeamStack, self).to_json()
+        out = super().to_json()
         out["kind"] = "team"
         return out
 

@@ -26,7 +26,7 @@ BUGS = """# Баги
 
 class ClaimBase(Base):
     def setUp(self):
-        super(ClaimBase, self).setUp()
+        super().setUp()
         self.brief = os.path.join(self.t.dir, "brief.md")
         with open(self.brief, "w") as f:
             f.write(BRIEF_TEXT)
@@ -35,7 +35,7 @@ class ClaimBase(Base):
             f.write(BUGS)
 
     def team(self, *argv):
-        return super(ClaimBase, self).team("--set", "repair.bugs=" + self.bugs, *argv)
+        return super().team("--set", "repair.bugs=" + self.bugs, *argv)
 
     def stk(self):
         return Stack(self.t.state, self.t.cfg)
@@ -218,11 +218,11 @@ class RepairTest(ClaimBase):
 
 class OutOfTurnTest(ClaimBase):
     def setUp(self):
-        super(OutOfTurnTest, self).setUp()
+        super().setUp()
         self.t.cfg["gates"] = json.loads(json.dumps(GATES_ALL))  # the DoR checks the brief
 
     def team(self, *argv):
-        return super(OutOfTurnTest, self).team("--set", "gates.dor=" + json.dumps(GATES_ALL["dor"]), *argv)
+        return super().team("--set", "gates.dor=" + json.dumps(GATES_ALL["dor"]), *argv)
 
     def test_a_freed_slot_takes_a_repair_before_the_trains(self):
         culprit = self.arrived()

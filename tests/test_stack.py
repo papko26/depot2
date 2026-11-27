@@ -235,7 +235,7 @@ class AutostartAndParkTest(Base):
 
 class LockPassTest(Base):
     def setUp(self):
-        super(LockPassTest, self).setUp()
+        super().setUp()
         s = Stack(self.t.state, self.t.cfg)
         s.add("Импорт 3", branch="import-3")
         s.add("Обложки")

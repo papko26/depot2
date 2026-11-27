@@ -243,7 +243,7 @@ class PostStackTest(PostStackBase):
 class CarBackTest(PostStackBase):
 
     def setUp(self):
-        super(CarBackTest, self).setUp()
+        super().setUp()
         tr = self.tracks()
         a = tr.add("Поиск")
         tr.car_add(a["id"], "иконки", n="3", size="S", branch="format-icons", brief="/tmp/format-icons.md")

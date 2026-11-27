@@ -109,7 +109,7 @@ def scan_argv(state, g, key="scan_args", d=""):
 def _git(state, *args):
     try:
         return subprocess.run(["git", "-C", state.root] + list(args), stdin=subprocess.DEVNULL,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     except FileNotFoundError:
         raise PushError(t("push.no_git"), "git")
 
@@ -398,7 +398,7 @@ def classify(code, err, tail):
     return PushError(reason, "push", tail)
 
 
-class Pusher(object):
+class Pusher:
     def __init__(self, state, cfg, auto=False):
         self.state, self.g, self.auto = state, cfg["backup"]["git"], auto
         self.secrets = backup.Secrets()

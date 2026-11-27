@@ -11,7 +11,7 @@ from depot2.tstack import TeamStack
 
 class TakeBase(QBase):
     def setUp(self):
-        super(TakeBase, self).setUp()
+        super().setUp()
         tr = Tracks(self.t.state, self.t.cfg)
         tr.add("Некритичные баги")
         tr.car_add("tr-0001", "поиск по пустой строке")  # car 0: the next free name is 1

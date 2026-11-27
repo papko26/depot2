@@ -142,7 +142,7 @@ class StackStagesTest(Base):
 
 class TrainStagesTest(Base):
     def setUp(self):
-        super(TrainStagesTest, self).setUp()
+        super().setUp()
         self.brief = os.path.join(self.t.dir, "brief.md")
         with open(self.brief, "w") as f:
             f.write("# бриф\n")
@@ -269,7 +269,7 @@ class MigrateStagesTest(Base):
     """`queues migrate` writes the stage the place says on every car from before the field, once."""
 
     def setUp(self):
-        super(MigrateStagesTest, self).setUp()
+        super().setUp()
         brief = os.path.join(self.t.dir, "brief.md")
         with open(brief, "w") as f:
             f.write("# бриф\n")

@@ -42,7 +42,7 @@ def slurp(path):
         return f.read()
 
 
-class TempState(object):
+class TempState:
     """A throwaway state dir with five characters, specs and balances."""
 
     def __init__(self, balances=None, git=False):

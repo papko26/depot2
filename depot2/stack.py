@@ -59,7 +59,7 @@ class StackError(ValueError):
     pass
 
 
-class Stack(object):
+class Stack:
     # The team stack (tstack.py) reuses this class with its own file, ids and config key.
     FILE = "stack.json"
     HISTORY = "stack-history.jsonl"
@@ -800,7 +800,7 @@ BALLOT_STATUSES = ("waiting", "presenting", "answered", "dropped")
 BALLOT_RU = i18n.Labels("stack.ballot", BALLOT_STATUSES)
 
 
-class Ballots(object):
+class Ballots:
     """The owner's ballot queue: every finished round, in order."""
 
     def __init__(self, state):

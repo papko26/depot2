@@ -51,7 +51,7 @@ class CliTest(unittest.TestCase):
                             "--set", "deep_repo.clone=", "--set", "read_dirs=[]",
                             "--set", "brainstorm.topics_dir=" + os.path.join(self.dir, "topics"),
                             "--set", "orders.results_dir=" + os.path.join(self.dir, "orders")] + list(args),
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         if ok and p.returncode != 0:
             raise AssertionError("depot2 %s failed (%d): %s %s" % (args, p.returncode, p.stdout, p.stderr))
         return p
@@ -92,12 +92,12 @@ class CliTest(unittest.TestCase):
         self.assertIn("Счетовод: nothing changed", self.team("reflect").stdout)
         # The state is a git repo with one commit per mutating command, nothing left over.
         log = subprocess.run(["git", "-C", self.state, "log", "--oneline"], stdout=subprocess.PIPE,
-                             universal_newlines=True).stdout
+                             text=True).stdout
         # seed, seed portraits, refund, payout, round, reflect, gender; the second
         # reflect had nothing to do
         self.assertEqual(len(log.splitlines()), 7)
         st = subprocess.run(["git", "-C", self.state, "status", "--porcelain"], stdout=subprocess.PIPE,
-                            universal_newlines=True).stdout
+                            text=True).stdout
         self.assertEqual(st.strip(), "")
 
     def test_report_round_rebuilds_without_a_model(self):
@@ -114,7 +114,7 @@ class CliTest(unittest.TestCase):
         self.assertEqual(slurp(path), saved)
         self.assertEqual(out, saved)
         st = subprocess.run(["git", "-C", self.state, "status", "--porcelain"], stdout=subprocess.PIPE,
-                            universal_newlines=True).stdout
+                            text=True).stdout
         self.assertEqual(st.strip(), "")  # the same bytes as committed by the round
         p = self.team("report", "--round", "old-review", ok=False)  # seeded, never played here
         self.assertEqual(p.returncode, 1)
@@ -133,7 +133,7 @@ class CliTest(unittest.TestCase):
         self.assertRegex(out, r"Копилка\s+2\s")
         self.assertIn(" fine ", self.team("ledger", "--all").stdout)
         log = subprocess.run(["git", "-C", self.state, "log", "--oneline", "-2"], stdout=subprocess.PIPE,
-                             universal_newlines=True).stdout
+                             text=True).stdout
         self.assertIn("team: fine painter 10 (ещё)", log)
         self.assertIn("team: fine all 1 old-review p1", log)
 
@@ -168,7 +168,7 @@ class CliTest(unittest.TestCase):
         rj = json.loads(slurp(os.path.join(self.state, "rounds", rid, "round.json")))
         self.assertEqual(rj["status"], "done")
         st = subprocess.run(["git", "-C", self.state, "status", "--porcelain"], stdout=subprocess.PIPE,
-                            universal_newlines=True).stdout
+                            text=True).stdout
         self.assertEqual(st.strip(), "")
         p = self.team("round", "--resume", rid, ok=False)
         self.assertEqual(p.returncode, 1)
@@ -205,7 +205,7 @@ class CliTest(unittest.TestCase):
         self.assertEqual(p.returncode, 1)
         self.assertIn("its 3 stakes came back already", p.stderr)
         log = subprocess.run(["git", "-C", self.state, "log", "--oneline", "-1"], stdout=subprocess.PIPE,
-                             universal_newlines=True).stdout
+                             text=True).stdout
         self.assertIn("team: auto refund old-review (3 stakes, 4 tokens)", log)
 
     def test_no_paid_passes_left(self):
@@ -226,7 +226,7 @@ class CliTest(unittest.TestCase):
             json.dump({"deep_levels": {"1": {"price": 1, "max_tool_turns": 11}},
                        "deep_dirs": [self.dir], "free": {"max_tool_turns_r1": 10}}, f)
         p = subprocess.run([sys.executable, TEAM, "--state", self.state, "config"], stdout=subprocess.PIPE,
-                           stderr=subprocess.PIPE, universal_newlines=True)
+                           stderr=subprocess.PIPE, text=True)
         self.assertEqual(p.returncode, 0, p.stderr)
         cfg = json.loads(p.stdout)
         self.assertNotIn("deep_levels", cfg)
@@ -239,7 +239,7 @@ class CliTest(unittest.TestCase):
         p = subprocess.run([sys.executable, TEAM, "--state", self.state, "--set", "deep_repo.clone=",
                             "--set", "bundle.decisions_glob=" + os.path.join(self.dir, "none-*.md"),
                             "round", "--kind", "ballot", "--input", os.path.join(self.dir, "q.md"), "--dry-run"],
-                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+                           stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         self.assertEqual(p.returncode, 0, p.stderr)
         self.assertIn("  --add-dir <a snapshot of origin/main>\n  --add-dir %s\n" % self.dir, p.stdout)
         from depot2 import config

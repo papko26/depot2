@@ -114,7 +114,7 @@ def _now(now):
     return now or datetime.datetime.now().astimezone()
 
 
-class Trains(object):
+class Trains:
     def __init__(self, state, cfg, tracks=None):
         self.state = state
         self.cfg = cfg

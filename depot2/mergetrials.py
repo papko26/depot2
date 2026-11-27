@@ -24,7 +24,7 @@ class Hold(Exception):
         self.status, self.reason = status, reason
 
 
-class TrialsMixin(object):
+class TrialsMixin:
     def depth(self):
         return int(self.m.get("presync_depth") or 0)
 

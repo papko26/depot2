@@ -34,7 +34,7 @@ class DecisionsTest(Base):
         return json.loads(out)
 
     def setUp(self):
-        super(DecisionsTest, self).setUp()
+        super().setUp()
         self.decide("all", "Первое: вкладка «Очереди»")
         self.decide("builder", "Второе: строитель про импорт", "--round", "2015-11-19-discuss", "--point", "Q2")
         self.decide("all", LINKED)

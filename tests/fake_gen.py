@@ -22,7 +22,7 @@ def main():
             f.write(json.dumps({"argv": argv, "cwd": os.getcwd()}) + "\n")
     if argv[0] == "generated":
         out = subprocess.run(["git", "ls-files", "--cached", "--others", "--exclude-standard"], stdout=subprocess.PIPE,
-                             universal_newlines=True, check=True).stdout.split()
+                             text=True, check=True).stdout.split()
         files = sorted(f for f in out if f != "docs/GENERATED.md")
         with open("docs/GENERATED.md", "w") as f:
             f.write("files: %d\n\n%s\n" % (len(files), "\n".join(files)))
@@ -40,7 +40,7 @@ def main():
             sys.stderr.write("primary-ci: the job failed\n")
             return 1
         rows = subprocess.run(["git", "show", argv[1] + ":ranking.txt"], stdout=subprocess.PIPE,
-                              universal_newlines=True, check=True).stdout.split()
+                              text=True, check=True).stdout.split()
         os.makedirs(os.path.join(argv[2], "golden"), exist_ok=True)
         with open(os.path.join(argv[2], "golden", "ranking.golden.json"), "w") as f:
             f.write("golden of %s\n" % " ".join(sorted(rows)))

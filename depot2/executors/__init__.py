@@ -38,7 +38,7 @@ class CallFailed(RuntimeError):
         self.result = result
 
 
-class CallSpec(object):
+class CallSpec:
     """One capped call: what the executor runs and within which limits."""
 
     def __init__(self, call_id, model, effort, system_path, user, schema, tools=(),
