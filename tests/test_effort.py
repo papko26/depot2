@@ -368,7 +368,7 @@ class ReflectionInMtokTest(unittest.TestCase):
         reflect(self.t.state, self.t.cfg, runner=runner, out=lines.append)
         self.assertEqual((specs[0].budget_mtok, specs[0].budget_usd), (0.28, 0.7))
         d = str(Path(self.t.dir, "reflections"))
-        costs = json.loads(slurp(Path(d, os.listdir(d)[0], "costs.json")))
+        costs = json.loads(slurp(Path(d, os.listdir(d)[0], "costs.json")))  # noqa: PTH208 - index the directory listing
         self.assertAlmostEqual(costs["mtok"], 0.0125 + 0.02 + 0.015)  # its tokens, not its ≈$0.30
         self.assertEqual(costs["total_usd"], 0.3)
         self.assertEqual([l for l in lines if "$" in l], [])  # noqa: E741

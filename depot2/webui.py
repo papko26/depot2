@@ -291,7 +291,11 @@ def code_files(root=CODE_ROOT):
     ):
         d = os.path.join(root, sub)
         if os.path.isdir(d):
-            out += [os.path.join(d, n) for n in sorted(os.listdir(d)) if keep(n) and os.path.isfile(os.path.join(d, n))]
+            out += [
+                os.path.join(d, n)
+                for n in sorted(entry.name for entry in Path(d).iterdir())
+                if keep(n) and os.path.isfile(os.path.join(d, n))
+            ]
     return out
 
 

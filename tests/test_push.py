@@ -559,7 +559,7 @@ class RawGateTest(unittest.TestCase):
         lines = []
         with self.assertRaises(RoundAborted):
             run_round(self.t.state, self.t.cfg, "ballot", inp, runner=runner, out=lines.append)
-        rid = os.listdir(self.t.state.rounds_dir())[0]
+        rid = os.listdir(self.t.state.rounds_dir())[0]  # noqa: PTH208 - index the directory listing
         rel = str(Path("rounds", rid, "raw", "chronicler-r1.jsonl"))
         rj = json.loads(slurp(Path(self.t.state.rounds_dir(), rid, "round.json")))
         self.assertEqual([q["file"] for q in rj["quarantined"]], [rel])

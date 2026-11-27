@@ -63,8 +63,8 @@ def last_review_since(state):
     rd = state.rounds_dir()
     best = None
     if os.path.isdir(rd):
-        for d in os.listdir(rd):
-            rj = read_json(Path(rd, d, "round.json"))
+        for directory in Path(rd).iterdir():
+            rj = read_json(directory / "round.json")
             if (
                 rj and rj.get("kind") == "review" and rj.get("status") in ("done", "imported") and not rj.get("pr")
             ):  # a one-PR review does not move the merge window
@@ -331,12 +331,13 @@ def quarantine_note(q):
 
 def saved_answers(rdir):
     """{(character, "r1"|"r2"): the answer} the round saved in answers/ (the lock pass's are never resumed)."""
-    d = str(Path(rdir, "answers"))
+    d = Path(rdir, "answers")
     out = {}
-    for f in sorted(os.listdir(d)) if os.path.isdir(d) else ():
+    for entry in sorted(d.iterdir(), key=lambda path: path.name) if os.path.isdir(d) else ():
+        f = entry.name
         cid, _, stage = f[: -len(".json")].rpartition("-") if f.endswith(".json") else ("", "", "")
         if cid in characters.IDS and stage in ("r1", "r2"):
-            out[(cid, stage)] = read_json(Path(d, f))
+            out[(cid, stage)] = read_json(entry)
     return out
 
 
@@ -905,8 +906,8 @@ def _locks_lifted_since_last_round(state, stk):
     """
     seen = 0
     rd = state.rounds_dir()
-    for d in os.listdir(rd) if os.path.isdir(rd) else ():
-        rj = read_json(Path(rd, d, "round.json")) or {}
+    for directory in Path(rd).iterdir() if os.path.isdir(rd) else ():
+        rj = read_json(directory / "round.json") or {}
         if rj.get("status") == "done":
             seen = max(seen, rj.get("stack_history_n") or 0)
     out = []

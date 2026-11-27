@@ -130,7 +130,7 @@ class WorktreesMixin:
         return None
 
     def wt_link_line(self, path, line):
-        return line.strip() == "?? " + NODE_MODULES and os.path.islink(Path(path, NODE_MODULES))
+        return line.strip() == "?? " + NODE_MODULES and Path(path, NODE_MODULES).is_symlink()
 
     def wt_verdict(self, path, branch, known):
         """None: the worktree at path may go; else why it stays, in one line."""
@@ -173,7 +173,7 @@ class WorktreesMixin:
         size = tree_bytes(path)
         link = str(Path(path, NODE_MODULES))
         target = None
-        if os.path.islink(link) and self.git(path, "check-ignore", "-q", NODE_MODULES)[0] != 0:
+        if Path(link).is_symlink() and self.git(path, "check-ignore", "-q", NODE_MODULES)[0] != 0:
             target = os.readlink(link)
             Path(link).unlink()  # the link itself: what it points at is never touched
         code, out, err = self.git(self.clone, "worktree", "remove", path)
@@ -281,11 +281,11 @@ class WorktreesMixin:
                 kept.append((name, res["reason"]))
         others = 0
         if os.path.isdir(root):
-            for d in sorted(os.listdir(root)):
-                p = os.path.realpath(Path(root, d))
+            for entry in sorted(Path(root).iterdir(), key=lambda path: path.name):
+                p = os.path.realpath(entry)
                 if p in known or not os.path.isdir(p) or any(k.startswith(p + os.sep) for k in under):
                     continue
-                kept.append((d, t("mergewt.not_a_worktree", clone=self.clone)))
+                kept.append((entry.name, t("mergewt.not_a_worktree", clone=self.clone)))
                 others += 1
         how = "dry" if dry_run else "real"
         L.insert(

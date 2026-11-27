@@ -270,7 +270,7 @@ class ResumeTest(unittest.TestCase):
                 runner=FakeRunner(self.t.state, script),
                 out=lambda *a: None,
             )
-        rid = os.listdir(self.t.state.rounds_dir())[0]
+        rid = os.listdir(self.t.state.rounds_dir())[0]  # noqa: PTH208 - index the directory listing
         return rid, str(cm.exception)
 
     def resume(self, rid, script=None, **kw):

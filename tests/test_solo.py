@@ -104,7 +104,7 @@ class SoloRoundTest(Base):
         self.stack_one()
         with self.assertRaises(RoundAborted):
             self.play({("keeper", "r1"): FatalError("API error 500")}, only="keeper")
-        rid = os.listdir(self.t.state.rounds_dir())[0]
+        rid = os.listdir(self.t.state.rounds_dir())[0]  # noqa: PTH208 - index the directory listing
         r, runner = self.play({("keeper", "r3"): lock()}, kind=None, input_path=None, resume=rid)
         self.assertEqual([(c[0], c[1]) for c in runner.calls], [("keeper", "r1"), ("keeper", "r3")])
         rj = json.loads(slurp(str(Path(r["dir"], "round.json"))))

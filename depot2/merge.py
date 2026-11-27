@@ -1240,7 +1240,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         try:
             yield tw
         finally:
-            if os.path.islink(link):
+            if Path(link).is_symlink():
                 Path(link).unlink()
             self.git(repo, "worktree", "remove", "--force", tw)
             shutil.rmtree(tmp, ignore_errors=True)

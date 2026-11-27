@@ -102,8 +102,8 @@ def rounds_since(state, cid, since_iso):
     if not os.path.isdir(rd):
         return out
     since = to_utc(since_iso) if since_iso else None
-    for d in sorted(os.listdir(rd)):
-        rj = read_json(Path(rd, d, "round.json"))
+    for directory in sorted(Path(rd).iterdir(), key=lambda entry: entry.name):
+        rj = read_json(directory / "round.json")
         if not rj or rj.get("status") != "done":
             continue
         if since and to_utc(rj["created"]) <= since:

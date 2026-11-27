@@ -72,6 +72,8 @@ extend-select = [
     "PTH106", # os-rmdir
     "PTH107", # os-remove
     "PTH108", # os-unlink
+    "PTH109", # os-getcwd
+    "PTH114", # os-path-islink
     "PTH116", # os-stat
     "PTH121", # os-path-samefile
     "PTH124", # py-path
@@ -80,6 +82,7 @@ extend-select = [
     "PTH203", # os-path-getatime
     "PTH204", # os-path-getmtime
     "PTH205", # os-path-getctime
+    "PTH208", # os-listdir
     "PTH210", # invalid-pathlib-with-suffix
     "Q",      # flake8-quotes
     "RSE102", # unnecessary-paren-on-raise-exception
