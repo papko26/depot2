@@ -17,10 +17,37 @@ ROOT = os.path.dirname(helpers.HERE)
 SCRIPT = os.path.join(ROOT, "examples", "demo", "make-demo.sh")
 MAIN = os.path.join(ROOT, "depot2", "__main__.py")
 CYRILLIC = re.compile("[\u0400-\u04ff]")
-VIEWS = ("board", "board --md", "tracks", "track tr-0001", "trains", "trains next", "stack", "stack --md", "tstack",
-         "ballots", "wishes", "think", "todo", "queues", "principles", "principles checks", "decisions", "agents",
-         "merge", "ledger", "show builder", "car show tr-0001:1", "priority tr-0001:1", "claims", "orders",
-         "brainstorm list", "backup --status", "--help", "stack --help")
+VIEWS = (
+    "board",
+    "board --md",
+    "tracks",
+    "track tr-0001",
+    "trains",
+    "trains next",
+    "stack",
+    "stack --md",
+    "tstack",
+    "ballots",
+    "wishes",
+    "think",
+    "todo",
+    "queues",
+    "principles",
+    "principles checks",
+    "decisions",
+    "agents",
+    "merge",
+    "ledger",
+    "show builder",
+    "car show tr-0001:1",
+    "priority tr-0001:1",
+    "claims",
+    "orders",
+    "brainstorm list",
+    "backup --status",
+    "--help",
+    "stack --help",
+)
 
 
 class DemoTest(unittest.TestCase):
@@ -42,8 +69,9 @@ class DemoTest(unittest.TestCase):
             env["DEPOT2_LANG"] = lang
         else:
             env.pop("DEPOT2_LANG", None)
-        p = subprocess.run([sys.executable, MAIN, "--state", self.state, *list(args)], capture_output=True,
-                           text=True, env=env)
+        p = subprocess.run(
+            [sys.executable, MAIN, "--state", self.state, *list(args)], capture_output=True, text=True, env=env
+        )
         self.assertEqual(p.returncode, 0, p.stderr)
         return p.stdout
 
@@ -81,8 +109,9 @@ class DemoTest(unittest.TestCase):
 
     def test_the_project_config_is_the_demos(self):
         cfg = json.loads(self.depot("config"))
-        self.assertEqual((cfg["project"]["name"], cfg["repo"], cfg["stack"]["slots"]),
-                         ("Shelfmark", "example-org/shelfmark", 2))
+        self.assertEqual(
+            (cfg["project"]["name"], cfg["repo"], cfg["stack"]["slots"]), ("Shelfmark", "example-org/shelfmark", 2)
+        )
 
 
 if __name__ == "__main__":

@@ -113,7 +113,7 @@ class CliDocsTest(unittest.TestCase):
         top = set(_subs(self.ap).choices)
         named = set()
         for ln in lines:
-            segs = ln[len("depot2 "):].split(" | ")
+            segs = ln[len("depot2 ") :].split(" | ")
             for seg in [segs[0]] + [s for s in segs[1:] if s.split(" ", 1)[0] in top]:
                 for p in _resolve(self.ap, seg.split()[:6])[0]:
                     for i in range(1, len(p) + 1):
@@ -134,6 +134,7 @@ class CliDocsTest(unittest.TestCase):
                         walk(sp, [*path, name])
                 elif not isinstance(a, argparse._HelpAction) and not a.help:
                     no.append("{} {}".format(" ".join(path), "/".join(a.option_strings) or a.dest))
+
         walk(self.ap, [])
         self.assertEqual(no, [])
 

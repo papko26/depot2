@@ -57,17 +57,35 @@ class NoTeamTest(MergeBase):
             self.run_ok(*view.split())
         out = self.run_ok("merge", "run")
         car = Tracks(self.t.state, self.t.cfg).car("tr-0001:0")[1]
-        self.assertEqual((car["status"], [(r["from"], r["stage"]) for r in car["stages"]][-2:]),
-                         ("merged", [("queued", "rolling"), ("rolling", "arrived")]))
+        self.assertEqual(
+            (car["status"], [(r["from"], r["stage"]) for r in car["stages"]][-2:]),
+            ("merged", [("queued", "rolling"), ("rolling", "arrived")]),
+        )
         self.assertIn("tr-0001:0: rolling → arrived", out)
-        for view in ("board", "stack", "merge", "car show tr-0001:0", "queues", "principles", "decisions",
-                     "backup --status"):
+        for view in (
+            "board",
+            "stack",
+            "merge",
+            "car show tr-0001:0",
+            "queues",
+            "principles",
+            "decisions",
+            "backup --status",
+        ):
             self.run_ok(*view.split())
 
     def test_the_team_commands_say_there_is_no_team(self):
-        for argv in (("round", "--kind", "discuss", "--input", "x.md", "--dry-run"), ("ledger",),
-                     ("payout", "builder", "1", "--reason", "x"), ("reflect",), ("brainstorm", "list"), ("show", "builder"),
-                     ("tstack",), ("gender", "builder", "f"), ("orders",)):
+        for argv in (
+            ("round", "--kind", "discuss", "--input", "x.md", "--dry-run"),
+            ("ledger",),
+            ("payout", "builder", "1", "--reason", "x"),
+            ("reflect",),
+            ("brainstorm", "list"),
+            ("show", "builder"),
+            ("tstack",),
+            ("gender", "builder", "f"),
+            ("orders",),
+        ):
             rc, out, err = self.team(*argv)
             self.assertEqual(rc, 1, argv)
             self.assertIn(NO_TEAM, err, argv)
