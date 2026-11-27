@@ -11,6 +11,7 @@ import os
 import shutil
 import subprocess
 import tempfile
+from pathlib import Path
 
 from . import bundle as bundle_mod
 from . import characters, effort, extras, prompts, push, schema
@@ -480,7 +481,7 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
         rid = new_round_id(state, kind, pr, only)
         rdir = os.path.join(state.rounds_dir(), rid)
         for sub in ("prompts", "raw", "answers"):
-            os.makedirs(os.path.join(rdir, sub), exist_ok=True)
+            Path(rdir, sub).mkdir(parents=True, exist_ok=True)
         _w(state, os.path.join(rdir, "bundle.md"), context)
         rec = {
             "id": rid,
@@ -511,7 +512,7 @@ def _run_round(state, cfg, kind, input_path, contexts, since, dry_run, runner, o
         # (a failed or fatal call is asked again, so it takes no planned call's place: a solo round keeps its lock).
         rid = resume["id"]
         rdir = os.path.join(state.rounds_dir(), rid)
-        os.makedirs(os.path.join(rdir, "raw"), exist_ok=True)
+        Path(rdir, "raw").mkdir(parents=True, exist_ok=True)
         saved = saved_answers(rdir)
         old = read_json(os.path.join(rdir, "costs.json")) or {}
         costs.extend(old.get("items") or [])

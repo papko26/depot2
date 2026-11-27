@@ -531,7 +531,7 @@ class OldRoundTest(unittest.TestCase):
             rec.update(extra)
             append_jsonl(self.led.path, rec)
         rdir = os.path.join(self.t.state.rounds_dir(), self.RID)
-        os.makedirs(os.path.join(rdir, "answers"))
+        Path(rdir, "answers").mkdir(parents=True)
         write_json(
             os.path.join(rdir, "round.json"),
             {

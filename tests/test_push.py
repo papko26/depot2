@@ -486,7 +486,7 @@ class RawGateTest(unittest.TestCase):
 
     def raw(self, name, text):
         p = os.path.join(self.t.state.rounds_dir(), "r", "raw", name)
-        os.makedirs(os.path.dirname(p), exist_ok=True)
+        Path(p).parent.mkdir(parents=True, exist_ok=True)
         with open(p, "w") as f:
             f.write(text)
         return p

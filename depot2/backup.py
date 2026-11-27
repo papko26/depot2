@@ -110,7 +110,7 @@ def archive_name(host, t=None):
 
 def bdir(state):
     d = state.path(DIR)
-    os.makedirs(d, exist_ok=True)
+    Path(d).mkdir(parents=True, exist_ok=True)
     gi = os.path.join(d, ".gitignore")
     if not os.path.exists(gi):
         with open(gi, "w") as f:
@@ -572,7 +572,7 @@ class Runner:
                 raise BackupError(t("backup.v_tops", tops=sorted(tops)[:3]), "verify")
             top = tops.pop()
             x = os.path.join(tmp, "x")
-            os.makedirs(x)
+            Path(x).mkdir(parents=True)
             p = subprocess.run(
                 _nice(["tar", "-xzf", local, "-C", x]), stdin=subprocess.DEVNULL, capture_output=True, text=True
             )

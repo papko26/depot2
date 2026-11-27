@@ -8,6 +8,7 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
 
 from . import (
     characters,
@@ -322,7 +323,7 @@ def cmd_order(state, cfg, a):
         if missing:
             raise ValueError("no such result file: {}".format(", ".join(missing)))
         d = os.path.join(os.path.expanduser(cfg["orders"]["results_dir"]), a.id)
-        os.makedirs(d, exist_ok=True)
+        Path(d).mkdir(parents=True, exist_ok=True)
         dest = []
         for f in a.result:
             to = os.path.join(d, os.path.basename(f))

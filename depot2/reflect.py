@@ -9,6 +9,7 @@ this runs only when called.
 """
 
 import os
+from pathlib import Path
 
 from . import characters, effort, i18n, prompts, push, schema
 from .executors import (
@@ -166,7 +167,7 @@ def run_portrait_calls(state, cfg, jobs, label, out=print, runner=None, dry_run=
     d, n = base, 2
     while os.path.exists(d):
         d, n = "%s-%d" % (base, n), n + 1  # noqa: UP031
-    os.makedirs(os.path.join(d, "raw"))
+    Path(d, "raw").mkdir(parents=True)
     guard = Guard(cfg)
     costs, status, quarantined = [], {}, []
     try:

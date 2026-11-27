@@ -89,7 +89,7 @@ class WebBase(GateBase):
         super().setUp()
         self.scratch = tempfile.mkdtemp(prefix="team-web-scratch-")
         for d in ("briefs", "design", "notes", "drafts"):
-            os.makedirs(os.path.join(self.scratch, d))
+            Path(self.scratch, d).mkdir(parents=True)
         self.web_brief = os.path.join(self.scratch, "briefs", "search.md")
         with open(self.web_brief, "w", encoding="utf-8") as f:
             f.write("# Поиск\n\n- **жирный** и `код`\n\n<script>alert(1)</script>\n")
@@ -896,13 +896,13 @@ class ReexecTest(unittest.TestCase):
         tmp = tempfile.mkdtemp(prefix="team-web-reexec-")
         try:
             code = os.path.join(tmp, "code")
-            os.makedirs(code)
+            Path(code).mkdir(parents=True)
             src = os.path.dirname(HERE)
             shutil.copytree(
                 os.path.join(src, "depot2"), os.path.join(code, "depot2"), ignore=shutil.ignore_patterns("__pycache__")
             )
             state = os.path.join(tmp, "state")
-            os.makedirs(state)
+            Path(state).mkdir(parents=True)
             env = dict(os.environ, DEPOT2_BACKUP="off", DEPOT2_FSYNC="0")
             env.pop(webui.FD_ENV, None)
             p = subprocess.Popen(

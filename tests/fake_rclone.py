@@ -114,7 +114,7 @@ def main():
             sys.stderr.write("ERROR : immutable file modified\n")
             return 1
         time.sleep(float(os.environ.get("FAKE_RCLONE_SLEEP", "0")))
-        os.makedirs(os.path.dirname(dst), exist_ok=True)
+        os.makedirs(os.path.dirname(dst), exist_ok=True)  # noqa: PTH103 - reject a destination without a directory
         shutil.copyfile(src, dst)
         return 0
     if cmd == "cryptcheck":

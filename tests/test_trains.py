@@ -4,6 +4,7 @@ import fcntl
 import json
 import os
 import shutil
+from pathlib import Path
 
 from helpers import BRIEF_TEXT
 from test_tracks import FUTURE, PAST, TracksBase
@@ -676,7 +677,7 @@ class MigrateTest(TracksBase):
     def test_it_waits_for_the_merge_queue_and_the_names(self):
         old_depot(self.t.state)
         p = self.t.state.path(merge.RUN_DIR, merge.RUN_LOCK)
-        os.makedirs(os.path.dirname(p), exist_ok=True)
+        Path(p).parent.mkdir(parents=True, exist_ok=True)
         with open(p, "w") as f:
             f.write("4242")
             f.flush()

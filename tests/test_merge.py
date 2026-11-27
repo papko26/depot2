@@ -67,7 +67,7 @@ class MergeBase(unittest.TestCase):
         self.git_bin = shutil.which("git")
         self.env0 = dict(os.environ)
         b = os.path.join(self.tmp, "bin")
-        os.makedirs(b)
+        Path(b).mkdir(parents=True)
         with open(os.path.join(b, "gh"), "w") as f:
             f.write(f'#!/bin/sh\nexec {sys.executable} -S {FAKE_GH} "$@"\n')
         Path(b, "gh").chmod(0o755)
@@ -414,7 +414,7 @@ class EnsureTest(unittest.TestCase):
     def test_a_dead_runners_pid_starts_one_detached_and_a_second_ensure_starts_none(self):
         self.put(301)
         self.put(302)
-        os.makedirs(self.t.state.path(merge.RUN_DIR), exist_ok=True)
+        Path(self.t.state.path(merge.RUN_DIR)).mkdir(parents=True, exist_ok=True)
         with open(self.t.state.path(merge.RUN_DIR, merge.RUN_LOCK), "w") as f:
             f.write("99999999\n")  # the runner that wrote it is gone: the lock is free
         rc, out, err = self.team("merge", "run", "--ensure")
@@ -1325,7 +1325,7 @@ class WorktreeTest(MergeBase):
         self.pr(301, "feat-a", {"a.txt": "A\n"}, title="Чистая")
         self.pr(302, "feat-b", {"b.txt": "B\n"}, title="Грязная")
         nm = os.path.join(self.tmp, "nm")
-        os.makedirs(nm)
+        Path(nm).mkdir(parents=True)
         self.write(nm, {"pkg.js": "x\n"})
         os.symlink(nm, os.path.join(self.wt_of("feat-a"), "node_modules"))
         with open(os.path.join(self.clone, ".git", "info", "exclude"), "a") as f:
@@ -1382,7 +1382,7 @@ class WorktreeTest(MergeBase):
         self.g(self.clone, "fetch", "-q", "origin")
         self.g(self.clone, "worktree", "add", "-q", "-b", "feat-e", self.wt_of("feat-e"), "origin/main")  # a new build
         self.g(self.clone, "worktree", "add", "-q", "--detach", self.wt_of("look"), "origin/main")
-        os.makedirs(self.wt_of("other-repo"))
+        Path(self.wt_of("other-repo")).mkdir(parents=True)
         self.write(self.wt_of("feat-b"), {"b.txt": "changed\n"})
         self.write(self.wt_of("feat-d"), {"d2.txt": "more\n"})
         self.g(self.wt_of("feat-d"), "add", "d2.txt")

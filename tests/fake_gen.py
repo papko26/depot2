@@ -12,6 +12,7 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 
 def main():
@@ -46,7 +47,7 @@ def main():
         rows = subprocess.run(
             ["git", "show", argv[1] + ":ranking.txt"], stdout=subprocess.PIPE, text=True, check=True
         ).stdout.split()
-        os.makedirs(os.path.join(argv[2], "golden"), exist_ok=True)
+        Path(argv[2], "golden").mkdir(parents=True, exist_ok=True)
         with open(os.path.join(argv[2], "golden", "ranking.golden.json"), "w") as f:
             f.write("golden of {}\n".format(" ".join(sorted(rows))))
         return 0

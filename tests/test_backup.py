@@ -51,7 +51,7 @@ class BackupBase(unittest.TestCase):
         self.tmp = tempfile.mkdtemp(prefix="team-backup-test-")
         self.cloud = os.path.join(self.tmp, "cloud")
         self.tmpdir = os.path.join(self.tmp, "tmp")
-        os.makedirs(self.tmpdir)
+        Path(self.tmpdir).mkdir(parents=True)
         self.rlog = os.path.join(self.tmp, "rclone.jsonl")
         self.plog = os.path.join(self.tmp, "pass.jsonl")
         self.keys = {PW: "pw-" + secrets.token_hex(16), SALT: "salt-" + secrets.token_hex(16)}
@@ -115,7 +115,7 @@ class BackupBase(unittest.TestCase):
         return backup.load_stamp(self.t.state)
 
     def set_stamp(self, **kw):
-        os.makedirs(self.t.state.path(backup.DIR), exist_ok=True)
+        Path(self.t.state.path(backup.DIR)).mkdir(parents=True, exist_ok=True)
         st = self.stamp()
         st.update(kw)
         write_json(self.t.state.path(backup.DIR, backup.STAMP), st)
@@ -401,7 +401,7 @@ class RetentionTest(BackupBase):
 
     def test_deletes_only_our_old_names_inside_the_folder(self):
         d = os.path.join(self.cloud, "depot2-backup")
-        os.makedirs(d)
+        Path(d).mkdir(parents=True)
         ours = ["team-testhost-201508%02dT030000Z.tar.gz" % x for x in (1, 20)]  # noqa: UP031
         ours += ["team-testhost-201509%02dT030000Z.tar.gz" % x for x in (1, 2, 30)]  # noqa: UP031
         ours += ["team-testhost-201510%02dT030000Z.tar.gz" % x for x in range(12, 32)]  # noqa: UP031
@@ -411,7 +411,7 @@ class RetentionTest(BackupBase):
             with open(os.path.join(d, n), "w") as f:
                 f.write(n)
         outside = os.path.join(self.cloud, "spare-1")
-        os.makedirs(outside)
+        Path(outside).mkdir(parents=True)
         with open(os.path.join(outside, "team-testhost-20150801T030000Z.tar.gz"), "w") as f:
             f.write("not ours")
         self.team("backup", "--drive", "--now")

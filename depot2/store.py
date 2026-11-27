@@ -10,6 +10,7 @@ import json
 import os
 import subprocess
 import time
+from pathlib import Path
 
 
 class WriteCheckError(RuntimeError):
@@ -56,7 +57,7 @@ def read_text(path, default=None):
 
 def atomic_write(path, text):
     """Write via a temp file and rename, then read back and compare."""
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    Path(os.fsdecode(os.path.dirname(path))).mkdir(parents=True, exist_ok=True)
     tmp = "%s.tmp-%d" % (path, os.getpid())  # noqa: UP031
     with open(tmp, "w", encoding="utf-8") as f:
         f.write(text)
@@ -68,7 +69,7 @@ def atomic_write(path, text):
 
 def write_new(path, text):
     """Create a file that must not exist yet (history is never overwritten)."""
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    Path(os.fsdecode(os.path.dirname(path))).mkdir(parents=True, exist_ok=True)
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o644)
     with os.fdopen(fd, "w", encoding="utf-8") as f:
         f.write(text)
@@ -96,7 +97,7 @@ def dumps_line(rec):
 def append_jsonl(path, rec):
     """Append one record, fsync, then check the file's last line is exactly that record."""
     line = dumps_line(rec)
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    Path(os.fsdecode(os.path.dirname(path))).mkdir(parents=True, exist_ok=True)
     with open(path, "a", encoding="utf-8") as f:
         f.write(line + "\n")
         _sync(f)
@@ -165,7 +166,7 @@ class State:
         """The state's lock. A command waits up to LOCK_WAIT_S for it (the backup's snapshot holds
         it for about a second), then fails.
         """
-        os.makedirs(self.root, exist_ok=True)
+        Path(self.root).mkdir(parents=True, exist_ok=True)
         fd = os.open(self.path(".lock"), os.O_RDWR | os.O_CREAT, 0o644)
         try:
             deadline = time.time() + (LOCK_WAIT_S if wait_s is None else wait_s)
@@ -194,7 +195,7 @@ class State:
         return subprocess.run(["git", "-C", self.root, *list(args)], check=check, capture_output=True, text=True)
 
     def init_git(self):
-        os.makedirs(self.root, exist_ok=True)
+        Path(self.root).mkdir(parents=True, exist_ok=True)
         if not self.is_git():
             self.git("init", "-q")
         gi = self.path(".gitignore")

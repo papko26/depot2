@@ -2,6 +2,7 @@ import json
 import os
 import sys
 import unittest
+from pathlib import Path
 
 from helpers import HERE
 from test_merge import MergeBase
@@ -26,7 +27,7 @@ class AutoBase(MergeBase):
 
     def write(self, d, files):
         for name, text in files.items():
-            os.makedirs(os.path.dirname(os.path.join(d, name)), exist_ok=True)
+            Path(d, name).parent.mkdir(parents=True, exist_ok=True)
             with open(os.path.join(d, name), "w") as f:
                 f.write(text)
 

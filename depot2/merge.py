@@ -305,7 +305,7 @@ class Resolutions:
             "note": (note or "").strip() or None,
             "added": stamp(),
         }
-        os.makedirs(self.dir, exist_ok=True)
+        Path(self.dir).mkdir(parents=True, exist_ok=True)
         dest = self.file_of(it)
         tmp = "%s.tmp-%d" % (dest, os.getpid())  # noqa: UP031
         with open(tmp, "wb") as f:
@@ -2716,7 +2716,7 @@ def back_stage(state, cfg, e):
 def run_dir(state):
     """.merge/: the runner's lock and log; its own .gitignore says *."""
     d = state.path(RUN_DIR)
-    os.makedirs(d, exist_ok=True)
+    Path(d).mkdir(parents=True, exist_ok=True)
     gi = os.path.join(d, ".gitignore")
     if not os.path.exists(gi):
         with open(gi, "w") as f:

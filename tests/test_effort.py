@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import unittest
+from pathlib import Path
 
 from helpers import FAKE, TempState, slurp
 from test_cli import TEAM, CliTest
@@ -295,7 +296,7 @@ class RoundInMtokTest(unittest.TestCase):
     def test_an_old_round_reports_in_mtok(self):
         rid = "2015-11-03-discuss-solo-keeper"
         rdir = os.path.join(self.t.state.rounds_dir(), rid)
-        os.makedirs(os.path.join(rdir, "answers"))
+        Path(rdir, "answers").mkdir(parents=True)
         write_json(
             os.path.join(rdir, "round.json"),
             {

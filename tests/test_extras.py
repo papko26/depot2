@@ -5,6 +5,7 @@ import os
 import shutil
 import tempfile
 import unittest
+from pathlib import Path
 
 from helpers import BALLOT, TempState, slurp
 from test_round import FakeRunner, ans
@@ -74,7 +75,7 @@ class Base(unittest.TestCase):
 
     def snapshot(self, cfg, out, commit_wanted=None):
         d = tempfile.mkdtemp(prefix="team-repo-test-")
-        os.makedirs(os.path.join(d, "tools", "bench"))
+        Path(d, "tools", "bench").mkdir(parents=True)
         with open(os.path.join(d, "tools", "bench", "run.mjs"), "w") as f:
             f.write("// a bench run\n")
         self.snaps.append(d)

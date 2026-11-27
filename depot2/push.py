@@ -308,7 +308,7 @@ def gate_raw(state, cfg, path, out=print):
     base, n = dest, 2
     while os.path.exists(dest):
         dest, n = "%s.%d" % (base, n), n + 1  # noqa: UP031
-    os.makedirs(os.path.dirname(dest), mode=0o700, exist_ok=True)
+    Path(dest).parent.mkdir(parents=True, mode=0o700, exist_ok=True)
     shutil.move(path, dest)
     atomic_write(
         path, json.dumps({"type": "quarantined", "at": now_iso(), "to": dest, "why": why}, ensure_ascii=False) + "\n"
@@ -378,7 +378,7 @@ def export_range(root, base, head, dest, spec=None):
                 if parts[1] != b"blob":
                     continue
                 out = os.path.join(dest, "blobs", parts[0][:12].decode(), _safe_rel(paths.get(parts[0], "blob")))
-                os.makedirs(os.path.dirname(out), exist_ok=True)
+                Path(out).parent.mkdir(parents=True, exist_ok=True)
                 with open(out, "wb") as f:
                     f.write(body)
                 blobs += 1
