@@ -1,6 +1,6 @@
 #!/bin/sh
 # The demo depot: an invented project (a library catalogue app), built with plain depot2 commands.
-# Usage: sh examples/demo/make-demo.sh DIR   (DIR must not exist yet). Everything in it is made up.
+# Usage: sh examples/demo/make-demo.sh DIR   (DIR and DIR-artifacts must not exist yet). Everything in it is made up.
 set -eu
 DIR=${1:?usage: make-demo.sh DIR}
 HERE=$(cd "$(dirname "$0")" && pwd)
@@ -11,6 +11,13 @@ d() { python3 "$ROOT/depot2/__main__.py" --state "$DIR" "$@" >/dev/null; }
 # the config first: its `characters` is the team that init seeds (a depot without them has no team)
 mkdir "$DIR"
 cp "$HERE/config.json" "$DIR/config.json"
+# the cars' files: a folder per car, named by its branch, beside the depot (artifacts.dir: `agents start` makes a
+# car's folder); the rules for the builders: builder-rules.md here (rules.files, shown from web.docs.dirs)
+ART="$(cd "$DIR" && pwd)-artifacts"
+mkdir -m 700 "$ART"
+python3 -c 'import json, sys; c = json.load(open(sys.argv[1])); c["artifacts"] = {"dir": sys.argv[2]}
+c["rules"] = {"files": [sys.argv[3] + "/builder-rules.md"]}; c["web"] = {"docs": {"dirs": [sys.argv[3]]}}
+json.dump(c, open(sys.argv[1], "w"), indent=2, ensure_ascii=False)' "$DIR/config.json" "$ART" "$HERE"
 d init --balance 5
 
 # two themes and their cars
@@ -44,4 +51,13 @@ d principles add --section mechanics --title "A dry run first" --text "An import
 # a decision of the owner, about one of the example characters
 d decide builder --text "Keep the index in one file until it is over 50 MB."
 
-echo "demo depot at $DIR"
+# what the runs left (made up here; a run's start makes its folder): the index car's test log and timings, the ranking
+# sketch's notes, a spike that is no car
+mkdir -m 700 "$ART/tr-0001-1" "$ART/sketch-tr-0001-0" "$ART/spike-cover-cache"
+mkdir "$ART/tr-0001-1/bench"
+printf 'ran 42 tests: 42 passed\n' > "$ART/tr-0001-1/test-run.log"
+printf 'query,ms\ntitle,3\nauthor,5\n' > "$ART/tr-0001-1/bench/query-times.csv"
+printf 'rank by title first, then by author\n' > "$ART/sketch-tr-0001-0/ranking-notes.txt"
+printf 'covers cached by their ISBN\n' > "$ART/spike-cover-cache/notes.txt"
+
+echo "demo depot at $DIR, its cars' files at $ART"

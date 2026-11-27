@@ -4,9 +4,11 @@ One page (`web/index.html`: HTML, CSS and JS in one file, no build, nothing from
 127.0.0.1 only. No authorization, so it never listens outside loopback, and it only shows: GET alone (any other
 method is 405), no handler writes to the depot or runs a command. The data are the `--json` functions, called in the
 process for every request. The Host header must name this computer (127.0.0.1, localhost, or `web.hosts`). Briefs and
-docs are served only as .md files inside `web.docs.dirs`. A change of the code's files re-executes the server on its
-socket. The texts are the message catalogs': the server's own through i18n.t (`webui.` keys), the page's as the `web.`
-keys it is served with, in the run's language (page_html).
+docs are served only as .md files inside `web.docs.dirs`, and so are the project's rules for its builders (the config's
+`rules.files`; no request names a path). Of the cars' files (`artifacts.dir`) it shows the names, sizes and dates
+alone, never a file, and a folder only as one its listing found there; it never makes a folder. A change of the code's
+files re-executes the server on its socket. The texts are the message catalogs': the server's own through i18n.t
+(`webui.` keys), the page's as the `web.` keys it is served with, in the run's language (page_html).
 """
 
 import base64
@@ -35,7 +37,8 @@ RE_HOST = re.compile(r"[a-z0-9](?:[a-z0-9-]{0,61}[a-z0-9])?(?:\.[a-z0-9](?:[a-z0
 PORT = 8765
 REFRESH_S = 25
 RETRY_S = 0.25
-# The only files it reads besides the state: .md briefs and docs, under the config's web.docs (base, dirs).
+# The only files it reads besides the state: .md briefs, docs and rules (rules.files), under the config's web.docs
+# (base, dirs); and it lists the folders of artifacts.dir (artifacts.py: names, sizes, dates; no content, no link).
 DOCS_BASE = None
 READ_DIRS = None
 DOC_BASE = None
@@ -168,6 +171,22 @@ def queues_overview(state, cfg):
     """`queues --json`: every queue the depot keeps, a row each, with what it is (the Queues tab's head)."""
     from . import queues
     return queues.overview_json(state, cfg)
+
+
+def artifacts_listing(state, cfg):
+    """`artifacts --json`: the cars' folders under artifacts.dir, their cars and counts (the Queues tab's table)."""
+    from . import artifacts
+    return artifacts.listing(state, cfg)
+
+
+def artifacts_folder(state, cfg, name):
+    """`artifacts --car NAME --json` for a folder's name alone (no car ref): its files' names, sizes and dates. The name
+    is looked up among the folders the listing finds, never joined into a path first."""
+    from . import artifacts
+    try:
+        return artifacts.files(state, cfg, name, folder_only=True)
+    except artifacts.ArtifactsError as e:
+        raise NotFound(str(e))
 
 
 def queue(state, cfg, name, q):
@@ -588,7 +607,8 @@ class Server(http.server.ThreadingHTTPServer):
                   "merge": lambda c: merge_queue(st, c), "meta": lambda c: meta(st, c, self.code_info()),
                   "doc": lambda c: self.doc(q), "principles": lambda c: principles(st, c, q),
                   "decisions": lambda c: decisions(st, c, q), "agents": lambda c: agents(st, c, q),
-                  "queues": lambda c: queues_overview(st, c)}
+                  "queues": lambda c: queues_overview(st, c), "artifacts": lambda c: artifacts_listing(st, c),
+                  "rules": lambda c: self.rules(c)}
         if rest is None and head in simple:
             return simple[head]
         if rest and head == "track":
@@ -601,6 +621,8 @@ class Server(http.server.ThreadingHTTPServer):
             return lambda c: self.brief(c, rest)
         if rest and head == "queue":
             return lambda c: queue(st, c, rest, q)
+        if rest and head == "artifacts":
+            return lambda c: artifacts_folder(st, c, rest)
         if rest == "report" and head == "merge":
             return lambda c: merge_report(st, c, q)
         return None
@@ -635,6 +657,12 @@ class Server(http.server.ThreadingHTTPServer):
             raise NotFound(i18n.t("webui.brief_not_served", path=path))
         text, cut = read_md(real)
         return {"ref": ref, "path": path, "text": text, "cut": cut}
+
+    def rules(self, cfg):
+        """`rules --json`: the project's rules for its builders (rules.files), each shown only as a brief is (safe_md
+        with the read dirs this server started with); the request names no path."""
+        from . import rules
+        return rules.listing(cfg, self.read_dirs, self.docs_base)
 
     def doc(self, q):
         rel = (q.get("path") or [""])[-1]

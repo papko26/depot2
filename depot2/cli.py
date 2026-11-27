@@ -556,6 +556,9 @@ def cmd_agents(state, cfg, a):
             from .gates import gates_text
             print(t("cli.forced", id=ag["id"], why=ag["why"], gates=gates_text(ag["gates"])))
         print(t("cli.agent_started", id=ag["id"], role=ags.view(ag)["role_ru"], car=ag["car"], by=ag["by"]))
+        shown, why = ags.files_made
+        if shown or why:
+            print(t("cli.agent_files", path=shown) if shown else "⚠ " + why)
         state.commit("team: agents start %s %s %s" % (ag["id"], ag["car"], ag["role"]))
         return 0
     if act == "attach":
@@ -1302,6 +1305,26 @@ def cmd_queues(state, cfg, a):
     return 0
 
 
+def cmd_artifacts(state, cfg, a):
+    from . import artifacts
+    j = artifacts.files(state, cfg, a.car) if a.car is not None else artifacts.listing(state, cfg)
+    if a.json:
+        print(json.dumps(j, ensure_ascii=False, indent=1))
+    else:
+        print((artifacts.files_md(j) if a.car is not None else artifacts.listing_md(j)), end="")
+    return 0
+
+
+def cmd_rules(state, cfg, a):
+    from . import rules
+    j = rules.listing(cfg)
+    if a.json:
+        print(json.dumps(j, ensure_ascii=False, indent=1))
+    else:
+        print(rules.listing_md(j), end="")
+    return 0
+
+
 def _label_words(labels):
     """{a typed word: its key} over a label family's words in every language (a plain dict: its own words)."""
     if isinstance(labels, i18n.Labels):
@@ -1938,9 +1961,9 @@ def build_parser():
     q.add_argument("--by", help=t("cli.help.agents_stop_by"))
     p.set_defaults(fn=cmd_agents, mutates=False)  # start, attach, stop write (main); a reading locks for its booking
 
-    p = sub.add_parser("web", help="depot2's web view, seven tabs: tracks, trains, board, merge queue, agents, "
-                                   "decisions and principles, queues; search, copy icons, a car's panel and brief; "
-                                   "127.0.0.1 only, no authorization, read only (Ctrl+C stops it)")
+    p = sub.add_parser("web", help="depot2's web view, eight tabs: tracks, trains, board, merge queue, agents, "
+                                   "decisions and principles, queues, rules; search, copy icons, a car's panel and "
+                                   "brief; 127.0.0.1 only, no authorization, read only (Ctrl+C stops it)")
     p.add_argument("--port", type=int, default=8765, help="the port (default 8765; 0: any free one)")
     p.add_argument("--verbose", action="store_true", help="log every request to stderr")
     p.set_defaults(fn=cmd_web, mutates=False)
@@ -2068,6 +2091,21 @@ def build_parser():
                                         "car's stage (the priorities and the queues of before: `depot2 migrate`)")
     q.add_argument("--dry-run", action="store_true", help="print what it would move, write nothing")
     p.set_defaults(fn=cmd_queues, mutates=False)
+
+    p = sub.add_parser("artifacts", help="the cars' files: a folder per car under artifacts.dir, named by its branch — "
+                                         "its car, stage, files, size, newest file; only reads (agents start makes "
+                                         "the folder)")
+    p.add_argument("--json", action="store_true", help="a stable format (README «JSON formats»)")
+    p.add_argument("--md", action="store_true", help="the table (the default)")
+    p.add_argument("--car", metavar="REF", help="the files of one folder: its name, or a car (tr-NNNN:N, st-NNNN) — "
+                                               "every folder of that car; the newest first")
+    p.set_defaults(fn=cmd_artifacts, mutates=False)
+
+    p = sub.add_parser("rules", help="the project's rules for its builders: the Markdown files of rules.files, each "
+                                     "with its title, size and date (or why it is not shown); only reads")
+    p.add_argument("--json", action="store_true", help="a stable format with each file's text (README «JSON formats»)")
+    p.add_argument("--md", action="store_true", help="the table (the default)")
+    p.set_defaults(fn=cmd_rules, mutates=False)
 
     p = sub.add_parser("gender", help="set a character's grammatical gender (meta.json + spec.md)")
     p.add_argument("character")

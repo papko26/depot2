@@ -1,6 +1,6 @@
 """The base of a list of entries kept in one depot file (`Queue`: the principles are one), and one overview of every
 queue the depot keeps (`depot2 queues`): the stack, the merge queue, the team's stack, the trains, the tracks, the
-ballots, the agents, the decisions and the principles.
+ballots, the agents, the decisions, the principles and the cars' files (artifacts.py: only listed here).
 
 A depot of schema 5 kept three more queues: wishes (wl-NNNN), things to think over (th-NNNN) and todos (td-NNNN).
 Schema 6 made each one a track of the same name (`wishes`, `to-think`, `todo`; migrate.py): their open entries are
@@ -232,7 +232,7 @@ def migrate(state, cfg, dry_run=False):
 
 # The rows of the overview, in their order: the key is the command that prints the queue (`depot2 <key> --md`) and
 # names its line of what it is (`queues.means.<key>`: what it holds, who writes into it, how a thing leaves it).
-ROWS = ("stack", "merge", "tstack", "trains", "tracks", "agents", "ballots", "decisions", "principles")
+ROWS = ("stack", "merge", "tstack", "trains", "tracks", "agents", "ballots", "decisions", "principles", "artifacts")
 
 
 def means(key):
@@ -293,6 +293,8 @@ def overview_rows(state, cfg, now=None):
     pc = Principles(state, cfg)
     rows.append((t("queues.ov.principles"), t("queues.ov.principles_count", n=len(pc.entries(True))),
                  ["③ %s %s" % (e["id"], _clip(pc.headline(e), 60)) for e in pc.checked()[:3]], "principles", None))
+    from .artifacts import overview_row as artifacts_row
+    rows.append(artifacts_row(cfg))
     return rows
 
 

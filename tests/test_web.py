@@ -133,7 +133,7 @@ class WebTest(WebBase):
         self.assertIn("<title>depot2</title>", html)
         self.assertIn('data-tab="principles"', html)
         self.assertIn('id="view-principles"', html)
-        for tab in ("tracks", "trains", "board", "merge", "agents", "principles", "queues"):
+        for tab in ("tracks", "trains", "board", "merge", "agents", "principles", "queues", "rules"):
             self.assertIn('data-tab="%s"' % tab, html)
             self.assertIn('id="view-%s"' % tab, html)
         self.assertIn('data-tab="board" aria-selected="false" data-t="tab.board">Board</button>\n    <button type="button" role="tab" '
@@ -144,8 +144,13 @@ class WebTest(WebBase):
         self.assertIn('data-tab="principles" aria-selected="false" data-t="tab.principles">', html)
         self.assertIn('data-tab="queues" aria-selected="false" data-t="tab.queues">', html)
         msgs = page_messages(html)  # the static texts filled from the catalog at load
-        self.assertEqual((msgs["tab.board"], msgs["tab.merge"], msgs["tab.agents"], msgs["tab.principles"], msgs["tab.queues"]),
-                         ("Доска", "Мердж-очередь", "Агенты", "Решения и принципы", "Очереди"))
+        self.assertEqual((msgs["tab.board"], msgs["tab.merge"], msgs["tab.agents"], msgs["tab.principles"], msgs["tab.queues"],
+                          msgs["tab.rules"]), ("Доска", "Мердж-очередь", "Агенты", "Решения и принципы", "Очереди", "Правила"))
+        self.assertIn('data-tab="queues" aria-selected="false" data-t="tab.queues">Queues</button>\n    <button type="button" '
+                      'role="tab" data-tab="rules" aria-selected="false" data-t="tab.rules">Rules</button>', html)
+        for part in ('get("/api/artifacts")', 'get("/api/rules")', '"/api/artifacts/" + enc(name)', "function renderRules()",
+                     "hlHtml(md(f.text))"):
+            self.assertIn(part, html)
         for part in ('id="pc-list"', 'id="dec-list"', '"/api/decisions"', '"/api/queue/"', 'data-side="dec"'):
             self.assertIn(part, html)
         self.assertNotIn('id="dec-q"', html)
@@ -547,6 +552,72 @@ class WebTest(WebBase):
                 self.assertEqual(self.web.get(p)[0], 200, p)
         self.assertEqual(runs, [])
         self.assertEqual(tree_hash(self.t.dir), before)
+
+    def files_and_rules(self, art):
+        """A server and the CLI's --set args with the cars' files at `art` and three rules: a brief, a design note (both
+        inside web.docs.dirs) and the private note (outside)."""
+        rules = [self.web_brief, self.secret, os.path.join(self.scratch, "design", "sketch.md")]
+        sets = ["artifacts.dir=" + art, "rules.files=" + json.dumps(rules)]
+        web = Served(self.t.state, self.sets + sets, read_dirs=self.dirs, doc_base=self.scratch, docs_base=self.scratch)
+        self.addCleanup(web.close)
+        cli = []
+        for x in sets + ["web.docs.dirs=" + json.dumps(list(self.dirs))]:
+            cli += ["--set", x]
+        return web, cli
+
+    def test_the_cars_files_and_the_rules_are_their_json_commands(self):
+        art = tempfile.mkdtemp(prefix="team-web-art-")
+        self.addCleanup(shutil.rmtree, art, True)
+        os.makedirs(os.path.join(art, "tr-0001-0", "shots"))
+        with open(os.path.join(art, "tr-0001-0", "shots", "a.png"), "wb") as f:
+            f.write(b"x" * 10)
+        os.makedirs(os.path.join(art, "spike"))
+        os.utime(os.path.join(art, "spike"), (1447322400, 1447322400))  # an empty folder, by its own date: the older
+        os.makedirs(os.path.join(art, ".hidden"))
+        os.symlink(os.path.dirname(self.secret), os.path.join(art, "link-out"))
+        web, cli = self.files_and_rules(art)
+        for path, argv in (("/api/artifacts", ["artifacts", "--json"]), ("/api/queues", ["queues", "--json"]),
+                           ("/api/artifacts/tr-0001-0", ["artifacts", "--car", "tr-0001-0", "--json"]),
+                           ("/api/artifacts/spike", ["artifacts", "--car", "spike", "--json"]),
+                           ("/api/rules", ["rules", "--json"])):
+            code, got = web.json(path)
+            self.assertEqual(code, 200, (path, got))
+            rc, out, err = self.team(*(cli + argv))
+            self.assertEqual(rc, 0, err)
+            self.assertEqual(got, json.loads(out), path)
+        _, a = web.json("/api/artifacts")
+        self.assertEqual([(f["folder"], f["ref"], f["files"]) for f in a["folders"]], [("tr-0001-0", "tr-0001:0", 1), ("spike", None, 0)])
+        self.assertEqual(sorted(web.json("/api/queues")[1][-1]["head"]), ["spike", "tr-0001-0"])
+        _, r = web.json("/api/rules")
+        self.assertEqual([(f["title"], f["shown"], f["why"]) for f in r["files"]],
+                         [("Поиск", True, None), ("secret.md", False, "вне web.docs.dirs"), ("Эскиз", True, None)])
+        self.assertIn("<script>alert(1)</script>", r["files"][0]["text"])  # as text: the page escapes it
+        for path in ("/api/artifacts/..%2F..", "/api/artifacts/..", "/api/artifacts/link-out", "/api/artifacts/.hidden",
+                     "/api/artifacts/tr-0001%3A0", "/api/artifacts/nope", "/api/artifacts/tr-0001-0%2Fshots",
+                     "/api/artifacts/" + art.lstrip("/"), "/api/artifacts/%00", "/api/rules/0"):
+            code, _, body = web.get(path)
+            self.assertEqual(code, 404, path)
+            self.assertNotIn(b"private", body)
+        for path in ("/api/artifacts", "/api/rules", "/api/queues"):
+            self.assertNotIn(b"private", web.get(path)[2])
+
+    def test_the_cars_files_and_the_rules_write_nothing(self):
+        top = tempfile.mkdtemp(prefix="team-web-art-")
+        self.addCleanup(shutil.rmtree, top, True)
+        art = os.path.join(top, "not-yet")
+        web, _ = self.files_and_rules(art)
+        before, docs = tree_hash(self.t.dir), tree_hash(self.scratch)
+
+        def no_popen(*a, **kw):
+            raise AssertionError("a handler ran a command: %r" % (a,))
+        with mock.patch.object(subprocess, "Popen", no_popen), mock.patch.object(os, "system", no_popen):
+            for p in ("/", "/api/queues", "/api/artifacts", "/api/rules", "/api/meta", "/api/agents?all=1"):
+                self.assertEqual(web.get(p)[0], 200, p)
+            self.assertEqual(web.get("/api/artifacts/tr-0001-0")[0], 404)
+        _, a = web.json("/api/artifacts")
+        self.assertEqual((a["on"], a["exists"], a["folders"]), (True, False, []))
+        self.assertEqual(os.listdir(top), [])  # the web view never makes the folder
+        self.assertEqual((tree_hash(self.t.dir), tree_hash(self.scratch)), (before, docs))
 
     def test_a_state_read_mid_write(self):
         p = os.path.join(self.t.dir, "stack.json")

@@ -148,6 +148,13 @@ DEFAULTS = {
         "timeout_s": 1800,                       # per rclone call
     },
     "repo": None,                    # the project on GitHub, owner/name (gh -R)
+    # The cars' files (artifacts.py): a folder per car, named by its branch, under `dir` (from / or ~; null: off).
+    # `agents start` makes the car's folder (and `dir`) when it is not there, 0700; the runs write there; nothing in
+    # depot2 deletes or rewrites anything in it: `depot2 artifacts` and the web view's Queues tab only list it.
+    "artifacts": {"dir": None},
+    # The project's rules for its builders (rules.py): its Markdown files, each from / or ~; `depot2 rules` and the web
+    # view's Rules tab show them, read only, and only a .md file inside web.docs.dirs (as the briefs).
+    "rules": {"files": []},
     "web": {"hosts": []},
     "merge": {
         "clone": None,                # the project's main clone: fetch, the dry run's throwaway worktree, the smoke's cwd
@@ -455,6 +462,16 @@ def check(cfg):
     for size, pct in cfg["usage"]["sizes"].items():
         if not isinstance(pct, (int, float)) or pct < 0:
             raise ValueError("usage.sizes.%s must be a number of %%UW >= 0" % size)
+    a = cfg.get("artifacts")
+    d = a.get("dir") if isinstance(a, dict) else 0
+    if not isinstance(a, dict) or d not in (None, "") and not (
+            isinstance(d, str) and "\0" not in d and os.path.isabs(os.path.expanduser(d))):
+        raise ValueError("artifacts.dir must be a folder's path from / or ~, or null (off)")
+    r = cfg.get("rules")
+    fs = r.get("files") if isinstance(r, dict) else None
+    if not isinstance(fs, list) or not all(isinstance(f, str) and f and "\0" not in f and
+                                           os.path.isabs(os.path.expanduser(f)) for f in fs):
+        raise ValueError("rules.files must be a list of the rules' Markdown files, each a path from / or ~")
     if not isinstance(cfg["backup"].get("drive"), bool):
         raise ValueError("backup.drive must be true or false (the daily Drive run)")
     if int(cfg["lock"]["price"]) < 1:

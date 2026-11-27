@@ -244,6 +244,27 @@ ol.acts { margin: 0; padding-left: 22px; font-size: 13px; } ol.acts li { overflo
   .overview tr td { border-top: 0; padding: 0; }
   .overview td:nth-child(3), .overview td:nth-child(4) { grid-column: 1 / -1; }
 }
+/* the cars' files: a row per folder, a click lists its files below it */
+.arts-s { margin: 14px 0 0; } .arts-s h3 { margin: 0 0 4px; font-size: 15px; } .arts-s h3 .cnt { color: var(--muted); font-variant-numeric: tabular-nums; }
+.arts-s .means { margin: 0 0 4px; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; }
+.arts tr[data-ax] { cursor: pointer; } .arts tr[data-ax]:hover, .arts tr[data-ax].open { background: var(--soft); }
+.arts .stg { color: var(--c); font-weight: 600; } .arts td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.aflist { margin: 2px 0 6px; padding-left: 18px; } .aflist li { overflow-wrap: anywhere; } .aflist code { font-size: 12px; }
+@media (max-width: 700px) {  /* a phone: a row is its folder, then its car, stage and counts in a line */
+  .arts thead { display: none; }
+  .arts tr { display: flex; flex-wrap: wrap; gap: 2px 10px; border-top: 1px solid var(--line); padding: 4px 0; }
+  .arts tr td { border-top: 0; padding: 0; }
+  .arts tr[data-ax] td:first-child, .arts tr.afiles td { flex-basis: 100%; }
+  .arts tr.afiles { border-top: 0; padding-top: 0; }
+  .arts td[data-k]::before { content: attr(data-k) " "; color: var(--muted); }
+}
+/* the rules for builders: a fold per file, its text as a brief's */
+.rules { display: grid; gap: 8px; }
+.rule .rh { padding: 10px 12px; display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 8px; }
+.rule .rpath { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; color: var(--muted); overflow-wrap: anywhere; min-width: 0; }
+.rule .rwhen { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.rule .rmd { padding: 0 14px 10px 32px; } .rule.off .ttitle { color: var(--muted); }
+@media (max-width: 700px) { .rule .rmd { padding-left: 12px; } }
 .qlist { overflow-y: auto; min-height: 0; overscroll-behavior-y: contain; }
 .qcard { border: 1px solid var(--line); border-left: 3px solid var(--qc, var(--line)); border-radius: 6px; padding: 6px 8px; margin-top: 6px; background: var(--card); }
 .qcard.p-high { --qc: var(--warn); } .qcard.p-normal { --qc: var(--link); } .qcard.p-later { --qc: var(--muted); }
@@ -382,6 +403,7 @@ pre.raw { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--soft
     <button type="button" role="tab" data-tab="agents" aria-selected="false" data-t="tab.agents">Agents</button>
     <button type="button" role="tab" data-tab="principles" aria-selected="false" data-t="tab.principles">Decisions and principles</button>
     <button type="button" role="tab" data-tab="queues" aria-selected="false" data-t="tab.queues">Queues</button>
+    <button type="button" role="tab" data-tab="rules" aria-selected="false" data-t="tab.rules">Rules</button>
   </nav>
   <div class="find" role="search">
     <input type="search" id="q" placeholder="search: id, words, track, train" aria-label="search in the tab" title="/ to search, Esc to clear" data-t-placeholder="find.placeholder" data-t-aria-label="find.aria" data-t-title="find.title" autocomplete="off" spellcheck="false">
@@ -414,6 +436,7 @@ pre.raw { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--soft
     </div>
   </section>
   <section id="view-queues" aria-label="queues" data-t-aria-label="aria.queues" hidden></section>
+  <section id="view-rules" aria-label="rules for builders" data-t-aria-label="aria.rules" hidden></section>
 </main>
 <aside id="panel" class="panel" hidden aria-label="car" data-t-aria-label="aria.panel">
   <div class="panel-head">
@@ -456,8 +479,8 @@ const BOARD_SHOWN = 15;
 const ui = { tab: "trains", car: null, doc: null, all: false, open: {}, more: {}, doneOpen: null, side: "pc", q: "", flash: null,
   sort: "", findOpen: {}, scroll: {} };
 let meta = null, data = null, idx = null, busy = false, timer = null;
-const shown = { tracks: "", trains: "", board: "", merge: "", agents: "", principles: "", dec: "", queues: "", panel: "", title: "", sort: "" };
-const TABS = ["tracks", "trains", "board", "merge", "agents", "principles", "queues"];
+const shown = { tracks: "", trains: "", board: "", merge: "", agents: "", principles: "", dec: "", queues: "", rules: "", panel: "", title: "", sort: "" };
+const TABS = ["tracks", "trains", "board", "merge", "agents", "principles", "queues", "rules"];
 const DEC_SHOWN = 40, QUEUE_SHOWN = 20;
 let pageStamp = null;  // the code the page came with: another one in /api/meta → the page reloads itself
 let panelCache = { ref: null, car: null, brief: null, briefErr: null, doc: null, docErr: null };
@@ -491,8 +514,10 @@ async function refresh() {
       get("/api/board" + (ui.all ? "?all=1" : "")), get("/api/tracks"), get("/api/trains"), get("/api/merge"),
       get("/api/merge/report?last=" + MERGES_SHOWN),
       get("/api/principles" + (ui.all ? "?all=1" : "")), get(decUrl(decQ)), get("/api/agents?all=1"), get("/api/queues"),
-      ...defs.map((d) => get("/api/queue/" + enc(d.name) + (ui.all ? "?all=1" : "")))]);
-    data = { board, tracks, trains, merge, merges, principles, decisions, agents, overview, queues: Object.fromEntries(defs.map((d, i) => [d.name, qs[i]])) };
+      get("/api/artifacts"), get("/api/rules"), ...defs.map((d) => get("/api/queue/" + enc(d.name) + (ui.all ? "?all=1" : "")))]);
+    const artifacts = qs.shift(), rules = qs.shift();
+    data = { board, tracks, trains, merge, merges, principles, decisions, agents, overview, artifacts, rules, queues: Object.fromEntries(defs.map((d, i) => [d.name, qs[i]])) };
+    for (const k of Object.keys(ui.open)) if (k.startsWith("ax:") && ui.open[k]) loadArt(k.slice(3));  // an unfolded folder: its files again
     index();
     render();
     if (decQ !== ui.q) loadDecisions();  // typed into the search meanwhile
@@ -646,7 +671,7 @@ const SORTS = [["own", T("sort.own")], ["match", T("sort.match")], ["prio", T("s
   ["old", T("sort.old")], ["stage", T("sort.stage")], ["group", T("sort.group")]];
 const TAB_SORTS = { tracks: ["match", "prio", "new", "old", "stage", "group"], trains: ["match", "prio", "new", "old", "stage", "group"],
   board: ["match", "prio", "new", "old", "group"], merge: ["match", "new", "old"], agents: ["match", "prio", "new", "old", "group"], principles: ["match", "new", "old"],
-  queues: ["match", "prio", "new", "old", "stage"] };
+  queues: ["match", "prio", "new", "old", "stage"], rules: ["match"] };
 const STATE_ORDER = [...LIVE, "arrived", "scrapped"];
 const find = { on: false, res: [], re: null, whole: "", marking: false, n: {} };
 let findTimer = null;
@@ -1335,7 +1360,7 @@ function render() {
   const was = find.marking;
   find.marking = true;  // the found words marked in the views, never in the panel
   try {
-    const kv = renderTracks(), tv = renderTrains(), bv = renderBoard(), mv = renderMerge(), av = renderAgents(), pv = renderPrinciples(), qv = renderQueues();
+    const kv = renderTracks(), tv = renderTrains(), bv = renderBoard(), mv = renderMerge(), av = renderAgents(), pv = renderPrinciples(), qv = renderQueues(), rv = renderRules();
     if (kv !== shown.tracks) { paint($("#view-tracks"), kv); shown.tracks = kv; }
     if (tv !== shown.trains) { paint($("#view-trains"), tv); shown.trains = tv; }
     if (bv !== shown.board) { paint($("#view-board"), bv); shown.board = bv; }
@@ -1343,13 +1368,14 @@ function render() {
     if (av !== shown.agents) { paint($("#view-agents"), av); shown.agents = av; }
     if (pv !== shown.principles) { paint($("#pc-list"), pv); shown.principles = pv; }
     if (qv !== shown.queues) { paint($("#view-queues"), qv); shown.queues = qv; }
+    if (rv !== shown.rules) { paint($("#view-rules"), rv); shown.rules = rv; }
   } finally { find.marking = was; }
   paintDecisions();
 }
 
 const CARDS = ".car[data-ref], .bcard[data-ref], .slot[data-ref], .bchip[data-ref], .arow[data-ref], .nchip[data-ref], .qcard[data-ref], .qcard[data-qx], .mcard[data-ref], .rlink[data-ref]";
 const COLUMN_CARDS = ".car[data-ref], .bcard[data-ref], .arow[data-ref], .qcard[data-ref], .qcard[data-qx], .mcard[data-ref]";  // the arrows walk these
-const HOLD_KEYS = ["data-qx", "data-ref", "data-more", "data-copy", "data-dec-link", "data-doc", "data-go"];
+const HOLD_KEYS = ["data-qx", "data-ax", "data-ref", "data-more", "data-copy", "data-dec-link", "data-doc", "data-go"];
 function byKey(root, k) {  // the elements of `root` with that key, in order (no selector built from the value)
   const out = [];
   for (const e of root.querySelectorAll(k.tag + "[" + k.attr + "]")) {
@@ -1579,10 +1605,96 @@ function renderQueues() {
       '<div class="means"><code>' + esc(def.command) + "</code>" + (pc ? " · " + esc(pc) : "") + (lim ? " · " + esc(lim) : "") + "</div>" +
       '<div class="qlist" data-sk="q:' + esc(def.name) + '">' + h + "</div></section>";
   }
+  const art = renderArtifacts();
+  found += art.found;
   find.n.queues = found;
   return renderOverview() + '<div class="summary"><span>' + T("q.open_line", { heads: heads.join(" · ") || "—" }) + "</span>" + foundLine(found) +
     "<span>" + (ui.all ? T("q.hint") : T("q.hint_closed")) + "</span></div>" +
-    '<div class="qboard" data-sk="qboard">' + cols + "</div>";
+    '<div class="qboard" data-sk="qboard">' + cols + "</div>" + art.html;
+}
+// the cars' files (`depot2 artifacts --json`): a folder per car under artifacts.dir, named by its branch; a click on a
+// row lists its files (/api/artifacts/<folder>: names, sizes and dates alone; the web view serves no file)
+const ART_SHOWN = 20, ART_FILES_SHOWN = 50;
+const artFiles = {};  // a folder's name -> its listing, or {error}
+async function loadArt(name) {
+  try { artFiles[name] = await get("/api/artifacts/" + enc(name)); } catch (e) { artFiles[name] = { error: e.message }; }
+  if (data && ui.open["ax:" + name]) render();
+}
+function toggleArt(name) {
+  const key = "ax:" + name;
+  ui.open[key] = !ui.open[key];
+  if (ui.open[key]) loadArt(name);
+  render();
+}
+function artFilesHtml(name) {
+  const j = artFiles[name], f = j && !j.error ? (j.folders || [])[0] : null;
+  if (!j || (!j.error && !f)) return '<p class="muted">' + esc(T("common.loading")) + "</p>";
+  if (j.error) return '<p class="muted">' + esc(j.error) + "</p>";
+  const all = f.entries || [], more = !!ui.more["af:" + name], list = more ? all : all.slice(0, ART_FILES_SHOWN);
+  let h = list.length ? '<ul class="aflist">' + list.map((e) => "<li><code>" + esc(e.name) + '</code> <span class="muted">' +
+    esc(e.size) + " · " + esc(when(e.mtime)) + "</span></li>").join("") + "</ul>" : '<p class="muted">' + esc(T("common.empty")) + "</p>";
+  if (all.length > ART_FILES_SHOWN) h += '<button type="button" class="btn more" data-more="af:' + esc(name) + '">' + (more ? T("common.fold") : T("common.more", { n: all.length - ART_FILES_SHOWN })) + "</button>";
+  if (f.more) h += '<p class="muted">' + esc(T("art.files_more", { n: f.more, shown: all.length })) + "</p>";
+  return h;
+}
+function artRow(f, h) {
+  const open = !!ui.open["ax:" + f.folder];
+  const car = f.ref ? linked(f.ref) + (f.title ? ' <span class="muted">' + hl(clipText(f.title, 60)) + "</span>" : "")
+    : '<span class="muted">' + esc(T("art.no_car")) + "</span>";
+  return '<tr' + (open ? ' class="open"' : "") + ' data-ax="' + esc(f.folder) + '" tabindex="0" role="button" aria-expanded="' + open + '">' +
+    "<td>" + named(f.folder) + "</td><td>" + car + (h && h.note ? h.note : "") + "</td>" +
+    "<td>" + (f.stage ? '<span class="stg s-' + esc(f.stage) + '">' + esc(f.stage_ru || ru(f.stage)) + "</span>" : "—") + "</td>" +
+    '<td class="num" data-k="' + esc(T("art.col_files")) + '">' + esc((f.cut ? "≥" : "") + f.files) + "</td>" +
+    '<td class="num" data-k="' + esc(T("art.col_size")) + '">' + esc(f.size) + "</td>" +
+    '<td data-k="' + esc(T("art.col_newest")) + '">' + esc(when(f.newest)) + "</td></tr>" +
+    (open ? '<tr class="afiles"><td colspan="6">' + artFilesHtml(f.folder) + "</td></tr>" : "");
+}
+function renderArtifacts() {
+  const a = data.artifacts;
+  if (!a) return { html: "", found: 0 };
+  let body, cnt = "", found = 0;
+  if (!a.on) body = '<p class="muted">' + esc(T("art.off")) + "</p>";
+  else if (!a.exists) body = '<p class="muted">' + esc(T("art.missing", { dir: a.dir })) + "</p>";
+  else {
+    const rows = (a.folders || []).map((f) => ({ f, h: hit([[f.folder, 40, 1], [f.ref, 40, 1], [f.title, 20, 1], [f.stage_ru, 5, 1]]) }));
+    const hits = find.on ? rows.filter((r) => r.h.ok) : rows, more = !!ui.more.art;
+    found = find.on ? hits.length : 0;
+    cnt = ' <span class="cnt">' + (find.on ? T("common.n_of", { n: hits.length, total: rows.length }) : rows.length) + "</span>";
+    const cols = [T("art.col_folder"), T("art.col_car"), T("art.col_stage"), T("art.col_files"), T("art.col_size"), T("art.col_newest")]
+      .map((c) => "<th>" + esc(c) + "</th>").join("");
+    body = '<div class="means"><code>depot2 artifacts</code> · ' + esc(T("art.line", { dir: a.dir, n: rows.length, files: a.files, size: a.size })) +
+      (a.cut ? " · " + esc(T("art.cut")) : "") + " · " + esc(T("art.only_list")) + " · " + esc(T("art.hint")) + "</div>" +
+      (hits.length ? '<table class="hist arts"><thead><tr>' + cols + "</tr></thead><tbody>" +
+        (more ? hits : hits.slice(0, ART_SHOWN)).map((r) => artRow(r.f, r.h)).join("") + "</tbody></table>"
+        : '<p class="muted">' + esc(find.on ? T("common.not_found") : T("art.empty")) + "</p>") +
+      (hits.length > ART_SHOWN ? '<button type="button" class="btn more" data-more="art">' + (more ? T("common.fold") : T("common.more", { n: hits.length - ART_SHOWN })) + "</button>" : "");
+  }
+  return { html: '<section class="arts-s" aria-label="' + esc(T("art.h")) + '"><h3>' + esc(T("art.h")) + cnt + "</h3>" + body + "</section>", found };
+}
+// the project's rules for its builders (`depot2 rules --json`): its Markdown files of rules.files, each folded under
+// its title, path and date, its text drawn as a brief's (md: everything escaped); one not shown says why
+function ruleCard(f, i, h) {
+  const meta = '<span class="rpath">' + hl(f.path) + "</span>" + (f.shown ? '<span class="rwhen">' + esc(when(f.mtime)) + " · " + esc(f.size) + "</span>" : "");
+  if (!f.shown) {
+    return '<article class="train rule off"><div class="rh"><span class="tnum">' + i + '</span><span class="ttitle">' + hl(f.title) + "</span>" + meta +
+      '<span class="tstat w">⚠ ' + esc(T("rules.not_shown", { why: f.why })) + "</span></div></article>";
+  }
+  const key = "r:" + f.path, open = isOpen(key, false);
+  return '<article class="train rule"><details data-key="' + esc(key) + '"' + (open ? " open" : "") + "><summary>" +
+    '<span class="tnum">' + i + '</span><span class="ttitle">' + hl(f.title) + "</span>" + meta + "</summary>" +
+    '<div class="md rmd">' + hlHtml(md(f.text)) + (f.cut ? '<p class="muted">' + esc(T("rules.cut")) + "</p>" : "") + "</div></details>" +
+    (h && h.note && !open ? '<div class="rh">' + h.note + "</div>" : "") + "</article>";
+}
+function renderRules() {
+  const r = data.rules;
+  if (!r) return "";
+  const rows = (r.files || []).map((f, i) => ({ f, i: i + 1, h: hit([[f.title, 20, 1], [f.path, 10, 1], [f.text, 10, 0, T("rules.in_text")]]) }));
+  const kept = find.on ? rows.filter((x) => x.h.ok) : rows;
+  const sorted = arrange(kept.map((x) => Object.assign(x, { s: x.h.s })), sortOf("rules"));
+  find.n.rules = find.on ? kept.length : 0;
+  const head = '<div class="summary"><span><code>depot2 rules</code> · ' + esc(T("rules.line", { n: r.n, shown: r.shown })) + "</span>" + foundLine(find.n.rules) + "</div>";
+  if (!rows.length) return head + '<p class="muted">' + esc(T("rules.none")) + "</p>";
+  return head + '<div class="rules">' + sorted.map((x) => ruleCard(x.f, x.i, x.h)).join("") + "</div>" + (find.on && !kept.length ? nothing() : "");
 }
 // every queue the depot keeps, a row each (`depot2 queues --json`): its count, what is on top, what it is; a queue with
 // a tab of its own links to it
@@ -2054,6 +2166,7 @@ function showTab() {
   $("#view-agents").hidden = ui.tab !== "agents";
   $("#view-principles").hidden = ui.tab !== "principles";
   $("#view-queues").hidden = ui.tab !== "queues";
+  $("#view-rules").hidden = ui.tab !== "rules";
   $("#all-l").textContent = ui.tab === "queues" ? T("top.all_closed") : T("top.all_fin");
   keepScroll($("main"));
   paintFind();
@@ -2087,6 +2200,12 @@ document.addEventListener("click", (e) => {
   const more = e.target.closest("[data-more]");
   if (more) { ui.more[more.dataset.more] = !ui.more[more.dataset.more]; render(); return; }
   if (e.target.closest("summary")) return;
+  const ax = e.target.closest("tr[data-ax]");
+  if (ax && !e.target.closest("[data-ref]")) {
+    const sel = getSelection();
+    if (!(sel && !sel.isCollapsed && ax.contains(sel.anchorNode))) toggleArt(ax.dataset.ax);
+    return;
+  }
   const row = e.target.closest("[data-ref], [data-qx]");
   if (!row || e.target.closest("#panel")) return;
   const sel = getSelection();
@@ -2114,6 +2233,12 @@ document.addEventListener("keydown", (e) => {
     return;
   }
   if (e.key === "Escape" && e.target === $("#q") && $("#q").value) { e.preventDefault(); $("#q").value = ""; applyFind(); return; }
+  const ax = e.target.matches && e.target.matches("tr[data-ax]") ? e.target : null;  // a folder of the cars' files
+  if (ax && !e.altKey && !e.ctrlKey && !e.metaKey && (e.key === "Enter" || e.key === " " || (e.key === "Escape" && ui.open["ax:" + ax.dataset.ax]))) {
+    e.preventDefault();
+    toggleArt(ax.dataset.ax);
+    return;
+  }
   const card = e.target.matches && e.target.matches(CARDS) ? e.target : null;
   if (e.key === "Escape" && card && card.hasAttribute("data-qx") && ui.open[card.dataset.qx]) { toggleQ(card); return; }
   if (e.key === "Escape" && ui.car) { closePanel(); return; }

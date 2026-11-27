@@ -150,12 +150,14 @@ class OverviewTest(QBase):
         rows = json.loads(self.team("queues", "--json")[1])
         self.assertEqual([r["queue"] for r in rows],
                          ["Стек агентов", "Мердж-очередь", "Стек команды", "Поезда", "Треки", "Агенты", "Бюллетени",
-                          "Решения", "Принципы"])
+                          "Решения", "Принципы", "Файлы вагонов"])
         self.assertEqual([r["key"] for r in rows], list(ROWS))
         self.assertEqual(sorted(rows[0]), ["command", "head", "key", "means", "open", "priority", "queue"])
         self.assertTrue(rows[1]["means"].startswith("PR, впущенные владельцем, с его словом дословно"))
         self.assertIn("вагон уходит с доски прибывшим или списанным", rows[4]["means"])
-        self.assertEqual([r["priority"] for r in rows], [None] * 9)
+        self.assertEqual([r["priority"] for r in rows], [None] * 10)
+        self.assertEqual((rows[-1]["open"], rows[-1]["head"]), ("выключено (artifacts.dir не задан)", []))
+        self.assertIn("| Файлы вагонов | выключено (artifacts.dir не задан) | — | — | `depot2 artifacts --md` |", out)
 
 
 class PriorityMigrateTest(QBase):

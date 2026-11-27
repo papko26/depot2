@@ -108,6 +108,7 @@ class Agents(object):
         self.data = read_json(self.path) or {"schema": SCHEMA, "next": 1, "agents": []}
         self._tracks = tracks
         self.lines = []  # what a command prints besides its table: the spend booked, the stack's lines
+        self.files_made = (None, None)  # start: the run's folder for its files, or why it is not there (run_folder)
 
     @property
     def tracks(self):
@@ -311,11 +312,27 @@ class Agents(object):
               "st": c.get("st")}
         if passed:
             ag.update(forced=True, why=why.strip(), gates=passed)
+        self.files_made = self.run_folder(ag, c)
         self.data["next"] = int(self.data["next"]) + 1
         self.data["agents"].append(ag)
         self._save("start", ag, role=role, by=ag["by"], usage=usage, st=ag["st"], forced=ag.get("forced"),
-                   why=ag.get("why"), gates=ag.get("gates"))
+                   why=ag.get("why"), gates=ag.get("gates"), files=ag.get("files"))
         return ag
+
+    def run_folder(self, ag, c):
+        """The run's folder for its files (artifacts.py), made when artifacts.dir is on: its name goes into the record
+        (`files`). Returns (the folder as the config names it, None), (None, why it is not there) or (None, None):
+        off. A folder that could not be made stops nothing: the start is recorded, its answer says why."""
+        from . import artifacts
+        branch = c.get("branch")
+        if not branch and c.get("st"):
+            obj = self.tracks.stack.get(c["st"]) if self.tracks.stack._dep_open(c["st"]) else None
+            branch = (obj or {}).get("branch")
+        name = artifacts.folder_name(ag["car"], ag["role"], branch)
+        shown, why = artifacts.ensure(self.cfg, name)
+        if shown:
+            ag["files"] = name
+        return shown, why
 
     def attach(self, aid, agent_id, transcript=None):
         ag = self.get(aid)
@@ -402,6 +419,8 @@ class Agents(object):
                    turns=v["turns"] if v["turns"] is not None else "—", spent=v["spent_text"]))
         if v["slot"]:
             L.append(t("agents.show_stack", slot=slot_text(v["slot"])))
+        if v.get("files"):
+            L.append(t("agents.show_files", folder=v["files"]))
         if v["actions"]:
             L.append("")
             L.append(t("agents.show_actions", n=len(v["actions"]), total=v.get("actions_n")))

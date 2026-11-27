@@ -25,6 +25,8 @@ License 2.0 ([License](#license)).
 - [Tracks and trains](#tracks-and-trains)
 - [The merge queue](#the-merge-queue)
 - [Queues](#queues)
+- [The cars' files](#the-cars-files)
+- [Rules for builders](#rules-for-builders)
 - [Connecting your project](#connecting-your-project)
 - [Plugins (hooks)](#plugins-hooks)
 - [Executors](#executors)
@@ -54,7 +56,7 @@ The depot lives in a directory of its own (`--state DIR`, or `$DEPOT2_STATE`; by
 
 ```sh
 export DEPOT2_STATE=/tmp/depot2-demo
-sh examples/demo/make-demo.sh "$DEPOT2_STATE"   # an invented project: two tracks, a train, a stack, queues
+sh examples/demo/make-demo.sh "$DEPOT2_STATE"   # an invented project: two tracks, a train, a stack, queues, files
 python3 -m depot2 board                          # every live car in the column of its stage
 python3 -m depot2 trains next                    # what a free slot would take now
 python3 -m depot2 stack                          # the executors' slots, the queue, the post-stack
@@ -169,6 +171,7 @@ it; `queues --json` and the web view's Queues tab carry the same rows with the l
 | Ballots | the team rounds' ballots waiting for the owner | `ballots add/point/at` | `ballots done/drop` |
 | Decisions | the owner's decisions, append-only | `decide` (and a lock the owner lifts) | nothing leaves |
 | Principles | the project's design principles, rendered to its Markdown file | `principles add/set` | `principles replace/drop` (in `--all`) |
+| The cars' files | the files the cars' runs leave (screenshots, builds, logs), a folder per car under `artifacts.dir` ([below](#the-cars-files)) | the runs, into the folder `agents start` makes | only by the owner's word, by hand |
 
 A depot of schema 5 kept three more queues — wishes (`wl-`), things to think over (`th-`) and todos (`td-`).
 `depot2 migrate` (any command runs it first; `--dry-run` says what it would do) makes each one a track of the same
@@ -176,6 +179,41 @@ name: every open entry becomes a car there, named by its entry's number where th
 entry and its text, date and place in the car's note; a track whose title (before a colon) is the name is used, else
 one is added. The closed and taken entries stay in an archive (`wishes-v5.json`, `think-v5.json`, `todo-v5.json`
 and their histories) that an old ref still reads: a car's `from` shows the entry, and where it moved.
+
+## The cars' files
+
+A run leaves files besides its pull request: screenshots, builds, logs. Their one place is the config's
+`artifacts.dir` (a path from `/` or `~`; null, the default, is off): a folder per car, named by the car's branch
+(`tr-0001-2` when it has none), with a sketch's and a plan's word first — `sketch-tr-0001-2`, `plan-tr-0001-2` — so
+that their files stay apart from the build's. A good place is `~/.local/share/depot2/artifacts`, beside the default
+depot: keep it outside the depot's directory, so that the depot's git and its backup never carry those files.
+
+`agents start` makes the run's folder when it is not there (and `artifacts.dir` itself), its owner's alone (0700),
+records its name in the agent (`files`) and prints it (`the run's files: ~/…/tr-0001-2/`), for the orchestrator to
+hand to the run; a folder that is there is left as it is. A folder that cannot be made stops nothing: the start is
+recorded, and its answer says why. The runs (and the orchestrator) write there. Nothing in depot2 ever deletes or
+rewrites anything in it — not `agents stop`, not a car's arrival, not `merge prune-worktrees`: a folder leaves only
+by the owner's word, by hand.
+
+`depot2 artifacts` prints a row per folder, the newest first: its car (the car an agent's start made it for; else the
+car or stack object whose `branch` is the folder's name, a sketch's or plan's word before it; else the name read as
+`[<word>-]tr-NNNN-<car>`; else «no car»), the car's stage, the number of files, their size and the newest file's date.
+`depot2 artifacts --car REF` lists the files of one folder (REF is its name) or of every folder of a car
+(`tr-NNNN:N`, `st-NNNN`), the newest first, at most 1000 a folder. Both only read, without the depot's lock, and never
+make a folder. The web view's Queues tab draws the same table under the queues; a click on a row lists its files. It
+shows names, sizes and dates alone and serves no file; nothing follows a symbolic link (a link is not listed either),
+a name that starts with a dot is left out, and a folder is opened only as one the listing found in `artifacts.dir`,
+never by a path a request names.
+
+## Rules for builders
+
+depot2 keeps no rules of its own: a project names the Markdown files its builders follow in the config's
+`rules.files` (a list of paths from `/` or `~`), and the depot shows them. `depot2 rules` lists them — each one's
+title (its first line when that is a `# heading`, else the file's name), path, size and date — and `rules --json`
+carries their texts; the web view shows them on its Rules tab, a fold per file, drawn as a brief is. A file is shown
+only as a brief is: a real `.md` file inside `web.docs.dirs`, at most 2 MB of it. Any other (not `.md`, outside
+`web.docs.dirs`, not there) is listed with the reason, and nothing of it is read. No request names a path: the list
+is the config's alone.
 
 ## Connecting your project
 
@@ -214,6 +252,8 @@ The config is read in layers, each deep-merged over the one before:
 | `repair.bugs` | null | a Markdown bug table whose first column is the bug's id |
 | `web.hosts`, `web.docs.base`, `web.docs.dirs` | `[]`, null, `[]` | more names of this computer for the web view; where its briefs live |
 | `backup.git.*`, `backup.*` | push off until a remote exists | the depot's own backup (below) |
+| `artifacts.dir` | null (off) | the cars' files: a folder per car, named by its branch ([The cars' files](#the-cars-files)) |
+| `rules.files` | `[]` | the project's rules for its builders, Markdown files ([Rules for builders](#rules-for-builders)) |
 
 **The effort unit.** Spend is stored in MTok: millions of price-weighted input-equivalent tokens (input ×1, cache
 write ×1.25, cache read ×0.1, output ×5). It prints as `X%UW (Y MTok)`: the share of a usage window, at
@@ -334,9 +374,10 @@ stream that is not CLEAN goes to a quarantine outside the depot.
 Every `--json` output is a stable format; the web view reads nothing else:
 `board --json` (the columns, their cars and limits), `tracks --json`, `track ID --json`, `trains --json [next]`,
 `stack --json`, `merge --json`, `agents --json`, `principles --json`,
-`decisions --json`, `queues --json`. Each is one JSON object; new fields may be added, existing ones keep their
-meaning. `merge report --json [--last N]` (the merge queue's tab reads it too) is a list: the last merges' entries,
-the same ones `merge report` shows (a PR dropped from the queue after its merge is not among them).
+`decisions --json`, `queues --json`, `artifacts --json`, `artifacts --car REF --json` (the web view asks it for a
+folder's name alone) and `rules --json`. Each is one JSON object; new fields may be added, existing ones keep their meaning.
+`merge report --json [--last N]` (the merge queue's tab reads it too) is a list: the last merges' entries, the same
+ones `merge report` shows (a PR dropped from the queue after its merge is not among them).
 
 ## Languages
 
@@ -458,7 +499,7 @@ depot2 agents start                # the gates (the role and the car's stage, th
 depot2 agents attach               # link it to its transcript: found by the agentId under agents.projects (the …
 depot2 agents show                 # one agent: its fields and its last actions
 depot2 agents stop                 # record its stop (the orchestrator stops the process): its spend so far on the car
-depot2 web                         # depot2's web view, seven tabs: tracks, trains, board, merge queue, agents, …
+depot2 web                         # depot2's web view, eight tabs: tracks, trains, board, merge queue, agents, …
 depot2 principles                  # the design principles (principles.json): PRINCIPLES.md is rendered from them, …
 depot2 principles add              # a new principle: the next number (never reused)
 depot2 principles set              # change one: fields replaced (the history keeps them), --words and --sub appended
@@ -485,6 +526,8 @@ depot2 merge resolve list          # the prepared resolutions, with their keys
 depot2 merge resolve drop          # take one out (the history keeps it)
 depot2 queues                      # the heads of every queue with counts (stack, merge queue, team stack, trains, …
 depot2 queues migrate              # one shot, idempotent: the stack's autostart = no written explicitly, every car's …
+depot2 artifacts                   # the cars' files: a folder per car under artifacts.dir, named by its branch — its …
+depot2 rules                       # the project's rules for its builders: the Markdown files of rules.files, …
 depot2 gender                      # set a character's grammatical gender (meta.json + spec.md)
 depot2 decide                      # record the owner's decision about a character (or all)
 depot2 decisions                   # the owner's decisions (decisions.jsonl), newest first; only reads (decide writes)
@@ -516,7 +559,7 @@ depot2/              the package: cli.py (the command line), one module per comm
 depot2/executors/    the executor interface; cli_agent.py, the bundled adapter
 depot2/hooks.py      the plugin interface
 depot2/web/          the web view's one page (HTML, CSS and JS, nothing from outside)
-examples/demo/       make-demo.sh: an invented project's depot
+examples/demo/       make-demo.sh: an invented project's depot; builder-rules.md, its rules for builders
 examples/plugins/    example_checks.py: a neutral plugin
 depot2/catalogs/     the message catalogs: en.py (the default) and ru.py; depot2/i18n.py reads them
 tests/               the tests and their stand-ins

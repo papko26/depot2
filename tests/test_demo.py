@@ -19,7 +19,7 @@ CYRILLIC = re.compile("[\u0400-\u04ff]")
 VIEWS = ("board", "board --md", "tracks", "track tr-0001", "trains", "trains next", "stack", "stack --md", "tstack",
          "ballots", "queues", "principles", "principles checks", "decisions", "agents",
          "merge", "ledger", "show builder", "car show tr-0001:1", "priority tr-0001:1", "claims", "orders",
-         "brainstorm list", "backup --status", "--help", "stack --help")
+         "brainstorm list", "backup --status", "artifacts", "artifacts --car tr-0001:1", "rules", "--help", "stack --help")
 
 
 class DemoTest(unittest.TestCase):
@@ -79,6 +79,16 @@ class DemoTest(unittest.TestCase):
         self.assertIn("| Tracks | 3 open of 3 |", self.depot("queues", lang="en"))
         self.assertIn("The answer first", self.depot("principles"))
         self.assertIn("50 MB", self.depot("decisions"))
+
+    def test_the_cars_files_and_the_rules(self):
+        out = self.depot("artifacts", lang="en")
+        self.assertIn("| tr-0001-1 | tr-0001:1 Search: the index and the query parser |", out)
+        self.assertIn("| spike-cover-cache | no car |", out)
+        self.assertIn("| sketch-tr-0001-0 | tr-0001:0 Search: a design note on ranking |", out)
+        self.assertIn("bench/query-times.csv", self.depot("artifacts", "--car", "tr-0001:1", lang="en"))
+        self.assertIn("| The cars' files | folders: 3 |", self.depot("queues", lang="en"))
+        j = json.loads(self.depot("rules", "--json"))
+        self.assertEqual([(f["title"], f["shown"]) for f in j["files"]], [("Rules for the builders of Shelfmark", True)])
 
     def test_the_project_config_is_the_demos(self):
         cfg = json.loads(self.depot("config"))
