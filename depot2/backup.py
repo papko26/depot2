@@ -134,7 +134,7 @@ def backup_lock(state, name=LOCK):
         try:
             fcntl.flock(fd, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
-            raise Busy()  # noqa: B904
+            raise Busy  # noqa: B904
         os.ftruncate(fd, 0)
         os.write(fd, ("%d\n" % os.getpid()).encode())  # noqa: UP031
         yield

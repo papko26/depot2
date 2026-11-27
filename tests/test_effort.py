@@ -48,8 +48,8 @@ class CalibrationTest(unittest.TestCase):
         self.assertEqual(effort.from_usd(6, cfg), 2.4)
 
     def test_a_bad_calibration_is_refused(self):
-        for bad in ("usage.usd_per_mtok=0", "usage.usd_per_mtok=\"x\"", "usage.mtok_per_pct=-1",
-                    "round.budget_mtok=0", "free.budget_mtok_r1=\"a lot\"", "round.stop_at_utilization=0",
+        for bad in ("usage.usd_per_mtok=0", 'usage.usd_per_mtok="x"', "usage.mtok_per_pct=-1",
+                    "round.budget_mtok=0", 'free.budget_mtok_r1="a lot"', "round.stop_at_utilization=0",
                     "round.stop_at_utilization=930"):
             with self.assertRaises(ValueError, msg=bad):
                 config.load("/nonexistent", [bad], warn=None)

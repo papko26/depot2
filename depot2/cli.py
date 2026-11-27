@@ -1428,7 +1428,7 @@ def _unrecognized(argv, extra):
     while k < len(argv) and not argv[k].startswith("-"):
         k += 1
     words += argv[i:k]
-    return msg + " — if «{}» belongs to {}, the value goes in quotes: {} \"{}\"".format(
+    return msg + ' — if «{}» belongs to {}, the value goes in quotes: {} "{}"'.format(
         " ".join(argv[i:k]), opt, opt, " ".join(words))
 
 
@@ -1495,7 +1495,7 @@ ARG_HELP = {
     "st-/tm-NNNN, #PR", "no_after": "it waits for nothing (clears --after)",
     "start": "into a free slot now: the gate into the build (the DoR, the slots, its train)",
     "when": "the start's condition in words (shown, never checked)",
-    "slots": "\"max N\" or all-free: the slots its cars may take at once",
+    "slots": '"max N" or all-free: the slots its cars may take at once',
     "met": "the condition landed (the reason carries the evidence)",
     "owner": "the owner lifts it (written as his decision about the locker)",
     "kind": "its kind", "input": "the input file the round reads", "who": "all, or one character",
@@ -2297,7 +2297,7 @@ def build_parser():
     p.set_defaults(fn=cmd_config, mutates=False)
 
     p = sub.add_parser("ledger", help="balances, open stakes, pending awards")
-    p.add_argument("--all", action="store_true", help="every transaction too (with --json: \"transactions\")")
+    p.add_argument("--all", action="store_true", help='every transaction too (with --json: "transactions")')
     p.add_argument("--json", action="store_true")
     p.set_defaults(fn=cmd_ledger, mutates=False)
 

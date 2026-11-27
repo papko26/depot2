@@ -240,7 +240,7 @@ class CliTest(unittest.TestCase):
         self.assertIn(f"  --add-dir <a snapshot of origin/main>\n  --add-dir {self.dir}\n", p.stdout)
         from depot2 import config
         warned = []
-        cfg = config.load(self.state, ["deep_dirs=[\"/x\"]", "read_dirs=[\"/y\"]"], warn=warned.append)
+        cfg = config.load(self.state, ['deep_dirs=["/x"]', 'read_dirs=["/y"]'], warn=warned.append)
         self.assertEqual(cfg["read_dirs"], ["/y"])
         self.assertEqual(len(warned), 3)
         self.assertIn("--set: deep_dirs is the old name of read_dirs, which is set too; deep_dirs ignored", warned[2])

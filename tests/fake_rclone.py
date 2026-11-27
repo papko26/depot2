@@ -73,7 +73,7 @@ def main():
         sys.stderr.write(f"fake rclone: {cmd} is forbidden in the backup\n")
         return 99
     if os.environ.get("FAKE_RCLONE_FAIL") == "network":
-        sys.stderr.write("ERROR : Failed to create file system: Get \"https://www.googleapis.com/drive/v3/files\": "
+        sys.stderr.write('ERROR : Failed to create file system: Get "https://www.googleapis.com/drive/v3/files": '
                          "dial tcp: lookup www.googleapis.com: no such host\n")
         return 1
     folder = os.path.join(os.environ["FAKE_RCLONE_DIR"], remote.split(":", 1)[1])

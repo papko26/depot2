@@ -768,8 +768,8 @@ MESSAGES = {
     "gates.limit_slots": "slots",
     "gates.limit_post": "post-stack",
     "gates.refused": ("gates: {ref} → «{target}» not passed: {text}. To pass anyway, give a reason: {cmd} --force "
-                      "--why \"…\" (recorded in the stage history: forced)"),
-    "gates.force_needs_why": "--force only with a reason: --why \"…\" (not passed: {text})",
+                      '--why "…" (recorded in the stage history: forced)'),
+    "gates.force_needs_why": '--force only with a reason: --why "…" (not passed: {text})',
     # --- the stack (stack.py) ---
     "stack.autostart_means": ("yes — the first free slot takes the object itself (`trains next`, after the trains); no "
                               "(the default) — it waits for the owner's word, `stack start`; car — a track car's object: "
@@ -784,7 +784,7 @@ MESSAGES = {
                            "them (`depot2 car stage ID docs`); the history — `depot2 car show ID`."),
     "in.stack.yes": r"yes|y|true|1|on",
     "in.stack.no": r"no|n|false|0|off",
-    "stack.queue_full": ("the queue is full ({n}): make room with depot2 stack done ID --reason \"…\" (what is no longer "
+    "stack.queue_full": ('the queue is full ({n}): make room with depot2 stack done ID --reason "…" (what is no longer '
                          "needed) or stack start ID (the head of the queue into a slot)"),
     "stack.running": "agent working",
     "stack.waiting": "waiting for a slot",
@@ -1367,7 +1367,7 @@ MESSAGES = {
     "merge.ensure_riding": "the merge queue's runner rides already (pid {pid}): no second one",
     "merge.ensure_empty": "the merge queue is empty: nothing to ride",
     "merge.ensure_stopped": "the merge queue is stopped at {id} #{pr}: {reason} — no runner started",
-    "merge.ensure_after_fix": "  once fixed: depot2 merge resume {pr}; or: depot2 merge drop {pr} --reason \"…\"",
+    "merge.ensure_after_fix": '  once fixed: depot2 merge resume {pr}; or: depot2 merge drop {pr} --reason "…"',
     "merge.ensure_start": "the runner is not riding{was}, {n} in the queue: starting it",
     "merge.ensure_stale_lock": " (the lock had pid {pid}, it is free)",
     "merge.ensure_started": "the runner rides (pid {pid}); its log: {log}",
@@ -1875,8 +1875,8 @@ MESSAGES = {
     "web.find.placeholder": "search: id, words, track, train",
     "web.find.aria": "search in the tab",
     "web.find.title": "/ to search, Esc to clear",
-    "web.find.found": "found for \"{q}\": <b>{n}</b>",
-    "web.find.nothing": "nothing found for \"{q}\"",
+    "web.find.found": 'found for "{q}": <b>{n}</b>',
+    "web.find.nothing": 'nothing found for "{q}"',
     "web.find.count_title": "found",
     "web.find.in_notes": "in the notes",
     "web.find.in_track_notes": "in the track's notes",
@@ -1935,7 +1935,7 @@ MESSAGES = {
     "web.prio.title": "priority {p} of 10 (10 is the most important)",
     "web.route.or": "or",
     "web.route.aria": "route: now {stage}",
-    "web.gate.unmet": "{gate} (entry to \"{stage}\"): {unmet}",
+    "web.gate.unmet": '{gate} (entry to "{stage}"): {unmet}',
     "web.gate.passed": "{gate} passed",
     "web.gate.passed_notes": "{gate} passed ({notes})",
     "web.merge.place": "merge queue: {pos} of {total} ({id}, {status})",
@@ -1947,8 +1947,8 @@ MESSAGES = {
     "web.mq.queue_h": "The queue",
     "web.mq.done_h": "The last merges",
     "web.mq.count": "in the merge queue: <b>{n}</b>{states}",
-    "web.mq.runner_rides": "the runner: <b class=\"g\">riding</b>",
-    "web.mq.runner_idle": "the runner: <b class=\"w\">not riding</b>, {n} in the queue",
+    "web.mq.runner_rides": 'the runner: <b class="g">riding</b>',
+    "web.mq.runner_idle": 'the runner: <b class="w">not riding</b>, {n} in the queue',
     "web.mq.runner_empty": "the runner: not riding, the queue is empty",
     "web.mq.last": "the last merge: {pr} {sha} ({at})",
     "web.mq.place_title": "its place in the queue",
@@ -2121,7 +2121,7 @@ MESSAGES = {
                    "<code>depot2</code> commands edit the queues, here they are only shown"),
     "web.q.hint_closed": ("trains, tracks, the agents' stack and the merge queue are on their own tabs; the "
                           "<code>depot2</code> commands edit the queues, here they are only shown (the closed ones: "
-                          "tick \"closed\")"),
+                          'tick "closed")'),
     "web.pc.active": "in force <b>{n}</b>",
     "web.pc.replaced": "replaced {n}",
     "web.pc.dropped": "dropped {n}",
@@ -2140,7 +2140,7 @@ MESSAGES = {
     "web.qa.bug": "bug {bug}",
     "web.qa.returns_title": "returns to build after handing in (defects)",
     "web.qa.returns": "defects {n}",
-    "web.qa.claims_title": "defects in production after \"arrived\" (claims)",
+    "web.qa.claims_title": 'defects in production after "arrived" (claims)',
     "web.qa.claims": "claims {n}",
     "web.qa.claim_line": "#{n} {date}: {why}",
     "web.qa.claim_ref": "{of} #{n}: {why}",
@@ -2160,7 +2160,7 @@ MESSAGES = {
     "web.hist.why": "why",
     "web.hist.off_route": "off the route",
     "web.hist.return": "defect: back to build",
-    "web.marks.legend": ("priority 1: gates (each has a line, none is \"violated\"); priority 2: score: ok +1, n/a "
+    "web.marks.legend": ('priority 1: gates (each has a line, none is "violated"); priority 2: score: ok +1, n/a '
                          "0, violated -1"),
     "web.marks.counts": "ok {ok} · n/a {na} · violated {bad} · not checked {none}",
     "web.marks.h_principle": "principle",
@@ -2181,7 +2181,7 @@ MESSAGES = {
     "web.panel.ask_open": "question {n}: {q} (open)",
     "web.panel.project": "a project is required ({why}): {state}",
     "web.panel.project_passed": "the stage passed",
-    "web.panel.project_skipped": "there was no \"project\" stage",
+    "web.panel.project_skipped": 'there was no "project" stage',
     "web.panel.docs": "docs needed ({need}): {word}",
     "web.panel.waits_h": "Waiting for",
     "web.panel.waits_none": "waits for nothing",

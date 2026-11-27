@@ -68,7 +68,7 @@ class MergeBase(unittest.TestCase):
         b = os.path.join(self.tmp, "bin")
         os.makedirs(b)
         with open(os.path.join(b, "gh"), "w") as f:
-            f.write(f"#!/bin/sh\nexec {sys.executable} -S {FAKE_GH} \"$@\"\n")
+            f.write(f'#!/bin/sh\nexec {sys.executable} -S {FAKE_GH} "$@"\n')
         os.chmod(os.path.join(b, "gh"), 0o755)
         os.symlink(FAKE_GIT, os.path.join(b, "git"))
         self.bare = os.path.join(self.tmp, "origin.git")
@@ -101,7 +101,7 @@ class MergeBase(unittest.TestCase):
         merge.CLOCK, merge.SLEEP = self.clock.time, self.clock.sleep
         self.sets = ["merge.clone=" + self.clone, "merge.worktrees=" + self.wt, "merge.poll_s=0",
                      "merge.scan=" + FAKE_SCAN, "merge.githubstatus=null", "merge.github_rerun_after_min=0",
-                     "merge.github_wait_max_min=0", "merge.site_check=[\"echo\", \"200\"]",
+                     "merge.github_wait_max_min=0", 'merge.site_check=["echo", "200"]',
                      "merge.smoke=" + json.dumps([sys.executable, "-c", f"print({SMOKE_OK!r})"]),
                      "plugins=" + json.dumps([EXAMPLE_PLUGIN]),
                      "merge.after_resolve=" + json.dumps([[sys.executable, "-c",

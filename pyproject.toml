@@ -47,6 +47,8 @@ extend-select = [
     "PTH203", # os-path-getatime
     "PTH205", # os-path-getctime
     "PTH210", # invalid-pathlib-with-suffix
+    "Q003",   # avoidable-escaped-quote
+    "RSE102", # unnecessary-paren-on-raise-exception
 ]
 ignore = [
     "E402",   # module-import-not-at-top-of-file

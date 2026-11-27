@@ -547,7 +547,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         with self.edit() as q:
             e = q.get(eid)
             if e["status"] == "dropped":
-                raise Dropped()
+                raise Dropped
             e.update(fields)
             if say:
                 log_line(e, say)
@@ -569,7 +569,7 @@ class Rider(TrialsMixin, WorktreesMixin):
 
     def alive(self, eid):
         if self.entry(eid)["status"] == "dropped":
-            raise Dropped()
+            raise Dropped
 
     # --- the runner's lock ---
     def lock_held(self):
@@ -615,7 +615,7 @@ class Rider(TrialsMixin, WorktreesMixin):
             if st is not None:
                 self.out("STOP: the merge queue is stopped at %s #%d: %s" % (st["id"], st["pr"],  # noqa: UP031
                                                                            (st.get("stop") or {}).get("reason")))
-                self.out("  after the fix: depot2 merge resume %d; or: depot2 merge drop %d --reason \"…\""  # noqa: UP031
+                self.out('  after the fix: depot2 merge resume %d; or: depot2 merge drop %d --reason "…"'  # noqa: UP031
                          % (st["pr"], st["pr"]))
                 return 1
             e = q.head()
@@ -640,7 +640,7 @@ class Rider(TrialsMixin, WorktreesMixin):
             while True:
                 e = self.entry(eid)
                 if e["status"] == "dropped":
-                    raise Dropped()
+                    raise Dropped
                 step = e.get("step")
                 if step is None:
                     break
@@ -739,7 +739,7 @@ class Rider(TrialsMixin, WorktreesMixin):
         e = self.entry(eid)
         self.update(eid, "stop", status="stopped", stop={"ts": stamp(self.clock()), "reason": reason, "step": e.get("step")},
                     github=None, reason=reason, say=f"STOP: {reason}")
-        self.out("  the queue is stopped: after the fix `depot2 merge resume %d`, or `depot2 merge drop %d --reason \"…\""  # noqa: UP031
+        self.out('  the queue is stopped: after the fix `depot2 merge resume %d`, or `depot2 merge drop %d --reason "…"'  # noqa: UP031
                  % (e["pr"], e["pr"]))
         try:  # the trials stood on it: thrown away (mergetrials.py)
             self.discard_trials("#%d stopped" % e["pr"])  # noqa: UP031
@@ -1172,7 +1172,7 @@ class Rider(TrialsMixin, WorktreesMixin):
                         now - last >= float(after) * 60:
                     self.do_rerun(eid, rid, f"the timer ({after} min)")
                 elif now - (epoch(g["since"]) or now) >= float(m["github_wait_max_min"]) * 60:
-                    raise GithubExit()
+                    raise GithubExit
                 pending_since = now
             else:
                 if self.github_over(eid):
@@ -1358,7 +1358,7 @@ class Rider(TrialsMixin, WorktreesMixin):
             self.update(eid, key + ("_rerun" if acted else "_rerun_refused"), **{key + "_runner": fb})
         self.github(eid, fb_reason(fb, key), fb["run"], False)  # (said once: the same reason is no change)
         if not acted and now - (epoch(fb["since"]) or now) >= float(self.m["github_wait_max_min"]) * 60:
-            raise GithubExit()  # the variable stays: the next `merge run` follows the run and sets it back
+            raise GithubExit  # the variable stays: the next `merge run` follows the run and sets it back
         return True
 
     def fb_back(self, eid, key, fb, why):

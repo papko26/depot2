@@ -247,7 +247,7 @@ def repo(cfg):
     """The project on GitHub (config `repo`, owner/name), or a ValueError that says how to set it."""
     r = cfg.get("repo")
     if not isinstance(r, str) or "/" not in r:
-        raise ValueError("repo is not set: the project on GitHub, owner/name (config.json \"repo\", or --set repo=…)")
+        raise ValueError('repo is not set: the project on GitHub, owner/name (config.json "repo", or --set repo=…)')
     return r
 
 
@@ -462,7 +462,7 @@ def check(cfg):
     if not isinstance(cfg.get("executor"), str) or not cfg["executor"]:
         raise ValueError("executor must be a module name (depot2.executors.cli_agent)")
     if not isinstance(cfg.get("project"), dict):
-        raise ValueError("project must be an object: {\"name\": ..., \"description\": ...}")
+        raise ValueError('project must be an object: {"name": ..., "description": ...}')
     from . import characters
     characters.check_config(cfg.get("characters"))
     check_merge(cfg["merge"])
@@ -499,7 +499,7 @@ def check_merge(m):
                 continue
             if not isinstance(r, dict) or not isinstance(r.get(key), str) or not r[key] or not isinstance(
                     r.get("cmd"), list) or not r["cmd"] or not all(isinstance(x, str) for x in r["cmd"]):
-                raise ValueError(f"merge.auto.{rule} must be null or {{\"{key}\": a path, \"cmd\": [a command]}}")
+                raise ValueError(f'merge.auto.{rule} must be null or {{"{key}": a path, "cmd": [a command]}}')
         if not isinstance(auto.get("union") or [], list) or not all(isinstance(x, str) and x for x in auto.get("union") or []):
             raise ValueError("merge.auto.union must be a list of path patterns")
     num("github_rerun_after_min", nullable=True)
@@ -535,5 +535,5 @@ def check_merge(m):
         if not isinstance(fb, dict) or not isinstance(fb.get("var"), str) or not fb["var"] or not all(
                 isinstance(fb.get(k), list) and fb[k] and all(isinstance(x, str) and x for x in fb[k])
                 for k in ("main", "fallback") + (("jobs",) if key == "ci_fallback" or "jobs" in fb else ())):
-            raise ValueError("merge.{} must be null or {{\"var\": a name, \"main\": [labels], \"fallback\": [labels]{}}}".format(key, ", \"jobs\": [job names]" if key == "ci_fallback" else ""))
+            raise ValueError('merge.{} must be null or {{"var": a name, "main": [labels], "fallback": [labels]{}}}'.format(key, ', "jobs": [job names]' if key == "ci_fallback" else ""))
 
