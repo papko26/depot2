@@ -10,7 +10,7 @@ queue that merges the finished pull requests one at a time.
 
 It grew inside one project and was cut out of it: everything that was that project's own (its checks, its deploy,
 its paths and machines, its team) now comes from a project config and from plugins, and the depot itself knows
-nothing about what it plans. Python 3.11+, the standard library only.
+nothing about what it plans. Requires Python 3.11 through 3.15 and uses only the standard library.
 
 **Status: extracted, not released.** The command line, the reports, the web view and the round prompts speak English
 by default; Russian is the second language (`language` in the config, or `$DEPOT2_LANG`; see [Languages](#languages)).
@@ -492,7 +492,7 @@ depot2 seed                        # one-off: state, specs, ledger, first portra
 ## Tests
 
 ```sh
-make test                                   # full suite with pytest-xdist
+make test                                   # full suite in parallel with line coverage
 uv run --locked pytest tests/test_merge.py  # one module, serially
 python3 -m unittest discover -s tests       # standard-library runner
 ```

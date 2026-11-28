@@ -1,28 +1,36 @@
 [build-system]
-requires = ["setuptools>=61"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.13.10,<0.14"]
+build-backend = "uv_build"
 
 [project]
 name = "depot2"
 version = "0.1.0"
 description = "A planning and merge depot for a team that works through outside runners"
 readme = "README.md"
-requires-python = ">=3.11"
-license = {text = "Apache-2.0"}
+requires-python = ">=3.11,<3.16"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 authors = [{name = "papko26"}, {name = "dice cafe"}]
 classifiers = [
-    "License :: OSI Approved :: Apache Software License",
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
 ]
 
 [project.scripts]
 depot2 = "depot2.cli:main"
 
-[tool.setuptools]
-packages = ["depot2", "depot2.catalogs", "depot2.executors"]
-
-[tool.setuptools.package-data]
-depot2 = ["web/*"]
+[tool.uv.build-backend]
+module-root = ""
 
 [dependency-groups]
 dev = [
@@ -30,7 +38,14 @@ dev = [
     "mypy==1.14.1",
     "pytest>=9.2.0",
     "pytest-xdist>=3.8.0",
+    "pytest-cov>=7.1.0",
 ]
+
+[tool.coverage.run]
+patch = ["subprocess"]
+
+[tool.coverage.report]
+precision = 1
 
 [tool.ruff]
 line-length = 120

@@ -18,7 +18,7 @@ lint:  ## Apply safe Ruff fixes and report remaining issues
 typecheck:  ## Check package types with mypy
 	uv run --locked mypy --python-version 3.11 -p depot2
 
-test:  ## Run the test suite in parallel
-	uv run --locked pytest -q -n auto tests
+test:  ## Run the test suite in parallel and report line coverage
+	uv run --locked pytest -q -n auto --cov=depot2 tests
 
 check: lint format-check typecheck test  ## Check lint, formatting, types, and tests
