@@ -11,14 +11,13 @@ ballots.json        the ballot queue: the rounds' points waiting for the owner, 
 
 import datetime
 import os
+from pathlib import Path
 
-from . import characters
-from . import i18n
-from .i18n import is_word, t
-from . import effort
+from . import characters, effort, i18n, stages
 from . import priority as pri
-from . import stages
-from .store import append_jsonl, now_iso, read_json, read_jsonl, write_json
+from .i18n import is_word, t
+from .store import absolute_user_path, append_jsonl, now_iso, read_json, read_jsonl, write_json
+
 
 # What a lock means; the README and the report say the same. The orchestrator honours it.
 def lock_means():
@@ -52,14 +51,14 @@ def parse_yes_no(text, flag="--autostart"):
         return True
     if is_word(word, "in.stack.no"):
         return False
-    raise StackError("%s is yes or no, got %r" % (flag, text))
+    raise StackError(f"{flag} is yes or no, got {text!r}")
 
 
 class StackError(ValueError):
     pass
 
 
-class Stack(object):
+class Stack:
     # The team stack (tstack.py) reuses this class with its own file, ids and config key.
     FILE = "stack.json"
     HISTORY = "stack-history.jsonl"
@@ -69,7 +68,7 @@ class Stack(object):
     POST = True  # the agents' stack has a post-stack; the team stack (tstack.py) has none
     STAGES = True  # the agents' objects are cars with stages (stages.py); a team item is not
 
-    def __init__(self, state, cfg):
+    def __init__(self, state, cfg) -> None:
         self.state = state
         self.cfg = cfg
         self.path = state.path(self.FILE)
@@ -77,7 +76,7 @@ class Stack(object):
         self.data = read_json(self.path) or {"next": 1, "next_lock": 1, "objects": []}
         self._links = None  # (the tracks files' stamps, {st: car})
         self._mq = None  # the merge queue's open entries (stages.merge_index), read once
-        self.notes = []  # the lines a command prints: a stage moved off the route
+        self.notes: list[str] = []  # the lines a command prints: a stage moved off the route
         self.last_forced = None  # what the last start or post forced past its gate (gates.py)
 
     # --- reading ----------------------------------------------------------------------------
@@ -108,14 +107,17 @@ class Stack(object):
         return [o for o in self.data["objects"] if o["where"] == "post"]
 
     def _ordered(self, objs):
-        return [o for o in objs if o["where"] == "slot"] + [o for o in objs if o["where"] == "post"] + \
-            [o for o in objs if o["where"] == "queue"]
+        return (
+            [o for o in objs if o["where"] == "slot"]
+            + [o for o in objs if o["where"] == "post"]
+            + [o for o in objs if o["where"] == "queue"]
+        )
 
     def get(self, oid):
         for o in self.data["objects"]:
             if o["id"] == oid:
                 return o
-        raise StackError("no %s in the stack" % oid)
+        raise StackError(f"no {oid} in the stack")
 
     def history(self):
         return read_jsonl(self.history_path)
@@ -138,7 +140,8 @@ class Stack(object):
     def dep_waiting(self, oid):
         """A dependency is not done while it is in the stack, or while it is or was the object of a track's
         car that is neither merged nor dropped (a parked car's object left the stack, its PR did not land;
-        a car sent back to its track with `stack done --car back` did no work that landed)."""
+        a car sent back to its track with `stack done --car back` did no work that landed).
+        """
         return self._dep_open(oid) or oid in self.open_car_objects()
 
     def _cars(self):
@@ -148,11 +151,16 @@ class Stack(object):
     def car_recs(self):
         """{st: (car ref, car record)} for every live object that is a track's car."""
         data = read_json(self.state.path("tracks.json")) or {}
-        return {c["st"]: ("%s:%s" % (t["id"], c["n"]), c) for t in data.get("tracks") or [] for c in t.get("cars") or []
-                if c.get("st")}
+        return {
+            c["st"]: ("{}:{}".format(t["id"], c["n"]), c)
+            for t in data.get("tracks") or []
+            for c in t.get("cars") or []
+            if c.get("st")
+        }
 
     def docs_of(self, o, recs=None):
         from . import gates
+
         if not self.STAGES:
             return None
         ref, car = (self.car_recs() if recs is None else recs).get(o["id"]) or (None, None)
@@ -170,23 +178,33 @@ class Stack(object):
     def car_places(self):
         tracks = read_json(self.state.path("tracks.json")) or {}
         trains = read_json(self.state.path("trains.json")) or {}
-        live = {r: tn for tn in trains.get("trains") or [] if tn.get("state") in ("design", "impl", "merge")
-                for r in tn.get("cars") or []}
+        live = {
+            r: tn
+            for tn in trains.get("trains") or []
+            if tn.get("state") in ("design", "impl", "merge")
+            for r in tn.get("cars") or []
+        }
         out = {}
-        for t in tracks.get("tracks") or []:
-            for c in t.get("cars") or []:
+        for track in tracks.get("tracks") or []:
+            for c in track.get("cars") or []:
                 if c.get("st"):
-                    ref = "%s:%s" % (t["id"], c["n"])
+                    ref = "{}:{}".format(track["id"], c["n"])
                     tn = live.get(ref)
-                    out[c["st"]] = {"car": ref, "track": t["id"], "track_title": t["title"],
-                                    "train": tn["name"] if tn else None, "train_title": tn["title"] if tn else None}
+                    out[c["st"]] = {
+                        "car": ref,
+                        "track": track["id"],
+                        "track_title": track["title"],
+                        "train": tn["name"] if tn else None,
+                        "train_title": tn["title"] if tn else None,
+                    }
         return out
 
     def car_links(self):
         """{st: car} for every object that is or was a track's car: from the tracks' history (`--car back`
-        clears a car's live link, a car stacked again gets a new object), the live link winning."""
+        clears a car's live link, a car stacked again gets a new object), the live link winning.
+        """
         paths = [self.state.path("tracks.json"), self.state.path("tracks-history.jsonl")]
-        stamp = tuple((os.stat(p).st_mtime_ns, os.stat(p).st_size) if os.path.exists(p) else None for p in paths)
+        stamp = tuple((Path(p).stat().st_mtime_ns, Path(p).stat().st_size) if Path(p).exists() else None for p in paths)
         if self._links and self._links[0] == stamp:
             return self._links[1]
         data = read_json(paths[0]) or {}
@@ -253,11 +271,13 @@ class Stack(object):
             return None
         if row["obj"].get("stage"):
             return row["obj"]["stage"]
-        return self._leaving_stage(row["obj"], row.get("outcome"), row.get("reason"), parked=row["event"] == "park",
-                                   fresh=False)
+        return self._leaving_stage(
+            row["obj"], row.get("outcome"), row.get("reason"), parked=row["event"] == "park", fresh=False
+        )
 
     def _leaving_stage(self, o, outcome, reason, parked=False, fresh=True):
         from .tracks import NOT_MERGED_RE, reads_dropped
+
         if parked:
             return "build"
         if outcome == "back":
@@ -273,8 +293,15 @@ class Stack(object):
         """Move an object's stage in memory (the caller saves); a move off the route is said in `notes`."""
         if not self.STAGES:
             return None
-        row = stages.record(o, stage, by, why, default=None if o.get("stage") else self.stage_default_why(o)[0],
-                            forced=forced, gates=gates)
+        row = stages.record(
+            o,
+            stage,
+            by,
+            why,
+            default=None if o.get("stage") else self.stage_default_why(o)[0],
+            forced=forced,
+            gates=gates,
+        )
         line = stages.say(o["id"], row)
         if line:
             self.notes.append(line)
@@ -289,9 +316,11 @@ class Stack(object):
             return row
         obj = self.left_obj(oid)
         if obj is None:
-            raise StackError("no %s in the stack" % oid)
+            raise StackError(f"no {oid} in the stack")
         obj = dict(obj)
-        row = stages.record(obj, stage, by, why, default=None if obj.get("stage") else self.left_stage(oid), forced=forced)
+        row = stages.record(
+            obj, stage, by, why, default=None if obj.get("stage") else self.left_stage(oid), forced=forced
+        )
         if row:
             self._save("stage", oid, stage=stages.hist(row), why=why, by=by, obj=obj, left=True)
         return row
@@ -309,9 +338,26 @@ class Stack(object):
         self.state.touch(self.history_path)
         return rec
 
-    def add(self, title, brief=None, branch=None, depends=(), at=None, pr=None, status=None, check_queue=True,
-            size=None, est_mtok=None, autostart=False, stage=None, by="stack add", why=None, extra=None,
-            forced=None, priority=None):
+    def add(
+        self,
+        title,
+        brief=None,
+        branch=None,
+        depends=(),
+        at=None,
+        pr=None,
+        status=None,
+        check_queue=True,
+        size=None,
+        est_mtok=None,
+        autostart=False,
+        stage=None,
+        by="stack add",
+        why=None,
+        extra=None,
+        forced=None,
+        priority=None,
+    ):
         if not (title or "").strip():
             raise StackError("a stack object needs a title")
         if stage is not None and stage not in stages.STAGES:
@@ -320,21 +366,36 @@ class Stack(object):
             raise StackError(t("stack.queue_full", n=self.queue_max))
         bad = [d for d in depends or () if not self._known(d)]
         if bad:
-            raise StackError("unknown dependency: %s" % ", ".join(bad))
+            raise StackError("unknown dependency: {}".format(", ".join(bad)))
         effort.check_size(size, self.cfg)
         oid = self._new_id()
-        obj = {"id": oid, "title": title.strip(), "where": "queue", "branch": branch, "pr": pr,
-               "brief": os.path.abspath(os.path.expanduser(brief)) if brief else None,
-               "depends_on": list(depends or ()), "status": status or t("stack.waiting"), "added": now_iso(),
-               "started": None, "lock": None, "size": size, "est_mtok": est_mtok, "spent_mtok": None,
-               "autostart": bool(autostart), "priority": pri.DEFAULT if priority is None else pri.parse(priority)}
+        obj = {
+            "id": oid,
+            "title": title.strip(),
+            "where": "queue",
+            "branch": branch,
+            "pr": pr,
+            "brief": absolute_user_path(brief) if brief else None,
+            "depends_on": list(depends or ()),
+            "status": status or t("stack.waiting"),
+            "added": now_iso(),
+            "started": None,
+            "lock": None,
+            "size": size,
+            "est_mtok": est_mtok,
+            "spent_mtok": None,
+            "autostart": bool(autostart),
+            "priority": pri.DEFAULT if priority is None else pri.parse(priority),
+        }
         obj.update(extra or {})
         if self.STAGES:
-            stages.start(obj, stage or ("sketch" if brief else "bogie"), by, why, forced=bool(forced), gates=forced or None)
+            stages.start(
+                obj, stage or ("sketch" if brief else "bogie"), by, why, forced=bool(forced), gates=forced or None
+            )
         return self._insert(obj, at)
 
     def _new_id(self):
-        oid = "%s-%04d" % (self.PREFIX, self.data["next"])
+        oid = "%s-%04d" % (self.PREFIX, self.data["next"])  # noqa: UP031
         self.data["next"] += 1
         return oid
 
@@ -343,8 +404,11 @@ class Stack(object):
         pos = len(q) if at is None else max(0, min(len(q), int(at) - 1))
         others = [o for o in self.data["objects"] if o["where"] != "queue"]
         self.data["objects"] = others + q[:pos] + [obj] + q[pos:]
-        repair = {"kind": "repair", "repairs": obj.get("repairs"), "bug": obj.get("bug")} \
-            if obj.get("kind") == "repair" else {}  # a team stack item's own `kind` is no repair
+        repair = (
+            {"kind": "repair", "repairs": obj.get("repairs"), "bug": obj.get("bug")}
+            if obj.get("kind") == "repair"
+            else {}
+        )  # a team stack item's own `kind` is no repair
         self._save("add", obj["id"], title=obj["title"], at=pos + 1, stage=obj.get("stage"), **repair)
         return obj
 
@@ -353,39 +417,58 @@ class Stack(object):
         head of the queue when none is free; its PR, branch and brief stay, and a lock does not hold it
         (a lock holds the merge; its agent may work to meet the condition). The way into the build is a soft
         gate (gates.py): the DoR and the slots; `force` with `why` passes it, recorded. passed: the caller
-        checked the gate already (`tracks car stack --start`): what it forced, or {}."""
+        checked the gate already (`tracks car stack --start`): what it forced, or {}.
+        """
         o = self.get(oid)
         if o["where"] == "post":
             return self._unpost(o, branch, reason, by)
         if o["where"] != "queue":
-            raise StackError("%s is in a slot already" % oid)
+            raise StackError(f"{oid} is in a slot already")
         if o.get("lock"):
-            raise StackError("%s is locked (%s, %s: %s): a locked object does not start"
-                             % (oid, o["lock"]["id"], characters.name(o["lock"]["by"]), o["lock"]["condition"]))
+            raise StackError(
+                "{} is locked ({}, {}: {}): a locked object does not start".format(
+                    oid, o["lock"]["id"], characters.name(o["lock"]["by"]), o["lock"]["condition"]
+                )
+            )
         forced = self.start_gate(o, force, why) if passed is None else (passed or None)
         self.last_forced = forced
-        o.update(where="slot", started=now_iso(),
-                 status=t(self.RUNNING_KEY) if i18n.matches(o["status"], "stack.waiting") else o["status"])
+        o.update(
+            where="slot",
+            started=now_iso(),
+            status=t(self.RUNNING_KEY) if i18n.matches(o["status"], "stack.waiting") else o["status"],
+        )
         parked = o.pop("parked", None)  # `stack start` by hand brings a parked object back
         if branch:
             o["branch"] = branch
         row = self._stage(o, "build", by, why if forced else reason, forced=bool(forced), gates=forced)
-        self._save("start", oid, branch=branch, unparked=True if parked else None, reason=reason, stage=stages.hist(row),
-                   forced=True if forced else None, why=why if forced else None, gates=forced)
+        self._save(
+            "start",
+            oid,
+            branch=branch,
+            unparked=True if parked else None,
+            reason=reason,
+            stage=stages.hist(row),
+            forced=True if forced else None,
+            why=why if forced else None,
+            gates=forced,
+        )
         return o
 
     def start_gate(self, o, force=False, why=None, cmd=None):
         """The way into the build for an object in the queue: the DoR (from a planning stage; the `after` from
-        any, as before the gates) and the slots. None, or what --force passed ({gate: [items]})."""
+        any, as before the gates) and the slots. None, or what --force passed ({gate: [items]}).
+        """
         from . import gates
+
         if not self.STAGES:  # a team item has no stage and no gate: the old refusals
             waiting = [d for d in o.get("depends_on") or [] if self.dep_waiting(d)]
             if waiting:
-                raise StackError("%s depends on %s, not done yet" % (o["id"], ", ".join(waiting)))
+                raise StackError("{} depends on {}, not done yet".format(o["id"], ", ".join(waiting)))
             if len(self.in_slots()) >= self.slots_n:
-                raise StackError("no free slot (%d/%d)" % (len(self.in_slots()), self.slots_n))
+                raise StackError("no free slot (%d/%d)" % (len(self.in_slots()), self.slots_n))  # noqa: UP031
             return None
         from .tracks import Tracks
+
         tr = Tracks(self.state, self.cfg)
         tr._stack = self
         t, c = tr.car_by_stack(o["id"])
@@ -395,15 +478,24 @@ class Stack(object):
             # car's `after` gates its merge, not its work)
             dor = gates.dor_unmet(self, tr, obj=o, items=[i for i in gates.dor_items(self.cfg) if i == "after"])
         unmet = {"DoR": dor, "limit": gates.slots_unmet(self)}
-        return gates.check(unmet, force, why, o["id"], stages.ru("build"),
-                           cmd or "depot2 stack start %s" % o["id"], error=StackError)
+        return gates.check(
+            unmet,
+            force,
+            why,
+            o["id"],
+            stages.ru("build"),
+            cmd or "depot2 stack start {}".format(o["id"]),
+            error=StackError,
+        )
 
     def _unpost(self, o, branch, reason, by="stack start"):
         oid = o["id"]
         free = len(self.in_slots()) < self.slots_n
         if not free and len(self.queue()) >= self.queue_max:
-            raise StackError("no free slot (%d/%d) and the queue is full (%d): %s stays in the post-stack"
-                             % (len(self.in_slots()), self.slots_n, self.queue_max, oid))
+            raise StackError(
+                "no free slot (%d/%d) and the queue is full (%d): %s stays in the post-stack"  # noqa: UP031
+                % (len(self.in_slots()), self.slots_n, self.queue_max, oid)
+            )
         o.pop("posted", None)
         if branch:
             o["branch"] = branch
@@ -414,8 +506,9 @@ class Stack(object):
         else:
             o.update(where="queue", status=t("stack.waiting"))
             rest = [x for x in self.data["objects"] if x is not o]
-            self.data["objects"] = [x for x in rest if x["where"] != "queue"] + [o] + \
-                [x for x in rest if x["where"] == "queue"]
+            self.data["objects"] = (
+                [x for x in rest if x["where"] != "queue"] + [o] + [x for x in rest if x["where"] == "queue"]
+            )
             self._save("start", oid, branch=branch, unposted=True, reason=reason, at=1, stage=stages.hist(row))
         return o
 
@@ -425,14 +518,14 @@ class Stack(object):
         if note is not None:
             if not note.strip():
                 raise StackError("an empty --note adds nothing")
-            changed["notes"] = list(o.get("notes") or []) + ["%s: %s" % (now_iso()[:10], note.strip())]
+            changed["notes"] = [*list(o.get("notes") or []), f"{now_iso()[:10]}: {note.strip()}"]
         if "ci" in changed:
             changed["ci"] = ci_record(changed["ci"])
         handed = self._handed(dod)
         if handed:
             changed["dod"] = dict(o.get("dod") or {}, **handed)
         if "brief" in changed:
-            changed["brief"] = os.path.abspath(os.path.expanduser(changed["brief"]))
+            changed["brief"] = absolute_user_path(changed["brief"])
         if "autostart" in changed:
             changed["autostart"] = bool(changed["autostart"])
         if "priority" in changed:
@@ -447,19 +540,21 @@ class Stack(object):
         o.update(changed)
         if note is not None:  # the history row keeps the line added, not the whole list again
             changed.pop("notes")
-        self._save("set", oid, est_cleared=True if clear_est else None, note_added=note.strip() if note else None,
-                   **changed)
+        self._save(
+            "set", oid, est_cleared=True if clear_est else None, note_added=note.strip() if note else None, **changed
+        )
         return o
 
     @staticmethod
     def _handed(dod):
         from .gates import handed
+
         return {k: handed(v) for k, v in (dod or {}).items() if v is not None}
 
     def move(self, oid, at):
         o = self.get(oid)
         if o["where"] != "queue":
-            raise StackError("%s is in a slot: only the queue has an order" % oid)
+            raise StackError(f"{oid} is in a slot: only the queue has an order")
         q = [x for x in self.queue() if x["id"] != oid]
         pos = max(0, min(len(q), int(at) - 1))
         self.data["objects"] = [x for x in self.data["objects"] if x["where"] != "queue"] + q[:pos] + [o] + q[pos:]
@@ -469,10 +564,11 @@ class Stack(object):
     def done(self, oid, reason, outcome=None, by="stack done"):
         o = self.get(oid)
         if o.get("lock"):
-            raise StackError("%s is locked (%s): lift it first (stack unlock %s --met|--owner)"
-                             % (oid, o["lock"]["id"], oid))
+            raise StackError(
+                "{} is locked ({}): lift it first (stack unlock {} --met|--owner)".format(oid, o["lock"]["id"], oid)
+            )
         if outcome is not None and outcome not in OUTCOMES:
-            raise StackError("--car is one of %s" % ", ".join(OUTCOMES))
+            raise StackError("--car is one of {}".format(", ".join(OUTCOMES)))
         self.data["objects"] = [x for x in self.data["objects"] if x["id"] != oid]
         row = self._stage(o, self._leaving_stage(o, outcome, reason), by, reason) if self.STAGES else None
         self._save("done", oid, reason=reason, obj=o, outcome=outcome, stage=stages.hist(row))
@@ -482,16 +578,19 @@ class Stack(object):
         """A slot whose PR waits (blocked, e.g. by a train) and no agent works: it frees the slot.
         leave=True (a track's car): the object leaves the stack; the car goes back to its track with
         its PR (tracks.py on_stack "park"). Else: slot → the head of the queue, with its branch, PR
-        and status; a freed slot never takes it by itself, `stack start` brings it back."""
+        and status; a freed slot never takes it by itself, `stack start` brings it back.
+        """
         o = self.get(oid)
         if o["where"] != "slot":
-            raise StackError("%s is not in a slot: only an object in a slot is parked" % oid)
+            raise StackError(f"{oid} is not in a slot: only an object in a slot is parked")
         if not (reason or "").strip():
             raise StackError("park needs --reason")
         if leave:
             if o.get("lock"):
-                raise StackError("%s is locked (%s): lift it first (stack unlock %s --met|--owner); a car's object "
-                                 "leaves the stack when it is parked" % (oid, o["lock"]["id"], oid))
+                raise StackError(
+                    "{} is locked ({}): lift it first (stack unlock {} --met|--owner); a car's object "
+                    "leaves the stack when it is parked".format(oid, o["lock"]["id"], oid)
+                )
             self.data["objects"] = [x for x in self.data["objects"] if x["id"] != oid]
             row = self._stage(o, "build", by, reason)  # a parked PR is still in build: it waits, blocked
             self._save("park", oid, reason=reason, obj=o, left=True, stage=stages.hist(row))
@@ -501,37 +600,55 @@ class Stack(object):
         o.update(where="queue", parked={"ts": now_iso(), "reason": reason.strip()})
         row = self._stage(o, "build", by, reason)
         rest = [x for x in self.data["objects"] if x is not o]
-        self.data["objects"] = [x for x in rest if x["where"] != "queue"] + [o] + [x for x in rest if x["where"] == "queue"]
+        self.data["objects"] = (
+            [x for x in rest if x["where"] != "queue"] + [o] + [x for x in rest if x["where"] == "queue"]
+        )
         self._save("park", oid, reason=reason, at=1, stage=stages.hist(row))
         return o
 
-    def post(self, oid, reason=None, ci=None, pr=None, by="stack post", force=False, why=None, dod=None,
-             principles=None):
+    def post(
+        self, oid, reason=None, ci=None, pr=None, by="stack post", force=False, why=None, dod=None, principles=None
+    ):
         o = self.get(oid)
         if not self.POST:
             raise StackError("this stack has no post-stack")
         if o["where"] == "post":
-            raise StackError("%s is in the post-stack already" % oid)
+            raise StackError(f"{oid} is in the post-stack already")
         if not (o.get("pr") or pr):
-            raise StackError("%s has no PR: only a PR that waits for the owner's merge goes to the post-stack "
-                             "(stack set %s --pr N first)" % (oid, oid))
+            raise StackError(
+                f"{oid} has no PR: only a PR that waits for the owner's merge goes to the post-stack "
+                f"(stack set {oid} --pr N first)"
+            )
         if o.get("lock"):
-            raise StackError("%s is locked (%s, %s: %s): a locked object does not merge; lift it first "
-                             "(stack unlock %s --met|--owner)" % (oid, o["lock"]["id"], characters.name(o["lock"]["by"]),
-                                                                 o["lock"]["condition"], oid))
+            raise StackError(
+                "{} is locked ({}, {}: {}): a locked object does not merge; lift it first "
+                "(stack unlock {} --met|--owner)".format(
+                    oid, o["lock"]["id"], characters.name(o["lock"]["by"]), o["lock"]["condition"], oid
+                )
+            )
         from . import gates
+
         handed = self._handed(dod)
         was_ci = o.get("ci")
         # --ci, else the one recorded (a green one stamped now, a red or pending one kept: the DoD sees it)
-        recorded = ci_record(ci) if ci else ci_record("green") if i18n.matches((was_ci or {}).get("state"),
-                                                                                "stack.ci.green") else was_ci
+        recorded = (
+            ci_record(ci)
+            if ci
+            else ci_record("green")
+            if i18n.matches((was_ci or {}).get("state"), "stack.ci.green")
+            else was_ci
+        )
         probe = dict(o, ci=recorded, dod=dict(o.get("dod") or {}, **handed))
         to_accept = oid not in self.mq_index()["st"]
-        unmet = {"DoD": gates.dod_unmet(self.cfg, probe, principles=principles, docs=self.docs_of(o))
-                 if to_accept and self.STAGES else [],
-                 "limit": gates.post_unmet(self, oid, o["where"])}
-        forced = gates.check(unmet, force, why, oid, stages.ru("acceptance"), "depot2 stack post %s" % oid,
-                             error=StackError)
+        unmet = {
+            "DoD": gates.dod_unmet(self.cfg, probe, principles=principles, docs=self.docs_of(o))
+            if to_accept and self.STAGES
+            else [],
+            "limit": gates.post_unmet(self, oid, o["where"]),
+        }
+        forced = gates.check(
+            unmet, force, why, oid, stages.ru("acceptance"), f"depot2 stack post {oid}", error=StackError
+        )
         self.last_forced = forced
         was = o["where"]
         if not o.get("pr"):
@@ -543,18 +660,33 @@ class Stack(object):
         o["ci"] = recorded or (ci_record("green") if "ci" not in gates.dod_items(self.cfg) else None)
         if handed:
             o["dod"] = probe["dod"]
-        row = self._stage(o, "acceptance", by, why if forced else reason, forced=bool(forced), gates=forced) \
-            if to_accept else None
-        self._save("post", oid, reason=reason, was=was, pr=o["pr"], ci=o["ci"], dod=handed or None,
-                   stage=stages.hist(row), forced=True if forced else None, why=why if forced else None, gates=forced)
+        row = (
+            self._stage(o, "acceptance", by, why if forced else reason, forced=bool(forced), gates=forced)
+            if to_accept
+            else None
+        )
+        self._save(
+            "post",
+            oid,
+            reason=reason,
+            was=was,
+            pr=o["pr"],
+            ci=o["ci"],
+            dod=handed or None,
+            stage=stages.hist(row),
+            forced=True if forced else None,
+            why=why if forced else None,
+            gates=forced,
+        )
         return o
 
     def restore(self, obj, check_queue=True, **fields):
         """A parked car's object comes back (`tracks car stack`): the same id, at the end of the queue,
-        so whatever waits for it keeps waiting for it."""
+        so whatever waits for it keeps waiting for it.
+        """
         oid = obj["id"]
         if self._dep_open(oid):
-            raise StackError("%s is in the stack already" % oid)
+            raise StackError(f"{oid} is in the stack already")
         if check_queue and len(self.queue()) >= self.queue_max:
             raise StackError(t("stack.queue_full", n=self.queue_max))
         o = dict(obj)
@@ -569,18 +701,26 @@ class Stack(object):
     def lock(self, oid, by, condition, why, round_id, tx, price):
         o = self.get(oid)
         if o.get("lock"):
-            raise StackError("%s is locked already (%s)" % (oid, o["lock"]["id"]))
-        lid = "lk-%04d" % self.data["next_lock"]
+            raise StackError("{} is locked already ({})".format(oid, o["lock"]["id"]))
+        lid = "lk-%04d" % self.data["next_lock"]  # noqa: UP031
         self.data["next_lock"] += 1
-        o["lock"] = {"id": lid, "by": by, "condition": condition, "why": why, "round": round_id, "ts": now_iso(),
-                     "tx": tx, "price": price}
+        o["lock"] = {
+            "id": lid,
+            "by": by,
+            "condition": condition,
+            "why": why,
+            "round": round_id,
+            "ts": now_iso(),
+            "tx": tx,
+            "price": price,
+        }
         self._save("lock", oid, lock=o["lock"])
         return o["lock"]
 
     def unlock(self, oid, how, reason):
         o = self.get(oid)
         if not o.get("lock"):
-            raise StackError("%s has no lock" % oid)
+            raise StackError(f"{oid} has no lock")
         lock = o["lock"]
         o["lock"] = None
         self._save("unlock", oid, lock=lock, how=how, reason=reason)
@@ -594,7 +734,7 @@ class Stack(object):
         slots = self.in_slots()
         for i in range(self.slots_n):
             out.append((t("stack.num_slot", n=i + 1), "slot", slots[i] if i < len(slots) else None))
-        for o in slots[self.slots_n:]:  # more in slots than the config allows now: still shown
+        for o in slots[self.slots_n :]:  # more in slots than the config allows now: still shown
             out.append((t("stack.num_slot_over"), "slot", o))
         for i, o in enumerate(self.posted(), 1):
             out.append((t("stack.num_post", n=i), "post", o))
@@ -617,6 +757,7 @@ class Stack(object):
         agents = {}
         if self.STAGES:
             from .agents import live_by_object
+
             agents = live_by_object(self.state, self.cfg, places)
         # the agents' stack is the board's view (board.py): its parts are the board's columns, with their limits
         board = self.STAGES
@@ -626,36 +767,56 @@ class Stack(object):
         parts.append((t("stack.part_queue_board" if board else "stack.part_queue"), "queue", len(q), self.queue_max))
         for part, where, n, cap in parts:
             over = t("stack.over_limit") if n > cap else ""
-            L.append("| **%s (%d/%d)%s** | | | | | | | | | | |%s" % (part, n, cap, over, blank))
+            L.append("| **%s (%d/%d)%s** | | | | | | | | | | |%s" % (part, n, cap, over, blank))  # noqa: UP031
             if where == "post" and not post:
-                L.append("| — | %s | %s | | | | | | | | |%s" % (WHERE["post"], t("stack.empty"), blank))
+                L.append("| — | {} | {} | | | | | | | | |{}".format(WHERE["post"], t("stack.empty"), blank))
             for num, w, o in rows:
                 if w != where:
                     continue
                 if o is None:
-                    L.append("| %s | %s | %s | | | | | | | | |%s" % (num, WHERE[w], t("stack.free"), blank))
+                    L.append("| {} | {} | {} | | | | | | | | |{}".format(num, WHERE[w], t("stack.free"), blank))
                     continue
                 pl = (places or {}).get(o["id"]) or {}
-                cells = (" %s | %s |" % (_cell(place_cell(pl, "train")), _cell(place_cell(pl, "track")))
-                         if places is not None else "")
-                L.append("| %s | %s | %s %s | %s | %s | %s | %s | %s | %s | %s | %s |%s" % (
-                    num, WHERE[w], o["id"], _cell(o["title"]), pri.cell(o), _cell(_branch_pr(o)),
-                    _cell(post_cell(o, now) if w == "post"
-                          else status_cell(o, agents.get(o["id"]) if w == "slot" else None)),
-                    autostart_cell(o, cars),
-                    effort_cell(o, self.cfg), ", ".join(o.get("depends_on") or []) or "—", _cell(lock_cell(o.get("lock"))),
-                    self.stage_cell(o, recs), cells))
+                cells = (
+                    " {} | {} |".format(_cell(place_cell(pl, "train")), _cell(place_cell(pl, "track")))
+                    if places is not None
+                    else ""
+                )
+                L.append(
+                    "| {} | {} | {} {} | {} | {} | {} | {} | {} | {} | {} | {} |{}".format(
+                        num,
+                        WHERE[w],
+                        o["id"],
+                        _cell(o["title"]),
+                        pri.cell(o),
+                        _cell(_branch_pr(o)),
+                        _cell(
+                            post_cell(o, now)
+                            if w == "post"
+                            else status_cell(o, agents.get(o["id"]) if w == "slot" else None)
+                        ),
+                        autostart_cell(o, cars),
+                        effort_cell(o, self.cfg),
+                        ", ".join(o.get("depends_on") or []) or "—",
+                        _cell(lock_cell(o.get("lock"))),
+                        self.stage_cell(o, recs),
+                        cells,
+                    )
+                )
             if where == "post":  # the merge queue (merge.py), under the post-stack: what rides, its step, what waits
                 from . import merge
+
                 L.extend(merge.stack_part(self.state, self.cfg, now, places=places))
         L.append("")
         if self.STAGES:
             L += self.marks_lines(rows, places or {})
         if self.STAGES:
             from .board import summary_line
+
             L.append(summary_line(self.state, self.cfg))
         if self.POST:
             from . import merge
+
             L.append(t("stack.legend_post", means=post_means()))
             L.append(merge.legend(self.state))
         L.append(t("stack.legend_lock", means=lock_means()))
@@ -667,19 +828,28 @@ class Stack(object):
 
     def marks_lines(self, rows, places):
         """Under the table: the marks by the principles (marks.py) of the objects in the slots and the post-stack, each
-        its car's (a stack object that is no car: its own); nothing when the third check is empty."""
+        its car's (a stack object that is no car: its own); nothing when the third check is empty.
+        """
         from . import marks
+
         pl = marks.plist(self.state, self.cfg)
         busy = [(num, o) for num, w, o in rows if o is not None and w in ("slot", "post")]
         if not pl or not busy:
             return []
-        cars = {c["st"]: c for t in (read_json(self.state.path("tracks.json")) or {}).get("tracks") or []
-                for c in t.get("cars") or [] if c.get("st")}
+        cars = {
+            c["st"]: c
+            for t in (read_json(self.state.path("tracks.json")) or {}).get("tracks") or []
+            for c in t.get("cars") or []
+            if c.get("st")
+        }
         L = [t("stack.marks_head")]
         for num, o in busy:
             ref = (places.get(o["id"]) or {}).get("car")
-            L.append("- %s %s%s: %s" % (num, o["id"], " (%s)" % ref if ref else "",
-                                        marks.of(cars.get(o["id"]) or o, pl)["cell"]))
+            L.append(
+                "- {} {}{}: {}".format(
+                    num, o["id"], f" ({ref})" if ref else "", marks.of(cars.get(o["id"]) or o, pl)["cell"]
+                )
+            )
         L.append("")
         return L
 
@@ -687,6 +857,7 @@ class Stack(object):
         places = self.car_places() if self.STAGES else {}
         if self.STAGES:
             from .agents import live_by_object
+
             agents = live_by_object(self.state, self.cfg, places)
         else:
             agents = {}
@@ -695,21 +866,44 @@ class Stack(object):
             out = dict({"autostart": False}, **o)
             if self.STAGES:
                 pl = places.get(o["id"]) or {}
-                out.update(stage=self.stage_of(o), stages=o.get("stages") or [], car=pl.get("car"),
-                           track=pl.get("track"), track_title=pl.get("track_title"), train=pl.get("train"),
-                           train_title=pl.get("train_title"), agent=agents.get(o["id"]))
+                out.update(
+                    stage=self.stage_of(o),
+                    stages=o.get("stages") or [],
+                    car=pl.get("car"),
+                    track=pl.get("track"),
+                    track_title=pl.get("track_title"),
+                    train=pl.get("train"),
+                    train_title=pl.get("train_title"),
+                    agent=agents.get(o["id"]),
+                )
             return out
-        out = {"slots": self.slots_n, "queue_max": self.queue_max, "in_slots": [norm(o) for o in self.in_slots()],
-               "queue": [norm(o) for o in self.queue()]}
+
+        out = {
+            "slots": self.slots_n,
+            "queue_max": self.queue_max,
+            "in_slots": [norm(o) for o in self.in_slots()],
+            "queue": [norm(o) for o in self.queue()],
+        }
         if self.POST:
             from . import merge
+
             out.update(post_max=self.post_max, post=[norm(o) for o in self.posted()], merge=merge.to_json(self.state))
         return out
 
 
 # The words --ci knows, as a CI state (its word: CI_RU, stored in the run's language; read in every one).
-CI_CODE = {"green": "green", "success": "green", "passed": "green", "ok": "green", "red": "red", "failure": "red",
-           "failed": "red", "pending": "running", "running": "running", "queued": "running"}
+CI_CODE = {
+    "green": "green",
+    "success": "green",
+    "passed": "green",
+    "ok": "green",
+    "red": "red",
+    "failure": "red",
+    "failed": "red",
+    "pending": "running",
+    "running": "running",
+    "queued": "running",
+}
 CI_RU = i18n.Labels("stack.ci", ("green", "red", "running"))
 CI_KEYS = tuple("stack.ci." + k for k in CI_RU)  # a stored CI word in any language is shown in the run's
 WHERE = i18n.Labels("stack.where", ("slot", "post", "queue"))  # a row's place (Stack.rows), as the table shows it
@@ -735,7 +929,7 @@ def age_ru(iso, now=None):
         return t("stack.age_m", m=mins)
     h, m = divmod(mins, 60)
     if h < 24:
-        return t("stack.age_hm", h=h, mm="%02d" % m)
+        return t("stack.age_hm", h=h, mm="%02d" % m)  # noqa: UP031
     d, h = divmod(h, 24)
     return t("stack.age_dh", d=d, h=h)
 
@@ -743,8 +937,12 @@ def age_ru(iso, now=None):
 def post_cell(o, now=None):
     p = o.get("posted") or {}
     ci = o.get("ci") or {}
-    parts = ["CI %s (%s)" % (i18n.retell(ci.get("state"), *CI_KEYS) or "?", (ci.get("ts") or "?")[:16].replace("T", " ")),
-             t("stack.post_waits", age=age_ru(p.get("ts"), now))]
+    parts = [
+        "CI {} ({})".format(
+            i18n.retell(ci.get("state"), *CI_KEYS) or "?", (ci.get("ts") or "?")[:16].replace("T", " ")
+        ),
+        t("stack.post_waits", age=age_ru(p.get("ts"), now)),
+    ]
     if o.get("status"):
         parts.append(o["status"])
     if p.get("reason"):
@@ -758,7 +956,7 @@ def effort_cell(o, cfg):
 
 def place_cell(pl, what):
     key = pl.get(what)
-    return "%s %s" % (key, pl.get(what + "_title") or "") if key else "—"
+    return "{} {}".format(key, pl.get(what + "_title") or "") if key else "—"
 
 
 def autostart_cell(o, cars=()):
@@ -775,6 +973,7 @@ def status_cell(o, agent=None):
     s += t("stack.parked_note", day=p["ts"][:10], reason=p["reason"]) if p else ""
     if agent:
         from .agents import agent_cell
+
         return agent_cell(agent) + ("" if s == "—" else " · " + s)
     return s
 
@@ -782,11 +981,11 @@ def status_cell(o, agent=None):
 def lock_cell(lock):
     if not lock:
         return "—"
-    return "%s %s: %s (−%s)" % (lock["id"], characters.name(lock["by"]), lock["condition"], lock.get("price", "?"))
+    return "{} {}: {} (-{})".format(lock["id"], characters.name(lock["by"]), lock["condition"], lock.get("price", "?"))
 
 
 def _branch_pr(o):
-    parts = [x for x in (o.get("branch"), ("PR #%s" % o["pr"]) if o.get("pr") else None) if x]
+    parts = [x for x in (o.get("branch"), ("PR #{}".format(o["pr"])) if o.get("pr") else None) if x]
     return " / ".join(parts) or "—"
 
 
@@ -800,10 +999,10 @@ BALLOT_STATUSES = ("waiting", "presenting", "answered", "dropped")
 BALLOT_RU = i18n.Labels("stack.ballot", BALLOT_STATUSES)
 
 
-class Ballots(object):
+class Ballots:
     """The owner's ballot queue: every finished round, in order."""
 
-    def __init__(self, state):
+    def __init__(self, state) -> None:
         self.state = state
         self.path = state.path("ballots.json")
         self.data = read_json(self.path) or {"entries": []}
@@ -815,7 +1014,7 @@ class Ballots(object):
         for e in self.data["entries"]:
             if e["round"] == rid:
                 return e
-        raise StackError("%s is not in the ballot queue" % rid)
+        raise StackError(f"{rid} is not in the ballot queue")
 
     def has(self, rid):
         return any(e["round"] == rid for e in self.data["entries"])
@@ -826,11 +1025,19 @@ class Ballots(object):
 
     def add(self, rec, points_order, title):
         if self.has(rec["id"]):
-            raise StackError("%s is in the ballot queue already" % rec["id"])
-        e = {"round": rec["id"], "title": title, "kind": rec["kind"],
-             "report": os.path.join(self.state.rounds_dir(), rec["id"], "report.md"),
-             "created": rec.get("finished") or rec.get("created"), "status": "waiting", "at_point": None,
-             "points_left": list(points_order), "answered": [], "notes": []}
+            raise StackError("{} is in the ballot queue already".format(rec["id"]))
+        e = {
+            "round": rec["id"],
+            "title": title,
+            "kind": rec["kind"],
+            "report": str(Path(self.state.rounds_dir(), rec["id"], "report.md")),
+            "created": rec.get("finished") or rec.get("created"),
+            "status": "waiting",
+            "at_point": None,
+            "points_left": list(points_order),
+            "answered": [],
+            "notes": [],
+        }
         self.data["entries"].append(e)
         self._save()
         return e
@@ -841,7 +1048,7 @@ class Ballots(object):
         if pid not in e["points_left"]:
             if quiet:
                 return None
-            raise StackError("%s has no open point %s" % (rid, pid))
+            raise StackError(f"{rid} has no open point {pid}")
         e["points_left"].remove(pid)
         e["answered"].append(pid)
         if e["status"] == "waiting":
@@ -861,7 +1068,7 @@ class Ballots(object):
         e = self.get(rid)
         rest = [x for x in self.data["entries"] if x is not e]
         pos = max(0, min(len(rest), int(at) - 1))
-        self.data["entries"] = rest[:pos] + [e] + rest[pos:]
+        self.data["entries"] = [*rest[:pos], e, *rest[pos:]]
         self._save()
         return e
 
@@ -869,7 +1076,7 @@ class Ballots(object):
         e = self.get(rid)
         e["status"] = status
         if reason:
-            e["notes"].append("%s: %s" % (now_iso()[:10], reason))
+            e["notes"].append(f"{now_iso()[:10]}: {reason}")
         self._save()
         return e
 
@@ -883,17 +1090,26 @@ class Ballots(object):
                 continue
             n += 1
             left = e["points_left"]
-            L.append("| %d | %s | %s | %s | %s | %s |" % (
-                n, e["round"], _cell(e["title"]), BALLOT_RU.get(e["status"], e["status"]), e.get("at_point") or "—",
-                ("%d: %s" % (len(left), ", ".join(left))) if left else "0"))
+            L.append(
+                "| %d | %s | %s | %s | %s | %s |"  # noqa: UP031
+                % (
+                    n,
+                    e["round"],
+                    _cell(e["title"]),
+                    BALLOT_RU.get(e["status"], e["status"]),
+                    e.get("at_point") or "—",
+                    ("%d: %s" % (len(left), ", ".join(left))) if left else "0",  # noqa: UP031
+                )
+            )
         if not n:
-            L.append("| — | | %s | | | |" % t("stack.empty"))
+            L.append("| — | | {} | | | |".format(t("stack.empty")))
         return "\n".join(L) + "\n"
 
 
 def round_title(rec):
     """A ballot's title: the input's first heading, the PR, or the kind."""
     from .prompts import KIND_RU
+
     if rec.get("only"):
         rest = dict(rec)
         rest.pop("only")
@@ -901,10 +1117,10 @@ def round_title(rec):
     if rec.get("brainstorm_of"):
         return t("stack.title_brainstorm", id=rec["brainstorm_of"]["id"])
     if rec.get("pr"):
-        return "PR #%s %s" % (rec["pr"], rec.get("pr_title") or "")
+        return "PR #{} {}".format(rec["pr"], rec.get("pr_title") or "")
     path = rec.get("input")
-    if path and os.path.exists(path):
-        with open(path, encoding="utf-8") as f:
+    if path and os.path.exists(path):  # noqa: PTH110 - keep os.path error and path-spelling semantics
+        with open(path, encoding="utf-8") as f:  # noqa: PTH123 - pass the original path spelling to open
             for line in f:
                 if line.startswith("# "):
                     return line[2:].strip()

@@ -1,10 +1,12 @@
 """A depot without a team (the config's `characters` null, the default), in English: a car goes the whole way from
 its track to production through the stack, the post-stack and the merge queue; the team's commands answer «no team
-configured»; and nothing it prints is Russian."""
+configured»; and nothing it prints is Russian.
+"""
 
 import os
 import re
 import unittest
+from pathlib import Path
 
 import helpers
 from test_merge import MergeBase
@@ -23,7 +25,7 @@ class NoTeamTest(MergeBase):
         characters.configure(None)  # the seeding of TempState below finds no team
         super().setUp()
         os.environ[i18n.ENV] = "en"
-        write_json(os.path.join(self.t.dir, "config.json"), {"characters": None})
+        write_json(str(Path(self.t.dir, "config.json")), {"characters": None})
         self.t.state.commit("test: no team")
         self.t.cfg = config.load(self.t.dir)
         self.t.cfg["deep_repo"]["clone"] = ""
@@ -36,8 +38,8 @@ class NoTeamTest(MergeBase):
 
     def run_ok(self, *argv):
         rc, out, err = self.team(*argv)
-        self.assertEqual(rc, 0, "%s: %s %s" % (argv, out, err))
-        self.assertIsNone(CYRILLIC.search(out + err), "%s printed Russian: %s %s" % (argv, out, err))
+        self.assertEqual(rc, 0, f"{argv}: {out} {err}")
+        self.assertIsNone(CYRILLIC.search(out + err), f"{argv} printed Russian: {out} {err}")
         return out
 
     def test_a_car_goes_all_the_way_to_production(self):
@@ -56,17 +58,35 @@ class NoTeamTest(MergeBase):
             self.run_ok(*view.split())
         out = self.run_ok("merge", "run")
         car = Tracks(self.t.state, self.t.cfg).car("tr-0001:0")[1]
-        self.assertEqual((car["status"], [(r["from"], r["stage"]) for r in car["stages"]][-2:]),
-                         ("merged", [("queued", "rolling"), ("rolling", "arrived")]))
+        self.assertEqual(
+            (car["status"], [(r["from"], r["stage"]) for r in car["stages"]][-2:]),
+            ("merged", [("queued", "rolling"), ("rolling", "arrived")]),
+        )
         self.assertIn("tr-0001:0: rolling → arrived", out)
-        for view in ("board", "stack", "merge", "car show tr-0001:0", "queues", "principles", "decisions",
-                     "backup --status"):
+        for view in (
+            "board",
+            "stack",
+            "merge",
+            "car show tr-0001:0",
+            "queues",
+            "principles",
+            "decisions",
+            "backup --status",
+        ):
             self.run_ok(*view.split())
 
     def test_the_team_commands_say_there_is_no_team(self):
-        for argv in (("round", "--kind", "discuss", "--input", "x.md", "--dry-run"), ("ledger",),
-                     ("payout", "builder", "1", "--reason", "x"), ("reflect",), ("brainstorm", "list"), ("show", "builder"),
-                     ("tstack",), ("gender", "builder", "f"), ("orders",)):
+        for argv in (
+            ("round", "--kind", "discuss", "--input", "x.md", "--dry-run"),
+            ("ledger",),
+            ("payout", "builder", "1", "--reason", "x"),
+            ("reflect",),
+            ("brainstorm", "list"),
+            ("show", "builder"),
+            ("tstack",),
+            ("gender", "builder", "f"),
+            ("orders",),
+        ):
             rc, out, err = self.team(*argv)
             self.assertEqual(rc, 1, argv)
             self.assertIn(NO_TEAM, err, argv)

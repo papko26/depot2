@@ -11,6 +11,7 @@
   goes to `backup.git.quarantine`, outside the depot, and a marker takes its place.
 """
 
+import contextlib
 import json
 import os
 import re
@@ -20,10 +21,11 @@ import subprocess
 import sys
 import tempfile
 import time
+from pathlib import Path
 
 from . import backup
 from .i18n import t
-from .store import atomic_write, now_iso, read_json, write_json
+from .store import atomic_write, expand_user_path, now_iso, read_json, write_json
 
 STAMP = "git.json"  # all four in .backup/, which git ignores and the Drive archive leaves out
 LOG = "git.log"
@@ -38,21 +40,39 @@ USERINFO_RE = re.compile(r"(?i)(https?://)[^/@\s]*@")
 # A rejection that only a force would get past: the remote has commits HEAD lacks.
 DIVERGED = ("non-fast-forward", "fetch first", "stale info", "already exists", "needs force")
 HOSTKEY_HINTS = ("host key verification failed", "remote host identification has changed")
-AUTH_HINTS = ("permission denied", "authentication failed", "terminal prompts disabled",
-              "could not read username", "could not read password", "invalid username or password",
-              "returned error: 401", "returned error: 403")
-NET_HINTS = ("could not resolve host", "temporary failure in name resolution", "name or service not known",
-             "network is unreachable", "no route to host", "connection timed out", "operation timed out",
-             "connection refused", "failed to connect", "connection reset", "couldn't connect")
+AUTH_HINTS = (
+    "permission denied",
+    "authentication failed",
+    "terminal prompts disabled",
+    "could not read username",
+    "could not read password",
+    "invalid username or password",
+    "returned error: 401",
+    "returned error: 403",
+)
+NET_HINTS = (
+    "could not resolve host",
+    "temporary failure in name resolution",
+    "name or service not known",
+    "network is unreachable",
+    "no route to host",
+    "connection timed out",
+    "operation timed out",
+    "connection refused",
+    "failed to connect",
+    "connection reset",
+    "couldn't connect",
+)
 MISSING_HINTS = ("does not appear to be a git repository", "repository not found")
 BACKOFF_MAX_MIN = 360
 
 
 class PushError(Exception):
     """A push that cannot go on. `reason` is the short Russian line of the ⚠ warning; `person`:
-    only a person can fix it, so no background retry."""
+    only a person can fix it, so no background retry.
+    """
 
-    def __init__(self, reason, step, detail="", person=False):
+    def __init__(self, reason, step, detail="", person=False) -> None:
         Exception.__init__(self, reason)
         self.reason, self.step, self.detail, self.person = reason, step, detail, person
 
@@ -65,6 +85,7 @@ def redact(text, secrets=None):
 
 
 # --- the stamp, the config -------------------------------------------------------------------
+
 
 def log_path(state):
     return state.path(backup.DIR, LOG)
@@ -83,8 +104,13 @@ def check_cfg(g):
     remote, branch = g.get("remote"), g.get("branch")
     if not isinstance(remote, str) or not NAME_RE.match(remote) or ".." in remote:
         raise PushError(t("push.bad_remote", remote=repr(remote)), "config", person=True)
-    if branch is not None and (not isinstance(branch, str) or not BRANCH_RE.match(branch) or ".." in branch
-                               or "//" in branch or branch.endswith(("/", ".", ".lock"))):
+    if branch is not None and (
+        not isinstance(branch, str)
+        or not BRANCH_RE.match(branch)
+        or ".." in branch
+        or "//" in branch
+        or branch.endswith(("/", ".", ".lock"))
+    ):
         raise PushError(t("push.bad_branch", branch=repr(branch)), "config", person=True)
     for k in ("every_commits", "retry_min", "timeout_s", "scan_timeout_s"):
         v = g.get(k)
@@ -101,17 +127,19 @@ def check_cfg(g):
 
 
 def scan_argv(state, g, key="scan_args", d=""):
-    return [os.path.expanduser(g["scan"] or "")] + [x.replace("{state}", state.root).replace("{dir}", d) for x in g[key]]
+    return [expand_user_path(g["scan"] or "")] + [x.replace("{state}", state.root).replace("{dir}", d) for x in g[key]]
 
 
 # --- git, read-only ---------------------------------------------------------------------------
 
+
 def _git(state, *args):
     try:
-        return subprocess.run(["git", "-C", state.root] + list(args), stdin=subprocess.DEVNULL,
-                              stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+        return subprocess.run(
+            ["git", "-C", state.root, *list(args)], stdin=subprocess.DEVNULL, capture_output=True, text=True
+        )
     except FileNotFoundError:
-        raise PushError(t("push.no_git"), "git")
+        raise PushError(t("push.no_git"), "git")  # noqa: B904
 
 
 def remote_url(state, remote):
@@ -136,7 +164,7 @@ def rev(state, ref):
 
 
 def tracking(remote, branch):
-    return "refs/remotes/%s/%s" % (remote, branch)
+    return f"refs/remotes/{remote}/{branch}"
 
 
 def _count(state, base, tip="HEAD"):
@@ -147,7 +175,8 @@ def _count(state, base, tip="HEAD"):
 
 def base_of(state, remote, branch, st):
     """The remote's commit as this repo knows it, without the network: the remote-tracking ref, else
-    the last push's commit; None: never pushed (the push carries all of HEAD's history)."""
+    the last push's commit; None: never pushed (the push carries all of HEAD's history).
+    """
     b = rev(state, tracking(remote, branch))
     if b:
         return b
@@ -161,6 +190,7 @@ def pending(state, remote, branch, st, tip="HEAD"):
 
 
 # --- the check after every command ------------------------------------------------------------
+
 
 def wait_min(g, st):
     """Minutes between two background starts: retry_min, doubled after each failure in a row."""
@@ -197,7 +227,7 @@ def due(state, st, g, n, now):
     if n < int(g["every_commits"]) or _needs_person(st):
         return False
     sp = state.path(backup.DIR, SPAWNED)
-    if os.path.exists(sp) and now - os.path.getmtime(sp) < wait_min(g, st) * 60:
+    if Path(sp).exists() and now - Path(sp).stat().st_mtime < wait_min(g, st) * 60:  # noqa: SIM103
         return False  # one start per window; a push still going holds its lock anyway
     return True
 
@@ -228,18 +258,26 @@ def check(state, a, b, now=None):
 
 # --- one push ---------------------------------------------------------------------------------
 
+
 def run_group(argv, env, timeout, cwd=None):
     """argv in its own process group, so a timeout kills ssh too. → (exit code or None, out, err)."""
-    p = subprocess.Popen(argv, env=env, cwd=cwd, stdin=subprocess.DEVNULL, stdout=subprocess.PIPE,
-                         stderr=subprocess.PIPE, encoding="utf-8", errors="replace", start_new_session=True)
+    p = subprocess.Popen(
+        argv,
+        env=env,
+        cwd=cwd,
+        stdin=subprocess.DEVNULL,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        encoding="utf-8",
+        errors="replace",
+        start_new_session=True,
+    )
     try:
         out, err = p.communicate(timeout=timeout)
         return p.returncode, out, err
     except subprocess.TimeoutExpired:
-        try:
+        with contextlib.suppress(OSError):
             os.killpg(p.pid, signal.SIGKILL)
-        except OSError:
-            pass
         p.communicate()
         return None, "", ""
 
@@ -252,27 +290,27 @@ def is_clean(out):
     return bool(lines) and lines[-1].rstrip("\r") == "CLEAN"
 
 
-
 RAW_OFF = ("0", "off", "no", "false")
 
 
 def gate_raw(state, cfg, path, out=print):
-    if os.environ.get("DEPOT2_RAW_SCAN", "").lower() in RAW_OFF or not os.path.isfile(path):
+    if os.environ.get("DEPOT2_RAW_SCAN", "").lower() in RAW_OFF or not os.path.isfile(path):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
         return None
     g = cfg["backup"]["git"]
     why = raw_verdict(state, g, path)
     if why is None:
         return None
     rel = os.path.relpath(path, state.root)
-    qdir = os.path.expanduser(g["quarantine"])
-    dest = os.path.join(qdir, _safe_rel(rel))
+    qdir = expand_user_path(g["quarantine"])
+    dest = str(Path(qdir, _safe_rel(rel)))
     base, n = dest, 2
-    while os.path.exists(dest):
-        dest, n = "%s.%d" % (base, n), n + 1
-    os.makedirs(os.path.dirname(dest), mode=0o700, exist_ok=True)
+    while Path(dest).exists():
+        dest, n = "%s.%d" % (base, n), n + 1  # noqa: UP031
+    Path(dest).parent.mkdir(parents=True, mode=0o700, exist_ok=True)
     shutil.move(path, dest)
-    atomic_write(path, json.dumps({"type": "quarantined", "at": now_iso(), "to": dest, "why": why},
-                                  ensure_ascii=False) + "\n")
+    atomic_write(
+        path, json.dumps({"type": "quarantined", "at": now_iso(), "to": dest, "why": why}, ensure_ascii=False) + "\n"
+    )
     out(t("push.quarantined", rel=rel, why=why, dest=dest))
     return {"file": rel, "to": dest, "why": why}
 
@@ -283,9 +321,9 @@ def raw_verdict(state, g, path):
         return None
     d = tempfile.mkdtemp(prefix="team-raw-scan-")
     try:
-        shutil.copyfile(path, os.path.join(d, os.path.basename(path)))
+        shutil.copyfile(path, Path(d, Path(path).name))
         argv = scan_argv(state, g, "scan_pushed_args", d)
-        if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):
+        if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
             return t("push.raw_no_scan", path=argv[0])
         code, text, _ = run_group(backup._nice(argv), None, int(g["scan_timeout_s"]), cwd=tempfile.gettempdir())
         if code is None:
@@ -297,16 +335,18 @@ def raw_verdict(state, g, path):
 
 def _safe_rel(path):
     parts = [p for p in path.replace("\\", "/").split("/") if p not in ("", ".", "..")]
-    return os.path.join(*parts) if parts else "blob"
+    return str(Path(*parts)) if parts else "blob"
 
 
 def export_range(root, base, head, dest, spec=None):
     """What a push of `head` carries beyond `base` (None: all of head's history), as files for the
     scan: each blob at <dest>/blobs/<sha12>/<its path>, the commit messages in <dest>/commits.txt.
-    spec: the revisions instead (the merge queue's trial: [head, "--not", its parents]). → (blobs, bytes)."""
+    spec: the revisions instead (the merge queue's trial: [head, "--not", its parents]). → (blobs, bytes).
+    """
     spec = list(spec) if spec else [base + ".." + head] if base else [head]
-    p = subprocess.run(["git", "-C", root, "rev-list", "--objects"] + spec, stdin=subprocess.DEVNULL,
-                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    p = subprocess.run(
+        ["git", "-C", root, "rev-list", "--objects", *spec], stdin=subprocess.DEVNULL, capture_output=True
+    )
     if p.returncode != 0:
         raise PushError(t("push.rev_list", code=p.returncode), "scan", os.fsdecode(p.stderr).strip()[-300:])
     paths = {}
@@ -315,12 +355,13 @@ def export_range(root, base, head, dest, spec=None):
         if sha and path and sha not in paths:
             paths[sha] = os.fsdecode(path)
     blobs, size = 0, 0
-    lst = os.path.join(dest, "objects.txt")
-    with open(lst, "wb") as f:
+    lst = str(Path(dest, "objects.txt"))
+    with Path(lst).open("wb") as f:
         f.write(b"".join(s + b"\n" for s in paths))
-    with open(lst, "rb") as inp:
-        cat = subprocess.Popen(["git", "-C", root, "cat-file", "--batch"], stdin=inp, stdout=subprocess.PIPE,
-                               stderr=subprocess.DEVNULL)
+    with Path(lst).open("rb") as inp:
+        cat = subprocess.Popen(
+            ["git", "-C", root, "cat-file", "--batch"], stdin=inp, stdout=subprocess.PIPE, stderr=subprocess.DEVNULL
+        )
         try:
             while True:
                 header = cat.stdout.readline()
@@ -334,42 +375,50 @@ def export_range(root, base, head, dest, spec=None):
                 cat.stdout.read(1)
                 if parts[1] != b"blob":
                     continue
-                out = os.path.join(dest, "blobs", parts[0][:12].decode(), _safe_rel(paths.get(parts[0], "blob")))
-                os.makedirs(os.path.dirname(out), exist_ok=True)
-                with open(out, "wb") as f:
+                out = str(Path(dest, "blobs", parts[0][:12].decode(), _safe_rel(paths.get(parts[0], "blob"))))
+                Path(out).parent.mkdir(parents=True, exist_ok=True)
+                with Path(out).open("wb") as f:
                     f.write(body)
                 blobs += 1
                 size += n
         finally:
             cat.stdout.close()
             cat.wait()
-    os.remove(lst)
-    p = subprocess.run(["git", "-C", root, "log", "--format=commit %H%n%B"] + spec, stdin=subprocess.DEVNULL,
-                       stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    Path(lst).unlink()
+    p = subprocess.run(
+        ["git", "-C", root, "log", "--format=commit %H%n%B", *spec], stdin=subprocess.DEVNULL, capture_output=True
+    )
     if p.returncode != 0:
         raise PushError(t("push.git_log", code=p.returncode), "scan")
-    with open(os.path.join(dest, "commits.txt"), "wb") as f:
+    with Path(dest, "commits.txt").open("wb") as f:
         f.write(p.stdout)
     return blobs, size
 
 
 def push_argv(remote, branch, sha):
     """The only push there is: the scanned commit onto the branch. No force, no mirror, no delete,
-    no tag (a global push.followTags would add tags, so it is off for this call)."""
+    no tag (a global push.followTags would add tags, so it is off for this call).
+    """
     if not NAME_RE.match(remote or "") or not BRANCH_RE.match(branch or "") or ".." in remote + branch:
         raise PushError(t("push.bad_names"), "config", person=True)
     if not SHA_RE.match(sha or ""):
         raise PushError(t("push.bad_sha"), "config", person=True)
-    return ["git", "-c", "push.followTags=false", "push", "--porcelain", remote, "%s:refs/heads/%s" % (sha, branch)]
+    return ["git", "-c", "push.followTags=false", "push", "--porcelain", remote, f"{sha}:refs/heads/{branch}"]
 
 
 def push_env(state):
     env = dict(os.environ)
     ssh = env.get("GIT_SSH_COMMAND") or _git(state, "config", "--get", "core.sshCommand").stdout.strip() or "ssh"
-    env.update(GIT_TERMINAL_PROMPT="0", GIT_ASKPASS="", SSH_ASKPASS="", SSH_ASKPASS_REQUIRE="never",
-               LC_ALL="C", LANGUAGE="C",
-               GIT_SSH_COMMAND=ssh + " -o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=15"
-                                     " -o ServerAliveCountMax=4")
+    env.update(
+        GIT_TERMINAL_PROMPT="0",
+        GIT_ASKPASS="",
+        SSH_ASKPASS="",
+        SSH_ASKPASS_REQUIRE="never",
+        LC_ALL="C",
+        LANGUAGE="C",
+        GIT_SSH_COMMAND=ssh + " -o BatchMode=yes -o ConnectTimeout=30 -o ServerAliveInterval=15"
+        " -o ServerAliveCountMax=4",
+    )
     return env
 
 
@@ -398,22 +447,22 @@ def classify(code, err, tail):
     return PushError(reason, "push", tail)
 
 
-class Pusher(object):
-    def __init__(self, state, cfg, auto=False):
+class Pusher:
+    def __init__(self, state, cfg, auto=False) -> None:
         self.state, self.g, self.auto = state, cfg["backup"]["git"], auto
         self.secrets = backup.Secrets()
 
     # output: in --auto stdout IS the log; in the foreground print and append to the log
     def say(self, msg):
         msg = redact(msg, self.secrets)
-        stamp = "%s [%d] " % (backup.utc_iso(), os.getpid())
+        stamp = "%s [%d] " % (backup.utc_iso(), os.getpid())  # noqa: UP031
         if self.auto:
             print(stamp + msg, flush=True)
             return
         print(msg, flush=True)
         try:
             backup.bdir(self.state)
-            with open(log_path(self.state), "a", encoding="utf-8") as f:
+            with Path(log_path(self.state)).open("a", encoding="utf-8") as f:
                 f.write(stamp + msg + "\n")
         except OSError:
             pass
@@ -432,18 +481,29 @@ class Pusher(object):
     def run_scan(self, argv, what):
         """One run of the private scan. Only its verdict is shown: its lines name private things."""
         g = self.g
-        if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):
+        if not (os.path.isfile(argv[0]) and os.access(argv[0], os.X_OK)):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
             raise PushError(t("push.scan_missing", path=argv[0]), "scan", person=True)
         t0 = time.time()
         code, out, _ = run_group(backup._nice(argv), None, int(g["scan_timeout_s"]), cwd=tempfile.gettempdir())
         if code is None:
             raise PushError(t("push.scan_timeout", s=int(g["scan_timeout_s"])), "scan")
         clean = is_clean(out)
-        self.say("scan of %s: %s in %.0f s (exit %d; its output is not shown here)" % (
-            what, "CLEAN" if clean else "NOT CLEAN", time.time() - t0, code))
+        self.say(
+            "scan of %s: %s in %.0f s (exit %d; its output is not shown here)"  # noqa: UP031
+            % (
+                what,
+                "CLEAN" if clean else "NOT CLEAN",
+                time.time() - t0,
+                code,
+            )
+        )
         if not clean:
-            raise PushError(t("push.scan_dirty_push" if what == "the push" else "push.scan_dirty_files"),
-                            "scan", "the scan, by hand: " + " ".join(argv), person=True)
+            raise PushError(
+                t("push.scan_dirty_push" if what == "the push" else "push.scan_dirty_files"),
+                "scan",
+                "the scan, by hand: " + " ".join(argv),
+                person=True,
+            )
 
     def scan(self, base, head):
         """Both scans of one push: what it carries (base..head, exported to a temp dir), then the files."""
@@ -453,9 +513,10 @@ class Pusher(object):
         d = tempfile.mkdtemp(prefix="team-push-scan-")
         try:
             blobs, size = export_range(self.state.root, base, head, d)
-            self.say("the push carries %s: %d blobs, %.1f MB, and the commit messages"
-                     % ("%s..%s" % (base[:12], head[:12]) if base else "all the history up to " + head[:12],
-                        blobs, size / 1e6))
+            self.say(
+                "the push carries %s: %d blobs, %.1f MB, and the commit messages"  # noqa: UP031
+                % (f"{base[:12]}..{head[:12]}" if base else "all the history up to " + head[:12], blobs, size / 1e6)
+            )
             self.run_scan(scan_argv(self.state, self.g, "scan_pushed_args", d), "the push")
         finally:
             shutil.rmtree(d, ignore_errors=True)
@@ -464,10 +525,11 @@ class Pusher(object):
     def git_push(self, remote, branch, sha):
         timeout = int(self.g["timeout_s"])
         try:
-            code, out, err = run_group(push_argv(remote, branch, sha), push_env(self.state), timeout,
-                                       cwd=self.state.root)
+            code, out, err = run_group(
+                push_argv(remote, branch, sha), push_env(self.state), timeout, cwd=self.state.root
+            )
         except FileNotFoundError:
-            raise PushError(t("push.no_git"), "push")
+            raise PushError(t("push.no_git"), "push")  # noqa: B904
         if code is None:
             raise PushError(t("push.push_timeout", s=timeout), "push")
         err = redact(err, self.secrets)
@@ -497,7 +559,7 @@ class Pusher(object):
             if url is None:
                 raise PushError(t("push.no_remote", remote=remote, root=self.state.root), "config", person=True)
             self.url_secrets(url)
-            if _git(self.state, "config", "--bool", "--get", "remote.%s.mirror" % remote).stdout.strip() == "true":
+            if _git(self.state, "config", "--bool", "--get", f"remote.{remote}.mirror").stdout.strip() == "true":
                 raise PushError(t("push.mirror", remote=remote), "config", person=True)
             branch = branch_of(self.state, self.g)
             if not branch:
@@ -507,36 +569,52 @@ class Pusher(object):
                 raise PushError(t("push.no_commits"), "config", person=True)
             n = pending(self.state, remote, branch, st)
             n = pending(self.state, remote, branch, st, head)
-            self.say("push %s → %s (%s), %s:refs/heads/%s; commits the remote lacks (by the local refs): %d"
-                     % (self.state.root, remote, url, head[:12], branch, n))
+            self.say(
+                "push %s → %s (%s), %s:refs/heads/%s; commits the remote lacks (by the local refs): %d"  # noqa: UP031
+                % (self.state.root, remote, url, head[:12], branch, n)
+            )
             if n == 0:
-                self.say("nothing to push: %s already holds HEAD %s" % (tracking(remote, branch), head))
+                self.say(f"nothing to push: {tracking(remote, branch)} already holds HEAD {head}")
             else:
                 # The scans cover base..head, and the push sends exactly head: a commit made
                 # meanwhile waits for the next push.
                 self.scan(base_of(self.state, remote, branch, st), head)
                 rows = self.git_push(remote, branch, head)
-                self.say("git push: %s" % "; ".join("%s %s" % (r[1], redact(r[2], self.secrets)) for r in rows))
-            st.update(last_success=backup.utc_iso(), commit=head, pushed=n, remote=remote, branch=branch,
-                      source=self.state.root, duration_s=round(time.time() - t0, 1), last_error=None, fails=0)
+                self.say("git push: {}".format("; ".join(f"{r[1]} {redact(r[2], self.secrets)}" for r in rows)))
+            st.update(
+                last_success=backup.utc_iso(),
+                commit=head,
+                pushed=n,
+                remote=remote,
+                branch=branch,
+                source=self.state.root,
+                duration_s=round(time.time() - t0, 1),
+                last_error=None,
+                fails=0,
+            )
             save_stamp(self.state, st)
-            self.say("ok: %s/%s at %s, %d commits pushed, in %.1f s" % (remote, branch, head, n, time.time() - t0))
+            self.say("ok: %s/%s at %s, %d commits pushed, in %.1f s" % (remote, branch, head, n, time.time() - t0))  # noqa: UP031
             return 0
         except PushError as e:
             st["last_error"] = {"ts": backup.utc_iso(), "reason": e.reason, "step": e.step, "person": e.person}
             st["fails"] = int(st.get("fails") or 0) + 1
             save_stamp(self.state, st)
-            self.say("FAILED (%s): %s%s" % (e.step, e.reason, ("\n" + e.detail) if e.detail else ""))
+            self.say("FAILED ({}): {}{}".format(e.step, e.reason, ("\n" + e.detail) if e.detail else ""))
             return 1
         except Exception as e:
-            st["last_error"] = {"ts": backup.utc_iso(), "reason": t("push.crash", error=redact(e, self.secrets)[:200]),
-                                "step": "internal", "person": False}
+            st["last_error"] = {
+                "ts": backup.utc_iso(),
+                "reason": t("push.crash", error=redact(e, self.secrets)[:200]),
+                "step": "internal",
+                "person": False,
+            }
             st["fails"] = int(st.get("fails") or 0) + 1
             save_stamp(self.state, st)
             raise
 
 
 # --- `depot2 backup --push` and the status ---------------------------------------------------
+
 
 def command(state, cfg, a):
     p = Pusher(state, cfg, auto=a.auto)
@@ -545,18 +623,22 @@ def command(state, cfg, a):
             return p.push()
     except backup.Busy:
         if a.auto:
-            p.say("another push holds %s: nothing to do" % state.path(backup.DIR, LOCK))
+            p.say(f"another push holds {state.path(backup.DIR, LOCK)}: nothing to do")
             return 0
-        print("error: a push is running already (%s); see depot2 backup --status" % state.path(backup.DIR, LOCK),
-              file=sys.stderr)
+        print(
+            f"error: a push is running already ({state.path(backup.DIR, LOCK)}); see depot2 backup --status",
+            file=sys.stderr,
+        )
         return 1
 
 
 def quarantine_line(g):
-    qdir = os.path.expanduser(g["quarantine"])
+    qdir = expand_user_path(g["quarantine"])
     n = sum(len(files) for _, _, files in os.walk(qdir))
-    return "quarantine: %s in %s (outside the depot: the private scan did not say CLEAN; a marker in the depot in its " \
-           "place)" % ("%d raw stream%s" % (n, "" if n == 1 else "s") if n else "empty", qdir)
+    return (
+        "quarantine: {} in {} (outside the depot: the private scan did not say CLEAN; a marker in the depot in its "
+        "place)".format("%d raw stream%s" % (n, "" if n == 1 else "s") if n else "empty", qdir)  # noqa: UP031
+    )
 
 
 def status(state, cfg):
@@ -564,7 +646,7 @@ def status(state, cfg):
     try:
         check_cfg(g)
     except PushError as e:
-        print("git push: %s" % e.reason)
+        print(f"git push: {e.reason}")
         return
     remote = g["remote"]
     url = remote_url(state, remote)
@@ -575,30 +657,50 @@ def status(state, cfg):
     now = time.time()
     st = load_stamp(state)
     branch = branch_of(state, g)
-    print("git push of %s → remote %s (%s), <the scanned commit>:refs/heads/%s, every %d commits; never a force"
-          % (state.root, remote, redact(url), branch or "? (HEAD is on no branch)", int(g["every_commits"])))
+    print(
+        "git push of %s → remote %s (%s), <the scanned commit>:refs/heads/%s, every %d commits; never a force"  # noqa: UP031
+        % (state.root, remote, redact(url), branch or "? (HEAD is on no branch)", int(g["every_commits"]))
+    )
     ls = st.get("last_success")
     if ls:
-        print("last push: %s (%.1f h ago): commit %s, %s commits, %s s"
-              % (ls, backup._age_h(now, ls), st.get("commit"), st.get("pushed"), st.get("duration_s")))
+        print(
+            "last push: {} ({:.1f} h ago): commit {}, {} commits, {} s".format(
+                ls, backup._age_h(now, ls), st.get("commit"), st.get("pushed"), st.get("duration_s")
+            )
+        )
     else:
-        print("last push: never. The first push is a person's: depot2 backup --push "
-              "(no background push starts before it)")
+        print(
+            "last push: never. The first push is a person's: depot2 backup --push (no background push starts before it)"
+        )
     n = pending(state, remote, branch, st) if branch else 0
-    print("waiting: %d commits (by the local refs, no network)%s" % (
-        n, "; the next depot2 command starts a push" if branch and due(state, st, g, n, now) else ""))
+    print(
+        "waiting: %d commits (by the local refs, no network)%s"  # noqa: UP031
+        % (
+            n,
+            "; the next depot2 command starts a push" if branch and due(state, st, g, n, now) else "",
+        )
+    )
     err = st.get("last_error")
     if err and (not ls or err.get("ts", "") >= ls):
-        print("last error: %s, step %s: %s%s" % (
-            err.get("ts"), err.get("step"), err.get("reason"),
-            " (needs a person: no background push until depot2 backup --push succeeds)" if err.get("person")
-            else " (retried in the background, at most every %d min)" % wait_min(g, st)))
+        print(
+            "last error: {}, step {}: {}{}".format(
+                err.get("ts"),
+                err.get("step"),
+                err.get("reason"),
+                " (needs a person: no background push until depot2 backup --push succeeds)"
+                if err.get("person")
+                else " (retried in the background, at most every %d min)" % wait_min(g, st),  # noqa: UP031
+            )
+        )
     if st.get("last_attempt"):
-        print("last attempt: %s" % st["last_attempt"])
+        print("last attempt: {}".format(st["last_attempt"]))
     print("running now: %s" % ("yes" if backup.is_running(state, LOCK) else "no"))
-    print("the scans before each push: %s; then %s" % (" ".join(scan_argv(state, g, "scan_pushed_args", "<tmp>")),
-                                                         " ".join(scan_argv(state, g))))
-    print("log: %s" % log_path(state))
+    print(
+        "the scans before each push: {}; then {}".format(
+            " ".join(scan_argv(state, g, "scan_pushed_args", "<tmp>")), " ".join(scan_argv(state, g))
+        )
+    )
+    print(f"log: {log_path(state)}")
     print(quarantine_line(g))
     line = warning(state, st, remote, n, now) if branch else t("push.w_no_branch", remote=remote)
     if line:

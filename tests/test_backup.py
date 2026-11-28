@@ -17,15 +17,16 @@ import tarfile
 import tempfile
 import time
 import unittest
+from pathlib import Path
 
 from helpers import HERE, TempState
 
 from depot2 import backup
-from depot2.store import read_json, write_json
+from depot2.store import write_json
 
-TEAM = os.path.join(os.path.dirname(HERE), "depot2", "__main__.py")
-FAKE_RCLONE = os.path.join(HERE, "fake_rclone.py")
-FAKE_PASS = os.path.join(HERE, "fake_pass.py")
+TEAM = str(Path(HERE).parent / "depot2" / "__main__.py")
+FAKE_RCLONE = str(Path(HERE, "fake_rclone.py"))
+FAKE_PASS = str(Path(HERE, "fake_pass.py"))
 PW = "example/depot2-backup/crypt-password"
 SALT = "example/depot2-backup/crypt-salt"
 ALLOWED = {"obscure", "lsjson", "copyto", "cryptcheck", "deletefile"}
@@ -48,18 +49,27 @@ class BackupBase(unittest.TestCase):
         self.t.state.commit("test: seed")
         self.root = self.t.dir
         self.tmp = tempfile.mkdtemp(prefix="team-backup-test-")
-        self.cloud = os.path.join(self.tmp, "cloud")
-        self.tmpdir = os.path.join(self.tmp, "tmp")
-        os.makedirs(self.tmpdir)
-        self.rlog = os.path.join(self.tmp, "rclone.jsonl")
-        self.plog = os.path.join(self.tmp, "pass.jsonl")
+        self.cloud = str(Path(self.tmp, "cloud"))
+        self.tmpdir = str(Path(self.tmp, "tmp"))
+        Path(self.tmpdir).mkdir(parents=True)
+        self.rlog = str(Path(self.tmp, "rclone.jsonl"))
+        self.plog = str(Path(self.tmp, "pass.jsonl"))
         self.keys = {PW: "pw-" + secrets.token_hex(16), SALT: "salt-" + secrets.token_hex(16)}
         self.env = dict(os.environ)
         self.env.pop("DEPOT2_BACKUP", None)  # helpers turns the check off for every other test
-        self.env.update(FAKE_PASS_SECRETS=json.dumps(self.keys), FAKE_RCLONE_DIR=self.cloud,
-                        FAKE_RCLONE_LOG=self.rlog, FAKE_PASS_LOG=self.plog, TMPDIR=self.tmpdir)
-        self.sets = ["backup.rclone_bin=" + FAKE_RCLONE, "backup.pass_bin=" + FAKE_PASS,
-                     "backup.remote=fakedrive:", "backup.host=testhost"]
+        self.env.update(
+            FAKE_PASS_SECRETS=json.dumps(self.keys),
+            FAKE_RCLONE_DIR=self.cloud,
+            FAKE_RCLONE_LOG=self.rlog,
+            FAKE_PASS_LOG=self.plog,
+            TMPDIR=self.tmpdir,
+        )
+        self.sets = [
+            "backup.rclone_bin=" + FAKE_RCLONE,
+            "backup.pass_bin=" + FAKE_PASS,
+            "backup.remote=fakedrive:",
+            "backup.host=testhost",
+        ]
         if self.drive:
             self.sets.append("backup.drive=true")
         self.outputs = []
@@ -80,33 +90,32 @@ class BackupBase(unittest.TestCase):
         argv = [sys.executable, TEAM, "--state", self.root]
         for s in self.sets:
             argv += ["--set", s]
-        p = subprocess.run(argv + list(args), stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                           universal_newlines=True, env=e, timeout=60)
+        p = subprocess.run(argv + list(args), capture_output=True, text=True, env=e, timeout=60)
         self.outputs.append(p.stdout + p.stderr)
         if ok and p.returncode != 0:
-            raise AssertionError("depot2 %s failed (%d): %s %s" % (args, p.returncode, p.stdout, p.stderr))
+            raise AssertionError("depot2 %s failed (%d): %s %s" % (args, p.returncode, p.stdout, p.stderr))  # noqa: UP031
         return p
 
     def calls(self):
-        if not os.path.exists(self.rlog):
+        if not Path(self.rlog).exists():
             return []
-        with open(self.rlog) as f:
+        with Path(self.rlog).open() as f:
             return [json.loads(ln) for ln in f if ln.strip()]
 
     def cmds(self, name=None):
         return [c["argv"] for c in self.calls() if name is None or c["argv"][0] == name]
 
     def pass_calls(self):
-        if not os.path.exists(self.plog):
+        if not Path(self.plog).exists():
             return []
-        with open(self.plog) as f:
+        with Path(self.plog).open() as f:
             return [json.loads(ln) for ln in f if ln.strip()]
 
     def stamp(self):
         return backup.load_stamp(self.t.state)
 
     def set_stamp(self, **kw):
-        os.makedirs(self.t.state.path(backup.DIR), exist_ok=True)
+        Path(self.t.state.path(backup.DIR)).mkdir(parents=True, exist_ok=True)
         st = self.stamp()
         st.update(kw)
         write_json(self.t.state.path(backup.DIR, backup.STAMP), st)
@@ -118,21 +127,22 @@ class BackupBase(unittest.TestCase):
                 return True
             time.sleep(0.1)
         self.fail("timed out waiting")
+        return None
 
     def spawned(self):
         """The mtime of the marker a start writes before it detaches, or None: no start."""
         p = self.t.state.path(backup.DIR, backup.SPAWNED)
-        return os.path.getmtime(p) if os.path.exists(p) else None
+        return Path(p).stat().st_mtime if Path(p).exists() else None
 
     def folder(self):
-        d = os.path.join(self.cloud, "depot2-backup")
-        return sorted(os.listdir(d)) if os.path.isdir(d) else []
+        d = str(Path(self.cloud, "depot2-backup"))
+        return sorted(entry.name for entry in Path(d).iterdir()) if Path(d).is_dir() else []
 
     def assert_no_secret(self):
         texts = list(self.outputs)
         for p in (self.rlog, self.plog, backup.log_path(self.t.state), self.t.state.path(backup.DIR, backup.STAMP)):
-            if os.path.exists(p):
-                with open(p, encoding="utf-8") as f:
+            if Path(p).exists():
+                with Path(p).open(encoding="utf-8") as f:
                     texts.append(f.read())
         for k in self.keys.values():
             for s in (k, fake_obscure(k)):
@@ -150,18 +160,18 @@ class BackupNowTest(BackupBase):
         name = st["archive"]
         self.assertRegex(name, r"^team-testhost-\d{8}T\d{6}Z\.tar\.gz$")
         self.assertEqual(self.folder(), [name])
-        path = os.path.join(self.cloud, "depot2-backup", name)
-        self.assertEqual(os.path.getsize(path), st["size"])
+        path = str(Path(self.cloud, "depot2-backup", name))
+        self.assertEqual(Path(path).stat().st_size, st["size"])
         self.assertIsNone(st["last_error"])
         self.assertEqual(st["source"], self.t.state.root)
-        base = os.path.basename(self.root)
+        base = Path(self.root).name
         with tarfile.open(path) as tf:
             names = tf.getnames()
         self.assertIn(base + "/.git/HEAD", names)
         self.assertIn(base + "/ledger.jsonl", names)
         self.assertFalse([n for n in names if n.startswith(base + "/.backup") or n == base + "/.lock"])
         # Only copyto writes: once, with --immutable, into the env-defined crypt remote.
-        self.assertTrue(set(c[0] for c in self.cmds()) <= ALLOWED, self.cmds())
+        self.assertTrue({c[0] for c in self.cmds()} <= ALLOWED, self.cmds())
         ups = self.cmds("copyto")
         self.assertEqual(len(ups), 1)
         self.assertIn("--immutable", ups[0])
@@ -179,7 +189,7 @@ class BackupNowTest(BackupBase):
         out = self.team("backup", "--drive", "--verify").stdout
         self.assertIn("git fsck --full ok", out)
         self.assertIn("(= the upload's)", out)
-        self.assertEqual(os.listdir(self.tmpdir), [])
+        self.assertEqual([entry.name for entry in Path(self.tmpdir).iterdir()], [])
         self.assertTrue(self.stamp()["last_verify"]["ok"])
         self.assertEqual(len(self.cmds("copyto")), 2)  # the upload, then the download
         self.assertTrue(self.cmds("copyto")[1][1].startswith("depot2backupcrypt:"))
@@ -200,8 +210,10 @@ class BackupNowTest(BackupBase):
         self.assertEqual(self.stamp()["last_error"]["reason"], "нет сети")
         self.assertEqual(self.cmds("copyto"), [])
         self.assertEqual(self.team("ledger").stderr, "")  # the daily run is off: no ⚠
-        self.assertIn("бэкап команды ещё не делался: нет сети",
-                      self.team("--set", "backup.drive=true", "ledger", FAKE_RCLONE_FAIL="network").stderr)
+        self.assertIn(
+            "бэкап команды ещё не делался: нет сети",
+            self.team("--set", "backup.drive=true", "ledger", FAKE_RCLONE_FAIL="network").stderr,
+        )
         self.assert_no_secret()
 
     def test_snapshot_waits_for_the_state_lock(self):
@@ -213,8 +225,13 @@ class BackupNowTest(BackupBase):
         self.assertEqual(self.cmds("copyto"), [])
 
     def test_refuses_foreign_names(self):
-        for bad in ("backup.folder=backups", "backup.folder=other-backups", "backup.remote=other-backup:",
-                    "backup.crypt_name=other-backup", "backup.folder=a/b"):
+        for bad in (
+            "backup.folder=backups",
+            "backup.folder=other-backups",
+            "backup.remote=other-backup:",
+            "backup.crypt_name=other-backup",
+            "backup.folder=a/b",
+        ):
             p = self.team("--set", bad, "backup", "--drive", "--now", ok=False)
             self.assertEqual(p.returncode, 1, bad)
         self.assertEqual(self.calls(), [])
@@ -222,15 +239,18 @@ class BackupNowTest(BackupBase):
 
     def test_missing_pass_entry(self):
         p = self.team("backup", "--drive", "--now", ok=False, FAKE_PASS_SECRETS=json.dumps({PW: self.keys[PW]}))
-        self.assertIn("нет записи pass %s" % SALT, p.stdout)
+        self.assertIn(f"нет записи pass {SALT}", p.stdout)
         self.assertEqual(self.calls(), [])
 
 
 class DriveFlagTest(BackupBase):
     def test_off_by_default_no_warning_no_start(self):
         self.assertEqual(self.team("ledger").stderr, "")  # never run: no ⚠ either
-        self.set_stamp(last_success=iso_ago(78), last_attempt=iso_ago(1),
-                       last_error={"ts": iso_ago(1), "reason": "pass заперт", "step": "pass"})
+        self.set_stamp(
+            last_success=iso_ago(78),
+            last_attempt=iso_ago(1),
+            last_error={"ts": iso_ago(1), "reason": "pass заперт", "step": "pass"},
+        )
         for cmd in (("ledger",), ("stack",), ("config",)):
             self.assertEqual(self.team(*cmd).stderr, "", cmd)
         self.assertIsNone(self.spawned())
@@ -291,11 +311,11 @@ class BackupCheckTest(BackupBase):
         self.team("ledger")
         self.assertEqual(self.spawned(), started)
         self.assertEqual(len(self.cmds("copyto")), 1)
-        with open(backup.log_path(self.t.state), encoding="utf-8") as f:
+        with Path(backup.log_path(self.t.state)).open(encoding="utf-8") as f:
             self.assertIn("ok in", f.read())
         # A dry run never starts one.
         self.set_stamp(last_success=iso_ago(30))
-        os.remove(self.t.state.path(backup.DIR, backup.SPAWNED))
+        Path(self.t.state.path(backup.DIR, backup.SPAWNED)).unlink()
         self.team("round", "--kind", "ballot", "--input", "/nonexistent", "--dry-run", ok=False)
         self.assertIsNone(self.spawned())
         self.assert_no_secret()
@@ -317,15 +337,16 @@ class BackupCheckTest(BackupBase):
         self.assertEqual(len(self.cmds("copyto")), 1)
         # A run holds the lock: another start (the retry window over) exits at once, and --now refuses.
         self.set_stamp(last_success=iso_ago(25))
-        os.remove(self.t.state.path(backup.DIR, backup.SPAWNED))
+        Path(self.t.state.path(backup.DIR, backup.SPAWNED)).unlink()
         n = len(self.calls())
         with backup.backup_lock(self.t.state):
             self.team("ledger")
             self.assertIsNotNone(self.spawned())
 
             def told():
-                with open(backup.log_path(self.t.state), encoding="utf-8") as f:
+                with Path(backup.log_path(self.t.state)).open(encoding="utf-8") as f:
                     return "another backup run holds" in f.read()
+
             self.wait_for(told)
             self.assertEqual(self.team("backup", "--drive", "--auto").returncode, 0)
             p = self.team("backup", "--drive", "--now", ok=False)
@@ -360,13 +381,18 @@ class BackupCheckTest(BackupBase):
 
 class RetentionTest(BackupBase):
     def test_plan(self):
-        names = ["team-h-201508%02dT030000Z.tar.gz" % d for d in range(1, 32)]
-        names += ["team-h-201509%02dT030000Z.tar.gz" % d for d in range(1, 31)]
-        names += ["team-h-20150930T120000Z.tar.gz", "team-other-20150801T000000Z.tar.gz", "notes.txt",
-                  "team-h-latest.tar.gz", "team-h-20150815T030000Z.tar.gz.partial"]
+        names = ["team-h-201508%02dT030000Z.tar.gz" % d for d in range(1, 32)]  # noqa: UP031
+        names += ["team-h-201509%02dT030000Z.tar.gz" % d for d in range(1, 31)]  # noqa: UP031
+        names += [
+            "team-h-20150930T120000Z.tar.gz",
+            "team-other-20150801T000000Z.tar.gz",
+            "notes.txt",
+            "team-h-latest.tar.gz",
+            "team-h-20150815T030000Z.tar.gz.partial",
+        ]
         keep, drop = backup.plan_retention(names, "h", 14)
-        days = ["team-h-201509%02dT030000Z.tar.gz" % d for d in range(17, 30)] + ["team-h-20150930T120000Z.tar.gz"]
-        self.assertEqual(keep, ["team-h-20150801T030000Z.tar.gz", "team-h-20150901T030000Z.tar.gz"] + days)
+        days = ["team-h-201509%02dT030000Z.tar.gz" % d for d in range(17, 30)] + ["team-h-20150930T120000Z.tar.gz"]  # noqa: UP031
+        self.assertEqual(keep, ["team-h-20150801T030000Z.tar.gz", "team-h-20150901T030000Z.tar.gz", *days])
         self.assertNotIn("team-h-20150930T030000Z.tar.gz", keep)  # the same day's older one
         self.assertEqual(len(drop), 31 + 30 + 1 - len(keep))
         self.assertFalse([n for n in drop if not n.startswith("team-h-2015")])
@@ -374,29 +400,29 @@ class RetentionTest(BackupBase):
         self.assertEqual(backup.plan_retention(["team-other-20150801T000000Z.tar.gz"], "h", 14), ([], []))
 
     def test_deletes_only_our_old_names_inside_the_folder(self):
-        d = os.path.join(self.cloud, "depot2-backup")
-        os.makedirs(d)
-        ours = ["team-testhost-201508%02dT030000Z.tar.gz" % x for x in (1, 20)]
-        ours += ["team-testhost-201509%02dT030000Z.tar.gz" % x for x in (1, 2, 30)]
-        ours += ["team-testhost-201510%02dT030000Z.tar.gz" % x for x in range(12, 32)]
+        d = str(Path(self.cloud, "depot2-backup"))
+        Path(d).mkdir(parents=True)
+        ours = ["team-testhost-201508%02dT030000Z.tar.gz" % x for x in (1, 20)]  # noqa: UP031
+        ours += ["team-testhost-201509%02dT030000Z.tar.gz" % x for x in (1, 2, 30)]  # noqa: UP031
+        ours += ["team-testhost-201510%02dT030000Z.tar.gz" % x for x in range(12, 32)]  # noqa: UP031
         ours.append("team-testhost-20151030T150000Z.tar.gz")
         foreign = ["team-otherhost-20150801T030000Z.tar.gz", "notes.txt", "team-testhost-latest.tar.gz"]
         for n in ours + foreign:
-            with open(os.path.join(d, n), "w") as f:
+            with Path(d, n).open("w") as f:
                 f.write(n)
-        outside = os.path.join(self.cloud, "spare-1")
-        os.makedirs(outside)
-        with open(os.path.join(outside, "team-testhost-20150801T030000Z.tar.gz"), "w") as f:
+        outside = str(Path(self.cloud, "spare-1"))
+        Path(outside).mkdir(parents=True)
+        with Path(outside, "team-testhost-20150801T030000Z.tar.gz").open("w") as f:
             f.write("not ours")
         self.team("backup", "--drive", "--now")
         new = self.stamp()["archive"]
-        keep, drop = backup.plan_retention(ours + [new] + foreign, "testhost", 14)
+        keep, drop = backup.plan_retention([*ours, new, *foreign], "testhost", 14)
         self.assertIn(new, keep)
         self.assertEqual(len(keep), 14 + 3)  # 14 days + the first of Aug, Sep, Oct (Nov's is the new one)
         self.assertEqual(sorted(a[1] for a in self.cmds("deletefile")), sorted("depot2backupcrypt:" + n for n in drop))
         self.assertEqual(self.folder(), sorted(keep + foreign))
-        self.assertEqual(os.listdir(outside), ["team-testhost-20150801T030000Z.tar.gz"])
-        self.assertTrue(set(c[0] for c in self.cmds()) <= ALLOWED, self.cmds())
+        self.assertEqual([entry.name for entry in Path(outside).iterdir()], ["team-testhost-20150801T030000Z.tar.gz"])
+        self.assertTrue({c[0] for c in self.cmds()} <= ALLOWED, self.cmds())
         self.assertEqual(len(self.cmds("copyto")), 1)
         st = self.stamp()
         self.assertEqual(st["retention"]["kept"], len(keep))
@@ -404,26 +430,32 @@ class RetentionTest(BackupBase):
         self.assert_no_secret()
 
 
-@unittest.skipUnless(os.environ.get("DEPOT2_TEST_REAL_RCLONE") == "1" and shutil.which("rclone"),
-                     "set DEPOT2_TEST_REAL_RCLONE=1 to run the real rclone crypt against a local folder")
+@unittest.skipUnless(
+    os.environ.get("DEPOT2_TEST_REAL_RCLONE") == "1" and shutil.which("rclone"),
+    "set DEPOT2_TEST_REAL_RCLONE=1 to run the real rclone crypt against a local folder",
+)
 class RealRcloneTest(BackupBase):
     def test_env_crypt_over_a_local_folder(self):
-        drive = os.path.join(self.tmp, "drive") + "/"
-        conf = os.path.join(self.tmp, "empty-rclone.conf")
-        open(conf, "w").close()
+        drive = str(Path(self.tmp, "drive")) + "/"
+        conf = str(Path(self.tmp, "empty-rclone.conf"))
+        Path(conf).open("w").close()
         self.env["RCLONE_CONFIG"] = conf
-        self.sets = ["backup.rclone_bin=rclone", "backup.pass_bin=" + FAKE_PASS, "backup.remote=" + drive,
-                     "backup.host=testhost"]
+        self.sets = [
+            "backup.rclone_bin=rclone",
+            "backup.pass_bin=" + FAKE_PASS,
+            "backup.remote=" + drive,
+            "backup.host=testhost",
+        ]
         self.team("backup", "--drive", "--now")
         name = self.stamp()["archive"]
-        raw = os.listdir(os.path.join(drive, "depot2-backup"))
+        raw = [entry.name for entry in Path(drive, "depot2-backup").iterdir()]
         self.assertEqual(len(raw), 1)
         self.assertNotEqual(raw[0], name)  # the name is encrypted too
-        with open(os.path.join(drive, "depot2-backup", raw[0]), "rb") as f:
+        with Path(drive, "depot2-backup", raw[0]).open("rb") as f:
             self.assertEqual(f.read(8), b"RCLONE\x00\x00")  # rclone crypt's file header
         out = self.team("backup", "--drive", "--verify").stdout
         self.assertIn("git fsck --full ok", out)
-        self.assertEqual(os.path.getsize(conf), 0)  # rclone.conf untouched
+        self.assertEqual(Path(conf).stat().st_size, 0)  # rclone.conf untouched
         self.assert_no_secret()
 
 

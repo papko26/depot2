@@ -1,16 +1,15 @@
-
 import json
-import os
+from pathlib import Path
 
 from helpers import slurp
 from test_extras import Base, order, proposal, r2
-from test_round import FakeRunner, ans
+from test_round import ans
 
 from depot2 import characters
 from depot2.executors import FatalError
 from depot2.ledger import Ledger
 from depot2.reflect import changes_since
-from depot2.round import _place_locks, run_round
+from depot2.round import _place_locks
 from depot2.stack import Ballots, Stack, StackError
 from depot2.store import read_jsonl
 from depot2.tstack import TeamStack
@@ -35,8 +34,11 @@ class StackTest(Base):
         self.assertEqual([o["id"] for o in s.queue()], ["st-0002", "st-0003", "st-0001"])
         with self.assertRaises(StackError) as e:
             s.add("лишняя")
-        self.assertEqual(str(e.exception), "очередь полна (3): место освобождает depot2 stack done ID --reason «…» (что уже "
-                                           "не нужно) или stack start ID (голова очереди — в слот)")
+        self.assertEqual(
+            str(e.exception),
+            "очередь полна (3): место освобождает depot2 stack done ID --reason «…» (что уже "
+            "не нужно) или stack start ID (голова очереди — в слот)",
+        )
         with self.assertRaises(StackError) as e:
             s.start(b["id"])
         self.assertIn("depends on st-0001, not done yet", str(e.exception))
@@ -61,7 +63,7 @@ class StackTest(Base):
         self.assertEqual(s2.add("ещё")["id"], "st-0005")  # ids are never reused
         events = [h["event"] for h in s2.history()]
         self.assertEqual(events.count("done"), 1)
-        self.assertEqual([h for h in s2.history() if h["event"] == "done"][0]["obj"]["pr"], 180)
+        self.assertEqual(next(h for h in s2.history() if h["event"] == "done")["obj"]["pr"], 180)
 
     def test_a_locked_object_does_not_start_or_leave(self):
         s = self.stack()
@@ -84,14 +86,22 @@ class StackTest(Base):
         s.start("st-0001")
         s.lock("st-0002", "keeper", "ответ владельца про лимиты", "дорого", "r", "tx-000001", 10)
         md = s.md()
-        self.assertIn("| № | Где | Задача | Приоритет | Ветка / PR | Статус | Автозапуск | Effort (ожидаемо / потрачено) "
-                      "| Зависит от | Замок |", md)
+        self.assertIn(
+            "| № | Где | Задача | Приоритет | Ветка / PR | Статус | Автозапуск | Effort (ожидаемо / потрачено) "
+            "| Зависит от | Замок |",
+            md,
+        )
         self.assertIn("| **Сборка — в слотах (1/2)** | | | | | | | | | |", md)
-        self.assertIn("| С1 | слот | st-0001 Импорт 3 | P5 | import-3 / PR #181 | агент работает | нет | — | — | — |", md)
+        self.assertIn(
+            "| С1 | слот | st-0001 Импорт 3 | P5 | import-3 / PR #181 | агент работает | нет | — | — | — |", md
+        )
         self.assertIn("| С2 | слот | свободен | | | | | | | |", md)
         self.assertIn("| **Очередь — ждёт слота (1/3)** | | | | | | | | | |", md)
-        self.assertIn("| 1 | очередь | st-0002 Обложки | P5 | — | ждёт слота | нет | — | st-0001 | lk-0001 Копилка: ответ "
-                      "владельца про лимиты (−10) |", md)
+        self.assertIn(
+            "| 1 | очередь | st-0002 Обложки | P5 | — | ждёт слота | нет | — | st-0001 | lk-0001 Копилка: ответ "
+            "владельца про лимиты (-10) |",
+            md,
+        )
         self.assertLess(md.index("в слотах"), md.index("ждёт слота"))
 
     def test_the_effort_column(self):
@@ -102,15 +112,18 @@ class StackTest(Base):
         with self.assertRaises(ValueError):
             s.add("x", size="XXL")
         md = s.md()
-        self.assertIn("| 1 | очередь | st-0001 Импорт 3 | P5 | — | ждёт слота | нет | ≈ 1%UW (10 MTok) / 1.44%UW "
-                      "(14.4 MTok) | — | — |", md)
+        self.assertIn(
+            "| 1 | очередь | st-0001 Импорт 3 | P5 | — | ждёт слота | нет | ≈ 1%UW (10 MTok) / 1.44%UW "
+            "(14.4 MTok) | — | — |",
+            md,
+        )
         self.assertIn("| 2 | очередь | st-0002 Замер | P5 | — | ждёт слота | нет | ≈ 0.3%UW (3 MTok) / — | — | — |", md)
         self.assertIn("1%UW ≈ 10 MTok (usage.mtok_per_pct)", md)
         self.t.cfg["usage"]["mtok_per_pct"] = 24.0
         md = Stack(self.t.state, self.t.cfg).md()
         self.assertIn("≈ 1%UW (24 MTok) / 0.6%UW (14.4 MTok)", md)
         self.assertIn("≈ 0.12%UW (3 MTok) / —", md)
-        rc, out, err = self.team("stack", "set", "st-0002", "--est-pct", "0.5", "--spent-mtok", "2.5")
+        rc, _out, err = self.team("stack", "set", "st-0002", "--est-pct", "0.5", "--spent-mtok", "2.5")
         self.assertEqual(rc, 0, err)
         o = Stack(self.t.state, self.t.cfg).get("st-0002")
         self.assertEqual((o["est_mtok"], o["spent_mtok"]), (5.0, 2.5))
@@ -134,19 +147,19 @@ class StackTest(Base):
         self.assertEqual(self.team("stack", "done", "st-0001", "--reason", "merged #190")[0], 0)
         self.assertNotIn("st-0001", self.team("stack")[1])
 
-
     def test_a_note_onto_the_object(self):
         from depot2.store import now_iso
+
         self.assertEqual(self.team("stack", "add", "--title", "Импорт 3")[0], 0)
         rc, out, _ = self.team("stack", "set", "st-0001", "--note", "ждёт CI")
         self.assertEqual(rc, 0)
         day = now_iso()[:10]
-        self.assertIn("st-0001: заметка 1 — %s: ждёт CI" % day, out)
+        self.assertIn(f"st-0001: заметка 1 — {day}: ждёт CI", out)
         rc, out, _ = self.team("stack", "set", "st-0001", "--note", "CI зелёный", "--status", "PR открыт")
         self.assertEqual(rc, 0)
-        self.assertIn("st-0001: заметка 2 — %s: CI зелёный" % day, out)
+        self.assertIn(f"st-0001: заметка 2 — {day}: CI зелёный", out)
         o = json.loads(self.team("stack", "--json")[1])["queue"][0]
-        self.assertEqual((o["notes"], o["status"]), (["%s: ждёт CI" % day, "%s: CI зелёный" % day], "PR открыт"))
+        self.assertEqual((o["notes"], o["status"]), ([f"{day}: ждёт CI", f"{day}: CI зелёный"], "PR открыт"))
         rows = [r for r in Stack(self.t.state, self.t.cfg).history() if r["event"] == "set"]
         self.assertEqual([r.get("note_added") for r in rows], ["ждёт CI", "CI зелёный"])
         self.assertNotIn("notes", rows[0])  # the row keeps the line added, not the whole list again
@@ -156,7 +169,6 @@ class StackTest(Base):
 
 
 class AutostartAndParkTest(Base):
-
     def test_the_autostart_flag(self):
         rc, out, err = self.team("stack", "add", "--title", "Импорт 3")
         self.assertEqual(rc, 0, err)
@@ -165,8 +177,11 @@ class AutostartAndParkTest(Base):
         self.assertIn("st-0002 added to the queue (2/10), autostart yes", out)
         self.assertIn("| 1 | очередь | st-0001 Импорт 3 | P5 | — | ждёт слота | нет | — | — | — |", out)
         self.assertIn("| 2 | очередь | st-0002 Обложки | P5 | — | ждёт слота | да | — | — | — |", out)
-        self.assertIn("Автозапуск: да — первый свободный слот берёт объект сам (`trains next`, после поездов); "
-                      "нет (по умолчанию) — ждёт слова владельца, `stack start`;", out)
+        self.assertIn(
+            "Автозапуск: да — первый свободный слот берёт объект сам (`trains next`, после поездов); "
+            "нет (по умолчанию) — ждёт слова владельца, `stack start`;",
+            out,
+        )
         s = Stack(self.t.state, self.t.cfg)
         self.assertEqual([o["autostart"] for o in s.queue()], [False, True])
         self.assertEqual(self.team("stack", "set", "st-0002", "--autostart", "no")[0], 0)
@@ -214,16 +229,24 @@ class AutostartAndParkTest(Base):
         s = Stack(self.t.state, self.t.cfg)
         self.assertEqual([o["id"] for o in s.queue()], ["st-0001", "st-0002"])
         o = s.get("st-0001")
-        self.assertEqual((o["where"], o["branch"], o["pr"], o["status"], o["parked"]["reason"]),
-                         ("queue", "bookmarks-size", 205, "PR #205 готов; ждёт замера", "ждёт замера выдачи"))
-        self.assertIn("| 1 | очередь | st-0001 Закладки | P5 | bookmarks-size / PR #205 | PR #205 готов; ждёт замера (запаркован %s: "
-                      "ждёт замера выдачи) | да |" % o["parked"]["ts"][:10], out)
+        self.assertEqual(
+            (o["where"], o["branch"], o["pr"], o["status"], o["parked"]["reason"]),
+            ("queue", "bookmarks-size", 205, "PR #205 готов; ждёт замера", "ждёт замера выдачи"),
+        )
+        self.assertIn(
+            "| 1 | очередь | st-0001 Закладки | P5 | bookmarks-size / PR #205 | PR #205 готов; ждёт замера (запаркован {}: "
+            "ждёт замера выдачи) | да |".format(o["parked"]["ts"][:10]),
+            out,
+        )
         # a freed slot never takes it by itself, though its autostart is yes; the next object goes
         from depot2.trains import Trains
+
         nx = Trains(self.t.state, self.t.cfg).next()
         self.assertEqual([x["id"] for x in nx["stack"]], ["st-0002"])
-        self.assertEqual([(w["stack"]["id"], w["why"], w["command"]) for w in nx["owner_word"]],
-                         [("st-0001", "запаркован: ждёт замера выдачи", "depot2 stack start st-0001")])
+        self.assertEqual(
+            [(w["stack"]["id"], w["why"], w["command"]) for w in nx["owner_word"]],
+            [("st-0001", "запаркован: ждёт замера выдачи", "depot2 stack start st-0001")],
+        )
         rc, out, _ = self.team("stack", "park", "st-0001", "--reason", "ещё раз")
         self.assertEqual(rc, 1)  # only an object in a slot
         # `stack start` brings it back
@@ -235,17 +258,20 @@ class AutostartAndParkTest(Base):
 
 class LockPassTest(Base):
     def setUp(self):
-        super(LockPassTest, self).setUp()
+        super().setUp()
         s = Stack(self.t.state, self.t.cfg)
         s.add("Импорт 3", branch="import-3")
         s.add("Обложки")
         s.start("st-0001")
 
     def test_the_lock_pass_runs_after_the_vote_and_sees_the_balance_after_the_debits(self):
-        script = {("counter", "r1"): dict(ans([("B49", "agree", 4, "важно")]),
-                                          brainstorm_proposal=proposal("Обложки и полки")),
-                  ("builder", "r1"): dict(ans(), order=order(seeds="1-5", threshold="8 мс", forecast="6")),
-                  ("keeper", "r3"): lock("st-0001")}
+        script = {
+            ("counter", "r1"): dict(
+                ans([("B49", "agree", 4, "важно")]), brainstorm_proposal=proposal("Обложки и полки")
+            ),
+            ("builder", "r1"): dict(ans(), order=order(seeds="1-5", threshold="8 мс", forecast="6")),
+            ("keeper", "r3"): lock("st-0001"),
+        }
         for cid in characters.IDS:
             script[(cid, "r2")] = r2([("BR1", "yes")])
         r, runner = self.play(script)
@@ -255,9 +281,9 @@ class LockPassTest(Base):
         self.assertEqual(seen, {"builder": 10, "painter": 15, "counter": 10, "chronicler": 15, "keeper": 15})
         r3 = [c[3] for c in runner.calls if c[1] == "r3"]
         self.assertEqual(r3[0].max_tool_turns, 2)
-        self.assertEqual(r3[0].budget_usd, 1.50)  # lock.budget_mtok 0.6 × usage.usd_per_mtok 2.5
+        self.assertEqual(r3[0].budget_usd, 1.50)  # lock.budget_mtok 0.6 x usage.usd_per_mtok 2.5
         self.assertEqual(r3[0].add_dirs, [self.snaps[0]])
-        self.assertIn("У тебя 15 ток.", [c.user for c in r3 if "keeper" in c.call_id][0])
+        self.assertIn("У тебя 15 ток.", next(c.user for c in r3 if "keeper" in c.call_id))
         system = slurp(r3[0].system_path)
         self.assertIn("## Стек: слоты агентов и очередь задач", system)
         self.assertIn("st-0001 Импорт 3", system)
@@ -271,17 +297,25 @@ class LockPassTest(Base):
         self.assertEqual((lk["id"], lk["by"], lk["round"], lk["tx"]), ("lk-0001", "keeper", r["id"], locks[0]["id"]))
         rep = r["report"]
         self.assertIn("Проход замков (раунд 3) прошёл: 5 вызовов.", rep)
-        self.assertIn("- lk-0001 Копилка на st-0001 «Импорт 3» (−10 ток.): условие: тест «isbn-dedup-cap» зелёный; "
-                      "зачем: иначе каталог двоится.", rep)
-        self.assertEqual(self.rows(rep)["Копилка"], ["Копилка", "20", "—", "0", "0", "−5", "0", "−10", "5"])
+        self.assertIn(
+            "- lk-0001 Копилка на st-0001 «Импорт 3» (-10 ток.): условие: тест «isbn-dedup-cap» зелёный; "
+            "зачем: иначе каталог двоится.",
+            rep,
+        )
+        self.assertEqual(self.rows(rep)["Копилка"], ["Копилка", "20", "—", "0", "0", "-5", "0", "-10", "5"])
         self.assertIn("замки 10 ток. (не возвращаются)", rep)
         self.assertNotIn("НЕ СХОДИТСЯ", rep)
         self.assertEqual(changes_since(self.t.state, "keeper"), ([], []))  # the team's act
 
     def test_refused_locks(self):
         Ledger(self.t.state).fine("painter", 15, "тест")  # 5 < 10: no call at all
-        r, runner = self.play({("builder", "r3"): lock("st-0002"), ("counter", "r3"): lock("st-0002"),
-                               ("keeper", "r3"): lock("st-0001", condition="")})
+        r, runner = self.play(
+            {
+                ("builder", "r3"): lock("st-0002"),
+                ("counter", "r3"): lock("st-0002"),
+                ("keeper", "r3"): lock("st-0001", condition=""),
+            }
+        )
         self.assertNotIn("painter", [c[0] for c in runner.calls if c[1] == "r3"])
         rep = r["report"]
         self.assertIn("- отклонён, Палитра, Краски — не может заплатить замок (5 < 10): без вызова.", rep)
@@ -290,12 +324,23 @@ class LockPassTest(Base):
         self.assertEqual([e["character"] for e in Ledger(self.t.state).entries() if e["type"] == "lock"], ["builder"])
         # One per character per round, and only on an object in the stack (checked by code).
         stk = Stack(self.t.state, self.t.cfg)
-        placed, refused = _place_locks(self.t.state, self.t.cfg, Ledger(self.t.state), stk, "r-x",
-                                       [("chronicler", lock("st-0001")["lock"]), ("chronicler", lock("st-0002")["lock"]),
-                                        ("keeper", lock("st-0404")["lock"])])
+        placed, refused = _place_locks(
+            self.t.state,
+            self.t.cfg,
+            Ledger(self.t.state),
+            stk,
+            "r-x",
+            [
+                ("chronicler", lock("st-0001")["lock"]),
+                ("chronicler", lock("st-0002")["lock"]),
+                ("keeper", lock("st-0404")["lock"]),
+            ],
+        )
         self.assertEqual([p["object"] for p in placed], ["st-0001"])
-        self.assertEqual([x["reason"] for x in refused], ["второй замок за раунд: один на персонажа",
-                                                         "нет такого объекта в стеке: st-0404"])
+        self.assertEqual(
+            [x["reason"] for x in refused],
+            ["второй замок за раунд: один на персонажа", "нет такого объекта в стеке: st-0404"],
+        )
 
     def test_skipped_on_an_empty_stack(self):
         s = Stack(self.t.state, self.t.cfg)
@@ -312,31 +357,36 @@ class LockPassTest(Base):
         self.assertIn("Перо, Летописец: раунд 3 (замки) пропущен (cap: 12 calls per round)", r["report"])
 
     def test_a_fatal_error_in_the_lock_pass_keeps_the_round(self):
-        r, runner = self.play({("painter", "r3"): FatalError("API error 429: usage limit"),
-                               ("builder", "r3"): lock("st-0001")})
+        r, runner = self.play(
+            {("painter", "r3"): FatalError("API error 429: usage limit"), ("builder", "r3"): lock("st-0001")}
+        )
         self.assertIn("lock pass stopped", r["fatal"])
         self.assertEqual([c[0] for c in runner.calls if c[1] == "r3"], ["builder", "painter"])
-        rj = json.loads(slurp(os.path.join(r["dir"], "round.json")))
+        rj = json.loads(slurp(str(Path(r["dir"], "round.json"))))
         self.assertEqual(rj["status"], "done")
         self.assertEqual([x["character"] for x in rj["locks"]["placed"]], ["builder"])
 
     def test_unlock_met_and_owner_only_owner_opens_the_gate(self):
         self.play({("builder", "r3"): lock("st-0001"), ("keeper", "r3"): lock("st-0002")})
-        rc, out, err = self.team("stack", "unlock", "st-0001", "--met", "--reason", "тест зелёный, CI #5")
+        rc, out, err = self.team("stack", "unlock", "st-0001", "--met", "--reason", "тест зелёный, CI #5")  # noqa: RUF059
         self.assertEqual(rc, 0, err)
         self.assertEqual(changes_since(self.t.state, "builder"), ([], []))
-        rc, out, err = self.team("stack", "unlock", "st-0002", "--owner", "--reason", "беру на себя")
+        rc, _out, err = self.team("stack", "unlock", "st-0002", "--owner", "--reason", "беру на себя")
         self.assertEqual(rc, 0, err)
-        owner, dec = changes_since(self.t.state, "keeper")
+        _owner, dec = changes_since(self.t.state, "keeper")
         self.assertEqual(len(dec), 1)
         self.assertIn("Владелец снял замок lk-0002 (st-0002", dec[0]["text"])
         self.assertEqual(Ledger(self.t.state).balance("keeper"), 10)  # the price stays spent
         self.assertEqual(self.team("stack", "unlock", "st-0002", "--met", "--reason", "x")[0], 1)  # no lock now
         # The next round's report lists them as lifted.
         r, _ = self.play({})
-        self.assertIn("- снят с прошлого раунда: lk-0001 на st-0001 (Строитель), условие выполнено: тест зелёный, CI #5.",
-                      r["report"])
-        self.assertIn("- снят с прошлого раунда: lk-0002 на st-0002 (Копилка), снял владелец: беру на себя.", r["report"])
+        self.assertIn(
+            "- снят с прошлого раунда: lk-0001 на st-0001 (Строитель), условие выполнено: тест зелёный, CI #5.",
+            r["report"],
+        )
+        self.assertIn(
+            "- снят с прошлого раунда: lk-0002 на st-0002 (Копилка), снял владелец: беру на себя.", r["report"]
+        )
 
 
 class BallotsTest(Base):
@@ -346,12 +396,12 @@ class BallotsTest(Base):
         e = bq.get(r["id"])
         self.assertEqual((e["status"], e["kind"], e["title"]), ("waiting", "ballot", "Бюллетень"))
         self.assertEqual(e["points_left"], ["B50", "B49", "X1", "X2"])
-        self.assertEqual(e["report"], os.path.join(r["dir"], "report.md"))
+        self.assertEqual(e["report"], str(Path(r["dir"], "report.md")))
         # The next round's bundle shows it to the characters.
         r2_, runner = self.play({})
         system = slurp(runner.calls[0][3].system_path)
         self.assertIn("## Очередь бюллетеней владельца (ещё не решены)", system)
-        self.assertIn("| 1 | %s | Бюллетень | ждёт | — | 4: B50, B49, X1, X2 |" % r["id"], system)
+        self.assertIn("| 1 | {} | Бюллетень | ждёт | — | 4: B50, B49, X1, X2 |".format(r["id"]), system)
         self.assertEqual([x["round"] for x in Ballots(self.t.state).entries()], [r["id"], r2_["id"]])
 
     def test_decide_marks_a_point_and_the_commands(self):
@@ -359,19 +409,19 @@ class BallotsTest(Base):
         rid = r["id"]
         rc, out, err = self.team("decide", "all", "--text", "да", "--round", rid, "--point", "B49")
         self.assertEqual(rc, 0, err)
-        self.assertIn("ballot %s: B49 answered; 3 points left (presenting)" % rid, out)
+        self.assertIn(f"ballot {rid}: B49 answered; 3 points left (presenting)", out)
         n = len(read_jsonl(self.t.state.decisions_path))
         rc, out, err = self.team("decide", "all", "--text", " ", "--round", rid, "--point", "B50")
         self.assertEqual((rc, len(read_jsonl(self.t.state.decisions_path))), (1, n))
         self.assertIn("a decision needs its words", err)
         rc, out, err = self.team("decide", "all", "--text", "нет", "--round", rid, "--point", "Z9")
-        self.assertIn("ballot %s: no open point Z9 (open: B50, X1, X2): the ballot is as it was" % rid, out)
+        self.assertIn(f"ballot {rid}: no open point Z9 (open: B50, X1, X2): the ballot is as it was", out)
         rc, out, err = self.team("decide", "all", "--text", "да", "--round", rid, "--point", "b50")
-        self.assertIn("ballot %s: B50 answered; 2 points left (presenting)" % rid, out)
+        self.assertIn(f"ballot {rid}: B50 answered; 2 points left (presenting)", out)
         self.assertEqual(read_jsonl(self.t.state.decisions_path)[-1]["point"], "B50")
         self.assertEqual(self.team("ballots", "at", rid, "X1")[0], 0)
         rc, out, _ = self.team("ballots", "--md")
-        self.assertIn("| 1 | %s | Бюллетень | показываю | X1 | 2: X1, X2 |" % rid, out)
+        self.assertIn(f"| 1 | {rid} | Бюллетень | показываю | X1 | 2: X1, X2 |", out)
         self.assertEqual(self.team("ballots", "point", rid, "B50")[0], 1)  # answered already
         r2_, _ = self.play({})
         self.assertEqual(self.team("ballots", "move", r2_["id"], "--at", "1")[0], 0)
@@ -386,7 +436,7 @@ class BallotsTest(Base):
         self.assertIn("снят", out)
         self.assertEqual(Ballots(self.t.state).get(r2_["id"])["notes"][0][-7:], "устарел")
         self.assertEqual(self.team("ballots", "add", "--round", rid)[0], 1)  # in the queue already
-        os.remove(Ballots(self.t.state).path)
+        Path(Ballots(self.t.state).path).unlink()
         self.assertEqual(self.team("ballots", "add", "--round", rid)[0], 0)  # an existing round
         self.assertEqual(Ballots(self.t.state).get(rid)["status"], "waiting")
         self.assertEqual(self.team("ballots", "done", rid)[0], 0)

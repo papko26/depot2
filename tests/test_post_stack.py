@@ -1,12 +1,10 @@
-
 import datetime
 import json
 
 from test_tracks import PAST, TracksBase
 
 from depot2.stack import Stack, StackError, age_ru
-from depot2.tracks import Tracks, reads_dropped
-from depot2.trains import Trains
+from depot2.tracks import reads_dropped
 
 THEN = "2015-11-08T13:00:00+02:00"
 LATER = datetime.datetime.fromisoformat("2015-11-08T15:05:00+02:00")
@@ -19,9 +17,9 @@ class PostStackBase(TracksBase):
     def in_slots(self, *titles, **kw):
         s = self.stk()
         for i, title in enumerate(titles):
-            o = s.add(title, branch="b%d" % (i + 1), pr=301 + i, brief="/tmp/brief-%d.md" % (i + 1), **kw)
+            o = s.add(title, branch="b%d" % (i + 1), pr=301 + i, brief="/tmp/brief-%d.md" % (i + 1), **kw)  # noqa: UP031
             s.start(o["id"])
-            s.set(o["id"], status="PR #%d, CI зелёный" % (301 + i))
+            s.set(o["id"], status="PR #%d, CI зелёный" % (301 + i))  # noqa: UP031
         return s
 
 
@@ -30,12 +28,18 @@ class PostStackTest(PostStackBase):
         self.in_slots("Импорт", "Обложки", "Закладки", "Рассылка")
         rc, out, err = self.team("stack", "post", "st-0001", "--reason", "перед мерджем подтянуть main")
         self.assertEqual(rc, 0, err)
-        self.assertIn("st-0001 → the post-stack (1/4): PR #301 waits for the owner's merge; the slot is free (3/4)", out)
+        self.assertIn(
+            "st-0001 → the post-stack (1/4): PR #301 waits for the owner's merge; the slot is free (3/4)", out
+        )
         o = self.stk().get("st-0001")
-        self.assertEqual((o["where"], o["pr"], o["branch"], o["brief"], o["status"]),
-                         ("post", 301, "b1", "/tmp/brief-1.md", "PR #301, CI зелёный"))  # all kept
-        self.assertEqual((o["posted"]["reason"], o["posted"]["from"], o["ci"]["state"]),
-                         ("перед мерджем подтянуть main", "slot", "зелёный"))
+        self.assertEqual(
+            (o["where"], o["pr"], o["branch"], o["brief"], o["status"]),
+            ("post", 301, "b1", "/tmp/brief-1.md", "PR #301, CI зелёный"),
+        )  # all kept
+        self.assertEqual(
+            (o["posted"]["reason"], o["posted"]["from"], o["ci"]["state"]),
+            ("перед мерджем подтянуть main", "slot", "зелёный"),
+        )
         h = self.stk().history()[-1]
         self.assertEqual((h["event"], h["object"], h["was"], h["pr"]), ("post", "st-0001", "slot", 301))
         for oid in ("st-0002", "st-0003", "st-0004"):
@@ -77,23 +81,31 @@ class PostStackTest(PostStackBase):
         self.ride("tr-0001", "reader", slots="max 1")
         self.tracks().car_stack("tr-0001:R0", start=True)
         self.team("stack", "set", "st-0001", "--pr", "206", "--ci", "green")
-        self.assertEqual(self.trains().next(PAST)["picks"], [])      # max 1: R0 holds the train's slot
+        self.assertEqual(self.trains().next(PAST)["picks"], [])  # max 1: R0 holds the train's slot
         rc, out, err = self.team("stack", "post", "st-0001")
         self.assertEqual(rc, 0, err)
         self.assertIn("tr-0001:R0 → PR #206 открыт, в пост-стеке: ждёт мерджа владельца (st-0001, слот свободен)", out)
-        self.assertIn("Свободный слот берёт (trains next): tr-0001:P (поезд reader P5, вагон P5) — `depot2 tracks car stack tr-0001:P "
-                      "--start`", out)
+        self.assertIn(
+            "Свободный слот берёт (trains next): tr-0001:P (поезд reader P5, вагон P5) — `depot2 tracks car stack tr-0001:P "
+            "--start`",
+            out,
+        )
         tr = self.tracks()
-        t, c = tr.car("tr-0001:R0")
+        _t, c = tr.car("tr-0001:R0")
         self.assertEqual((c["status"], c["st"], c["pr"], c["branch"]), ("pr", "st-0001", 206, "reader-mockup"))
         self.assertTrue(tr.posted(c))
-        self.assertFalse(tr.parked(c))                                # not parked: it waits only for the merge
+        self.assertFalse(tr.parked(c))  # not parked: it waits only for the merge
         self.assertEqual(self.trains().busy(self.trains().get("reader")), [])
         self.assertEqual([p["car"]["n"] for p in self.trains().next(PAST)["picks"]], ["P"])
-        self.assertIn("| R0 | P5 | макет | — | M: ≈ 1%UW (12 MTok) / — | reader-mockup / PR #206 | st-0001 | reader | PR открыт, "
-                      "в пост-стеке: ждёт мерджа владельца |", tr.car_md("tr-0001", now=PAST))
-        self.assertIn("Пост-стек — ждут мерджа владельца (1/4, слот не держат): st-0001 (tr-0001:R0) PR #206",
-                      "\n".join(self.trains().next_lines(PAST, train=self.trains().get("reader"))))
+        self.assertIn(
+            "| R0 | P5 | макет | — | M: ≈ 1%UW (12 MTok) / — | reader-mockup / PR #206 | st-0001 | reader | PR открыт, "
+            "в пост-стеке: ждёт мерджа владельца |",
+            tr.car_md("tr-0001", now=PAST),
+        )
+        self.assertIn(
+            "Пост-стек — ждут мерджа владельца (1/4, слот не держат): st-0001 (tr-0001:R0) PR #206",
+            "\n".join(self.trains().next_lines(PAST, train=self.trains().get("reader"))),
+        )
         self.assertNotIn("Запаркованы", "\n".join(self.trains().next_lines(PAST)))
         rc, _, err = self.team("trains", "done", "reader")
         self.assertIn("cars — tr-0001:R0 (PR открыт)", err)
@@ -107,8 +119,11 @@ class PostStackTest(PostStackBase):
         self.team("stack", "set", "st-0002", "--pr", "207")
         rc, _, err = self.team("stack", "post", "st-0002")
         self.assertEqual(rc, 1)
-        self.assertIn("st-0002 is the object of tr-0001:R1, which waits for R0 (PR открыт): its PR is blocked, not "
-                      "ready to merge; stack park st-0002", err)
+        self.assertIn(
+            "st-0002 is the object of tr-0001:R1, which waits for R0 (PR открыт): its PR is blocked, not "
+            "ready to merge; stack park st-0002",
+            err,
+        )
 
     def test_done_after_post(self):
         self.in_slots("Импорт", "Обложки")
@@ -154,7 +169,7 @@ class PostStackTest(PostStackBase):
         self.team("stack", "post", "st-0001")
         s = self.stk()
         for i in range(4):
-            s.add("занят %d" % i)
+            s.add("занят %d" % i)  # noqa: UP031
         s.add("ждёт")
         for oid in ("st-0002", "st-0003", "st-0004", "st-0005"):
             s.start(oid)
@@ -176,23 +191,36 @@ class PostStackTest(PostStackBase):
         s = self.in_slots("Импорт", "Обложки")
         s.add("в очереди")
         md = s.md()
-        self.assertIn("| **Приёмка — пост-стек, ждут мерджа владельца (0/4)** | | | | | | | | | | | | |\n| — | пост | (пусто) |", md)
+        self.assertIn(
+            "| **Приёмка — пост-стек, ждут мерджа владельца (0/4)** | | | | | | | | | | | | |\n| — | пост | (пусто) |",
+            md,
+        )
         self.team("stack", "post", "st-0002", "--reason", "подтянуть main с #205")
         s = self.stk()
         o = s.get("st-0002")
         o["posted"]["ts"], o["ci"] = THEN, {"state": "зелёный", "ts": "2015-11-08T12:58:00+02:00"}
         s._save("test", "st-0002")
         md = self.stk().md(now=LATER)
-        self.assertLess(md.index("**Сборка — в слотах (1/4)**"), md.index("**Приёмка — пост-стек, ждут мерджа владельца (1/4)**"))
-        self.assertLess(md.index("**Приёмка — пост-стек, ждут мерджа владельца (1/4)**"), md.index("**Очередь — ждёт слота (1/10)**"))
-        self.assertIn("| П1 | пост | st-0002 Обложки | P5 | b2 / PR #302 | CI зелёный (2015-11-08 12:58) · ждёт 2 ч 05 мин · "
-                      "PR #302, CI зелёный · подтянуть main с #205 | нет | — | — | — |", md)
+        self.assertLess(
+            md.index("**Сборка — в слотах (1/4)**"), md.index("**Приёмка — пост-стек, ждут мерджа владельца (1/4)**")
+        )
+        self.assertLess(
+            md.index("**Приёмка — пост-стек, ждут мерджа владельца (1/4)**"),
+            md.index("**Очередь — ждёт слота (1/10)**"),
+        )
+        self.assertIn(
+            "| П1 | пост | st-0002 Обложки | P5 | b2 / PR #302 | CI зелёный (2015-11-08 12:58) · ждёт 2 ч 05 мин · "
+            "PR #302, CI зелёный · подтянуть main с #205 | нет | — | — | — |",
+            md,
+        )
         self.assertIn("| С2 | слот | свободен |", md)  # the slot it held is free
         self.assertIn("Пост-стек: PR готов (CI зелёный) и ждёт только «мердж» владельца; слота не держит", md)
         self.assertIn("**Приёмка — пост-стек", self.team("stack", "--md")[1])
         data = json.loads(self.team("stack", "--json")[1])
-        self.assertEqual((data["post_max"], [o["id"] for o in data["post"]], [o["id"] for o in data["in_slots"]]),
-                         (4, ["st-0002"], ["st-0001"]))
+        self.assertEqual(
+            (data["post_max"], [o["id"] for o in data["post"]], [o["id"] for o in data["in_slots"]]),
+            (4, ["st-0002"], ["st-0001"]),
+        )
         # `stack set --ci` records the CI as last seen, stamped
         self.team("stack", "set", "st-0002", "--ci", "red")
         self.assertEqual(self.stk().get("st-0002")["ci"]["state"], "красный")
@@ -200,10 +228,14 @@ class PostStackTest(PostStackBase):
         # `trains next`: the free slots without the post-stack, and the post-stack on one line
         lines = "\n".join(self.trains().next_lines(LATER))
         self.assertIn("Свободных слотов в стеке: 3/4.", lines)
-        self.assertIn("Пост-стек — ждут мерджа владельца (1/4, слот не держат): st-0002 PR #302 (CI красный, ждёт ", lines)
+        self.assertIn(
+            "Пост-стек — ждут мерджа владельца (1/4, слот не держат): st-0002 PR #302 (CI красный, ждёт ", lines
+        )
         nx = json.loads(self.team("trains", "next", "--json")[1])
-        self.assertEqual((nx["free"], nx["post_max"], [(p["id"], p["pr"], p["car"]) for p in nx["post"]]),
-                         (3, 4, [("st-0002", 302, None)]))
+        self.assertEqual(
+            (nx["free"], nx["post_max"], [(p["id"], p["pr"], p["car"]) for p in nx["post"]]),
+            (3, 4, [("st-0002", 302, None)]),
+        )
         self.assertIn("пост-стек 1/4", self.team("queues")[1])
         # the team stack has no post-stack
         self.assertNotIn("Пост-стек", self.team("tstack")[1])
@@ -213,19 +245,20 @@ class PostStackTest(PostStackBase):
     def test_the_ref_state_of_a_posted_pr(self):
         s = self.stk()
         s.add("раньше", pr=340)
-        s.done("st-0001", "merged #340")          # an older row with the same PR says merged
+        s.done("st-0001", "merged #340")  # an older row with the same PR says merged
         self.assertTrue(self.tracks().ref_state("#340")[0])
         self.in_slots("доработка #340")
         self.stk().set("st-0002", pr=340)
         self.team("stack", "post", "st-0002")
         tr = self.tracks()
-        self.assertEqual(tr.ref_state("#340"),
-                         (False, "PR #340 (не слит; в пост-стеке st-0002, ждёт мерджа владельца)"))
+        self.assertEqual(
+            tr.ref_state("#340"), (False, "PR #340 (не слит; в пост-стеке st-0002, ждёт мерджа владельца)")
+        )
         self.assertEqual(tr.ref_state("st-0002"), (False, "st-0002 (в пост-стеке, ждёт мерджа владельца)"))
         s = self.stk()
         s.add("после доработки", depends=["st-0002"])
         with self.assertRaises(StackError):
-            s.start("st-0003")                    # a dependency in the post-stack is not done
+            s.start("st-0003")  # a dependency in the post-stack is not done
 
     def test_a_slot_freed_by_post_takes_the_next_autostart_object(self):
         self.in_slots("Импорт", "Обложки", "Закладки", "Рассылка")
@@ -242,9 +275,8 @@ class PostStackTest(PostStackBase):
 
 
 class CarBackTest(PostStackBase):
-
     def setUp(self):
-        super(CarBackTest, self).setUp()
+        super().setUp()
         tr = self.tracks()
         a = tr.add("Поиск")
         tr.car_add(a["id"], "иконки", n="3", size="S", branch="format-icons", brief="/tmp/format-icons.md")
@@ -260,22 +292,30 @@ class CarBackTest(PostStackBase):
         for oid, ref, ru in (("st-0001", "tr-0001:3", "готов"), ("st-0002", "tr-0001:7", "в работе")):
             rc, _, err = self.team("stack", "done", oid, "--reason", "вернулся в поезд")
             self.assertEqual(rc, 1)
-            self.assertIn("%s is the object of %s (%s): say what the car becomes: --car merged (its PR landed), "
-                          "--car dropped (the car is off), or --car back" % (oid, ref, ru), err)
+            self.assertIn(
+                f"{oid} is the object of {ref} ({ru}): say what the car becomes: --car merged (its PR landed), "
+                "--car dropped (the car is off), or --car back",
+                err,
+            )
         self.assertEqual([c["status"] for c in self.tracks().get("tr-0001")["cars"]], ["ready", "running"])
         self.assertEqual([o["id"] for o in self.stk().objects()], ["st-0002", "st-0001", "st-0003"])
 
     def test_car_back_returns_it_to_its_train_as_it_was(self):
         rc, out, err = self.team("stack", "done", "st-0002", "--car", "back", "--reason", "владелец: в поезд")
         self.assertEqual(rc, 0, err)
-        self.assertIn("tr-0001:7 → ждёт, назад на трек как был: бриф и ветка при нём, связь со стеком снята "
-                      "(st-0002 вышел); снова в стек: depot2 tracks car stack tr-0001:7", out)
+        self.assertIn(
+            "tr-0001:7 → ждёт, назад на трек как был: бриф и ветка при нём, связь со стеком снята "
+            "(st-0002 вышел); снова в стек: depot2 tracks car stack tr-0001:7",
+            out,
+        )
         rc, out, err = self.team("stack", "done", "st-0001", "--car", "back", "--reason", "владелец: в поезд")
         self.assertIn("tr-0001:3 → готов, назад на трек как был", out)
         tr = self.tracks()
         c3, c7 = tr.car("tr-0001:3")[1], tr.car("tr-0001:7")[1]
-        self.assertEqual((c3["status"], c3["st"], c3["branch"], c3["brief"], c3["finished"]),
-                         ("ready", None, "format-icons", "/tmp/format-icons.md", None))
+        self.assertEqual(
+            (c3["status"], c3["st"], c3["branch"], c3["brief"], c3["finished"]),
+            ("ready", None, "format-icons", "/tmp/format-icons.md", None),
+        )
         self.assertEqual((c7["status"], c7["st"], c7["returned"]["st"]), ("waiting", None, "st-0002"))  # as stacked
         self.assertEqual(self.stk().history()[-1]["outcome"], "back")
         self.assertEqual(tr.ref_state("st-0001"), (False, "st-0001 (вне стека; вагон tr-0001:3 готов)"))
@@ -297,10 +337,10 @@ class CarBackTest(PostStackBase):
         rc, _, err = self.team("stack", "done", "st-0002", "--car", "back", "--reason", "x")
         self.assertIn("st-0002 has PR #360: a car with a PR goes back to its track with `stack park st-0002`", err)
         self.assertEqual(self.stk().get("st-0002")["where"], "slot")
-        rc, _, err = self.team("stack", "done", "st-0003", "--car", "back", "--reason", "x")
+        rc, _, err = self.team("stack", "done", "st-0003", "--car", "back", "--reason", "x")  # noqa: RUF059
         self.assertIn("st-0003 is no track's car's object: --car back sends a car back to its track", err)
         # a car with no PR is not parked: the refusal says how it goes back
-        rc, _, err = self.team("stack", "park", "st-0001", "--reason", "x")
+        _rc, _, err = self.team("stack", "park", "st-0001", "--reason", "x")
         self.assertIn("a car with no PR goes back to its track with stack done st-0001 --car back", err)
         # an object that is no car's: --car merged|dropped is its row's outcome, and a PR ref reads it first
         s = self.stk()
@@ -345,8 +385,10 @@ class PostStackRowsTest(PostStackBase):
         self.assertIn("tr-0001:M: its after (0b (готов)) is not met; it gates the merge, not the work", out)
         tr = self.tracks()
         self.assertEqual(tr.car("tr-0001:M")[1]["status"], "ready")
-        self.assertEqual([p["car"]["n"] for p in self.trains().next(PAST)["picks"]], ["0b"])  # a freed slot does not take M
-        self.assertEqual(self.team("stack", "start", "st-0001")[0], 0)              # the owner's word does
+        self.assertEqual(
+            [p["car"]["n"] for p in self.trains().next(PAST)["picks"]], ["0b"]
+        )  # a freed slot does not take M
+        self.assertEqual(self.team("stack", "start", "st-0001")[0], 0)  # the owner's word does
 
     def test_park_refuses_a_full_queue(self):
         self.t.cfg["stack"]["queue_max"] = 1
@@ -356,7 +398,10 @@ class PostStackRowsTest(PostStackBase):
         s.add("в очереди")
         with self.assertRaises(StackError) as e:
             s.park("st-0001", "ждёт замера")
-        self.assertIn("очередь полна (1): a parked object goes to the head of the queue; st-0001 stays in its slot", str(e.exception))
+        self.assertIn(
+            "очередь полна (1): a parked object goes to the head of the queue; st-0001 stays in its slot",
+            str(e.exception),
+        )
         self.assertIn("or stack post st-0001 if its PR waits only for the merge", str(e.exception))
         self.assertEqual(self.stk().get("st-0001")["where"], "slot")
 

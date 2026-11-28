@@ -9,32 +9,36 @@ MESSAGES = {
     "team.disagree": "disagrees",
     "team.spec_gender": "",
     "in.spec_gender": r"^Grammatical gender:",
-
     # --- init (cli.py) ---
     "init.done": "depot initialised at {root}: {n} characters, {balance} tokens each",
     "init.done_no_team": "depot initialised at {root}: no team (set `characters` in config.json to have one)",
-
     # --- the stack (stack.py) ---
-    "stack.lock_means": ("an object in the queue does not start; an object in a slot is not merged (its agent may go on "
-                         "working to meet the condition); it holds until `stack unlock --met` or `--owner`"),
-
+    "stack.lock_means": (
+        "an object in the queue does not start; an object in a slot is not merged (its agent may go on "
+        "working to meet the condition); it holds until `stack unlock --met` or `--owner`"
+    ),
     # --- the priority (priority.py) ---
-    "priority.means": ("priority 1–10 (10 is the most important, 5 by default): `depot2 priority ID N` or `--priority N` "
-                       "on add/set; a free slot takes by the train's priority, then the car's, on a tie in order"),
-
+    "priority.means": (
+        "priority 1-10 (10 is the most important, 5 by default): `depot2 priority ID N` or `--priority N` "
+        "on add/set; a free slot takes by the train's priority, then the car's, on a tie in order"
+    ),
     # --- the author's note (README's first lines; the end of `depot2 --help`) ---
-    "about.note": ("A note first: I know there are ready-made orchestrators, such as herdr, and you will most likely "
-                   "want to pick one of them. I built this one to understand the process myself."),
-
+    "about.note": (
+        "A note first: I know there are ready-made orchestrators, such as herdr, and you will most likely "
+        "want to pick one of them. I built this one to understand the process myself."
+    ),
     # === the command line, the board, claims, agents, priority, decisions, effort, seed, migrate ===
     # --- the priority (priority.py) ---
     "in.priority.high": r"high",
     "in.priority.normal": r"normal",
     "in.priority.later": r"later",
-    "priority.is_track": ("{ref} is a track (a theme): a priority belongs to a train and its cars, not to a track; a "
-                          "car is {ref}:N"),
-    "priority.bad_ref": ("a priority belongs to a train (its name), a car tr-NNNN:N, an object st-/tm-NNNN, a wish "
-                         "wl-, a to-think entry th-, a todo td-NNNN; not {ref}"),
+    "priority.is_track": (
+        "{ref} is a track (a theme): a priority belongs to a train and its cars, not to a track; a car is {ref}:N"
+    ),
+    "priority.bad_ref": (
+        "a priority belongs to a train (its name), a car tr-NNNN:N, an object st-/tm-NNNN, a wish "
+        "wl-, a to-think entry th-, a todo td-NNNN; not {ref}"
+    ),
     "priority.not_in_stack": "{ref} is not in the stack: a priority belongs to what stands in the stack",
     "priority.not_in_tstack": "{ref} is not in the team stack: a priority belongs to what stands in the stack",
     "priority.not_in_queue": "no {ref} in the {queue} queue",
@@ -52,9 +56,11 @@ MESSAGES = {
     "decisions.empty": "(empty)",
     "decisions.footer": "`depot2 decide` writes them; this command only reads (`--grep WORDS`, `--limit N`, `--json`).",
     # --- the effort (effort.py) ---
-    "effort.legend": ("Effort — %UW, a share of the usage window; in brackets MTok, million tokens of «input "
-                      "equivalent» (input ×1, cache write ×1.25, cache read ×0.1, output ×5). 1%UW ≈ {per} MTok "
-                      "(usage.mtok_per_pct). Sizes, %UW: {sizes}."),
+    "effort.legend": (
+        "Effort — %UW, a share of the usage window; in brackets MTok, million tokens of «input "
+        "equivalent» (input x1, cache write x1.25, cache read x0.1, output x5). 1%UW ≈ {per} MTok "
+        "(usage.mtok_per_pct). Sizes, %UW: {sizes}."
+    ),
     # --- seeding (seed.py): a spec and the first portrait's prompt ---
     "seed.spec": "# {name} («{full}»)\n\nFrom the team's brief ({brief}).\n\n{spec}\n",
     "seed.part_votes": "Your votes in the ballot {file}",
@@ -64,8 +70,9 @@ MESSAGES = {
     "seed.part_cut": "[…the code left out {n} more lines…]",
     "seed.past": "# Your past",
     "seed.owner_after": "## What the owner did after the stakes (not counted yet)",
-    "seed.task_first": ("## Task: the first self-portrait\nWrite your first self-portrait from your spec and your "
-                        "past positions above."),
+    "seed.task_first": (
+        "## Task: the first self-portrait\nWrite your first self-portrait from your spec and your past positions above."
+    ),
     # --- the data migrations (migrate.py) ---
     "migrate.old_status.paused": "paused",
     "migrate.old_status.done": "arrived",
@@ -80,38 +87,55 @@ MESSAGES = {
     "migrate.nothing": "depot data migration: nothing to move (schema {v})",
     "migrate.nothing_no_data": "depot data migration: nothing to move (schema — no data)",
     "migrate.dry_run": "DRY RUN: nothing written",
-    "migrate.history": ("history: {n} rows → tracks-history.jsonl; the old file — {hist}, the old trains.json — "
-                        "{trains}"),
-    "migrate.head_3": ("depot data migration: schema 2 → 3 (the car's principles check: the DoD item `legacy_check` → "
-                       "`principles`)"),
+    "migrate.history": (
+        "history: {n} rows → tracks-history.jsonl; the old file — {hist}, the old trains.json — {trains}"
+    ),
+    "migrate.head_3": (
+        "depot data migration: schema 2 → 3 (the car's principles check: the DoD item `legacy_check` → `principles`)"
+    ),
     "migrate.legacy_words": "the «legacy check» words handed in are taken off the stack objects: {words}",
     "migrate.legacy_none": "the «legacy check» words handed in are taken off the stack objects: none",
-    "migrate.marks_empty": ("the principles marks are empty: the next stack post, merge add or tracks car check "
-                            "--from-pr reads them from the PR"),
+    "migrate.marks_empty": (
+        "the principles marks are empty: the next stack post, merge add or tracks car check "
+        "--from-pr reads them from the PR"
+    ),
     "migrate.queue.wishes": "wishes",
     "migrate.queue.think": "«to think over»",
     "migrate.queue.todo": "todo",
-    "migrate.head_4": ("depot data migration: schema 3 → 4 (the priority 1–10 on trains and cars in any of their "
-                       "forms: a train, a track's car, a stack and a team stack object, a wish, a to-think entry, a "
-                       "todo; 10 — the most important)"),
+    "migrate.head_4": (
+        "depot data migration: schema 3 → 4 (the priority 1-10 on trains and cars in any of their "
+        "forms: a train, a track's car, a stack and a team stack object, a wish, a to-think entry, a "
+        "todo; 10 — the most important)"
+    ),
     "migrate.queue_prio": "{queue}: prio → priority on {n} (high 8, normal 5, later 2; no word — 5)",
     "migrate.prio_notes": "from the note «prio: …»: {ids}",
-    "migrate.prio_planned": ("trains, track cars, stack and team stack objects: priority 5 (the default) — to each, "
-                             "after the steps above"),
-    "migrate.prio_default": ("priority 5 (the default): trains {trains}, track cars {cars}, stack objects {stack}, "
-                             "team stack {tstack} (a car's object — as its car)"),
+    "migrate.prio_planned": (
+        "trains, track cars, stack and team stack objects: priority 5 (the default) — to each, after the steps above"
+    ),
+    "migrate.prio_default": (
+        "priority 5 (the default): trains {trains}, track cars {cars}, stack objects {stack}, "
+        "team stack {tstack} (a car's object — as its car)"
+    ),
     "migrate.arrivals_by": "depot2 migrate (schema 5)",
-    "migrate.head_5": ("depot data migration: schema 4 → 5 (cars «rolling», merged past the merge queue before its "
-                       "last rollout, → «arrived»)"),
-    "migrate.arr_planned": ("cars «rolling» before the last rollout — after the steps above (the list: depot2 migrate "
-                            "--dry-run on schema 4)"),
-    "migrate.arr_last": ("the merge queue's last rollout: #{pr} ({id}), merged {at}; cars «rolling» before it, merged "
-                         "past the queue: {n}"),
+    "migrate.head_5": (
+        "depot data migration: schema 4 → 5 (cars «rolling», merged past the merge queue before its "
+        "last rollout, → «arrived»)"
+    ),
+    "migrate.arr_planned": (
+        "cars «rolling» before the last rollout — after the steps above (the list: depot2 migrate "
+        "--dry-run on schema 4)"
+    ),
+    "migrate.arr_last": (
+        "the merge queue's last rollout: #{pr} ({id}), merged {at}; cars «rolling» before it, merged "
+        "past the queue: {n}"
+    ),
     "migrate.arr_none": "no merge queue rollouts: the «rolling» cars stay",
     "migrate.arr_why": "rolled out with #{pr} ({id}, {at}): merged by hand earlier (migration)",
     "migrate.arr_line": "- {car} «{title}» (rolling since {at}) → arrived: {why}",
-    "migrate.arr_left": ("stay «rolling» (merged after the last rollout, or the merge queue carries them, or the "
-                         "object is in the stack): {n} — {refs}"),
+    "migrate.arr_left": (
+        "stay «rolling» (merged after the last rollout, or the merge queue carries them, or the "
+        "object is in the stack): {n} — {refs}"
+    ),
     # --- the board (board.py) ---
     "board.kind.car": "car",
     "board.kind.stack": "stack object",
@@ -125,15 +149,17 @@ MESSAGES = {
     "board.where.parked": "parked",
     "board.where.track": "on the track",
     "board.where.merge": "merge queue",
-    "board.legend": ("Columns are the car's stages (Kanban); the whole car — `depot2 car show ID`. The limits are "
-                     "soft: the build — the slots (stack.slots), the acceptance — the post-stack's places "
-                     "(stack.post_max); the cars already queued from a slot or the post-stack hold them too. Past a "
-                     "limit or a gate (DoR — into the build, DoD — into the acceptance) only with `--force --why "
-                     "«…»`; the stage's history marks it forced (⚑). The docs are an optional stage after the build: "
-                     "they hold a build slot; a car that needs them (`tracks car set --docs yes` or the sketch's line "
-                     "«Docs: needed») is not let into the acceptance straight from the build by its DoD — first "
-                     "`depot2 car stage ID docs`. On a car: «defect N» — returns to the build, «claims N» — defects "
-                     "in production, «repair» — a repair car (`depot2 claims`)."),
+    "board.legend": (
+        "Columns are the car's stages (Kanban); the whole car — `depot2 car show ID`. The limits are "
+        "soft: the build — the slots (stack.slots), the acceptance — the post-stack's places "
+        "(stack.post_max); the cars already queued from a slot or the post-stack hold them too. Past a "
+        "limit or a gate (DoR — into the build, DoD — into the acceptance) only with `--force --why "
+        "«…»`; the stage's history marks it forced (⚑). The docs are an optional stage after the build: "
+        "they hold a build slot; a car that needs them (`tracks car set --docs yes` or the sketch's line "
+        "«Docs: needed») is not let into the acceptance straight from the build by its DoD — first "
+        "`depot2 car stage ID docs`. On a car: «defect N» — returns to the build, «claims N» — defects "
+        "in production, «repair» — a repair car (`depot2 claims`)."
+    ),
     "board.why_repair": "repair, out of turn",
     "board.why_autostart": "autostart",
     "board.why_train": "train {name}",
@@ -162,8 +188,10 @@ MESSAGES = {
     "board.mark_claims": "claims {n}",
     "board.where_in_merge": "merge queue {id}",
     "board.gate_passed": "{name} passed",
-    "board.summary": ("Board (`depot2 board`): {counts}; the stack is a view of it: build, docs, acceptance, queued "
-                      "and the stack queue."),
+    "board.summary": (
+        "Board (`depot2 board`): {counts}; the stack is a view of it: build, docs, acceptance, queued "
+        "and the stack queue."
+    ),
     # --- returns and claims (claims.py) ---
     "claims.what.car": "a car",
     "claims.what.culprit": "the culprit",
@@ -171,9 +199,11 @@ MESSAGES = {
     "claims.what.old_culprit": "the old culprit",
     "claims.no_pr": "#{n}: no car and no stack object with this PR",
     "claims.bad_ref": "{what} is st-NNNN, tr-NNNN:N or #PR, not {text}",
-    "claims.not_on_prod": ("{ref} is on the stage «{stage}», not in production (a claim is for an arrived car; a "
-                           "defect before the merge is a return to the build, «rework»: depot2 stack start from the "
-                           "post-stack)"),
+    "claims.not_on_prod": (
+        "{ref} is on the stage «{stage}», not in production (a claim is for an arrived car; a "
+        "defect before the merge is a return to the build, «rework»: depot2 stack start from the "
+        "post-stack)"
+    ),
     "claims.of_and_bug": "--of {of} is not a car (st-NNNN, tr-NNNN:N, #PR), and --bug {bug}: one bug only",
     "claims.not_rolled": "{of} is not a car that rolled out: a claim is for st-NNNN, tr-NNNN:N or #PR",
     "claims.of_needed": "--of: the culprit (st-NNNN, tr-NNNN:N, #PR) or a bug's id from BUGS.md",
@@ -185,13 +215,18 @@ MESSAGES = {
     "claims.title_bug": "repair: {bug}",
     "claims.title_car": "repair: {ref} {title}",
     "claims.added_ref": "{id} — repair {ref}: the head of the stack queue ({n}/{max}), autostart yes, stage sketch",
-    "claims.added_ref_no_brief": ("{id} — repair {ref}: the head of the stack queue ({n}/{max}), autostart yes, stage "
-                                  "sketch; no brief — the DoR waits for it (depot2 stack set {id} --brief …)"),
-    "claims.added_noref": ("{id} — repair (culprit not found): the head of the stack queue ({n}/{max}), autostart yes, "
-                           "stage sketch"),
-    "claims.added_noref_no_brief": ("{id} — repair (culprit not found): the head of the stack queue ({n}/{max}), "
-                                    "autostart yes, stage sketch; no brief — the DoR waits for it (depot2 stack set "
-                                    "{id} --brief …)"),
+    "claims.added_ref_no_brief": (
+        "{id} — repair {ref}: the head of the stack queue ({n}/{max}), autostart yes, stage "
+        "sketch; no brief — the DoR waits for it (depot2 stack set {id} --brief …)"
+    ),
+    "claims.added_noref": (
+        "{id} — repair (culprit not found): the head of the stack queue ({n}/{max}), autostart yes, stage sketch"
+    ),
+    "claims.added_noref_no_brief": (
+        "{id} — repair (culprit not found): the head of the stack queue ({n}/{max}), "
+        "autostart yes, stage sketch; no brief — the DoR waits for it (depot2 stack set "
+        "{id} --brief …)"
+    ),
     "claims.claim_added": "{ref}: claim №{n} (repair {repair}); claims now {claims}",
     "claims.culprit_later": "when the culprit is found — depot2 repair link {id} --of <st-…|tr-…:N|#PR>",
     "claims.bugs_md": "BUGS.md: in the row {bug}, under «where to», — {id}",
@@ -221,11 +256,14 @@ MESSAGES = {
     "claims.since_start": "the start",
     "claims.until_today": "today",
     "claims.report_head": "## Defects and claims — {period}",
-    "claims.report_means": ("A defect — a car came back to the build after it was handed in (from the acceptance, "
-                            "«rework», or from the queued). A claim — a defect in production after «arrived»: a "
-                            "repair car (`depot2 repair add --of …`)."),
-    "claims.report_total": ("Total: defects {returns}, claims {claims} — on {cars} cars; repairs {repairs} ({open} in "
-                            "work)."),
+    "claims.report_means": (
+        "A defect — a car came back to the build after it was handed in (from the acceptance, "
+        "«rework», or from the queued). A claim — a defect in production after «arrived»: a "
+        "repair car (`depot2 repair add --of …`)."
+    ),
+    "claims.report_total": (
+        "Total: defects {returns}, claims {claims} — on {cars} cars; repairs {repairs} ({open} in work)."
+    ),
     "claims.by_tracks": "### By track",
     "claims.tracks_table": "| Track | Cars | Defects | Claims |",
     "claims.off_tracks": "off the tracks (stack)",
@@ -248,10 +286,12 @@ MESSAGES = {
     "agents.state.stopped": "stopped",
     "agents.state.unattached": "not attached",
     "agents.state.lost": "transcript not found",
-    "agents.state_means": ("working — new lines in the transcript; silent — not a line for longer than "
-                           "agents.silent_min; finished — the transcript is closed (the spend is booked on the car); "
-                           "stopped — `agents stop` (the orchestrator stops the process); not attached — no `agents "
-                           "attach`"),
+    "agents.state_means": (
+        "working — new lines in the transcript; silent — not a line for longer than "
+        "agents.silent_min; finished — the transcript is closed (the spend is booked on the car); "
+        "stopped — `agents stop` (the orchestrator stops the process); not attached — no `agents "
+        "attach`"
+    ),
     "agents.st_stopped": "stopped {at}: {why}",
     "agents.st_finished_at": "finished {at}",
     "agents.st_unattached": "not attached (depot2 agents attach {id} <run id>)",
@@ -262,12 +302,18 @@ MESSAGES = {
     "agents.post_n": "PS{n}",
     "agents.booked_finished": "{id} finished: {mtok} booked on the car {car} (on the car in all {total})",
     "agents.booked_stopped": "{id} stopped: {mtok} booked on the car {car} (on the car in all {total})",
-    "agents.role_build_stage": ("role «{role}»: the car is on the stage «{stage}» — the build starts from a sketch, a "
-                                "project or a build (a parked PR)"),
-    "agents.role_docs_stage": ("role «{role}»: the car is on the stage «{stage}», and the role takes the stage "
-                               "«{docs}» (it holds the build's slot): depot2 car stage {ref} docs"),
-    "agents.role_docs_slot": ("role «{role}»: the stage «{docs}» holds the build's slot, and {st} is not in a slot; "
-                              "into a slot — depot2 tracks car stack {ref} --start, then depot2 car stage {ref} docs"),
+    "agents.role_build_stage": (
+        "role «{role}»: the car is on the stage «{stage}» — the build starts from a sketch, a "
+        "project or a build (a parked PR)"
+    ),
+    "agents.role_docs_stage": (
+        "role «{role}»: the car is on the stage «{stage}», and the role takes the stage "
+        "«{docs}» (it holds the build's slot): depot2 car stage {ref} docs"
+    ),
+    "agents.role_docs_slot": (
+        "role «{role}»: the stage «{docs}» holds the build's slot, and {st} is not in a slot; "
+        "into a slot — depot2 tracks car stack {ref} --start, then depot2 car stage {ref} docs"
+    ),
     "agents.role_stages": "role «{role}»: the car is on the stage «{stage}», and the role takes the stages: {stages}",
     "agents.no_usage": "no usage window reading: --usage X (a share or %), stop {stop} (usage.stop_at)",
     "agents.over_stop": "window {usage} ≥ stop {stop} (usage.stop_at)",
@@ -279,8 +325,9 @@ MESSAGES = {
     "agents.none_live": "No live agents (`depot2 agents --all`: all).",
     "agents.table": "| Agent | Car | Role | Who | Started | State | Turns | Spent | Last action | Slot |",
     "agents.forced_mark": "gates with --force",
-    "agents.legend": ("State: {means}. Spent — by the transcript (%UW and MTok, as everywhere); when it ends — on the "
-                      "car, once."),
+    "agents.legend": (
+        "State: {means}. Spent — by the transcript (%UW and MTok, as everywhere); when it ends — on the car, once."
+    ),
     "agents.show_who": "- who: {by}; started {at}",
     "agents.show_who_usage": "- who: {by}; started {at}; window at the start {usage} (stop {stop})",
     "agents.show_forced": "- gates passed with --force ({why}): {gates}",
@@ -297,16 +344,19 @@ MESSAGES = {
     "cli.note_added": "{id}: note {n} — {note}",
     "cli.unlock_decision": "The owner lifted the lock {lock} ({id}, condition «{condition}»): {reason}",
     "cli.forced": "{id}: gates passed with --force ({why}): {gates}",
-    "cli.stage_on_add": ("--stage on an add is bogie, sketch or project, not «{stage}»; after that the car's commands "
-                         "move it"),
-    "cli.question_open": ("{car}: question {n} open: {q} (the DoR waits for the answer: depot2 car answer {id} {n} "
-                          "--answer «…»)"),
+    "cli.stage_on_add": (
+        "--stage on an add is bogie, sketch or project, not «{stage}»; after that the car's commands move it"
+    ),
+    "cli.question_open": (
+        "{car}: question {n} open: {q} (the DoR waits for the answer: depot2 car answer {id} {n} --answer «…»)"
+    ),
     "cli.question_closed": "{car}: question {n} closed: {answer}",
     "cli.project_required": "{car}: the project is required: {why}",
     "cli.project_required_off": "{car}: the mark «project required» is lifted",
-    "cli.priority_show": "{ref}: priority {cell} ({min}–{max}, 10 is the most important; {default} by default)",
-    "cli.agent_started": ("{id} — {role}, {car} ({by}): now start the agent; its run id — depot2 agents attach {id} "
-                          "<run id>"),
+    "cli.priority_show": "{ref}: priority {cell} ({min}-{max}, 10 is the most important; {default} by default)",
+    "cli.agent_started": (
+        "{id} — {role}, {car} ({by}): now start the agent; its run id — depot2 agents attach {id} <run id>"
+    ),
     "cli.agent_attached": "{id} → {agent} ({path}): {state}, turns {turns}, spent {spent}",
     "cli.agent_stopped": "{id} stopped ({why}): the orchestrator stops the process",
     "cli.check_either": "either --from-pr (the PR's lines) or one mark by hand (N ok|n/a|bad)",
@@ -326,63 +376,89 @@ MESSAGES = {
     "cli.web_bad_host": "warning: web.hosts: not a host name, skipped: {bad}",
     "cli.web_resumed": "{name}: restarted on the new code ({code})",
     "cli.web_restart": "{name}: the code changed — restarting",
-    "cli.import_dry": ("DRY RUN: would import {n} principles from {file}; the render equals the file line for line "
-                       "({lines} lines), but the banner and the sections' headings in today's words"),
+    "cli.import_dry": (
+        "DRY RUN: would import {n} principles from {file}; the render equals the file line for line "
+        "({lines} lines), but the banner and the sections' headings in today's words"
+    ),
     "cli.principle_replaced": "{id} → replaced by {by}",
     "cli.principle_dropped": "{id} → dropped",
     "cli.queues_migrate_dry": "DRY RUN: would move {n} entries and objects",
     "cli.queues_migrate": "moved: {n} entries and objects",
-    "cli.train_state_arrived": ("arrived is not reached by trains state: depot2 trains done NAME (every car merged or "
-                                "dropped; past the gate: --force --why «…»)"),
+    "cli.train_state_arrived": (
+        "arrived is not reached by trains state: depot2 trains done NAME (every car merged or "
+        "dropped; past the gate: --force --why «…»)"
+    ),
     "cli.train_state_scrapped": "scrapped is not reached by trains state: depot2 trains drop NAME --why «…»",
-    "cli.train_state_bad": ("a train moves to design, impl or merge, got {text}; it arrives by depot2 trains done "
-                            "NAME, is scrapped by trains drop NAME --why «…»"),
+    "cli.train_state_bad": (
+        "a train moves to design, impl or merge, got {text}; it arrives by depot2 trains done "
+        "NAME, is scrapped by trains drop NAME --why «…»"
+    ),
     # --- the command line's help (cli.py; the parser is built before the config is read: $DEPOT2_LANG or en) ---
     "cli.help.queues_json": "the entries as data (the web's «Queues»)",
-    "cli.help.car_docs": ("its docs are needed: with yes it goes into the acceptance only through the stage «docs» "
-                          "(car stage REF docs); it wins over its sketch's line «Docs: needed»"),
-    "cli.help.car_stack": ("put the car into the agents' stack (linked); --start: into a free slot now (a car of a "
-                           "live train: its train in «implementation», within its slots)"),
-    "cli.help.car_check": ("its marks by the principles: print them; --from-pr reads its PR's «Principles check»; N "
-                           "MARK sets one by hand (it wins over the PR's line)"),
+    "cli.help.car_docs": (
+        "its docs are needed: with yes it goes into the acceptance only through the stage «docs» "
+        "(car stage REF docs); it wins over its sketch's line «Docs: needed»"
+    ),
+    "cli.help.car_stack": (
+        "put the car into the agents' stack (linked); --start: into a free slot now (a car of a "
+        "live train: its train in «implementation», within its slots)"
+    ),
+    "cli.help.car_check": (
+        "its marks by the principles: print them; --from-pr reads its PR's «Principles check»; N "
+        "MARK sets one by hand (it wins over the PR's line)"
+    ),
     "cli.help.check_rest": "a principle's number and ok | n/a | bad",
-    "cli.help.trains": ("the trains (trains.json): named runs of cars — design, implementation, merge queue; no "
-                        "action: print them"),
+    "cli.help.trains": (
+        "the trains (trains.json): named runs of cars — design, implementation, merge queue; no action: print them"
+    ),
     "cli.help.trains_add": "a new train, in «design»",
     "cli.help.owner_word": "its way into «implementation» is the owner's word",
-    "cli.help.owner_word_set": ("yes (the flag alone, as on add) or no: its way into «implementation» is the owner's "
-                                "word"),
-    "cli.help.trains_next": ("what a free slot takes now: a repair out of turn, then the trains in «implementation» "
-                             "by priority (their cars past the DoR), then the stack's autostart queue"),
-    "cli.help.car": ("one car (tr-NNNN:N, st-, wl-, th-): its stage, show, its open questions, the stage «project» "
-                     "required"),
+    "cli.help.owner_word_set": (
+        "yes (the flag alone, as on add) or no: its way into «implementation» is the owner's word"
+    ),
+    "cli.help.trains_next": (
+        "what a free slot takes now: a repair out of turn, then the trains in «implementation» "
+        "by priority (their cars past the DoR), then the stack's autostart queue"
+    ),
+    "cli.help.car": (
+        "one car (tr-NNNN:N, st-, wl-, th-): its stage, show, its open questions, the stage «project» required"
+    ),
     "cli.help.stage_by": "who (default: car stage), e.g. «owner»",
     "cli.help.answer_by": "whose answer, e.g. «owner»",
-    "cli.help.needs_project": ("the stage «project» is required (the data model, the server, privacy and policy; size "
-                               "L is by itself): the DoR asks for it"),
+    "cli.help.needs_project": (
+        "the stage «project» is required (the data model, the server, privacy and policy; size "
+        "L is by itself): the DoR asks for it"
+    ),
     "cli.help.needs_why": "why, e.g. «data schema»",
     "cli.help.board_view": "stack: the stack's view (build, acceptance, queued, the queue): stack --md",
-    "cli.help.repair": ("defects and claims: a claim on a car on production and its repair car (repair add --of …), "
-                        "its culprit found later (repair link)"),
+    "cli.help.repair": (
+        "defects and claims: a claim on a car on production and its repair car (repair add --of …), "
+        "its culprit found later (repair link)"
+    ),
     "cli.help.repair_title": "default: «repair: <the culprit or the bug>»",
     "cli.help.repair_by": "who (default: repair add), e.g. «owner»",
     "cli.help.claims": "defects and claims: which tracks and cars gave them, for a period",
-    "cli.help.agents_start": ("the gates (the role and the car's stage, the usage window's stop, one live agent per "
-                              "car; a build: its slot or the DoR, then into a slot; docs: the stage «docs», in the "
-                              "build's slot), then ag-NNNN: its id, the first line"),
-    "cli.help.agents_role": ("the stages it takes: sketch — bogie, sketch; plan — sketch, project; build — its car in "
-                             "a slot, or into one through the DoR; docs — docs (in the build's slot: car stage REF "
-                             "docs first); mergefix — acceptance, queued"),
+    "cli.help.agents_start": (
+        "the gates (the role and the car's stage, the usage window's stop, one live agent per "
+        "car; a build: its slot or the DoR, then into a slot; docs: the stage «docs», in the "
+        "build's slot), then ag-NNNN: its id, the first line"
+    ),
+    "cli.help.agents_role": (
+        "the stages it takes: sketch — bogie, sketch; plan — sketch, project; build — its car in "
+        "a slot, or into one through the DoR; docs — docs (in the build's slot: car stage REF "
+        "docs first); mergefix — acceptance, queued"
+    ),
     "cli.help.agents_by": "who starts it (default: orchestrator)",
     "cli.help.agents_stop_by": "who stops it (default: orchestrator)",
     "cli.help.queue_done": "«done»: it came true (not drop); off the open table, in --all",
     "cli.help.principles_checks": "the three checks: the owner's words, «Check against the code», the check principles",
     "cli.help.merge_word": "the owner's words, verbatim (e.g. «merge»)",
     "cli.help.merge_force": "the DoD's principles (its PR's «Principles check»: priority 1 are gates)",
-    "cli.help.merge_handoff": ("a merged PR whose ride did not end stops being watched: its deploy rides with the "
-                               "next merge (it stays «rolling» until that one arrives)"),
+    "cli.help.merge_handoff": (
+        "a merged PR whose ride did not end stops being watched: its deploy rides with the "
+        "next merge (it stays «rolling» until that one arrives)"
+    ),
     "cli.help.merge_rerun": "gh run rerun --failed for the run GitHub left unstarted («waits for GitHub»)",
-
     # === stages, tracks, trains ===
     # --- the stages (stages.py); a stage's English label is its code ---
     "stage.bogie": "bogie",
@@ -428,19 +504,23 @@ MESSAGES = {
     "stages.in_merge_queue": "in the merge queue {id}",
     "stages.merged_rolling": "merged ({sha}), the merge queue {id} still rolls it out",
     "stages.hand_why": "rolled out with #{pr} ({id}): merged by hand before",
-    "stages.arrive_hint": ("the merge queue's next roll-out sets «arrived»: it takes everything merged before it; "
-                           "by hand (the roll-out has passed) — depot2 car stage {ref} arrived --why «rolled out with #N …»"),
+    "stages.arrive_hint": (
+        "the merge queue's next roll-out sets «arrived»: it takes everything merged before it; "
+        "by hand (the roll-out has passed) — depot2 car stage {ref} arrived --why «rolled out with #N …»"
+    ),
     "stages.no_object": "no object {ref} in the stack",
     "stages.left_no_record": "{ref} left the stack with no record of the object",
     "stages.bad_ref": "a car is st-NNNN, tr-NNNN:N, wl-NNNN or th-NNNN; not {ref!r}",
     "stages.label_object": "{car} (object {obj})",
     "stages.owned_queued": "the merge queue sets «queued»: depot2 merge add <PR> --word «the owner's words»",
-    "stages.owned_back_to_brief": ("{oid} {where}: back to the brief — depot2 stack done {oid} --car back (a car) "
-                                   "or stack park {oid}"),
+    "stages.owned_back_to_brief": (
+        "{oid} {where}: back to the brief — depot2 stack done {oid} --car back (a car) or stack park {oid}"
+    ),
     "stages.owned_obj_build": "build — depot2 stack start {oid}",
     "stages.owned_obj_acceptance": "acceptance — depot2 stack post {oid}",
-    "stages.owned_obj_rolling": ("rolling — after the merge: depot2 stack done {oid} --car merged --reason «…» "
-                                 "(or the merge queue)"),
+    "stages.owned_obj_rolling": (
+        "rolling — after the merge: depot2 stack done {oid} --car merged --reason «…» (or the merge queue)"
+    ),
     "stages.owned_obj_arrived": "arrived — depot2 stack done {oid} --car merged --reason «…» (no PR) or the merge queue",
     "stages.owned_obj_scrapped": "scrapped — depot2 stack done {oid} --car dropped --reason «…»",
     "stages.owned_car_build": "build — depot2 tracks car stack {ref} --start",
@@ -450,8 +530,9 @@ MESSAGES = {
     "stages.owned_entry_scrapped": "scrapped — depot2 {name} drop {ref} --reason «…»",
     "stages.owned_wish_arrived": "arrived — depot2 wishes done {ref} --reason «…»",
     "stages.owned_wish_take": "a wish is not built by itself: it is taken into work — depot2 wish take {ref} --to st-…|tr-…:N",
-    "stages.owned_think_take": ("a to-think entry is not built by itself: it is taken into work — depot2 wish take {ref} "
-                                "--to st-…|tr-…:N"),
+    "stages.owned_think_take": (
+        "a to-think entry is not built by itself: it is taken into work — depot2 wish take {ref} --to st-…|tr-…:N"
+    ),
     "stages.owned_left": "{ref} left the stack: by hand only «rolling» → «arrived»",
     "stages.next_arrive_mq": "Next: the merge queue sets «arrived» when {id} #{pr} rolls out.",
     "stages.next_line": "Next: {hint}.",
@@ -476,7 +557,7 @@ MESSAGES = {
     "stages.questions": "Questions:",
     "stages.question_answered": "- {n}. {q} — answered ({at}): {answer}",
     "stages.question_open": "- {n}. {q} — open",
-    "stages.show_priority": "Priority: {p} (1–10, 10 is the most important; `depot2 priority {ref} N`).",
+    "stages.show_priority": "Priority: {p} (1-10, 10 is the most important; `depot2 priority {ref} N`).",
     "stages.show_track": "Track: {track} {title}. Train: {train}.",
     "stages.show_old_ref": "{ref} is an old ref: the car moved, now {now}.",
     "stages.show_moved": "Moved: {src} → {to} ({at}{why}).",
@@ -497,7 +578,6 @@ MESSAGES = {
     "stages.migrate_tracks": "stages: the tracks' cars — recorded on {n} ({counts})",
     "stages.migrate_wishes": "stages: the wishes — recorded on {n} ({counts})",
     "stages.migrate_think": "stages: to think over — recorded on {n} ({counts}); a question on {asked}",
-
     # --- the tracks (tracks.py) ---
     "tracks.car.waiting": "waiting",
     "tracks.car.ready": "ready",
@@ -511,10 +591,13 @@ MESSAGES = {
     "tracks.moved_note": "note: {ref} moved to {now} — the same car",
     "tracks.taken_car": "the name is taken: {track}:{n} — {title} ({status})",
     "tracks.taken_pointer": "the name is taken: {track}:{n} — the car «{title}» moved to {to}",
-    "tracks.closed_note": ("warning: {track}:{n} «{title}» — {status}, stage «{stage}»: this writes into a closed car; "
-                           "a new car — depot2 tracks car add {track} --title …"),
-    "tracks.marks_head": ("Marks by the principles (`depot2 tracks car check <car>`; gates — priority 1, "
-                          "the score — priority 2):"),
+    "tracks.closed_note": (
+        "warning: {track}:{n} «{title}» — {status}, stage «{stage}»: this writes into a closed car; "
+        "a new car — depot2 tracks car add {track} --title …"
+    ),
+    "tracks.marks_head": (
+        "Marks by the principles (`depot2 tracks car check <car>`; gates — priority 1, the score — priority 2):"
+    ),
     "tracks.why_dropped": "dropped",
     "tracks.why_merged_before": "merged before the stages were kept — in production",
     "tracks.why_running": "running",
@@ -543,8 +626,10 @@ MESSAGES = {
     "tracks.no_object_team": "no object {oid} in the team's stack",
     "tracks.object_left": "{oid} left the stack: a car takes an object that stands in it",
     "tracks.object_left_team": "{oid} left the team's stack: a car takes an object that stands in it",
-    "tracks.team_in_slot": ("{oid} is in the team's slot: its round runs and writes into this object (round --item); "
-                            "a car takes an object from the team's queue"),
+    "tracks.team_in_slot": (
+        "{oid} is in the team's slot: its round runs and writes into this object (round --item); "
+        "a car takes an object from the team's queue"
+    ),
     "tracks.taken_reason": "taken into the car {ref}",
     "tracks.taken_team": "{oid} → {ref}: a new car «{title}» ({stage}); {oid} left the team's stack",
     "tracks.already_object": "{oid} is the object of the car {track}:{n} already",
@@ -554,8 +639,10 @@ MESSAGES = {
     "tracks.blocker_arrived": "it has arrived (merged): its PR is in main under this ref; new work is a new car (tracks car add)",
     "tracks.blocker_queued": "its PR #{pr} is in the merge queue ({id}): it moves once the entry closes",
     "tracks.no_move": "{old} does not move: {blocker}",
-    "tracks.moved": ("{old} → {new}: moved with all its history (stages, notes, spend, branch, PR, brief, marks); "
-                     "its old place holds a pointer «moved to {new}» — the old ref finds it"),
+    "tracks.moved": (
+        "{old} → {new}: moved with all its history (stages, notes, spend, branch, PR, brief, marks); "
+        "its old place holds a pointer «moved to {new}» — the old ref finds it"
+    ),
     "tracks.moved_slot": "{new}: the slot and the PR go with it ({st})",
     "tracks.moved_slot_pr": "{new}: the slot and the PR go with it ({st}, PR #{pr})",
     "tracks.moved_waits": "waiting for it under the new ref (after): {waits}",
@@ -569,8 +656,10 @@ MESSAGES = {
     "tracks.on_park": "{ref} → PR #{pr} open, parked on the track ({oid} left the stack, the slot is free)",
     "tracks.on_post": "{ref} → PR #{pr} open, in the post-stack: waits for the owner's merge ({oid}, the slot is free)",
     "tracks.on_requeue": "{ref} → ready ({oid} at the head of the stack queue, for more work; PR #{pr})",
-    "tracks.on_back": ("{ref} → {status}, back on its track as it was: the brief and the branch kept, the stack link "
-                       "cleared ({oid} left); into the stack again: depot2 tracks car stack {ref}"),
+    "tracks.on_back": (
+        "{ref} → {status}, back on its track as it was: the brief and the branch kept, the stack link "
+        "cleared ({oid} left); into the stack again: depot2 tracks car stack {ref}"
+    ),
     "tracks.open_n": "open {n}",
     "tracks.in_trains": "in trains: {names}",
     "tracks.free_n": "in no train {n}",
@@ -578,12 +667,16 @@ MESSAGES = {
     "tracks.md_header": "| # | Track | Cars (done / all) | Effort (expected / spent) | State | The cars' stages |",
     "tracks.md_empty": "| — | (empty) | | | | |",
     "tracks.md_hidden": "Done tracks not shown: {n} (`depot2 tracks --all`).",
-    "tracks.md_legend": ("A track is a theme and its cars; who rides after whom and how many slots they take — the "
-                         "trains (`depot2 trains --md`)."),
+    "tracks.md_legend": (
+        "A track is a theme and its cars; who rides after whom and how many slots they take — the "
+        "trains (`depot2 trains --md`)."
+    ),
     "tracks.car_md_heading": "## Track {id} {title}",
     "tracks.car_md_state": "State: {state}. Effort (expected / spent): {effort}.",
-    "tracks.car_md_header": ("| Car | Priority | What | After | Size: effort (estimate / actual) | Branch / PR | Stack "
-                             "| Train | Status | Stage |"),
+    "tracks.car_md_header": (
+        "| Car | Priority | What | After | Size: effort (estimate / actual) | Branch / PR | Stack "
+        "| Train | Status | Stage |"
+    ),
     "tracks.car_md_empty": "| — | | (no cars) | | | | | | | |",
     "tracks.car_md_moved": "Moved from here (the old ref finds the car): {moved}.",
     "tracks.parked_list": "Parked (they hold no slot): {list}.",
@@ -602,13 +695,14 @@ MESSAGES = {
     "tracks.note_obj": "from {id} — a stack object ({where}; added {added}): {title}",
     "tracks.by_cars": "(by the cars ≈ {sum})",
     "tracks.dropped_n": "(+{n} dropped)",
-    "tracks.stage_legend": ("Stage: bogie → sketch → (project) → build → (docs) → acceptance → queued → rolling → "
-                            "arrived, or scrapped; docs — `depot2 car stage tr-…:N docs`, whether they are needed — "
-                            "`tracks car set --docs yes|no` or the sketch's line «Docs: needed»; the history — "
-                            "`depot2 car show tr-…:N`."),
+    "tracks.stage_legend": (
+        "Stage: bogie → sketch → (project) → build → (docs) → acceptance → queued → rolling → "
+        "arrived, or scrapped; docs — `depot2 car stage tr-…:N docs`, whether they are needed — "
+        "`tracks car set --docs yes|no` or the sketch's line «Docs: needed»; the history — "
+        "`depot2 car show tr-…:N`."
+    ),
     "tracks.post_item": "{id}{car} PR #{pr} (CI {ci}, waiting {age})",
     "tracks.post_line": "The post-stack — waiting for the owner's merge ({n}/{cap}, they hold no slot): {items}.",
-
     # --- the trains (trains.py) ---
     "trains.state.design": "design",
     "trains.state.impl": "implementation",
@@ -640,8 +734,9 @@ MESSAGES = {
     "trains.gate_passed_owner": "to «{state}»: the gates passed — `depot2 trains state {name} {to}` (the owner's word)",
     "trains.gate_passed_word": "to «{state}»: the gates passed — `depot2 trains state {name} {to}` --word «…»",
     "trains.gate_waits": "to «{state}» waits for: {miss}",
-    "trains.slot_only_impl": ("train {name} — «{state}»: its cars take a slot in «implementation» only "
-                              "(`depot2 trains state {name} impl`)"),
+    "trains.slot_only_impl": (
+        "train {name} — «{state}»: its cars take a slot in «implementation» only (`depot2 trains state {name} impl`)"
+    ),
     "trains.slots_full": "train {name} holds {busy} of {n} slots already ({cars})",
     "trains.why_parked": "parked: {reason}",
     "trains.why_owner_word": "waits for the owner's word (autostart — no)",
@@ -650,20 +745,24 @@ MESSAGES = {
     "trains.state_moved": "{name}: «{was}» → «{to}»",
     "trains.state_moved_forced": "{name}: «{was}» → «{to}» (the gates with --force: {gates})",
     "trains.pr_queued_already": "{ref}: PR #{n} is in the merge queue already",
-    "trains.enqueue_failed": ("{name}: did not get into «merge queue» — {ref}: {said}\n{back}\n"
-                              "The train's state — «{state}», as it was."),
+    "trains.enqueue_failed": (
+        "{name}: did not get into «merge queue» — {ref}: {said}\n{back}\nThe train's state — «{state}», as it was."
+    ),
     "trains.off_hint": "or take it off the train: `depot2 trains car drop {name} {ref} --why «…»`",
     "trains.plan_no_pr": "{ref}: no PR — `depot2 tracks car set {ref} --pr N`, {off}",
     "trains.plan_same_pr": "{ref}: PR #{n} — the same as {other}'s: `depot2 tracks car set {ref} --pr N`, {off}",
     "trains.plan_refused": "{ref}: {said} — fix the PR or the car (another PR: `depot2 tracks car set {ref} --pr N`), {off}",
-    "trains.plan_not_ready": ("{name}: the whole train gets into «merge queue» or nothing — {bad} of {all} cars are "
-                              "not ready:\n{list}\nNothing written: the queue and the train as they were."),
+    "trains.plan_not_ready": (
+        "{name}: the whole train gets into «merge queue» or nothing — {bad} of {all} cars are "
+        "not ready:\n{list}\nNothing written: the queue and the train as they were."
+    ),
     "trains.take_back_why": "rollback of trains state merge (train {name}: PR #{n} did not get in)",
     "trains.take_back_nothing": "Nothing to roll back: before it this call queued nothing.",
     "trains.take_back_head": "Rolled back ({why}):",
     "trains.take_back_dropped": "- {ref}: {id} PR #{pr} taken off the merge queue",
-    "trains.take_back_failed": ("- {ref}: {id} PR #{pr} not taken off ({err}) — take it off by hand: "
-                                "`depot2 merge drop {pr} --reason «{why}»`"),
+    "trains.take_back_failed": (
+        "- {ref}: {id} PR #{pr} not taken off ({err}) — take it off by hand: `depot2 merge drop {pr} --reason «{why}»`"
+    ),
     "trains.renamed_car": "train {name}: {old} → {new}, in the same place ({pos})",
     "trains.renamed_after": "train {name}: start after {old} → after {new}",
     "trains.taken_by_hand": "note: train {name} — «{state}»: {ref} taken into a slot by hand",
@@ -675,8 +774,10 @@ MESSAGES = {
     "trains.at_once": "at once",
     "trains.status_busy": "{state}: running {cars}",
     "trains.md_heading": "## Trains",
-    "trains.md_header": ("| # | Train | Priority | State | Start | Cars (done / all) | Slots "
-                         "| Effort (expected / spent) | Next | The cars' stages |"),
+    "trains.md_header": (
+        "| # | Train | Priority | State | Start | Cars (done / all) | Slots "
+        "| Effort (expected / spent) | Next | The cars' stages |"
+    ),
     "trains.md_empty": "| — | (empty) | | | | | | | | |",
     "trains.free_slots": "Free slots in the stack: {free}/{slots}.",
     "trains.repairs": "Out of turn — repairs: {list}.",
@@ -692,23 +793,28 @@ MESSAGES = {
     "trains.gated": "Waiting for the DoR gate (a slot does not take them by itself): {list}.",
     "trains.gated_item": "{ref} «{title}» — {dor} (`{cmd}`, or with --force --why «…»)",
     "trains.owner_word_head": "The stack queue, a slot does not take them by itself:",
-    "trains.order": ("The order: repairs out of turn, then the trains in «implementation» by the train's priority, "
-                     "within a train by the car's priority, then the stack queue by priority; on a tie, in order "
-                     "(P10 first)."),
+    "trains.order": (
+        "The order: repairs out of turn, then the trains in «implementation» by the train's priority, "
+        "within a train by the car's priority, then the stack queue by priority; on a tie, in order "
+        "(P10 first)."
+    ),
     "trains.car_md_heading": "## Train {name} «{title}»",
-    "trains.car_md_state": ("State: {state}. Priority: {p}. Start: {start}. Slots: {slots}. "
-                            "Effort (expected / spent): {effort}. Next: {next}."),
+    "trains.car_md_state": (
+        "State: {state}. Priority: {p}. Start: {start}. Slots: {slots}. "
+        "Effort (expected / spent): {effort}. Next: {next}."
+    ),
     "trains.car_md_header": "| # | Car | Priority | Track | What | Branch / PR | Stack | Status | Stage |",
     "trains.car_md_empty": "| — | (no cars) | | | | | | | |",
     "trains.unpriced": "cars with no estimate: {n}",
-    "trains.states_legend": ("Train: design → implementation → merge queue → arrived, or scrapped; the gates — "
-                             "`depot2 trains state NAME impl|merge` (with --force --why «…» past them), back — no gates."),
+    "trains.states_legend": (
+        "Train: design → implementation → merge queue → arrived, or scrapped; the gates — "
+        "`depot2 trains state NAME impl|merge` (with --force --why «…» past them), back — no gates."
+    ),
     "trains.freed_repair": "{id} (a repair, out of turn) — `depot2 stack start {id}`",
     "trains.freed_pick": "{track}:{n} (train {train} {tp}, car {cp}) — `{cmd}`",
     "trains.freed_takes": "A free slot takes (trains next): {list}",
     "trains.freed_nothing": "A free slot (trains next): nothing with autostart to take",
     "trains.freed_nothing_word": "A free slot (trains next): nothing with autostart to take; waiting for the owner's word: {ids}",
-
     # === the stack, the team stack, gates, queues, extras, push, backup ===
     # --- the gates (gates.py) ---
     "gates.item.brief": "brief",
@@ -759,33 +865,48 @@ MESSAGES = {
     "gates.brief_not_found": "brief not found: {path}",
     "gates.open_questions": "open questions: {n} ({list})",
     "gates.after_unmet": "after not met: {blockers}",
-    "gates.project_required": ("the project is required ({need}), there was no stage «project» "
-                               "(depot2 car stage … project)"),
-    "gates.post_full_slot": ("the post-stack is full ({used}/{cap}): {oid} stays in its slot; the owner merges one first "
-                             "(stack done), or one goes back for work (stack start)"),
-    "gates.post_full_queue": ("the post-stack is full ({used}/{cap}): {oid} stays in the queue; the owner merges one "
-                              "first (stack done), or one goes back for work (stack start)"),
+    "gates.project_required": (
+        "the project is required ({need}), there was no stage «project» (depot2 car stage … project)"
+    ),
+    "gates.post_full_slot": (
+        "the post-stack is full ({used}/{cap}): {oid} stays in its slot; the owner merges one first "
+        "(stack done), or one goes back for work (stack start)"
+    ),
+    "gates.post_full_queue": (
+        "the post-stack is full ({used}/{cap}): {oid} stays in the queue; the owner merges one "
+        "first (stack done), or one goes back for work (stack start)"
+    ),
     "gates.limit_slots": "slots",
     "gates.limit_post": "post-stack",
-    "gates.refused": ("gates: {ref} → «{target}» not passed: {text}. To pass anyway, give a reason: {cmd} --force "
-                      "--why \"…\" (recorded in the stage history: forced)"),
-    "gates.force_needs_why": "--force only with a reason: --why \"…\" (not passed: {text})",
+    "gates.refused": (
+        "gates: {ref} → «{target}» not passed: {text}. To pass anyway, give a reason: {cmd} --force "
+        '--why "…" (recorded in the stage history: forced)'
+    ),
+    "gates.force_needs_why": '--force only with a reason: --why "…" (not passed: {text})',
     # --- the stack (stack.py) ---
-    "stack.autostart_means": ("yes — the first free slot takes the object itself (`trains next`, after the trains); no "
-                              "(the default) — it waits for the owner's word, `stack start`; car — a track car's object: "
-                              "its slot is taken by its train in «implementation» (or `tracks car stack --start`), the "
-                              "flag is not read"),
-    "stack.post_means": ("the PR is ready (CI green) and waits only for the owner's «merge»; it holds no slot (`stack "
-                         "post`); after the merge — `stack done`, back for work — `stack start` (into a slot, or to the "
-                         "head of the queue when no slot is free)"),
-    "stack.stage_legend": ("Stage: bogie → sketch → (project) → build → (docs) → acceptance → queued → rolling → "
-                           "arrived, or scrapped; the docs hold the build's slot, and a car that needs them (`tracks car "
-                           "set --docs yes` or the sketch's line «Docs: needed») goes to the acceptance only through "
-                           "them (`depot2 car stage ID docs`); the history — `depot2 car show ID`."),
+    "stack.autostart_means": (
+        "yes — the first free slot takes the object itself (`trains next`, after the trains); no "
+        "(the default) — it waits for the owner's word, `stack start`; car — a track car's object: "
+        "its slot is taken by its train in «implementation» (or `tracks car stack --start`), the "
+        "flag is not read"
+    ),
+    "stack.post_means": (
+        "the PR is ready (CI green) and waits only for the owner's «merge»; it holds no slot (`stack "
+        "post`); after the merge — `stack done`, back for work — `stack start` (into a slot, or to the "
+        "head of the queue when no slot is free)"
+    ),
+    "stack.stage_legend": (
+        "Stage: bogie → sketch → (project) → build → (docs) → acceptance → queued → rolling → "
+        "arrived, or scrapped; the docs hold the build's slot, and a car that needs them (`tracks car "
+        "set --docs yes` or the sketch's line «Docs: needed») goes to the acceptance only through "
+        "them (`depot2 car stage ID docs`); the history — `depot2 car show ID`."
+    ),
     "in.stack.yes": r"yes|y|true|1|on",
     "in.stack.no": r"no|n|false|0|off",
-    "stack.queue_full": ("the queue is full ({n}): make room with depot2 stack done ID --reason \"…\" (what is no longer "
-                         "needed) or stack start ID (the head of the queue into a slot)"),
+    "stack.queue_full": (
+        'the queue is full ({n}): make room with depot2 stack done ID --reason "…" (what is no longer '
+        "needed) or stack start ID (the head of the queue into a slot)"
+    ),
     "stack.running": "agent working",
     "stack.waiting": "waiting for a slot",
     "stack.stage_needs_docs": "{stage} (docs needed)",
@@ -800,11 +921,15 @@ MESSAGES = {
     "stack.why_unpost": "from the post-stack back for work",
     "stack.why_restore": "a parked PR back to work",
     "stack.no_stage": "no stage {stage}",
-    "stack.park_full": ("the queue is full ({n}): a parked object goes to the head of the queue; {oid} stays in its "
-                        "slot (stack done one of the queue first)"),
-    "stack.park_full_post": ("the queue is full ({n}): a parked object goes to the head of the queue; {oid} stays in "
-                             "its slot (stack done one of the queue first, or stack post {oid} if its PR waits only for "
-                             "the merge)"),
+    "stack.park_full": (
+        "the queue is full ({n}): a parked object goes to the head of the queue; {oid} stays in its "
+        "slot (stack done one of the queue first)"
+    ),
+    "stack.park_full_post": (
+        "the queue is full ({n}): a parked object goes to the head of the queue; {oid} stays in "
+        "its slot (stack done one of the queue first, or stack post {oid} if its PR waits only for "
+        "the merge)"
+    ),
     "stack.num_slot": "S{n}",
     "stack.num_slot_over": "S+",
     "stack.num_post": "PS{n}",
@@ -812,8 +937,10 @@ MESSAGES = {
     "stack.where.post": "post",
     "stack.where.queue": "queue",
     "stack.heading": "## Stack",
-    "stack.header": ("| # | Where | Task | Priority | Branch / PR | Status | Autostart | Effort (expected / spent) "
-                     "| Depends on | Lock | Stage |"),
+    "stack.header": (
+        "| # | Where | Task | Priority | Branch / PR | Status | Autostart | Effort (expected / spent) "
+        "| Depends on | Lock | Stage |"
+    ),
     "stack.header_places": " Train | Track |",
     "stack.part_build_board": "Build — in slots",
     "stack.part_slots": "In slots",
@@ -828,8 +955,9 @@ MESSAGES = {
     "stack.legend_lock": "Lock: {means}.",
     "stack.legend_autostart": "Autostart: {means}.",
     "stack.legend_priority": "Priority: {means}.",
-    "stack.marks_head": ("Marks by the principles (`depot2 tracks car check <car>`; gates — priority 1, the score — "
-                         "priority 2):"),
+    "stack.marks_head": (
+        "Marks by the principles (`depot2 tracks car check <car>`; gates — priority 1, the score — priority 2):"
+    ),
     "stack.ci.green": "green",
     "stack.ci.red": "red",
     "stack.ci.running": "running",
@@ -849,7 +977,6 @@ MESSAGES = {
     "stack.ballots_header": "| # | Round | Topic | Status | Where we stopped | Points left |",
     "stack.title_solo": "{title} (solo: {who})",
     "stack.title_brainstorm": "The team's brainstorm ({id})",
-
     # --- the team stack (tstack.py) ---
     "tstack.kind.review": "review",
     "tstack.kind.review-10": "review after 10 merges",
@@ -865,10 +992,13 @@ MESSAGES = {
     "tstack.queue_full": "the team's queue is full ({n})",
     "tstack.round_done": "round done: {rid}",
     "tstack.heading": "## The team's stack",
-    "tstack.header": ("| # | Where | What | Priority | Kind | Who | Input | Round | Status | Effort (expected / spent) "
-                      "| Depends on |"),
-    "tstack.footer": ("The team's slots run beside the agents' stack: the rounds are light. Spent — by the tokens of "
-                      "the round's own calls (costs.json)."),
+    "tstack.header": (
+        "| # | Where | What | Priority | Kind | Who | Input | Round | Status | Effort (expected / spent) | Depends on |"
+    ),
+    "tstack.footer": (
+        "The team's slots run beside the agents' stack: the rounds are light. Spent — by the tokens of "
+        "the round's own calls (costs.json)."
+    ),
     "in.tstack.all": r"all",
     "tstack.all": "all",
     # --- the queues (queues.py) ---
@@ -878,8 +1008,10 @@ MESSAGES = {
     "queues.take_new_only_other": "--n, --size and --title are for a new car: --to tr-NNNN; {to} is not a track",
     "queues.took_new": "{id} → {ref}: a new car «{title}» ({stage})",
     "queues.took_car": "{id} → {ref}: into the car «{title}» (its note and from)",
-    "queues.took_car_prio": ("{id} → {ref}: into the car «{title}» (its note and from); the car's priority is its own, "
-                             "{cprio} ({id} had {eprio})"),
+    "queues.took_car_prio": (
+        "{id} → {ref}: into the car «{title}» (its note and from); the car's priority is its own, "
+        "{cprio} ({id} had {eprio})"
+    ),
     "queues.col.n": "#",
     "queues.col.stage": "Stage",
     "queues.col.date": "Date",
@@ -899,8 +1031,10 @@ MESSAGES = {
     "queues.col.kind": "Kind",
     "queues.open_of": "Open: {n} of {total}.",
     "queues.open_of_first": "Open: {n} of {total}; the first {limit} shown.",
-    "queues.stage_note": ("Stage: a wish and a «to think over» are bogies; a taken wish lives on in what took it "
-                          "(«bogie → …» is its stage now); the history — `depot2 car show ID`."),
+    "queues.stage_note": (
+        "Stage: a wish and a «to think over» are bogies; a taken wish lives on in what took it "
+        "(«bogie → …» is its stage now); the history — `depot2 car show ID`."
+    ),
     "queues.area.product": "product",
     "queues.area.tools": "tools",
     "queues.area.infra": "infra",
@@ -974,11 +1108,15 @@ MESSAGES = {
     "queues.ov.principles_count": "{n} active",
     "queues.ov.heading": "## Queues ({ts})",
     "queues.ov.header": "| Queue | Open | Priority | On top | Command |",
-    "queues.ov.priority_legend": ("Priority: the open ones by priority 1–10 (P10 is the most important; `depot2 priority "
-                                  "ID N`); «On top» — by it too; for the principles «On top» is the principles of the "
-                                  "third check (③, `depot2 principles checks`)."),
-    "queues.ov.stages": ("The cars' stages (the stack, the trains' open cars, wishes, «to think over»; without the "
-                         "arrived and the scrapped): {counts}; a car's history — `depot2 car show ID`."),
+    "queues.ov.priority_legend": (
+        "Priority: the open ones by priority 1-10 (P10 is the most important; `depot2 priority "
+        "ID N`); «On top» — by it too; for the principles «On top» is the principles of the "
+        "third check (③, `depot2 principles checks`)."
+    ),
+    "queues.ov.stages": (
+        "The cars' stages (the stack, the trains' open cars, wishes, «to think over»; without the "
+        "arrived and the scrapped): {counts}; a car's history — `depot2 car show ID`."
+    ),
     # --- a round's extras: brainstorms and orders (extras.py) ---
     "extras.brainstorm.approved": "approved, waiting to run",
     "extras.brainstorm.done": "done",
@@ -988,7 +1126,7 @@ MESSAGES = {
     "extras.order.done": "run, waiting for a decision",
     "extras.order.settled": "settled",
     "extras.no_topic": "no topic",
-    "extras.questions_count": "{n} questions, {lo}–{hi} needed",
+    "extras.questions_count": "{n} questions, {lo}-{hi} needed",
     "extras.quorum_majority": "more than half «yes»: {need} of {n} (who did not vote — «no»)",
     "extras.quorum_unanimous": "the whole team takes part in round 2 and everyone says «yes»",
     "extras.no_part": "{who} did not take part in round 2",
@@ -998,8 +1136,10 @@ MESSAGES = {
     "extras.cannot_pay": "{who} cannot pay ({balance} < {fee})",
     "extras.one_per_round": "passed, but one brainstorm per round: {id} was chosen",
     "extras.topic_heading": "# The team's brainstorm: {topic}",
-    "extras.topic_called": ("Called by: {who} ({id}, approved in round {round}). The topic, the «why» and the questions "
-                            "are verbatim from the proposal."),
+    "extras.topic_called": (
+        "Called by: {who} ({id}, approved in round {round}). The topic, the «why» and the questions "
+        "are verbatim from the proposal."
+    ),
     "extras.topic_why": "## Why now",
     "extras.topic_questions": "## Questions for the round",
     "extras.order_missing": "not filled: {fields}",
@@ -1022,15 +1162,18 @@ MESSAGES = {
     "push.w_foreign": "⚠ the depot's push: the stamp is from {source}, not from this folder; no background pushes",
     "push.w_never_err": "⚠ the depot has not been pushed to {remote} yet: {reason} (depot2 backup --status)",
     "push.w_never": "⚠ the depot has not been pushed to {remote} yet: the first push — depot2 backup --push",
-    "push.w_failed": ("⚠ the depot's push to {remote} failed (commits not sent: {n}): {reason} "
-                      "(depot2 backup --status)"),
+    "push.w_failed": (
+        "⚠ the depot's push to {remote} failed (commits not sent: {n}): {reason} (depot2 backup --status)"
+    ),
     "push.w_hung": "⚠ the depot's push to {remote}: the background push did not finish (log {log})",
     "push.w_not_started": "⚠ the depot's push did not start: {reason}",
     "push.w_no_branch": "⚠ the depot's push to {remote}: HEAD is on no branch, no push",
-    "push.started": ("· the depot's push to {remote}: {n} commits waiting, started in the background "
-                     "(depot2 backup --status)"),
-    "push.quarantined": ("⚠ the raw stream {rel}: {why} — quarantined in {dest} (outside the depot), a marker in the "
-                         "depot in its place"),
+    "push.started": (
+        "· the depot's push to {remote}: {n} commits waiting, started in the background (depot2 backup --status)"
+    ),
+    "push.quarantined": (
+        "⚠ the raw stream {rel}: {why} — quarantined in {dest} (outside the depot), a marker in the depot in its place"
+    ),
     "push.raw_no_scan": "no scan {path} (backup.git.scan)",
     "push.raw_timeout": "the scan did not finish in {s} s",
     "push.raw_not_clean": "the private scan is not CLEAN",
@@ -1045,8 +1188,9 @@ MESSAGES = {
     "push.r_code": "git push: exit {code}",
     "push.scan_missing": "no scan {path} (backup.git.scan): no push",
     "push.scan_timeout": "the scan did not finish in {s} s: no push",
-    "push.scan_dirty_push": ("the scan is not CLEAN (what the push carries), no push: run the scan by hand, then "
-                             "depot2 backup --push"),
+    "push.scan_dirty_push": (
+        "the scan is not CLEAN (what the push carries), no push: run the scan by hand, then depot2 backup --push"
+    ),
     "push.scan_dirty_files": "the scan is not CLEAN (the files), no push: run the scan by hand, then depot2 backup --push",
     "push.push_timeout": "git push: did not finish in {s} s",
     "push.diverged": "the remote has diverged, the owner is needed",
@@ -1057,8 +1201,10 @@ MESSAGES = {
     "push.detached": "HEAD is on no branch: a push only from a branch",
     "push.no_commits": "the state has no commits",
     "push.crash": "crash: {error}",
-    "push.status_no_remote": ("git push: remote {remote} is not set: nothing is pushed and nothing warns. Add it once: "
-                              "git -C {root} remote add {remote} <url> (README «The state's backup»)"),
+    "push.status_no_remote": (
+        "git push: remote {remote} is not set: nothing is pushed and nothing warns. Add it once: "
+        "git -C {root} remote add {remote} <url> (README «The state's backup»)"
+    ),
     # --- the cloud backup (backup.py) ---
     "backup.key_in_argv": "the key would get into argv: refused",
     "backup.bad_folder": "backup.folder must be one folder name, not {folder}",
@@ -1110,7 +1256,6 @@ MESSAGES = {
     "backup.push_check_crashed": "⚠ the depot's push: the check crashed: {kind}: {error}",
     "backup.started": "· the depot's backup: the last one {h} h ago, started in the background (depot2 backup --status)",
     "backup.not_started": "⚠ the depot's backup did not start: {reason}",
-
     # === the merge queue, its worktrees and trials, principles, marks ===
     # --- the marks by the principles (marks.py) ---
     "marks.hand": "by hand",
@@ -1120,10 +1265,12 @@ MESSAGES = {
     "marks.unchecked": "not checked",
     "marks.section": "Principles check",
     "marks.format": "`- 20: ok — how it is done`, `- 26: n/a`, `- 4: violated — what; instead …`",
-    "marks.legend": ("Marks by the principles (`depot2 tracks car check <car>`): priority 1 is the gates (a line for "
-                     "each, none «violated»: else `stack post` and `merge add` refuse); priority 2 is the car's score: "
-                     "ok +1, n/a 0, violated −1; no line — «not checked». The source: the section «{section}» of the "
-                     "PR's body."),
+    "marks.legend": (
+        "Marks by the principles (`depot2 tracks car check <car>`): priority 1 is the gates (a line for "
+        "each, none «violated»: else `stack post` and `merge add` refuse); priority 2 is the car's score: "
+        "ok +1, n/a 0, violated -1; no line — «not checked». The source: the section «{section}» of the "
+        "PR's body."
+    ),
     "marks.gate_missing": "no line — {labels}",
     "marks.gate_bad": "violated — {labels}",
     "marks.gate_passed": "gates passed",
@@ -1134,8 +1281,9 @@ MESSAGES = {
     "marks.score_unchecked": "; not checked: {labels}",
     "marks.score_unchecked_n": ", {n} not checked",
     "marks.text_not_needed": "no principles needed (the third check is empty: `depot2 principles checks`)",
-    "marks.text_not_read": ("not checked: no lines by the principles (the section «{section}» in the PR; "
-                            "`depot2 tracks car check`)"),
+    "marks.text_not_read": (
+        "not checked: no lines by the principles (the section «{section}» in the PR; `depot2 tracks car check`)"
+    ),
     "marks.cell_not_needed": "not needed (the third check is empty)",
     "marks.md_heading": "## {ref}: the marks by the principles",
     "marks.md_empty": "The third check is empty: no principle has `check: true` (`depot2 principles checks`).",
@@ -1151,13 +1299,15 @@ MESSAGES = {
     "marks.title": "Marks by the principles",
     "marks.kind_gate": "gates",
     "marks.kind_score": "score",
-    "marks.holder_none": ("{ref}: marks by the principles go on a track's car or a live stack object "
-                          "(tr-NNNN:N, st-NNNN)"),
+    "marks.holder_none": (
+        "{ref}: marks by the principles go on a track's car or a live stack object (tr-NNNN:N, st-NNNN)"
+    ),
     "marks.pr_unread": "PR #{n} not read: {error}",
     "marks.read_error": "principles: {error}; the marks stay as they were",
     "marks.read_no_section": "principles: PR #{pr} has no section «{section}» ({format})",
-    "marks.read_lines": ("principles: PR #{pr}, the section «{section}» — {n} lines (ok {ok} · n/a {na} · "
-                         "violated {bad})"),
+    "marks.read_lines": (
+        "principles: PR #{pr}, the section «{section}» — {n} lines (ok {ok} · n/a {na} · violated {bad})"
+    ),
     "marks.read_junk": "  line {no} not read: «{line}» ({format})",
     "marks.read_repeats": "  a number twice: {labels} — the worse mark counts",
     "marks.read_unknown": "  not in the third check: {labels}",
@@ -1169,7 +1319,6 @@ MESSAGES = {
     "in.marks.ok": r"ok",
     "in.marks.na": r"n/a|na",
     "in.marks.bad": r"bad|violated",
-
     # --- the principles (principles.py) ---
     "principles.section.core": "Priority 1 — the gates",
     "principles.section.mechanics": "Priority 2 — the car's score",
@@ -1182,16 +1331,20 @@ MESSAGES = {
     "in.principles.section.checks": r"checks|check|how we check",
     "in.principles.section.voice": r"voice|texts",
     "principles.means.1": "a line for each, and none «violated» — else the car goes neither to acceptance nor to the merge",
-    "principles.means.2": "ok +1, n/a 0, violated −1; no line — «not checked»",
-    "principles.banner": ("> Rendered from the depot (`depot2 principles render`); change it through `depot2 principles` "
-                          "(add, set, replace, drop), not by hand: between renders the file is read-only."),
+    "principles.means.2": "ok +1, n/a 0, violated -1; no line — «not checked»",
+    "principles.banner": (
+        "> Rendered from the depot (`depot2 principles render`); change it through `depot2 principles` "
+        "(add, set, replace, drop), not by hand: between renders the file is read-only."
+    ),
     "principles.banner_words": "Rendered from the depot",
     "in.principles.banner": r"Rendered from the depot",
     "principles.default_head": "# Project principles",
     "in.principles.owner": r"\bowner\b",
     "principles.check1_title": "The owner's words",
-    "principles.check1_text": ("what the owner said, verbatim and dated; the owner's later answers and the dated "
-                               "amendments in the head beat the rest of the sketch."),
+    "principles.check1_text": (
+        "what the owner said, verbatim and dated; the owner's later answers and the dated "
+        "amendments in the head beat the rest of the sketch."
+    ),
     "principles.check2_title": "«Check against the code»",
     "principles.check2_text": "what the code does now, on origin/main and with file:line; not from memory, not from an old brief.",
     "in.principles.frame": r"check",
@@ -1203,9 +1356,11 @@ MESSAGES = {
     "principles.import_lossy": "the import would lose lines, nothing written: {lost}",
     "principles.md_header": "| Principle | Section | Date | The owner's words | Subs | Status |",
     "principles.md_empty": "| (empty: `depot2 principles import FILE`) | | | | | |",
-    "principles.md_footer": ("Active: {n} of {of}{first}; ③ — in the third check (`depot2 principles checks`). The file: "
-                             "{file} — rendered from the depot (`depot2 principles render`), changed through "
-                             "`depot2 principles add|set|replace|drop`."),
+    "principles.md_footer": (
+        "Active: {n} of {of}{first}; ③ — in the third check (`depot2 principles checks`). The file: "
+        "{file} — rendered from the depot (`depot2 principles render`), changed through "
+        "`depot2 principles add|set|replace|drop`."
+    ),
     "principles.md_first": "; the first {n} shown",
     "principles.md_no_file": "none yet",
     "principles.show_heading": "# {id} — principle {label} ({status})",
@@ -1218,32 +1373,40 @@ MESSAGES = {
     "principles.field.links": "links",
     "principles.field.source_ref": "from",
     "principles.field.notes": "notes",
-    "principles.check3_text": ("a line for each principle below: {format} — how it is done, «n/a», or «violated» with "
-                               "what instead; the depot reads these lines from the PR's body and gives the car its marks."),
+    "principles.check3_text": (
+        "a line for each principle below: {format} — how it is done, «n/a», or «violated» with "
+        "what instead; the depot reads these lines from the PR's body and gives the car its marks."
+    ),
     "principles.checks_heading": "## The three checks (`depot2 principles checks`)",
-    "principles.checks_intro": ("Every sketch, brief, PR and team round goes through three checks; the principles of "
-                                "priority 1 are gates, the others give the car its score."),
+    "principles.checks_intro": (
+        "Every sketch, brief, PR and team round goes through three checks; the principles of "
+        "priority 1 are gates, the others give the car its score."
+    ),
     "principles.checks_third": "3. **{title}** — a line for each principle: {format}.",
     "principles.checks_none": "     - (none: `depot2 principles set pc-… --check yes`)",
-    "principles.checks_where": ("In the brief — the sections «Check against the code» and «{section}» (the DoR gate, its "
-                                "item `checks`). In the PR's body — the section «{section}», a line for each principle "
-                                "above: the depot reads it at `stack post` and `merge add` (the DoD gate, its item "
-                                "`principles`) and gives the car its marks — the gates and the score "
-                                "(`depot2 tracks car check <car>`)."),
+    "principles.checks_where": (
+        "In the brief — the sections «Check against the code» and «{section}» (the DoR gate, its "
+        "item `checks`). In the PR's body — the section «{section}», a line for each principle "
+        "above: the depot reads it at `stack post` and `merge add` (the DoD gate, its item "
+        "`principles`) and gives the car its marks — the gates and the score "
+        "(`depot2 tracks car check <car>`)."
+    ),
     "principles.round_none": "none",
     "principles.round_no_checks": "no principle has check: true",
-    "principles.round_line": ("The three checks (`depot2 principles checks`): (1) the owner's words, (2) «Check against "
-                              "the code», (3) the principles check — {third}. Check the round's topic against them and "
-                              "against the principles below; name a violation plainly, with what instead."),
+    "principles.round_line": (
+        "The three checks (`depot2 principles checks`): (1) the owner's words, (2) «Check against "
+        "the code», (3) the principles check — {third}. Check the round's topic against them and "
+        "against the principles below; name a violation plainly, with what instead."
+    ),
     "principles.check_mark.1": "gates",
     "principles.check_mark.2": "score",
     "principles.diff_line": "line {n}: was {was}, the render has {got}",
     "principles.diff_eof": "the end of the file",
     "principles.parse_blank": "{name}:{no}: a blank line right after a section's heading — the render never makes one",
-    "principles.parse_junk": ("{name}:{no}: the line is no principle («N. **…**»), no sub («   - …») and no section "
-                              "(«## …»): «{line}»"),
+    "principles.parse_junk": (
+        "{name}:{no}: the line is no principle («N. **…**»), no sub («   - …») and no section («## …»): «{line}»"
+    ),
     "principles.owner_said": "(owner {words})",
-
     # --- the merge queue's worktrees (mergewt.py) ---
     "mergewt.no_reason": "no reason",
     "mergewt.text_removed": "worktree removed ({size})",
@@ -1277,10 +1440,10 @@ MESSAGES = {
     "mergewt.prune_kept": "kept ({n}):",
     "mergewt.prune_total_dry": "in all: would remove {n}, kept {kept}, {size} to free",
     "mergewt.prune_total_real": "in all: removed {n}, kept {kept}, {size} freed",
-
     # --- the merge queue's trials (mergetrials.py) ---
-    "mergetrials.line_conflict": ("{head}: #{n}: conflict {conflicts} — its own turn stops there unless that is resolved "
-                                  "first ({reason})"),
+    "mergetrials.line_conflict": (
+        "{head}: #{n}: conflict {conflicts} — its own turn stops there unless that is resolved first ({reason})"
+    ),
     "mergetrials.brief_pushed": "#{n} — {branch} {sha} on top of {on} (CI on {branch})",
     "mergetrials.brief_same": "#{n} — the head {sha} has {on} already: it is the trial",
     "mergetrials.brief.stop": "the trial stopped",
@@ -1295,7 +1458,6 @@ MESSAGES = {
     "mergetrials.cell.blocked": "the trial is not built",
     "mergetrials.cell.failed": "the trial failed",
     "mergetrials.cell_other": "trial: {status}",
-
     # --- the merge queue (merge.py) ---
     "merge.status.waiting": "waiting",
     "merge.status.riding": "riding",
@@ -1315,9 +1477,11 @@ MESSAGES = {
     "merge.smoke.ok": "ok",
     "merge.smoke.skipped": "skipped",
     "merge.smoke.bad": "NOT ok",
-    "merge.means": ("PRs on the owner's word (kept verbatim in the depot), one at a time, in the order added "
-                    "(`depot2 merge`); a failure stops the queue until `merge resume` or `merge drop`; «waiting for "
-                    "GitHub» (the job did not start) is no stop"),
+    "merge.means": (
+        "PRs on the owner's word (kept verbatim in the depot), one at a time, in the order added "
+        "(`depot2 merge`); a failure stops the queue until `merge resume` or `merge drop`; «waiting for "
+        "GitHub» (the job did not start) is no stop"
+    ),
     "merge.ci_no_run": "no run",
     "merge.ci_stuck": "the job «{job}» queued {min}+ min, no runner",
     "merge.ci_running": "running ({status})",
@@ -1329,12 +1493,17 @@ MESSAGES = {
     "merge.fb_waits.ci": "CI waits for",
     "merge.fb_waits.cd": "the deploy waits for",
     "merge.fb_reason": "{main} is offline: {what} → {spare} (the run {run} cancelled, the failed ones rerun)",
-    "merge.fb_var_refused": ("{var}: {main} is offline, «{job}» waited {waited}+ min; setting {var} to {to} failed "
-                             "({error}): {waits} {main}"),
-    "merge.fb_cancel_refused": ("{var}: {main} is offline, «{job}» waited {waited}+ min; cancelling the run {run} "
-                                "failed ({error}), {waits} {main}"),
-    "merge.fb_switched": ("{var}: {main} is offline, «{job}» waited {waited}+ min → {what} on {spare} (the run {run}: "
-                          "cancelled, the failed ones rerun)"),
+    "merge.fb_var_refused": (
+        "{var}: {main} is offline, «{job}» waited {waited}+ min; setting {var} to {to} failed ({error}): {waits} {main}"
+    ),
+    "merge.fb_cancel_refused": (
+        "{var}: {main} is offline, «{job}» waited {waited}+ min; cancelling the run {run} "
+        "failed ({error}), {waits} {main}"
+    ),
+    "merge.fb_switched": (
+        "{var}: {main} is offline, «{job}» waited {waited}+ min → {what} on {spare} (the run {run}: "
+        "cancelled, the failed ones rerun)"
+    ),
     "merge.fb_back": "{var} is {back_to} again ({at})",
     "merge.fb_back_error": "{var} NOT set back ({error}): set it back by hand `{cmd}`",
     "merge.fb_back_later": "{var} is {to} for now: back to {back_to} once the run is over (`merge run`)",
@@ -1352,8 +1521,9 @@ MESSAGES = {
     "merge.conflict_n": "#{n}: conflict {conflicts}",
     "merge.plan_car_merged": " ({car} → merged)",
     "merge.plan_parked_merged": "car {car} → merged",
-    "merge.no_word": ("a merge only on the owner's word: --word «the words» (verbatim); without them no PR goes into "
-                      "the queue"),
+    "merge.no_word": (
+        "a merge only on the owner's word: --word «the words» (verbatim); without them no PR goes into the queue"
+    ),
     "merge.dod_principles": "principles, gates: {unmet}",
     "merge.forced": "{id}: gates passed with --force ({why}): {gates}",
     "merge.why_queued": "the owner's word: «{word}» ({id}){force}",
@@ -1367,7 +1537,7 @@ MESSAGES = {
     "merge.ensure_riding": "the merge queue's runner rides already (pid {pid}): no second one",
     "merge.ensure_empty": "the merge queue is empty: nothing to ride",
     "merge.ensure_stopped": "the merge queue is stopped at {id} #{pr}: {reason} — no runner started",
-    "merge.ensure_after_fix": "  once fixed: depot2 merge resume {pr}; or: depot2 merge drop {pr} --reason \"…\"",
+    "merge.ensure_after_fix": '  once fixed: depot2 merge resume {pr}; or: depot2 merge drop {pr} --reason "…"',
     "merge.ensure_start": "the runner is not riding{was}, {n} in the queue: starting it",
     "merge.ensure_stale_lock": " (the lock had pid {pid}, it is free)",
     "merge.ensure_started": "the runner rides (pid {pid}); its log: {log}",
@@ -1411,7 +1581,6 @@ MESSAGES = {
     "merge.report_none": "no PR merged by the queue yet",
     "merge.report_queue": "The queue: {counts}; the runner: {runner}.",
     "merge.report_queue_empty": "empty",
-
     # === the team rounds: prompts, reports, reflection, bundles ===
     # --- the prompts (prompts.py) ---
     "prompts.pos.agree": "yes",
@@ -1428,10 +1597,14 @@ MESSAGES = {
     "prompts.and": " and ",
     "prompts.or": " or ",
     "prompts.project_name": "the project",
-    "prompts.project": ("The project is {name}. The orchestrator (the owner's main agent) runs team rounds; this is one "
-                        "of them. The owner reads English."),
-    "prompts.project_desc": ("The project is {name}: {desc}. The orchestrator (the owner's main agent) runs team rounds; "
-                             "this is one of them. The owner reads English."),
+    "prompts.project": (
+        "The project is {name}. The orchestrator (the owner's main agent) runs team rounds; this is one "
+        "of them. The owner reads English."
+    ),
+    "prompts.project_desc": (
+        "The project is {name}: {desc}. The orchestrator (the owner's main agent) runs team rounds; "
+        "this is one of them. The owner reads English."
+    ),
     "prompts.team_line": "- {label}: {role}.",
     "prompts.rules": (
         "You are one member of a {n}-character team that advises the owner of a project.\n"
@@ -1474,26 +1647,36 @@ MESSAGES = {
         "- main_point: your main point of this round, one sentence.\n"
         "- inner_thought: 1-2 sentences to yourself about this round. Don't retell; think.\n"
         "\n"
-        "This round: {kind}."),
+        "This round: {kind}."
+    ),
     "prompts.identity_head": "# You are {label}",
-    "prompts.identity_body": ("## Your spec\n{spec}\n\n## Your self-portrait (version {version})\n{portrait}\n\n"
-                              "## Your latest thoughts\n{thoughts}\n\n## Balance\nYou have {balance} tokens."),
+    "prompts.identity_body": (
+        "## Your spec\n{spec}\n\n## Your self-portrait (version {version})\n{portrait}\n\n"
+        "## Your latest thoughts\n{thoughts}\n\n## Balance\nYou have {balance} tokens."
+    ),
     "prompts.portrait_empty": "(empty so far)",
     "prompts.point_by": "- {id}. {title} (proposed by {name})",
     "prompts.no_points": "(no points ready)",
-    "prompts.tools": ("Read tools: at most {turns} turns (past that the process is killed and the answer is lost). "
-                      "Available: {dirs}. Read narrowly: Grep first, then Read the lines you need."),
-    "prompts.stakes": ("A stake is your comment's priority. All your stakes in the round together are at most your "
-                       "balance; every stake comes back when the round ends."),
-    "prompts.standing": ("{ids} are the standing questions of every round: answer about the round's topic, or about the "
-                         "project when the topic gives nothing. Position none, the answer in comment."),
+    "prompts.tools": (
+        "Read tools: at most {turns} turns (past that the process is killed and the answer is lost). "
+        "Available: {dirs}. Read narrowly: Grep first, then Read the lines you need."
+    ),
+    "prompts.stakes": (
+        "A stake is your comment's priority. All your stakes in the round together are at most your "
+        "balance; every stake comes back when the round ends."
+    ),
+    "prompts.standing": (
+        "{ids} are the standing questions of every round: answer about the round's topic, or about the "
+        "project when the topic gives nothing. Position none, the answer in comment."
+    ),
     "prompts.brainstorm": (
         "`brainstorm_proposal` (optional, else leave it empty): the team may call a brainstorm on any topic "
         "itself, without the owner calling it; the owner gets a ballot from it. Give the topic (topic), "
-        "why now (why) and {qmin}–{qmax} questions (questions). The fee: {fee_init} tokens from the initiator and "
+        "why now (why) and {qmin}-{qmax} questions (questions). The fee: {fee_init} tokens from the initiator and "
         "{fee_other} from each of the others; the fee does not come back. The brainstorm takes place only with the "
         "quorum in round 2 ({quorum}) and only if everyone can pay from the balance after the stakes come back. One "
-        "brainstorm per round."),
+        "brainstorm per round."
+    ),
     "prompts.order": (
         "`order` (optional, one per round, else leave it empty): an order for a measurement or a test run, {price} "
         "tokens. The protocol: command — one call of a script from the snapshot's tools/ with its arguments; seeds; "
@@ -1501,19 +1684,28 @@ MESSAGES = {
         "forecast — your forecast before the run; why — which point it decides. The orchestrator runs it, in turn; "
         "the results come in one of the next rounds. The price comes back +{bonus} if the measurement moves the "
         "decision; it burns if the result matches both the forecast and the recommendation; otherwise the owner "
-        "decides."),
-    "prompts.solo": ("This is a solo round: the owner asks only you. There is no debate, and no brainstorm is called in "
-                     "a solo round (it needs the team's quorum); the stakes, the order and the lock work as in a full "
-                     "round."),
+        "decides."
+    ),
+    "prompts.solo": (
+        "This is a solo round: the owner asks only you. There is no debate, and no brainstorm is called in "
+        "a solo round (it needs the team's quorum); the stakes, the order and the lock work as in a full "
+        "round."
+    ),
     "prompts.task_r1": "## Task: round 1, independently of your colleagues",
     "prompts.task_r1_solo": "## Task: a solo round, only you",
     "prompts.points_head": "Points (id and title; the details are in the bundle):",
-    "prompts.points_how": ("In `points` give your position on every point where you have one: id, position, stake, "
-                           "comment. Skip the points you have no opinion on."),
-    "prompts.proposals": ("In `proposals` (up to {n}) put your new points for the owner: title, question (what you "
-                          "propose and why), stake. Only what is not among the points above."),
-    "prompts.verdict_how": ("`verdict`: where the project is heading (or this PR, when the bundle has one PR): "
-                            "on_track, drifting or off_course."),
+    "prompts.points_how": (
+        "In `points` give your position on every point where you have one: id, position, stake, "
+        "comment. Skip the points you have no opinion on."
+    ),
+    "prompts.proposals": (
+        "In `proposals` (up to {n}) put your new points for the owner: title, question (what you "
+        "propose and why), stake. Only what is not among the points above."
+    ),
+    "prompts.verdict_how": (
+        "`verdict`: where the project is heading (or this PR, when the bundle has one PR): "
+        "on_track, drifting or off_course."
+    ),
     "prompts.no_positions": "(no positions)",
     "prompts.r1_title": "## Round 1 results (short)",
     "prompts.r1_point_by": "### {id}. {title} (proposed by {name})",
@@ -1524,18 +1716,24 @@ MESSAGES = {
     "prompts.bs_proposal": "### {id}. {topic} (proposed by {name})",
     "prompts.bs_why": "Why now: {text}",
     "prompts.bs_fee": "Fee: {fees}.",
-    "prompts.r2_votes": ("In `brainstorm_votes` vote on every brainstorm proposal ({ids}), your own too: proposal, vote "
-                         "yes or no, line — one line on why. Whoever does not vote counts as no. Needed: {quorum}, and "
-                         "everyone can pay the fee ({fee_init} from the initiator, {fee_other} from each of the others; "
-                         "it does not come back)."),
+    "prompts.r2_votes": (
+        "In `brainstorm_votes` vote on every brainstorm proposal ({ids}), your own too: proposal, vote "
+        "yes or no, line — one line on why. Whoever does not vote counts as no. Needed: {quorum}, and "
+        "everyone can pay the fee ({fee_init} from the initiator, {fee_other} from each of the others; "
+        "it does not come back)."
+    ),
     "prompts.task_r2": "## Task: round 2, the debate",
     "prompts.r2_tools": "{tools} Check the others' claims.",
     "prompts.r2_own": "The round 1 results are in the bundle. Your round 1 positions:",
-    "prompts.r2_rebut": ("Read your colleagues. You may rebut (up to {n} rebuttals in `rebuttals`: to whom, on which "
-                         "point, the text) or revise your positions and stakes."),
-    "prompts.r2_points": ("In `points` give your final positions; a point you skip keeps its round 1 position. You may "
-                          "move a stake; when someone else's point repeats yours, back one of them, do not split the "
-                          "stakes."),
+    "prompts.r2_rebut": (
+        "Read your colleagues. You may rebut (up to {n} rebuttals in `rebuttals`: to whom, on which "
+        "point, the text) or revise your positions and stakes."
+    ),
+    "prompts.r2_points": (
+        "In `points` give your final positions; a point you skip keeps its round 1 position. You may "
+        "move a stake; when someone else's point repeats yours, back one of them, do not split the "
+        "stakes."
+    ),
     "prompts.r2_sum": "Your stakes together are at most {n} tokens (your balance); every stake comes back when the round ends.",
     "prompts.r2_order": "{order} If you already ordered in round 1, a second order is refused.",
     "prompts.outcome_title": "## The round's results (final positions, after the debate)",
@@ -1555,15 +1753,18 @@ MESSAGES = {
         "answer. why — what for.\n"
         "One lock per object, one per character per round; you decide alone, no quorum. The code checks the object, "
         "the condition and the balance.\n"
-        "inner_thought: 1-2 sentences to yourself."),
+        "inner_thought: 1-2 sentences to yourself."
+    ),
     "prompts.r3_lock": (
         "`lock` (optional, else leave it empty): a lock on one stack object (its id is in the bundle, the table "
         "«The stack»). The price is {price} tokens. A lock means: an object in the queue does not start, an object in "
-        "a slot is not merged, until the condition is met or the owner lifts the lock."),
+        "a slot is not merged, until the condition is met or the owner lifts the lock."
+    ),
     "prompts.r3_lock_paid": (
         "`lock` (optional, else leave it empty): a lock on one stack object (its id is in the bundle, the table "
         "«The stack»). The price is {price} tokens, not returned. A lock means: an object in the queue does not "
-        "start, an object in a slot is not merged, until the condition is met or the owner lifts the lock."),
+        "start, an object in a slot is not merged, until the condition is met or the owner lifts the lock."
+    ),
     "prompts.reflect_rules": (
         "You maintain the self-portrait of one character of a {n}-character advisory team.\n"
         "{project}\n"
@@ -1586,8 +1787,8 @@ MESSAGES = {
         "(at most {summary_max} characters, third person): who the character is, what it stands for, its record "
         "with the owner, its running disputes, how it spends tokens.\n"
         "- inner_thought: 1-2 sentences to yourself. Don't retell; think.\n"
-        "- Answer ONLY through the structured output."),
-
+        "- Answer ONLY through the structured output."
+    ),
     # --- the round's bundle (bundle.py) ---
     "bundle.cut_note": "{what}: kept {cap} of {n} characters (the start)",
     "bundle.cut_mark": "[…cut by the code…]",
@@ -1621,7 +1822,6 @@ MESSAGES = {
     "in.bundle.question": r"questions?",
     "in.bundle.question_full": r"question \(in full\)|question \(detailed\)",
     "in.bundle.rec": r"recommendation|recommended|i recommend|(?:the )?orchestrator's recommendation",
-
     # --- the round (round.py) ---
     "round.unknown_point": "unknown point {id} skipped",
     "round.quarantine": "{file}: the raw stream is quarantined ({why}): {to}",
@@ -1631,8 +1831,10 @@ MESSAGES = {
     "round.stack_what": "the stack",
     "round.ballots": "The owner's ballot queue (not decided yet)",
     "round.ballots_what": "the ballot queue",
-    "round.resumed": ("the round resumed after a fatal error ({why}): {n} answer(s) taken from the aborted pass "
-                      "({kept}), calls only for the missing ones"),
+    "round.resumed": (
+        "the round resumed after a fatal error ({why}): {n} answer(s) taken from the aborted pass "
+        "({kept}), calls only for the missing ones"
+    ),
     "round.r1_unasked": "{name}: no round 1 answer in the aborted pass; not asked again — round 2 had begun",
     "round.r1_failed": "{name}: round 1 failed ({error})",
     "round.r1_skipped": "{name}: round 1 skipped ({error})",
@@ -1657,7 +1859,6 @@ MESSAGES = {
     "round.order_why": "- why: {text}",
     "round.order_result": "- result: {text}",
     "round.order_note": "- the orchestrator's note: {text}",
-
     # --- reflection (reflect.py) ---
     "reflect.forfeit": "- {date} stake {stake} NOT returned{where}: {reason}",
     "reflect.fine": "- {date} fine {amount}{where}: {reason}",
@@ -1673,25 +1874,30 @@ MESSAGES = {
     "reflect.facts_owner": "## What the owner did since your last reflection",
     "reflect.facts_rounds": "## Your positions in the rounds since your last reflection",
     "reflect.facts_stakes": "## Your open stakes",
-    "reflect.task": ("## Task: reflection\nRead your self-portrait, your thoughts and the facts above and write the new "
-                     "self-portrait in full: it replaces the old one (the code keeps the old one in the history)."),
-
+    "reflect.task": (
+        "## Task: reflection\nRead your self-portrait, your thoughts and the facts above and write the new "
+        "self-portrait in full: it replaces the old one (the code keeps the old one in the history)."
+    ),
     # --- the round's report (report.py) ---
     "report.with_stake": "{text} (stake: {n} tokens)",
     "report.skipped": "skipped",
     "report.call_failed": "{turns}, the call failed",
     "report.no_stakes": "No stakes.",
-    "report.stakes_all_back": ("Stakes: {n} tokens; all came back when the round ended: a stake is only a point's "
-                               "priority."),
-    "report.stakes_none_back": ("Stakes: {n} tokens; debited until the owner decides: the round ran before the stakes "
-                                "came back by themselves."),
+    "report.stakes_all_back": (
+        "Stakes: {n} tokens; all came back when the round ended: a stake is only a point's priority."
+    ),
+    "report.stakes_none_back": (
+        "Stakes: {n} tokens; debited until the owner decides: the round ran before the stakes came back by themselves."
+    ),
     "report.stakes_some_back": "Stakes: {n} tokens; {back} of them came back by themselves, the owner settled the rest.",
     "report.title_solo": "# The team: {kind}, a solo round ({name}), {rid}",
     "report.title_brainstorm": "# The team: team brainstorm (called by {name}), {rid}",
     "report.title": "# The team: {kind}, {rid}",
-    "report.solo": ("A solo round: only {name} answers; there is no debate and no brainstorm is called; the stakes, the "
-                    "ledger, the payouts, the decisions and the reflection work as in a full round, for {name} alone. "
-                    "Caps for one: {cap}, {calls} calls."),
+    "report.solo": (
+        "A solo round: only {name} answers; there is no debate and no brainstorm is called; the stakes, the "
+        "ledger, the payouts, the decisions and the reflection work as in a full round, for {name} alone. "
+        "Caps for one: {cap}, {calls} calls."
+    ),
     "report.src_input": "input `{path}`",
     "report.src_brainstorm": "brainstorm {id}, approved in round {round}",
     "report.src_pr": "PR #{pr} «{title}»",
@@ -1700,16 +1906,24 @@ MESSAGES = {
     "report.src_decisions": "decisions `{path}`",
     "report.sources": "Sources: {list}.",
     "report.cuts": "Cut by the code: {list}.",
-    "report.calls": ("Calls {calls}, turns {turns} (with tools {tool_turns}), {secs} s; tokens {total}: input {input}, "
-                     "cache read {cache_read}, cache write {cache_write}, output {output}."),
-    "report.calls_approx": ("Calls {calls}, turns {turns} (with tools {tool_turns}), {secs} s; tokens {total}: input "
-                            "{input}, cache read {cache_read}, cache write {cache_write}, output {output} (≈: the killed "
-                            "calls counted from their stream)."),
-    "report.spend": ("Spent {spent}: the calls' tokens by weight (input ×1, cache write ×1.25, cache read ×0.1, output "
-                     "×5; 1%UW ≈ {per} MTok). Usage window: {window}. Model {models}, effort {effort}."),
-    "report.spend_by_cost": ("Spent {spent}: the calls' tokens by weight (input ×1, cache write ×1.25, cache read ×0.1, "
-                             "output ×5; 1%UW ≈ {per} MTok); {by_cost} calls without tokens by the CLI's estimate / "
-                             "usage.usd_per_mtok. Usage window: {window}. Model {models}, effort {effort}."),
+    "report.calls": (
+        "Calls {calls}, turns {turns} (with tools {tool_turns}), {secs} s; tokens {total}: input {input}, "
+        "cache read {cache_read}, cache write {cache_write}, output {output}."
+    ),
+    "report.calls_approx": (
+        "Calls {calls}, turns {turns} (with tools {tool_turns}), {secs} s; tokens {total}: input "
+        "{input}, cache read {cache_read}, cache write {cache_write}, output {output} (≈: the killed "
+        "calls counted from their stream)."
+    ),
+    "report.spend": (
+        "Spent {spent}: the calls' tokens by weight (input x1, cache write x1.25, cache read x0.1, output "
+        "x5; 1%UW ≈ {per} MTok). Usage window: {window}. Model {models}, effort {effort}."
+    ),
+    "report.spend_by_cost": (
+        "Spent {spent}: the calls' tokens by weight (input x1, cache write x1.25, cache read x0.1, "
+        "output x5; 1%UW ≈ {per} MTok); {by_cost} calls without tokens by the CLI's estimate / "
+        "usage.usd_per_mtok. Usage window: {window}. Model {models}, effort {effort}."
+    ),
     "report.na": "n/a",
     "report.effort_default": "default",
     "report.read_pr_head": "The passes read the PR head {commit}.",
@@ -1747,9 +1961,11 @@ MESSAGES = {
     "report.ledger_empty": "no transactions in the ledger",
     "report.after_head": "## After the round",
     "report.after_cols": "| Character | After the round | Refunded | Paid | Fine | Other | Now |",
-    "report.after_legend": ("«Paid»: the owner's payouts and this round's order settlements. «Other»: the transactions "
-                            "after the round that are not about it: payouts and fines of other rounds or of none, the "
-                            "fees and orders of later rounds; their stakes come back at once and sum to 0."),
+    "report.after_legend": (
+        "«Paid»: the owner's payouts and this round's order settlements. «Other»: the transactions "
+        "after the round that are not about it: payouts and fines of other rounds or of none, the "
+        "fees and orders of later rounds; their stakes come back at once and sum to 0."
+    ),
     "report.now_mismatch": "«Now» DOES NOT MATCH the ledger: {names}.",
     "report.now_ok": "«Now» matches the ledger (the balance at {tx}).",
     "report.settle.moved": "moved the decision, the price back and +1",
@@ -1774,18 +1990,23 @@ MESSAGES = {
     "report.bs_fee": "- Fee: {fees}.",
     "report.bs_fee_paid": "- Fee: {fees} — debited ({first} … {last}).",
     "report.bs_reason": "- Why not: {text}",
-    "report.bs_run": ("- Topic: `{file}`. Run (the orchestrator, right after this round): "
-                      "`depot2 round --kind brainstorm --brainstorm {id}`"),
+    "report.bs_run": (
+        "- Topic: `{file}`. Run (the orchestrator, right after this round): "
+        "`depot2 round --kind brainstorm --brainstorm {id}`"
+    ),
     "report.orders_head": "## Orders",
-    "report.order_placed": ("- {id} {name} (−{price} tokens): `{command}`; seeds {seeds}; {hardware}; threshold: "
-                            "{threshold}; forecast: {forecast}; why: {why}."),
+    "report.order_placed": (
+        "- {id} {name} (-{price} tokens): `{command}`; seeds {seeds}; {hardware}; threshold: "
+        "{threshold}; forecast: {forecast}; why: {why}."
+    ),
     "report.order_refused": "- refused, {name}: `{command}` — {reason}.",
     "report.orders_shown": "- results in this round's bundle: {ids}.",
     "report.locks_head": "## Locks",
     "report.locks_ran": "The lock pass (round 3) ran: {n} calls. A lock: {means}.",
     "report.locks_skipped": "The lock pass (round 3) skipped: {why}.",
-    "report.lock_placed": ("- {id} {name} on {object} «{title}» (−{price} tokens): condition: {condition}; "
-                           "why: {why}."),
+    "report.lock_placed": (
+        "- {id} {name} on {object} «{title}» (-{price} tokens): condition: {condition}; why: {why}."
+    ),
     "report.lock_refused": "- refused, {name} — {reason}.",
     "report.lock_refused_obj": "- refused, {name}: {object} — {reason}.",
     "report.lock_lifted": "- lifted since the last round: {id} on {object} ({name}), {how}: {reason}.",
@@ -1795,9 +2016,8 @@ MESSAGES = {
     "report.ow_payout": "payout +{n}",
     "report.ow_forfeit": "stake {n} not returned",
     "report.ow_settle": "order {order}: {outcome}, {amount}",
-    "report.ow_fine": "fine −{n}",
-    "report.ow_fine_part": "fine −{n} of {asked} (there was no more)",
-
+    "report.ow_fine": "fine -{n}",
+    "report.ow_fine_part": "fine -{n} of {asked} (there was no more)",
     # === the web view ===
     # --- the server (webui.py) ---
     "webui.queue.todo": "Todo",
@@ -1823,15 +2043,17 @@ MESSAGES = {
     "webui.code_dirty": "code {commit} of {date}, with edits",
     "webui.code_outside_git": "code outside git ({stamp})",
     "webui.no_api": "no such API: /api/{name}",
-    "webui.migrate_pending": ("the depot's data wait for a migration (schema {old} → {new}): the next depot command "
-                              "does it, `depot2 migrate`; the view writes nothing"),
-    "webui.read_failed": ("the depot's state cannot be read right now ({kind}: {error}); the page tries again at the "
-                          "next refresh"),
+    "webui.migrate_pending": (
+        "the depot's data wait for a migration (schema {old} → {new}): the next depot command "
+        "does it, `depot2 migrate`; the view writes nothing"
+    ),
+    "webui.read_failed": (
+        "the depot's state cannot be read right now ({kind}: {error}); the page tries again at the next refresh"
+    ),
     "webui.no_brief": "{ref} has no brief",
     "webui.brief_not_served": "the brief is not served: {path} (only .md files in the web.docs.dirs folders)",
     "webui.file_not_served": "the file is not served: {path} (only .md files in the web.docs.dirs folders)",
     "in.webui.yes": r"1|true|yes",
-
     # --- the page (web/index.html): T(key) there names these keys without the `web.` prefix ---
     "web.top.ro": "view only · 127.0.0.1",
     "web.top.tabs": "view",
@@ -1867,16 +2089,17 @@ MESSAGES = {
     "web.code.outside_git": "code outside git · {stamp}",
     "web.code.broken": "{code} · the new code does not compile: {error}",
     "web.code.title": "the code that serves this page; the server started {started}",
-    "web.code.title_broken": ("the code that serves this page; the server started {started}; new code with an error "
-                              "on disk: the old one runs"),
+    "web.code.title_broken": (
+        "the code that serves this page; the server started {started}; new code with an error on disk: the old one runs"
+    ),
     "web.copy.name": "copy {name}",
     "web.copy.done": "copied",
     "web.copy.failed": "not copied: the browser gave no clipboard",
     "web.find.placeholder": "search: id, words, track, train",
     "web.find.aria": "search in the tab",
     "web.find.title": "/ to search, Esc to clear",
-    "web.find.found": "found for \"{q}\": <b>{n}</b>",
-    "web.find.nothing": "nothing found for \"{q}\"",
+    "web.find.found": 'found for "{q}": <b>{n}</b>',
+    "web.find.nothing": 'nothing found for "{q}"',
     "web.find.count_title": "found",
     "web.find.in_notes": "in the notes",
     "web.find.in_track_notes": "in the track's notes",
@@ -1935,7 +2158,7 @@ MESSAGES = {
     "web.prio.title": "priority {p} of 10 (10 is the most important)",
     "web.route.or": "or",
     "web.route.aria": "route: now {stage}",
-    "web.gate.unmet": "{gate} (entry to \"{stage}\"): {unmet}",
+    "web.gate.unmet": '{gate} (entry to "{stage}"): {unmet}',
     "web.gate.passed": "{gate} passed",
     "web.gate.passed_notes": "{gate} passed ({notes})",
     "web.merge.place": "merge queue: {pos} of {total} ({id}, {status})",
@@ -1947,8 +2170,8 @@ MESSAGES = {
     "web.mq.queue_h": "The queue",
     "web.mq.done_h": "The last merges",
     "web.mq.count": "in the merge queue: <b>{n}</b>{states}",
-    "web.mq.runner_rides": "the runner: <b class=\"g\">riding</b>",
-    "web.mq.runner_idle": "the runner: <b class=\"w\">not riding</b>, {n} in the queue",
+    "web.mq.runner_rides": 'the runner: <b class="g">riding</b>',
+    "web.mq.runner_idle": 'the runner: <b class="w">not riding</b>, {n} in the queue',
     "web.mq.runner_empty": "the runner: not riding, the queue is empty",
     "web.mq.last": "the last merge: {pr} {sha} ({at})",
     "web.mq.place_title": "its place in the queue",
@@ -1965,8 +2188,10 @@ MESSAGES = {
     "web.mq.merged_sha": "merged {sha}",
     "web.mq.github": "waiting for GitHub at the step «{step}»: {reason} (since {since}, {age}; reruns {reruns})",
     "web.mq.stopped": "stopped at the step «{step}», {at} ({ago}): {reason}",
-    "web.mq.todo": ("what to do: once fixed, <code>depot2 merge resume {pr}</code>; or "
-                    "<code>depot2 merge drop {pr} --reason …</code>"),
+    "web.mq.todo": (
+        "what to do: once fixed, <code>depot2 merge resume {pr}</code>; or "
+        "<code>depot2 merge drop {pr} --reason …</code>"
+    ),
     "web.mq.empty": "the merge queue is empty",
     "web.mq.none_merged": "no PR merged by the queue yet",
     "web.mq.merged_at": "merged {sha} · {at}",
@@ -2085,14 +2310,18 @@ MESSAGES = {
     "web.agents.out": "Live outside the slots",
     "web.agents.recent": "Recent",
     "web.agents.none_ended": "no finished agents yet: depot2 agents --all",
-    "web.agents.legend": ("State: working — new lines in the transcript; silent — no line for over {silent} min "
-                          "(agents.silent_min); finished — the transcript is closed, the spend is booked to the car; "
-                          "stopped — depot2 agents stop; not attached — no depot2 agents attach. The spend is from "
-                          "the transcript, in %UW and MTok."),
+    "web.agents.legend": (
+        "State: working — new lines in the transcript; silent — no line for over {silent} min "
+        "(agents.silent_min); finished — the transcript is closed, the spend is booked to the car; "
+        "stopped — depot2 agents stop; not attached — no depot2 agents attach. The spend is from "
+        "the transcript, in %UW and MTok."
+    ),
     "web.dec.count_found": "found {n} of {total}",
     "web.dec.none": "no decisions yet",
-    "web.dec.note": ("Newest on top. <code>depot2 decide</code> writes them; here they are only shown (<code>depot2 "
-                     "decisions</code>)."),
+    "web.dec.note": (
+        "Newest on top. <code>depot2 decide</code> writes them; here they are only shown (<code>depot2 "
+        "decisions</code>)."
+    ),
     "web.q.when": "when: {v}",
     "web.q.questions": "questions {n}: {first}",
     "web.q.raised_by": "raised by: {who}",
@@ -2117,11 +2346,15 @@ MESSAGES = {
     "web.q.closed_n": "closed {n}",
     "web.q.total": "· all {n}",
     "web.q.open_line": "open: {heads}",
-    "web.q.hint": ("trains, tracks, the agents' stack and the merge queue are on their own tabs; the "
-                   "<code>depot2</code> commands edit the queues, here they are only shown"),
-    "web.q.hint_closed": ("trains, tracks, the agents' stack and the merge queue are on their own tabs; the "
-                          "<code>depot2</code> commands edit the queues, here they are only shown (the closed ones: "
-                          "tick \"closed\")"),
+    "web.q.hint": (
+        "trains, tracks, the agents' stack and the merge queue are on their own tabs; the "
+        "<code>depot2</code> commands edit the queues, here they are only shown"
+    ),
+    "web.q.hint_closed": (
+        "trains, tracks, the agents' stack and the merge queue are on their own tabs; the "
+        "<code>depot2</code> commands edit the queues, here they are only shown (the closed ones: "
+        'tick "closed")'
+    ),
     "web.pc.active": "in force <b>{n}</b>",
     "web.pc.replaced": "replaced {n}",
     "web.pc.dropped": "dropped {n}",
@@ -2140,7 +2373,7 @@ MESSAGES = {
     "web.qa.bug": "bug {bug}",
     "web.qa.returns_title": "returns to build after handing in (defects)",
     "web.qa.returns": "defects {n}",
-    "web.qa.claims_title": "defects in production after \"arrived\" (claims)",
+    "web.qa.claims_title": 'defects in production after "arrived" (claims)',
     "web.qa.claims": "claims {n}",
     "web.qa.claim_line": "#{n} {date}: {why}",
     "web.qa.claim_ref": "{of} #{n}: {why}",
@@ -2160,8 +2393,9 @@ MESSAGES = {
     "web.hist.why": "why",
     "web.hist.off_route": "off the route",
     "web.hist.return": "defect: back to build",
-    "web.marks.legend": ("priority 1: gates (each has a line, none is \"violated\"); priority 2: score: ok +1, n/a "
-                         "0, violated −1"),
+    "web.marks.legend": (
+        'priority 1: gates (each has a line, none is "violated"); priority 2: score: ok +1, n/a 0, violated -1'
+    ),
     "web.marks.counts": "ok {ok} · n/a {na} · violated {bad} · not checked {none}",
     "web.marks.h_principle": "principle",
     "web.marks.h_priority": "priority",
@@ -2181,7 +2415,7 @@ MESSAGES = {
     "web.panel.ask_open": "question {n}: {q} (open)",
     "web.panel.project": "a project is required ({why}): {state}",
     "web.panel.project_passed": "the stage passed",
-    "web.panel.project_skipped": "there was no \"project\" stage",
+    "web.panel.project_skipped": 'there was no "project" stage',
     "web.panel.docs": "docs needed ({need}): {word}",
     "web.panel.waits_h": "Waiting for",
     "web.panel.waits_none": "waits for nothing",

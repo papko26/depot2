@@ -10,7 +10,7 @@ queue that merges the finished pull requests one at a time.
 
 It grew inside one project and was cut out of it: everything that was that project's own (its checks, its deploy,
 its paths and machines, its team) now comes from a project config and from plugins, and the depot itself knows
-nothing about what it plans. Python 3.8+, the standard library only.
+nothing about what it plans. Requires Python 3.11 through 3.15 and uses only the standard library.
 
 **Status: extracted, not released.** The command line, the reports, the web view and the round prompts speak English
 by default; Russian is the second language (`language` in the config, or `$DEPOT2_LANG`; see [Languages](#languages)).
@@ -185,8 +185,8 @@ The config is read in layers, each deep-merged over the one before:
 | `web.hosts`, `web.docs.base`, `web.docs.dirs` | `[]`, null, `[]` | more names of this computer for the web view; where its briefs live |
 | `backup.git.*`, `backup.*` | push off until a remote exists | the depot's own backup (below) |
 
-**The effort unit.** Spend is stored in MTok: millions of price-weighted input-equivalent tokens (input ×1, cache
-write ×1.25, cache read ×0.1, output ×5). It prints as `X%UW (Y MTok)`: the share of a usage window, at
+**The effort unit.** Spend is stored in MTok: millions of price-weighted input-equivalent tokens (input x1, cache
+write x1.25, cache read x0.1, output x5). It prints as `X%UW (Y MTok)`: the share of a usage window, at
 `usage.mtok_per_pct` MTok per percent. Set it to your runner's own budget; the sizes of cars (`usage.sizes`) are in
 `%UW`.
 
@@ -254,7 +254,7 @@ with the user prompt on its stdin:
   saved to resume, and anything that would ask for a permission is denied;
 - the system prompt and the answer's JSON schema are depot2's; the tools are read-only (`tools`: Read, Grep, Glob or
   fewer; a reflection gets none), confined to the round's dirs (a snapshot of `deep_repo`, and `read_dirs`) with `deny_read` on top;
-- `--max-budget-usd` is the call's cap in MTok × `usage.usd_per_mtok`, since the runner takes its cap in dollars; the
+- `--max-budget-usd` is the call's cap in MTok x `usage.usd_per_mtok`, since the runner takes its cap in dollars; the
   runner has no turn-cap flag, so depot2 counts the tool turns in the stream and kills the process group at the cap or
   the timeout;
 - the child's environment is the caller's without `CLAUDECODE`, any `CLAUDE_CODE_*` variable, `ANTHROPIC_API_KEY` and
@@ -282,7 +282,7 @@ stopped. Nothing else in the log is read.
 - any other runner is a module of its own with the three functions, named in `executor`. `run_call` gets a `CallSpec`
   (`depot2/executors/__init__.py`: the prompts, the schema, the tools, the dirs, the caps in turns, MTok and seconds)
   and returns a dict with `structured` (the answer), `usage` (`input`, `cache_write`, `cache_read`, `output`; or
-  `cost_usd` alone), `status`, and `utilization` / `week_utilization` (window shares, 0–1) when the runner reports
+  `cost_usd` alone), `status`, and `utilization` / `week_utilization` (window shares, 0-1) when the runner reports
   them; it raises `CallFailed` or `FatalError` with that dict. `find_transcript` returns a log's path;
   `read_transcript` returns `{turns, mtok, first_at, last_at, actions, finished, stopped_by_user}`, or None.
   The modes of `tests/fake_executor.py` are the failures such a module has to tell apart.
@@ -410,7 +410,7 @@ depot2 trains car move             # its place in the train
 depot2 trains car drop             # out of the train
 depot2 train                       # one train: its cars in order
 depot2 migrate                     # bring the depot's data to today's form, once (schema 1 → 5: tracks and trains, …
-depot2 priority                    # the priority 1–10 (10 — the most important, default 5) of a train or a car in …
+depot2 priority                    # the priority 1-10 (10 — the most important, default 5) of a train or a car in …
 depot2 car                         # one car (tr-NNNN:N, st-, wl-, th-): its stage, show, its open questions, the …
 depot2 car stage                   # move its stage, on the route; the moves a command makes are refused, each with …
 depot2 car show                    # its stage, where it may go, the next gate, its history
@@ -492,14 +492,31 @@ depot2 seed                        # one-off: state, specs, ledger, first portra
 ## Tests
 
 ```sh
-python3 -m unittest discover -s tests            # the standard library only, no network
-python3 -m unittest discover -s tests -p 'test_merge*.py'
+make test                                   # full suite in parallel with line coverage
+uv run --locked pytest tests/test_merge.py  # one module, serially
+python3 -m unittest discover -s tests       # standard-library runner
 ```
 
 No test reaches GitHub, a runner or the network: `tests/` has stand-ins for `gh`, `git` (a logging wrapper), `rclone`,
 `pass`, the scan and the executor (`fake_executor.py`), and the test project's config (`tests/project-config.json`,
 through `$DEPOT2_CONFIG`). `tests/test_demo.py` builds the demo depot and reads it back. `tests/test_cli_docs.py`
 checks that every command this README names exists, and that the «Commands» block above names every command.
+
+### Development checks
+
+From the repository root, use uv to create `.venv` and install the project and development tools from `uv.lock`.
+
+```sh
+make install      # uv sync --locked
+make check        # check lint, formatting, types, and tests
+```
+
+Run checks individually with `make lint`, `make typecheck`, or `make test`.
+`make lint` applies safe Ruff fixes and reports any remaining violations.
+`make format` formats all Python files under the repository with Ruff. Run
+`uv run --locked ruff format path/to/file.py` on files you edit, or add `--check` to preview which files need formatting.
+
+When changing dependencies in `pyproject.toml`, run `uv lock` and commit the updated `uv.lock` alongside it.
 
 ## Layout
 

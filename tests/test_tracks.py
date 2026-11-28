@@ -1,7 +1,6 @@
-
 import datetime
 import json
-import os
+from pathlib import Path
 
 from test_extras import Base
 
@@ -14,9 +13,8 @@ FUTURE = datetime.datetime(2015, 11, 9, 12, 0).astimezone()
 
 
 class TracksBase(Base):
-
     def setUp(self):
-        super(TracksBase, self).setUp()
+        super().setUp()
         self.t.cfg["stack"].update(slots=4, queue_max=10)
         self.t.cfg["usage"]["mtok_per_pct"] = 12.0
 
@@ -29,16 +27,21 @@ class TracksBase(Base):
     def ride(self, tid, name=None, slots="max 1", **kw):
         tr = self.trains()
         t = tr.tracks.get(tid)
-        name = name or "train-%s" % tid[-1]
-        tr.add(name, t["title"], cars=["%s:%s" % (tid, c["n"]) for c in t["cars"] if c["status"] not in ("merged",
-                                                                                                      "dropped")],
-               slots=slots, **kw)
+        name = name or f"train-{tid[-1]}"
+        tr.add(
+            name,
+            t["title"],
+            cars=["{}:{}".format(tid, c["n"]) for c in t["cars"] if c["status"] not in ("merged", "dropped")],
+            slots=slots,
+            **kw,
+        )
         tr.set_state(name, "impl")
         return name
 
     def team(self, *argv):  # never the main clone (repo_version), never a real model
-        return super(TracksBase, self).team("--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent",
-                                            "--set", "usage.mtok_per_pct=12", *argv)
+        return super().team(
+            "--set", "deep_repo.clone=", "--set", "executor_bin=/nonexistent", "--set", "usage.mtok_per_pct=12", *argv
+        )
 
 
 class TracksTest(TracksBase):
@@ -66,23 +69,38 @@ class TracksTest(TracksBase):
         with self.assertRaises(TrackError):  # a car's bare name is a car of its track, never a train
             tr.car_add(a["id"], "z", after=["export-n-print"])
         md = Tracks(self.t.state, self.t.cfg).md(now=PAST)  # read back from tracks.json
-        self.assertIn("| № | Трек | Вагонов (готово / всего) | Effort (ожидаемо / потрачено) | Состояние | Этапы вагонов |",
-                      md)
-        self.assertIn("| 1 | tr-0001 Поиск | 1 / 4 | ≈ 3.9%UW (46.8 MTok) / 1.63%UW (19.6 MTok) | открыто 3; "
-                      "вне поездов 3 |", md)
-        self.assertIn("| 2 | tr-0002 Читалка | 0 / 2 | ≈ 10–13%UW (120–156 MTok) / — (по вагонам ≈ 2.4%UW (28.8 MTok)) | "
-                      "открыто 2; вне поездов 2 |", md)
+        self.assertIn(
+            "| № | Трек | Вагонов (готово / всего) | Effort (ожидаемо / потрачено) | Состояние | Этапы вагонов |", md
+        )
+        self.assertIn(
+            "| 1 | tr-0001 Поиск | 1 / 4 | ≈ 3.9%UW (46.8 MTok) / 1.63%UW (19.6 MTok) | открыто 3; вне поездов 3 |", md
+        )
+        self.assertIn(
+            "| 2 | tr-0002 Читалка | 0 / 2 | ≈ 10-13%UW (120-156 MTok) / — (по вагонам ≈ 2.4%UW (28.8 MTok)) | "
+            "открыто 2; вне поездов 2 |",
+            md,
+        )
         self.assertIn("| 3 | tr-0003 Экспорт | 0 / 0 | — | вагонов нет |", md)
         self.assertIn("1%UW ≈ 12 MTok (usage.mtok_per_pct). Размеры, %UW: S 0.3, doc 0.4, M 1, L 1.4.", md)
         cm = tr.car_md("tr-0001", now=PAST)
         self.assertIn("## Трек tr-0001 Поиск", cm)
-        self.assertIn("| Вагон | Приоритет | Что | После | Размер: effort (оценка / факт) | Ветка / PR | Стек | Поезд | Статус |", cm)
-        self.assertIn("| 0 | P5 | дизайн-док | — | doc: ≈ 0.4%UW (4.8 MTok) / 0.38%UW (4.6 MTok) | — | — | — | слит |", cm)
-        self.assertIn("| 1 | P5 | индекс и фильтры | — | L: ≈ 1.4%UW (16.8 MTok) / 1.25%UW (15 MTok) | PR #189 | — | — | "
-                      "PR открыт |", cm)
+        self.assertIn(
+            "| Вагон | Приоритет | Что | После | Размер: effort (оценка / факт) | Ветка / PR | Стек | Поезд | Статус |",
+            cm,
+        )
+        self.assertIn(
+            "| 0 | P5 | дизайн-док | — | doc: ≈ 0.4%UW (4.8 MTok) / 0.38%UW (4.6 MTok) | — | — | — | слит |", cm
+        )
+        self.assertIn(
+            "| 1 | P5 | индекс и фильтры | — | L: ≈ 1.4%UW (16.8 MTok) / 1.25%UW (15 MTok) | PR #189 | — | — | "
+            "PR открыт |",
+            cm,
+        )
         self.assertIn("| 2 | P5 | файл синонимов | 1 | M: ≈ 1%UW (12 MTok) / — | — | — | — | ждёт: 1 (PR открыт) |", cm)
-        self.assertIn("| 3 | P5 | пустая выдача | 1, 2 | ≈ 1.1%UW (13.2 MTok) / — | — | — | — | ждёт: 1 (PR открыт), 2 "
-                      "(ждёт) |", cm)
+        self.assertIn(
+            "| 3 | P5 | пустая выдача | 1, 2 | ≈ 1.1%UW (13.2 MTok) / — | — | — | — | ждёт: 1 (PR открыт), 2 (ждёт) |",
+            cm,
+        )
         events = [h["event"] for h in tr.history()]
         self.assertEqual(events.count("add"), 3)
         self.assertEqual(events.count("car_add"), 6)
@@ -91,7 +109,7 @@ class TracksTest(TracksBase):
         self.assertEqual(tr.ref_state("tr-0001"), (False, "tr-0001 Поиск (открыто вагонов: 3)"))
         self.assertEqual(tr.ref_state("tr-0003")[0], False)  # no cars: not done
         for n in ("1", "2", "3"):
-            tr.car_set("tr-0001:%s" % n, status="dropped" if n == "3" else "merged")
+            tr.car_set(f"tr-0001:{n}", status="dropped" if n == "3" else "merged")
         self.assertEqual(tr.ref_state("tr-0001"), (True, "tr-0001 Поиск (пройден)"))
         self.assertNotIn("tr-0001 Поиск", Tracks(self.t.state, self.t.cfg).md(now=PAST))  # done: only with --all
         self.assertIn("Пройденных треков не показано: 1", Tracks(self.t.state, self.t.cfg).md(now=PAST))
@@ -110,14 +128,14 @@ class TracksTest(TracksBase):
         # A new calibration: a stored spend keeps its MTok (its % moves); a size keeps its % (its MTok moves).
         self.t.cfg["usage"]["mtok_per_pct"] = 6.0
         self.assertEqual(tr.effort_cell(tr.get(a["id"])), "≈ 1.5%UW (9 MTok) / 3%UW (18 MTok)")
-        rc, out, err = self.team("--set", "usage.sizes.M=0.7", "--set", "usage.mtok_per_pct=10", "config")
+        _rc, out, _err = self.team("--set", "usage.sizes.M=0.7", "--set", "usage.mtok_per_pct=10", "config")
         self.assertEqual((json.loads(out)["usage"]["sizes"]["M"], json.loads(out)["usage"]["mtok_per_pct"]), (0.7, 10))
         self.assertEqual(self.team("--set", "usage.mtok_per_pct=0", "tracks")[0], 1)
 
 
 class StackLinkTest(TracksBase):
     def setUp(self):
-        super(StackLinkTest, self).setUp()
+        super().setUp()
         tr = self.tracks()
         a = tr.add("Поиск")
         tr.car_add(a["id"], "индекс", size="L", branch="search-index")
@@ -152,8 +170,11 @@ class StackLinkTest(TracksBase):
         self.assertIn("tr-0001:0 → слит (merged #201)", out)
         self.assertEqual(self.tracks().car("tr-0001:0")[1]["status"], "merged")
         rc, out, err = self.team("tracks", "car", "set", "tr-0001:0", "--spent-mtok", "16.2")
-        self.assertIn("| 0 | P5 | индекс | — | L: ≈ 1.4%UW (16.8 MTok) / 1.35%UW (16.2 MTok) | search-index / PR #201 | "
-                      "st-0001 | poisk | слит |", out)  # its train keeps it in its list
+        self.assertIn(
+            "| 0 | P5 | индекс | — | L: ≈ 1.4%UW (16.8 MTok) / 1.35%UW (16.2 MTok) | search-index / PR #201 | "
+            "st-0001 | poisk | слит |",
+            out,
+        )  # its train keeps it in its list
         # The second car: into the queue first, then `stack start`; dropped by its flag. The last car closed: the
         # train arrives by itself.
         rc, out, err = self.team("tracks", "car", "stack", "tr-0001:1")
@@ -182,9 +203,12 @@ class StackLinkTest(TracksBase):
         self.assertEqual(self.team("tracks", "car", "stack", "tr-0001:1")[0], 0)
         rc, out, err = self.team("tracks", "car", "set", "tr-0001:0", "--status", "merged")
         self.assertEqual(rc, 1)
-        self.assertIn("error: tr-0001:0: its stack object st-0001 is in the stack, the status goes with it: depot2 "
-                      "stack done st-0001 --car merged|dropped|back --reason «…», stack start st-0001 or stack park "
-                      "st-0001 --reason «…»", err)
+        self.assertIn(
+            "error: tr-0001:0: its stack object st-0001 is in the stack, the status goes with it: depot2 "
+            "stack done st-0001 --car merged|dropped|back --reason «…», stack start st-0001 or stack park "
+            "st-0001 --reason «…»",
+            err,
+        )
         self.assertEqual(self.tracks().car("tr-0001:0")[1]["status"], "running")
         self.assertEqual(self.team("tracks", "car", "set", "tr-0001:0", "--status", "running", "--note", "x")[0], 0)
         # its PR and branch set on the car are its object's too (`stack post` reads the object's PR first)
@@ -197,39 +221,64 @@ class StackLinkTest(TracksBase):
         self.assertEqual(self.team("stack", "done", "st-0001", "--reason", "слит #201", "--car", "merged")[0], 0)
         tr = self.tracks()
         other = tr.car_add(tr.add("Ещё")["id"], "x", size="S")
-        ref = "%s:%s" % (other[0]["id"], other[1]["n"])
-        rc, out, err = self.team("tracks", "car", "set", ref, "--st", "st-0001")
+        ref = "{}:{}".format(other[0]["id"], other[1]["n"])
+        rc, out, err = self.team("tracks", "car", "set", ref, "--st", "st-0001")  # noqa: RUF059
         self.assertEqual(rc, 1)
         self.assertIn("st-0001 is or was the stack object of tr-0001:0: a car links only to an object of its own", err)
         # a merged car whose object stayed in the queue (the API's write, as the hand's was before): no start, no post
         self.tracks().car_set("tr-0001:1", status="merged")
         finished = self.tracks().car("tr-0001:1")[1]["finished"]
         for act in (("start", "st-0002"), ("post", "st-0002", "--reason", "CI")):
-            rc, out, err = self.team("stack", *act)
+            rc, _out, err = self.team("stack", *act)
             self.assertEqual(rc, 1, act)
-            self.assertIn("st-0002 is the object of tr-0001:1, which is слит: no stack %s — the object is left over, "
-                          "close it: depot2 stack done st-0002 --car merged --reason «…»" % act[0], err)
+            self.assertIn(
+                f"st-0002 is the object of tr-0001:1, which is слит: no stack {act[0]} — the object is left over, "
+                "close it: depot2 stack done st-0002 --car merged --reason «…»",
+                err,
+            )
         self.assertEqual(self.tracks().car("tr-0001:1")[1]["status"], "merged")
         self.assertEqual(self.team("stack", "done", "st-0002", "--reason", "остался", "--car", "merged")[0], 0)
         self.assertEqual(self.tracks().car("tr-0001:1")[1]["finished"], finished)  # its day kept
         self.assertIn("picks", json.loads(self.team("trains", "--json", "next")[1]))  # the parent's --json too
 
     def test_the_spend_from_a_transcript_and_on_both_sides_of_the_link(self):
-        path = os.path.join(self.out, "agent.output")
+        path = str(Path(self.out, "agent.output"))
         lines = [
-            {"type": "assistant", "message": {"id": "msg_a", "usage": {
-                "input_tokens": 1000, "cache_creation_input_tokens": 2000, "cache_read_input_tokens": 1000000,
-                "output_tokens": 500}}},
-            {"type": "assistant", "message": {"id": "msg_a", "usage": {  # the same message, a second block
-                "input_tokens": 1000, "cache_creation_input_tokens": 2000, "cache_read_input_tokens": 1000000,
-                "output_tokens": 500}}},
+            {
+                "type": "assistant",
+                "message": {
+                    "id": "msg_a",
+                    "usage": {
+                        "input_tokens": 1000,
+                        "cache_creation_input_tokens": 2000,
+                        "cache_read_input_tokens": 1000000,
+                        "output_tokens": 500,
+                    },
+                },
+            },
+            {
+                "type": "assistant",
+                "message": {
+                    "id": "msg_a",
+                    "usage": {  # the same message, a second block
+                        "input_tokens": 1000,
+                        "cache_creation_input_tokens": 2000,
+                        "cache_read_input_tokens": 1000000,
+                        "output_tokens": 500,
+                    },
+                },
+            },
             {"type": "user", "message": {"content": "no usage here"}},
-            {"type": "assistant", "message": {"id": "msg_b", "usage": {"cache_read_input_tokens": 2000000,
-                                                                          "output_tokens": 1000}}}]
-        with open(path, "w") as f:
+            {
+                "type": "assistant",
+                "message": {"id": "msg_b", "usage": {"cache_read_input_tokens": 2000000, "output_tokens": 1000}},
+            },
+        ]
+        with Path(path).open("w") as f:
             f.write("\n".join(json.dumps(x) for x in lines) + "\nnot json\n")
-        # 1000 + 2000 × 1.25 + 1e6 × 0.1 + 500 × 5, then 2e6 × 0.1 + 1000 × 5
+        # 1000 + 2000 x 1.25 + 1e6 x 0.1 + 500 x 5, then 2e6 x 0.1 + 1000 x 5
         from depot2.effort import from_transcript
+
         self.assertEqual(from_transcript(path), 0.311)
         self.team("tracks", "car", "stack", "tr-0001:0", "--start")
         rc, out, err = self.team("tracks", "car", "set", "tr-0001:0", "--transcript", path)
@@ -250,7 +299,9 @@ class StackLinkTest(TracksBase):
             self.tracks().car_stack("tr-0002:0", start=True)
         self.assertIn("поезд pozzhe — «дизайн»: его вагоны берут слот только в «имплементации»", str(e.exception))
         self.t.cfg["stack"]["slots"] = 0
-        with self.assertRaises(TrackError) as e:  # the slots: a soft gate (gates.py), refused before anything is written
+        with self.assertRaises(
+            TrackError
+        ) as e:  # the slots: a soft gate (gates.py), refused before anything is written
             self.tracks().car_stack("tr-0001:0", start=True)
         self.assertIn("no free slot (0/0)", str(e.exception))
         self.assertEqual(Stack(self.t.state, self.t.cfg).objects(), [])  # nothing added on a refusal
@@ -297,18 +348,29 @@ class StackLinkTest(TracksBase):
 
 
 class ImportTest(TracksBase):
-    SPEC = {"tracks": [
-        {"title": "Поиск", "notes": ["бывший st-0006"],
-         "cars": [{"n": "0", "title": "дизайн-док", "size": "doc", "spent_mtok": 4.6, "status": "merged"},
-                  {"n": "1", "title": "индекс и фильтры", "size": "L", "spent_mtok": 15, "status": "pr", "pr": 189},
-                  {"n": "2", "title": "файл синонимов", "after": ["1"], "size": "M"}]},
-        {"title": "Читалка", "est_pct": "10-13",
-         "cars": [{"n": "R0", "title": "макет", "size": "M"}, {"n": "R1", "title": "вёрстка", "after": ["R0"]}]},
-        {"title": "Экспорт", "cars": [{"title": "док", "after": ["tr-0002:R1"]}]}]}
+    SPEC = {  # noqa: RUF012
+        "tracks": [
+            {
+                "title": "Поиск",
+                "notes": ["бывший st-0006"],
+                "cars": [
+                    {"n": "0", "title": "дизайн-док", "size": "doc", "spent_mtok": 4.6, "status": "merged"},
+                    {"n": "1", "title": "индекс и фильтры", "size": "L", "spent_mtok": 15, "status": "pr", "pr": 189},
+                    {"n": "2", "title": "файл синонимов", "after": ["1"], "size": "M"},
+                ],
+            },
+            {
+                "title": "Читалка",
+                "est_pct": "10-13",
+                "cars": [{"n": "R0", "title": "макет", "size": "M"}, {"n": "R1", "title": "вёрстка", "after": ["R0"]}],
+            },
+            {"title": "Экспорт", "cars": [{"title": "док", "after": ["tr-0002:R1"]}]},
+        ]
+    }
 
     def write(self, spec):
-        path = os.path.join(self.out, "tracks-import.json")
-        with open(path, "w", encoding="utf-8") as f:
+        path = str(Path(self.out, "tracks-import.json"))
+        with Path(path).open("w", encoding="utf-8") as f:
             json.dump(spec, f, ensure_ascii=False)
         return path
 
@@ -318,7 +380,7 @@ class ImportTest(TracksBase):
         self.assertEqual(rc, 0, err)
         self.assertIn("DRY RUN: would import 3 tracks, 6 cars", out)
         self.assertIn("## Трек tr-0002 Читалка", out)
-        self.assertFalse(os.path.exists(os.path.join(self.t.dir, "tracks.json")))
+        self.assertFalse(Path(self.t.dir, "tracks.json").exists())
         rc, out, err = self.team("tracks", "import", path)
         self.assertEqual(rc, 0, err)
         tr = self.tracks()
@@ -338,7 +400,7 @@ class ImportTest(TracksBase):
         rc, _, err = self.team("tracks", "import", self.write(spec))
         self.assertEqual(rc, 1)
         self.assertIn("tr-0002 Читалка: tr-0002 has no car R9", err)
-        self.assertFalse(os.path.exists(os.path.join(self.t.dir, "tracks.json")))
+        self.assertFalse(Path(self.t.dir, "tracks.json").exists())
         spec = json.loads(json.dumps(self.SPEC))
         spec["tracks"][0]["status"] = "running"  # a planning key of before is refused, never dropped unseen
         rc, _, err = self.team("tracks", "import", self.write(spec))
@@ -348,10 +410,11 @@ class ImportTest(TracksBase):
 
 class ParkCarTest(TracksBase):
     """`stack park` of a car's object: the object leaves the stack, the car waits on its track with its
-    PR (status pr), its slot is free; when its `after` is met its PR is ready to merge."""
+    PR (status pr), its slot is free; when its `after` is met its PR is ready to merge.
+    """
 
     def setUp(self):
-        super(ParkCarTest, self).setUp()
+        super().setUp()
         tr = self.tracks()
         a = tr.add("Аккаунты")
         tr.car_add(a["id"], "док v2", n="0b", size="doc")
@@ -385,21 +448,29 @@ class ParkCarTest(TracksBase):
         self.assertEqual([p["car"]["n"] for p in nx["picks"]], ["0b"])  # the train's slot is free for 0b
         self.assertEqual(nx["stack"], [])
         cm = tr.tracks.car_md("tr-0001", now=PAST)
-        self.assertIn("| M | P5 | пароли | 0b | M: ≈ 1%UW (12 MTok) / — | passwords-0.1 / PR #202 | st-0001 | akkaunty | "
-                      "PR открыт, запаркован: ждёт: 0b (готов) |", cm)
+        self.assertIn(
+            "| M | P5 | пароли | 0b | M: ≈ 1%UW (12 MTok) / — | passwords-0.1 / PR #202 | st-0001 | akkaunty | "
+            "PR открыт, запаркован: ждёт: 0b (готов) |",
+            cm,
+        )
         self.assertIn("Запаркованы (слот не держат): tr-0001:M — PR #202 запаркован, ждёт: 0b (готов).", cm)
         self.assertEqual(self.team("trains", "done", "akkaunty")[0], 1)  # a parked PR is not merged
         # 0b lands: M's PR is ready to merge, and a merge needs no slot
         self.tracks().car_set("tr-0001:0b", status="merged")
         tr = self.trains()
         lines = "\n".join(tr.next_lines(PAST))
-        self.assertIn("Готово к мерджу (слот не нужен): tr-0001:M — PR #202 готов к мерджу (после слова владельца).",
-                      lines)
+        self.assertIn(
+            "Готово к мерджу (слот не нужен): tr-0001:M — PR #202 готов к мерджу (после слова владельца).", lines
+        )
         self.assertIn("PR открыт, запаркован: готов к мерджу (после слова владельца) |", tr.tracks.car_md("tr-0001"))
-        self.assertIn("Готово к мерджу (слот не нужен): tr-0001:M", "\n".join(tr.next_lines(PAST, train=tr.get("akkaunty"))))
+        self.assertIn(
+            "Готово к мерджу (слот не нужен): tr-0001:M", "\n".join(tr.next_lines(PAST, train=tr.get("akkaunty")))
+        )
         self.assertIn("к мерджу: tr-0001:M", self.team("queues")[1])
-        self.assertEqual(json.loads(self.team("trains", "next", "--json")[1])["parked"],
-                         [{"car": "tr-0001:M", "pr": 202, "ready": True, "waits": []}])
+        self.assertEqual(
+            json.loads(self.team("trains", "next", "--json")[1])["parked"],
+            [{"car": "tr-0001:M", "pr": 202, "ready": True, "waits": []}],
+        )
         # work is needed after all: the same object comes back into the stack, its id kept
         rc, out, err = self.team("tracks", "car", "stack", "tr-0001:M")
         self.assertEqual(rc, 0, err)
@@ -437,7 +508,7 @@ class PrRefTest(TracksBase):
         stk.done("st-0002", "closed: superseded")
         stk.done("st-0003", "ушёл из стека, PR #303 открыт, НЕ слит")
         tr = self.tracks()
-        self.assertEqual([tr.ref_state("#%d" % n)[0] for n in (301, 302, 303, 304)], [True, False, False, False])
+        self.assertEqual([tr.ref_state("#%d" % n)[0] for n in (301, 302, 303, 304)], [True, False, False, False])  # noqa: UP031
         a = tr.add("Т")
         tr.car_add(a["id"], "x", pr=304, status="merged")
         self.assertTrue(self.tracks().ref_state("#304")[0])
@@ -477,9 +548,8 @@ class CarNotesTest(TracksBase):
 
 
 class CarMoveTest(TracksBase):
-
     def setUp(self):
-        super(CarMoveTest, self).setUp()
+        super().setUp()
         tr = self.tracks()
         a = tr.add("Каталог")
         tr.car_add(a["id"], "a", size="S")
@@ -561,14 +631,14 @@ class CarMoveTest(TracksBase):
         self.assertEqual(self.trains().get("katalog")["cars"][1], "tr-0002:1")
 
     def test_a_new_name_on_its_own_track_and_back(self):
-        rc, out, err = self.team("tracks", "car", "move", "tr-0001:2", "--n", "c7")
+        rc, out, err = self.team("tracks", "car", "move", "tr-0001:2", "--n", "c7")  # noqa: RUF059
         self.assertEqual(rc, 0, err)
         tr = self.tracks()
         self.assertEqual([x["n"] for x in tr.get("tr-0001")["cars"]], ["0", "1", "c7"])  # its place kept
         self.assertEqual(tr.car("tr-0001:2")[1]["n"], "c7")
         self.assertEqual(self.trains().get("katalog")["cars"], ["tr-0001:0", "tr-0001:1", "tr-0001:c7"])
         tr.car_add("tr-0001", "d", after=["c7"])
-        rc, out, err = self.team("tracks", "car", "move", "tr-0001:c7", "--n", "2", "--at", "1")
+        rc, _out, err = self.team("tracks", "car", "move", "tr-0001:c7", "--n", "2", "--at", "1")
         self.assertEqual(rc, 0, err)
         tr = self.tracks()
         t = tr.get("tr-0001")
@@ -599,15 +669,18 @@ class CarMoveTest(TracksBase):
         rc, out, err = self.team("tracks", "car", "move", "tr-0001:1", "--to", "tr-0002", "--n", "0")
         self.assertEqual(rc, 1)
         self.assertIn("номер занят: tr-0002:0 — x (ждёт); свободный номер — --n 1", err)
-        rc, out, err = self.team("tracks", "car", "move", "tr-0001:1", "--to", "tr-0001")
+        rc, out, err = self.team("tracks", "car", "move", "tr-0001:1", "--to", "tr-0001")  # noqa: RUF059
         self.assertIn("tr-0001:1 stays where it is", err)
         self.assertEqual(self.team("tracks", "car", "move", "tr-0001:1")[0], 1)  # neither --at nor --to/--n
         from depot2.merge import FILE, MergeQueue
         from depot2.store import write_json
-        write_json(self.t.state.path(FILE), {"next": 2, "entries": [
-            {"id": "mq-0001", "pr": 302, "car": "tr-0001:1", "st": None, "status": "stopped"}]})
+
+        write_json(
+            self.t.state.path(FILE),
+            {"next": 2, "entries": [{"id": "mq-0001", "pr": 302, "car": "tr-0001:1", "st": None, "status": "stopped"}]},
+        )
         self.assertEqual(len(MergeQueue(self.t.state).entries(open_only=True)), 1)
-        rc, out, err = self.team("tracks", "car", "move", "tr-0001:1", "--to", "tr-0002", "--n", "9")
+        rc, _out, err = self.team("tracks", "car", "move", "tr-0001:1", "--to", "tr-0002", "--n", "9")
         self.assertIn("tr-0001:1 не переносится: его PR #302 в мердж-очереди (mq-0001)", err)
         self.assertNotIn("moved_out", self.tracks().get("tr-0001"))  # nothing written
 
@@ -629,8 +702,11 @@ class CarMoveTest(TracksBase):
         self.assertNotIn("warning", out)
         rc, out, err = self.team("tracks", "car", "set", "tr-0001:0", "--note", "после выкатки")
         self.assertEqual(rc, 0, err)
-        self.assertIn("warning: tr-0001:0 «a» — слит, этап «прибыл»: запись идёт в закрытый вагон; новый вагон — "
-                      "depot2 tracks car add tr-0001 --title …", out)
+        self.assertIn(
+            "warning: tr-0001:0 «a» — слит, этап «прибыл»: запись идёт в закрытый вагон; новый вагон — "
+            "depot2 tracks car add tr-0001 --title …",
+            out,
+        )
         self.assertRegex(self.tracks().car("tr-0001:0")[1]["notes"][-1], r"после выкатки$")  # written all the same
         tr = self.tracks()
         tr.car_set("tr-0001:2", status="dropped")

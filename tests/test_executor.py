@@ -3,6 +3,7 @@ import os
 import tempfile
 import time
 import unittest
+from pathlib import Path
 
 from helpers import FAKE, slurp
 
@@ -14,11 +15,15 @@ from depot2.executors.cli_agent import build_argv, run_call
 class RunnerTest(unittest.TestCase):
     def setUp(self):
         self.dir = tempfile.mkdtemp(prefix="team-cli-")
-        self.sys_path = os.path.join(self.dir, "system.md")
-        with open(self.sys_path, "w") as f:
+        self.sys_path = str(Path(self.dir, "system.md"))
+        with Path(self.sys_path).open("w") as f:
             f.write("rules")
-        self.schema = {"type": "object", "properties": {"x": {"type": "integer"}},
-                       "required": ["x"], "additionalProperties": False}
+        self.schema = {
+            "type": "object",
+            "properties": {"x": {"type": "integer"}},
+            "required": ["x"],
+            "additionalProperties": False,
+        }
         os.environ["FAKE_STRUCTURED"] = json.dumps({"x": 1})
 
     def tearDown(self):
@@ -26,9 +31,17 @@ class RunnerTest(unittest.TestCase):
             os.environ.pop(k, None)
 
     def spec(self, **kw):
-        base = dict(call_id="t/builder-r1", model="fake-model-1", effort="low",
-                    system_path=self.sys_path, user="hello", schema=self.schema,
-                    timeout_s=20, cwd=self.dir, raw_path=os.path.join(self.dir, "raw.jsonl"))
+        base = {
+            "call_id": "t/builder-r1",
+            "model": "fake-model-1",
+            "effort": "low",
+            "system_path": self.sys_path,
+            "user": "hello",
+            "schema": self.schema,
+            "timeout_s": 20,
+            "cwd": self.dir,
+            "raw_path": str(Path(self.dir, "raw.jsonl")),
+        }
         base.update(kw)
         return CallSpec(**base)
 
@@ -43,7 +56,7 @@ class RunnerTest(unittest.TestCase):
         self.assertEqual(res["usage"]["cache_read"], 900)
         self.assertEqual(res["utilization"], 0.25)
         self.assertEqual(res["tool_turns"], 0)  # StructuredOutput is not a tool turn
-        self.assertTrue(os.path.getsize(os.path.join(self.dir, "raw.jsonl")) > 0)
+        self.assertTrue(Path(self.dir, "raw.jsonl").stat().st_size > 0)
 
     def test_turn_cap_kills_the_process(self):
         t0 = time.monotonic()
@@ -102,15 +115,21 @@ class RunnerTest(unittest.TestCase):
         self.assertIn("schema", str(cm.exception))
 
     def test_flags_and_environment(self):
-        argv_out = os.path.join(self.dir, "argv.json")
+        argv_out = str(Path(self.dir, "argv.json"))
         os.environ["FAKE_ARGV"] = argv_out
         os.environ["CLAUDE_CODE_SESSION_ID"] = "parent-session"
         os.environ["ANTHROPIC_API_KEY"] = "must-not-leak"
         self.run_fake("ok")
         got = json.loads(slurp(argv_out))
         argv = got["argv"]
-        for flag in ("-p", "--safe-mode", "--restricted", "--strict-mcp-config", "--no-session-persistence",
-                     "--disable-slash-commands"):
+        for flag in (
+            "-p",
+            "--safe-mode",
+            "--restricted",
+            "--strict-mcp-config",
+            "--no-session-persistence",
+            "--disable-slash-commands",
+        ):
             self.assertIn(flag, argv)
         self.assertEqual(argv[argv.index("--output-format") + 1], "stream-json")
         self.assertEqual(argv[argv.index("--tools") + 1], "")
@@ -121,8 +140,10 @@ class RunnerTest(unittest.TestCase):
         self.assertNotIn("ANTHROPIC_API_KEY", got["env"])
 
     def test_paid_pass_flags(self):
-        argv = build_argv(self.spec(tools=["Read", "Grep", "Glob"], max_tool_turns=6,
-                                    add_dirs=["/repo"], deny=["Read(//proc/**)"]), "claude")
+        argv = build_argv(
+            self.spec(tools=["Read", "Grep", "Glob"], max_tool_turns=6, add_dirs=["/repo"], deny=["Read(//proc/**)"]),
+            "claude",
+        )
         self.assertEqual(argv[argv.index("--tools") + 1], "Read,Grep,Glob")
         self.assertEqual(argv[-4:], ["--add-dir", "/repo", "--disallowedTools", "Read(//proc/**)"])
 

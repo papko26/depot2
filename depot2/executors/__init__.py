@@ -25,7 +25,7 @@ DEFAULT = "depot2.executors.cli_agent"
 class FatalError(RuntimeError):
     """Stop everything: auth, quota, API, or a broken runner. Never retried."""
 
-    def __init__(self, msg, result=None):
+    def __init__(self, msg, result=None) -> None:
         RuntimeError.__init__(self, msg)
         self.result = result
 
@@ -33,17 +33,32 @@ class FatalError(RuntimeError):
 class CallFailed(RuntimeError):
     """This call failed (its cap, timeout, or a bad answer). Refund it; the round goes on."""
 
-    def __init__(self, msg, result=None):
+    def __init__(self, msg, result=None) -> None:
         RuntimeError.__init__(self, msg)
         self.result = result
 
 
-class CallSpec(object):
+class CallSpec:
     """One capped call: what the executor runs and within which limits."""
 
-    def __init__(self, call_id, model, effort, system_path, user, schema, tools=(),
-                 max_tool_turns=0, budget_usd=1.0, timeout_s=300, cwd=None, add_dirs=(),
-                 deny=(), raw_path=None, budget_mtok=None):
+    def __init__(
+        self,
+        call_id,
+        model,
+        effort,
+        system_path,
+        user,
+        schema,
+        tools=(),
+        max_tool_turns=0,
+        budget_usd=1.0,
+        timeout_s=300,
+        cwd=None,
+        add_dirs=(),
+        deny=(),
+        raw_path=None,
+        budget_mtok=None,
+    ) -> None:
         self.call_id = call_id
         self.model = model
         self.effort = effort
@@ -67,7 +82,7 @@ def adapter(cfg):
     try:
         return importlib.import_module(name)
     except ImportError as e:
-        raise FatalError("executor %s: %s" % (name, e))
+        raise FatalError(f"executor {name}: {e}")  # noqa: B904
 
 
 def run_call(spec, cfg, validate=None):
@@ -93,12 +108,26 @@ def describe(res, cfg):
     u = res.get("usage") or {}
     util = res.get("utilization")
     mtok = res.get("mtok") if res.get("mtok") is not None else effort.call_mtok(res, cfg)
-    return ("%-30s %-16s %-6s %6.1fs  %s%s  %s%d tok (in %d, cache r %d w %d, out %d)  turns %s, "
-            "tool turns %d%s  %s%s" % (
-                res.get("call"), res.get("model"), res.get("effort") or "-", res.get("duration_s") or 0,
-                "≈" if res.get("usage_from_stream") or effort.by_cost_only(res) else "", effort.fmt(mtok, cfg),
-                "≈" if res.get("usage_from_stream") else "", total_tokens(u),
-                u.get("input", 0), u.get("cache_read", 0), u.get("cache_write", 0), u.get("output", 0),
-                res.get("num_turns"), res.get("tool_turns", 0),
-                ("  window %.0f%%" % (util * 100)) if util is not None else "",
-                res.get("status"), (": " + res["reason"]) if res.get("reason") else ""))
+    return (
+        "%-30s %-16s %-6s %6.1fs  %s%s  %s%d tok (in %d, cache r %d w %d, out %d)  turns %s, "  # noqa: UP031
+        "tool turns %d%s  %s%s"
+        % (
+            res.get("call"),
+            res.get("model"),
+            res.get("effort") or "-",
+            res.get("duration_s") or 0,
+            "≈" if res.get("usage_from_stream") or effort.by_cost_only(res) else "",
+            effort.fmt(mtok, cfg),
+            "≈" if res.get("usage_from_stream") else "",
+            total_tokens(u),
+            u.get("input", 0),
+            u.get("cache_read", 0),
+            u.get("cache_write", 0),
+            u.get("output", 0),
+            res.get("num_turns"),
+            res.get("tool_turns", 0),
+            ("  window %.0f%%" % (util * 100)) if util is not None else "",
+            res.get("status"),
+            (": " + res["reason"]) if res.get("reason") else "",
+        )
+    )

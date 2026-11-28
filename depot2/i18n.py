@@ -17,6 +17,8 @@ import importlib
 import os
 import re
 import string
+from collections.abc import Iterable, Iterator
+from typing import Generic, TypeVar
 
 LANGS = ("en", "ru")
 DEFAULT = "en"
@@ -30,7 +32,7 @@ _lang = [None]  # the run's language once configure() ran; None: $DEPOT2_LANG or
 
 def check_language(lang, where="language"):
     if lang not in LANGS:
-        raise ValueError("%s must be one of %s, got %r" % (where, ", ".join(LANGS), lang))
+        raise ValueError("{} must be one of {}, got {!r}".format(where, ", ".join(LANGS), lang))
     return lang
 
 
@@ -50,7 +52,7 @@ def language():
 
 def catalog(lang):
     if lang not in _catalogs:
-        _catalogs[lang] = importlib.import_module("%s.catalogs.%s" % (__package__, check_language(lang))).MESSAGES
+        _catalogs[lang] = importlib.import_module(f"{__package__}.catalogs.{check_language(lang)}").MESSAGES
     return _catalogs[lang]
 
 
@@ -61,14 +63,14 @@ def message(key, lang=None):
     if m is None and lang != DEFAULT:
         m = catalog(DEFAULT).get(key)
     if m is None:
-        raise KeyError("no message %r in the catalogs" % (key,))
+        raise KeyError(f"no message {key!r} in the catalogs")
     return m
 
 
 def pick(m, gender):
     if isinstance(m, dict):
         if gender not in GENDERS:
-            raise ValueError("gender must be f or m, got %r" % (gender,))
+            raise ValueError(f"gender must be f or m, got {gender!r}")
         return m[gender]
     return m
 
@@ -83,7 +85,7 @@ def forms(key):
     out = []
     for lang in LANGS:
         m = catalog(lang).get(key)
-        for f in (m.values() if isinstance(m, dict) else [m] if m is not None else []):
+        for f in m.values() if isinstance(m, dict) else [m] if m is not None else []:
             if f not in out:
                 out.append(f)
     return out
@@ -101,12 +103,13 @@ def _template_rx(template):
 def matches(text, key):
     """Whether a stored or typed text is the message `key` in any language (any value in its fields)."""
     text = str(text or "")
-    return any(re.fullmatch(_template_rx(f), text, re.S) for f in forms(key))
+    return any(re.fullmatch(_template_rx(f), text, re.DOTALL) for f in forms(key))
 
 
 def retell(text, *keys):
     """A stored word shown in the run's language: when `text` is one of the field-less messages `keys` in any
-    language (a default status written by an older run, a CI word), that message now; any other text as it is."""
+    language (a default status written by an older run, a CI word), that message now; any other text as it is.
+    """
     for key in keys:
         if text in forms(key) and "{" not in message(key):
             return t(key)
@@ -115,12 +118,12 @@ def retell(text, *keys):
 
 def rx(key):
     """A regex group that accepts the words `key` (an `in.` key) of every language."""
-    return "(?:%s)" % "|".join(forms(key))
+    return "(?:{})".format("|".join(forms(key)))
 
 
 def is_word(text, key):
     """Whether the typed word is one of the words `key` (an `in.` key) of any language, any case."""
-    return re.fullmatch(rx(key), " ".join(str(text or "").split()), re.I) is not None
+    return re.fullmatch(rx(key), " ".join(str(text or "").split()), re.IGNORECASE) is not None
 
 
 def fold(text):
@@ -128,29 +131,33 @@ def fold(text):
     return " ".join(str(text or "").strip().lower().replace("\u0451", "\u0435").split())
 
 
-class Labels(object):
-    """A family of messages read like a dict: Labels("stage", STAGES)[k] is t("stage." + k), in the language of
-    the moment."""
+LabelKey = TypeVar("LabelKey")
 
-    def __init__(self, prefix, keys):
+
+class Labels(Generic[LabelKey]):
+    """A family of messages read like a dict: Labels("stage", STAGES)[k] is t("stage." + k), in the language of
+    the moment.
+    """
+
+    def __init__(self, prefix: str, keys: Iterable[LabelKey]) -> None:
         self.prefix = prefix
         self._keys = tuple(keys)
 
-    def __getitem__(self, k):
+    def __getitem__(self, k: LabelKey) -> str:
         if k not in self._keys:
             raise KeyError(k)
-        return t("%s.%s" % (self.prefix, k))
+        return t(f"{self.prefix}.{k}")
 
     def get(self, k, default=None):
         return self[k] if k in self._keys else default
 
-    def __contains__(self, k):
+    def __contains__(self, k) -> bool:
         return k in self._keys
 
-    def __iter__(self):
+    def __iter__(self) -> Iterator[LabelKey]:
         return iter(self._keys)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self._keys)
 
     def keys(self):
@@ -167,7 +174,7 @@ def web_messages(lang=None):
     """The web view's messages (the `web.` keys, without the prefix), English filling what the language lacks."""
     lang = lang or language()
     out = {}
-    for src in ((DEFAULT, lang) if lang != DEFAULT else (DEFAULT,)):
+    for src in (DEFAULT, lang) if lang != DEFAULT else (DEFAULT,):
         for k, v in catalog(src).items():
             if k.startswith("web."):
                 out[k[4:]] = v

@@ -13,8 +13,10 @@ from .i18n import t
 from .ledger import Decisions
 
 V = 1
-RE_LINK = re.compile(r"(?<![\w-])(?:(tr-\d{4}:[0-9A-Za-z]+(?:-[0-9A-Za-z]+)*)|(tr-\d{4})"
-                     r"|((?:st|wl|th|td|tm|pc|bs|ord)-\d{4})|(dec-\d{6})|#(\d{1,5}))(?![\w])")
+RE_LINK = re.compile(
+    r"(?<![\w-])(?:(tr-\d{4}:[0-9A-Za-z]+(?:-[0-9A-Za-z]+)*)|(tr-\d{4})"
+    r"|((?:st|wl|th|td|tm|pc|bs|ord)-\d{4})|(dec-\d{6})|#(\d{1,5}))(?![\w])"
+)
 LINK_KINDS = ("cars", "tracks", "items", "decisions", "prs")
 
 
@@ -26,11 +28,20 @@ def who_ru(who):
 
 def links(text):
     """The ids the text names, each kind in the order they first appear, once."""
-    out = {k: [] for k in LINK_KINDS}
+    out: dict[str, list[str | int]] = {k: [] for k in LINK_KINDS}
     for m in RE_LINK.finditer(text or ""):
         car, track, item, dec, pr = m.groups()
-        kind, val = (("cars", car) if car else ("tracks", track) if track else ("items", item) if item else
-                     ("decisions", dec) if dec else ("prs", int(pr)))
+        kind, val = (
+            ("cars", car)
+            if car
+            else ("tracks", track)
+            if track
+            else ("items", item)
+            if item
+            else ("decisions", dec)
+            if dec
+            else ("prs", int(pr))
+        )
         if val not in out[kind]:
             out[kind].append(val)
     return out
@@ -38,8 +49,14 @@ def links(text):
 
 def row(rec):
     """A record as it is stored, with `date`, `who` (in the run's language) and `links`."""
-    return dict(rec, round=rec.get("round"), point=rec.get("point"), date=(rec.get("ts") or "")[:10] or None,
-                who=who_ru(rec.get("character")), links=links(rec.get("text")))
+    return dict(
+        rec,
+        round=rec.get("round"),
+        point=rec.get("point"),
+        date=(rec.get("ts") or "")[:10] or None,
+        who=who_ru(rec.get("character")),
+        links=links(rec.get("text")),
+    )
 
 
 def words(text):
@@ -68,23 +85,53 @@ def listing(state, grep=None, limit=None):
 def to_json(state, grep=None, limit=None):
     """`decisions --json`: {v, total, found, count, grep, limit, decisions}; `found` — those the filter keeps."""
     rows, found, total = listing(state, grep, limit)
-    return {"v": V, "total": total, "found": found, "count": len(rows), "grep": grep or None, "limit": limit,
-            "decisions": rows}
+    return {
+        "v": V,
+        "total": total,
+        "found": found,
+        "count": len(rows),
+        "grep": grep or None,
+        "limit": limit,
+        "decisions": rows,
+    }
 
 
 def md(state, grep=None, limit=None):
     """`decisions --md`: a list, newest first, every text whole on one line."""
     rows, found, total = listing(state, grep, limit)
-    L = [t("decisions.head_grep", n=len(rows), total=total, grep=grep, found=found) if grep else
-         t("decisions.head", n=len(rows), total=total), ""]
+    L = [
+        t("decisions.head_grep", n=len(rows), total=total, grep=grep, found=found)
+        if grep
+        else t("decisions.head", n=len(rows), total=total),
+        "",
+    ]
     for r in rows:
-        where = (" · " + (t("decisions.round_point", round=r["round"], point=r["point"]) if r.get("point") else
-                          t("decisions.round", round=r["round"])) if r.get("round") else "")
-        ln = [x for k in LINK_KINDS for x in (["#%d" % p for p in r["links"][k]] if k == "prs" else r["links"][k])
-              if x != r["id"]]
-        L.append("- **%s** · %s · %s%s — %s%s" % (r["id"], r.get("date") or "—", r["who"], where,
-                                                 " ".join((r.get("text") or "").split()),
-                                                 (" (%s)" % t("decisions.links", links=", ".join(ln))) if ln else ""))
+        where = (
+            " · "
+            + (
+                t("decisions.round_point", round=r["round"], point=r["point"])
+                if r.get("point")
+                else t("decisions.round", round=r["round"])
+            )
+            if r.get("round")
+            else ""
+        )
+        ln = [
+            x
+            for k in LINK_KINDS
+            for x in (["#%d" % p for p in r["links"][k]] if k == "prs" else r["links"][k])  # noqa: UP031
+            if x != r["id"]
+        ]
+        L.append(
+            "- **{}** · {} · {}{} — {}{}".format(
+                r["id"],
+                r.get("date") or "—",
+                r["who"],
+                where,
+                " ".join((r.get("text") or "").split()),
+                (" ({})".format(t("decisions.links", links=", ".join(ln)))) if ln else "",
+            )
+        )
     if not rows:
         L.append(t("decisions.empty"))
     L.append("")

@@ -1,10 +1,17 @@
 import json
-import os
 import unittest
+from pathlib import Path
 
 from helpers import TempState
 
-from depot2.ledger import AUTO_REASON, Decisions, Ledger, LedgerError, OverdraftError, Pending
+from depot2.ledger import (
+    AUTO_REASON,
+    Decisions,
+    Ledger,
+    LedgerError,
+    OverdraftError,
+    Pending,
+)
 from depot2.store import WriteCheckError, append_jsonl
 
 
@@ -28,8 +35,7 @@ class LedgerTest(unittest.TestCase):
             self.led.stake("builder", 1, "r1", "p2")
         self.assertEqual(self.led.balance("builder"), 0)
         # Nothing was written by the refused debit.
-        self.assertEqual([e["type"] for e in self.led.entries() if e["character"] == "builder"],
-                         ["seed", "stake"])
+        self.assertEqual([e["type"] for e in self.led.entries() if e["character"] == "builder"], ["seed", "stake"])
 
     def test_signs_are_enforced(self):
         with self.assertRaises(LedgerError):
@@ -56,6 +62,7 @@ class LedgerTest(unittest.TestCase):
 
     def test_a_fine_gates_the_reflection(self):
         from depot2.reflect import changes_since, owner_facts
+
         self.led.fine("painter", 7, "требовала обратного", round_id="r1", point="Q7")
         owner, _ = changes_since(self.t.state, "painter")
         self.assertEqual([e["type"] for e in owner], ["fine"])
@@ -67,9 +74,21 @@ class LedgerTest(unittest.TestCase):
         for typ, amount in (("think", -1), ("think_refund", 1)):
             with self.assertRaises(LedgerError):
                 self.led._append(typ, "painter", amount)
-        append_jsonl(self.led.path, {"seq": 6, "id": "tx-000006", "ts": "2015-11-03T10:00:00+02:00",
-                                     "type": "think", "character": "painter", "amount": -2, "balance_after": 3,
-                                     "round": "r0", "call": "r0/painter-deep", "level": 2})
+        append_jsonl(
+            self.led.path,
+            {
+                "seq": 6,
+                "id": "tx-000006",
+                "ts": "2015-11-03T10:00:00+02:00",
+                "type": "think",
+                "character": "painter",
+                "amount": -2,
+                "balance_after": 3,
+                "round": "r0",
+                "call": "r0/painter-deep",
+                "level": 2,
+            },
+        )
         self.assertEqual(self.led.balance("painter"), 3)
         self.assertEqual(self.led.stake("painter", 1, "r1", "p1")["balance_after"], 2)
 
@@ -79,9 +98,14 @@ class LedgerTest(unittest.TestCase):
         c = self.led.stake("builder", 3, "r1", "p1")
         other = self.led.stake("builder", 1, "r0", "p9")  # another round's stake stays open
         got = self.led.auto_refund_round("r1")
-        self.assertEqual([(t["type"], t["ref"], t["amount"], t["point"], t["reason"]) for t in got],
-                         [("auto_refund", a["id"], 2, "p1", AUTO_REASON), ("auto_refund", b["id"], 1, "p2", AUTO_REASON),
-                          ("auto_refund", c["id"], 3, "p1", AUTO_REASON)])
+        self.assertEqual(
+            [(t["type"], t["ref"], t["amount"], t["point"], t["reason"]) for t in got],
+            [
+                ("auto_refund", a["id"], 2, "p1", AUTO_REASON),
+                ("auto_refund", b["id"], 1, "p2", AUTO_REASON),
+                ("auto_refund", c["id"], 3, "p1", AUTO_REASON),
+            ],
+        )
         self.assertEqual((self.led.balance("painter"), self.led.balance("builder")), (5, 3))
         self.assertEqual([e["id"] for e in self.led.open_stakes()], [other["id"]])
         self.assertEqual(self.led.auto_refund_round("r1"), [])  # no stake is closed twice
@@ -104,6 +128,7 @@ class LedgerTest(unittest.TestCase):
 
     def test_an_auto_refund_is_not_an_owner_action(self):
         from depot2.reflect import changes_since
+
         self.led.stake("painter", 2, "r1", "p1")
         self.led.auto_refund_round("r1")
         self.assertEqual(changes_since(self.t.state, "painter"), ([], []))
@@ -139,7 +164,7 @@ class LedgerTest(unittest.TestCase):
         self.assertEqual(tx["seq"], self.led.last_seq())
 
     def test_a_corrupt_ledger_is_an_error_not_a_skip(self):
-        with open(self.led.path, "a") as f:
+        with Path(self.led.path).open("a") as f:
             f.write('{"broken": \n')
         with self.assertRaises(ValueError):
             self.led.balances()
@@ -147,7 +172,7 @@ class LedgerTest(unittest.TestCase):
     def test_balance_after_is_recorded(self):
         tx = self.led.stake("painter", 2, "r1", "p1")
         self.assertEqual(tx["balance_after"], 3)
-        with open(self.led.path) as f:
+        with Path(self.led.path).open() as f:
             last = json.loads(f.read().splitlines()[-1])
         self.assertEqual(last, tx)
 
@@ -174,9 +199,9 @@ class WriteCheckTest(unittest.TestCase):
     def test_append_rejects_newlines_in_records(self):
         t = TempState()
         try:
-            path = os.path.join(t.dir, "y.jsonl")
+            path = str(Path(t.dir, "y.jsonl"))
             append_jsonl(path, {"text": "a\nb"})  # json escapes \n, so this is one line
-            with open(path) as f:
+            with Path(path).open() as f:
                 self.assertEqual(len(f.read().splitlines()), 1)
         finally:
             t.close()

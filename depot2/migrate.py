@@ -4,13 +4,21 @@ Each step reads the data of one schema and writes the next, with a history row t
 has nothing to move says so. The web view never migrates: it answers 503 until the next command does.
 """
 
-import os
+from pathlib import Path
 
-from . import i18n
+from . import i18n, stages
 from . import priority as pri
-from . import stages
 from .i18n import t
-from .store import append_jsonl, atomic_write, now_iso, read_json, read_jsonl, read_text, write_json, write_new
+from .store import (
+    append_jsonl,
+    atomic_write,
+    now_iso,
+    read_json,
+    read_jsonl,
+    read_text,
+    write_json,
+    write_new,
+)
 from .tracks import CAR_BUSY, CAR_DONE, SCHEMA
 
 ARCHIVE_HISTORY = "trains-history-v1.jsonl"
@@ -20,9 +28,47 @@ PLANNING_FIELDS = ("status", "start", "slots", "started", "finished")
 # Cyrillic → latin for the names (a plain table: the names are handles, not spelling). The keys: the Russian lower-case
 # alphabet in its order (a..ye, yo, zh..ya), written as code points.
 CYRILLIC_ABC = "".join(chr(c) for c in range(0x430, 0x436)) + chr(0x451) + "".join(chr(c) for c in range(0x436, 0x450))
-TRANSLIT = dict(zip(CYRILLIC_ABC,
-                    ["a", "b", "v", "g", "d", "e", "yo", "zh", "z", "i", "y", "k", "l", "m", "n", "o", "p", "r", "s",
-                     "t", "u", "f", "kh", "ts", "ch", "sh", "shch", "", "y", "", "e", "yu", "ya"]))
+TRANSLIT = dict(
+    zip(
+        CYRILLIC_ABC,
+        [
+            "a",
+            "b",
+            "v",
+            "g",
+            "d",
+            "e",
+            "yo",
+            "zh",
+            "z",
+            "i",
+            "y",
+            "k",
+            "l",
+            "m",
+            "n",
+            "o",
+            "p",
+            "r",
+            "s",
+            "t",
+            "u",
+            "f",
+            "kh",
+            "ts",
+            "ch",
+            "sh",
+            "shch",
+            "",
+            "y",
+            "",
+            "e",
+            "yu",
+            "ya",
+        ],
+        strict=False,
+    )
+)
 NAME_WORDS = 3
 OLD_STATUS = i18n.Labels("migrate.old_status", ("paused", "done"))  # a schema-1 train's status, in the step's lines
 NAME_CHARS = 32
@@ -60,7 +106,7 @@ def slug(title):
 def unique(name, taken):
     n, i = name, 2
     while n in taken:
-        n = "%s-%d" % (name, i)
+        n = "%s-%d" % (name, i)  # noqa: UP031
         i += 1
     taken.add(n)
     return n
@@ -69,16 +115,20 @@ def unique(name, taken):
 def has_build(c):
     """A car with a build or a PR: in work or a PR, a PR number, or a stage past the sketch."""
     s = c.get("stage")
-    return c["status"] in CAR_BUSY or bool(c.get("pr")) or (bool(s) and s not in stages.PLANNING and
-                                                              s not in stages.TERMINAL)
+    return (
+        c["status"] in CAR_BUSY
+        or bool(c.get("pr"))
+        or (bool(s) and s not in stages.PLANNING and s not in stages.TERMINAL)
+    )
 
 
 def plan(old, names=None):
     """(tracks.json, trains.json, the new trains' history rows, the migration row, lines) from an old trains.json.
-    names: {tr-NNNN: name} to use instead of the slugs."""
+    names: {tr-NNNN: name} to use instead of the slugs.
+    """
     names = names or {}
     tracks, trains, rows, skipped = [], [], [], []
-    taken = set()
+    taken: set[str] = set()
     planning = {}
     now = now_iso()
     for old_t in old["trains"]:
@@ -87,8 +137,14 @@ def plan(old, names=None):
         planning[old_t["id"]] = {k: old_t.get(k) for k in PLANNING_FIELDS}
         open_ = [c for c in old_t["cars"] if c["status"] not in CAR_DONE]
         if old_t.get("status") not in ("running", "waiting"):
-            skipped.append(t("migrate.skip_status", id=old_t["id"], title=old_t["title"],
-                             status=OLD_STATUS.get(old_t.get("status"), old_t.get("status"))))
+            skipped.append(
+                t(
+                    "migrate.skip_status",
+                    id=old_t["id"],
+                    title=old_t["title"],
+                    status=OLD_STATUS.get(old_t.get("status"), old_t.get("status")),
+                )
+            )
             continue
         if not open_:
             skipped.append(t("migrate.skip_no_open", id=old_t["id"], title=old_t["title"]))
@@ -96,29 +152,69 @@ def plan(old, names=None):
         name = unique(names.get(old_t["id"]) or slug(old_t["title"]), taken)
         state = "impl" if any(has_build(c) for c in open_) else "design"
         st = old_t.get("start") or {}
-        tn = {"name": name, "title": old_t["title"], "state": state,
-              "cars": ["%s:%s" % (old_t["id"], c["n"]) for c in open_],
-              "start": {"after": list(st.get("after") or []), "not_before": st.get("not_before"),
-                        "owner": bool(st.get("owner")), "note": st.get("note")},
-              "slots": old_t.get("slots") or {"policy": "max", "n": 1}, "est_mtok": None, "notes": [],
-              "added": now, "started": old_t.get("started") if state == "impl" else None, "finished": None,
-              "states": [{"state": state, "at": now, "by": "migrate",
-                          "why": t("migrate.why_from_train", id=old_t["id"], status=old_t.get("status"))}]}
+        tn = {
+            "name": name,
+            "title": old_t["title"],
+            "state": state,
+            "cars": ["{}:{}".format(old_t["id"], c["n"]) for c in open_],
+            "start": {
+                "after": list(st.get("after") or []),
+                "not_before": st.get("not_before"),
+                "owner": bool(st.get("owner")),
+                "note": st.get("note"),
+            },
+            "slots": old_t.get("slots") or {"policy": "max", "n": 1},
+            "est_mtok": None,
+            "notes": [],
+            "added": now,
+            "started": old_t.get("started") if state == "impl" else None,
+            "finished": None,
+            "states": [
+                {
+                    "state": state,
+                    "at": now,
+                    "by": "migrate",
+                    "why": t("migrate.why_from_train", id=old_t["id"], status=old_t.get("status")),
+                }
+            ],
+        }
         trains.append(tn)
-        rows.append({"ts": now, "event": "migrate", "train": name, "from": old_t["id"], "state": state,
-                     "cars": tn["cars"]})
+        rows.append(
+            {"ts": now, "event": "migrate", "train": name, "from": old_t["id"], "state": state, "cars": tn["cars"]}
+        )
     track_data = {"schema": 2, "next": old.get("next", len(tracks) + 1), "tracks": tracks}
     train_data = {"schema": 2, "trains": trains}
-    mig = {"ts": now, "event": "migrate", "track": None, "schema": 2, "from": "trains.json (schema 1)",
-           "archive": [ARCHIVE_TRAINS, ARCHIVE_HISTORY], "tracks": len(tracks),
-           "cars": sum(len(trk["cars"]) for trk in tracks), "trains": {tn["name"]: tn["cars"][0].split(":")[0]
-                                                                   for tn in trains}, "planning": planning}
+    mig = {
+        "ts": now,
+        "event": "migrate",
+        "track": None,
+        "schema": 2,
+        "from": "trains.json (schema 1)",
+        "archive": [ARCHIVE_TRAINS, ARCHIVE_HISTORY],
+        "tracks": len(tracks),
+        "cars": sum(len(trk["cars"]) for trk in tracks),
+        "trains": {tn["name"]: tn["cars"][0].split(":")[0] for tn in trains},
+        "planning": planning,
+    }
     from .trains import STATE_RU
-    L = [t("migrate.head_2"),
-         t("migrate.tracks_count", tracks=len(tracks), trains=len(old["trains"]), cars=mig["cars"]),
-         t("migrate.trains_count", n=len(trains))]
-    L += ["  " + t("migrate.train_line", name=tn["name"], track=tn["cars"][0].split(":")[0], title=tn["title"],
-                   state=STATE_RU[tn["state"]], cars=len(tn["cars"])) for tn in trains]
+
+    L = [
+        t("migrate.head_2"),
+        t("migrate.tracks_count", tracks=len(tracks), trains=len(old["trains"]), cars=mig["cars"]),
+        t("migrate.trains_count", n=len(trains)),
+    ]
+    L += [
+        "  "
+        + t(
+            "migrate.train_line",
+            name=tn["name"],
+            track=tn["cars"][0].split(":")[0],
+            title=tn["title"],
+            state=STATE_RU[tn["state"]],
+            cars=len(tn["cars"]),
+        )
+        for tn in trains
+    ]
     if skipped:
         L.append(t("migrate.no_train", n=len(skipped)))
         L += ["  " + s for s in skipped]
@@ -127,30 +223,36 @@ def plan(old, names=None):
 
 def cars_of(tracks_or_trains):
     """{ref: (status, stage, pr)} over the tracks (or an old trains.json's trains)."""
-    return {"%s:%s" % (t["id"], c["n"]): (c["status"], c.get("stage"), c.get("pr"))
-            for t in tracks_or_trains for c in t["cars"]}
+    return {
+        "{}:{}".format(t["id"], c["n"]): (c["status"], c.get("stage"), c.get("pr"))
+        for t in tracks_or_trains
+        for c in t["cars"]
+    }
 
 
 def verify(old, track_data, train_data):
     """The tracks hold every car as it was (status, stage, PR); every train's car is an open car of a track, in one
-    train at most."""
+    train at most.
+    """
     before, after = cars_of(old["trains"]), cars_of(track_data["tracks"])
     if before != after:
         lost = sorted(set(before) - set(after))
         odd = sorted(r for r in set(before) & set(after) if before[r] != after[r])
-        raise MigrateError("cars differ after the migration: lost %s, changed %s" % (lost[:5], odd[:5]))
+        raise MigrateError(f"cars differ after the migration: lost {lost[:5]}, changed {odd[:5]}")
     seen = set()
     for tn in train_data["trains"]:
         for r in tn["cars"]:
             if r not in after or after[r][0] in CAR_DONE or r in seen:
-                raise MigrateError("train %s: car %s is not an open car of a track, or rides twice" % (tn["name"], r))
+                raise MigrateError(
+                    "train {}: car {} is not an open car of a track, or rides twice".format(tn["name"], r)
+                )
             seen.add(r)
 
 
 def history_rows(state):
     """The old history (the archive when an earlier run made it), each row with `train` read as `track`."""
     arch = state.path(ARCHIVE_HISTORY)
-    src = arch if os.path.exists(arch) else state.path("trains-history.jsonl")
+    src = arch if Path(arch).exists() else state.path("trains-history.jsonl")
     out = []
     for h in read_jsonl(src):
         h = dict(h)
@@ -167,10 +269,13 @@ def run(state, cfg, dry_run=False, names=None):
     if v is None or v >= SCHEMA:
         return [t("migrate.nothing", v=v) if v is not None else t("migrate.nothing_no_data")], 0
     from .merge import lock_held
+
     pid = lock_held(state)
     if pid:
-        raise MigrateError("the merge queue is riding (pid %s): its old code would write the old trains.json; "
-                           "stop it (or let it finish), then migrate" % pid)
+        raise MigrateError(
+            f"the merge queue is riding (pid {pid}): its old code would write the old trains.json; "
+            "stop it (or let it finish), then migrate"
+        )
     L = []
     if v < 2:
         L += step_tracks_trains(state, dry_run, names)
@@ -179,14 +284,14 @@ def run(state, cfg, dry_run=False, names=None):
     if v < 4:
         L += step_priority(state, dry_run, planned=dry_run and v < 2)
     L += step_arrivals(state, cfg, dry_run, planned=dry_run and v < 4)
-    return ([t("migrate.dry_run")] + L if dry_run else L), 1
+    return ([t("migrate.dry_run"), *L] if dry_run else L), 1
 
 
 def step_tracks_trains(state, dry_run=False, names=None):
     """Schema 1 → 2: the old trains become the tracks and the trains (the module's head)."""
     old = read_json(state.path("trains.json"))
     arch = state.path(ARCHIVE_TRAINS)
-    if os.path.exists(arch):  # a run cut short: the trains.json of before is the archive's
+    if Path(arch).exists():  # a run cut short: the trains.json of before is the archive's
         old = read_json(arch)
     track_data, train_data, rows, mig, L = plan(old, names)
     verify(old, track_data, train_data)
@@ -194,14 +299,15 @@ def step_tracks_trains(state, dry_run=False, names=None):
     L.append(t("migrate.history", n=len(hist), hist=ARCHIVE_HISTORY, trains=ARCHIVE_TRAINS))
     if dry_run:
         return L
-    if not os.path.exists(arch):
+    if not Path(arch).exists():
         write_new(arch, read_text(state.path("trains.json")))
         state.touch(arch)
     harch = state.path(ARCHIVE_HISTORY)
-    if not os.path.exists(harch) and os.path.exists(state.path("trains-history.jsonl")):
+    if not Path(harch).exists() and Path(state.path("trains-history.jsonl")).exists():
         write_new(harch, read_text(state.path("trains-history.jsonl")))
         state.touch(harch)
     from .store import dumps_line
+
     atomic_write(state.path("tracks-history.jsonl"), "".join(dumps_line(h) + "\n" for h in hist))
     append_jsonl(state.path("tracks-history.jsonl"), mig)
     write_json(state.path("tracks.json"), track_data)
@@ -213,17 +319,23 @@ def step_tracks_trains(state, dry_run=False, names=None):
 
 
 def legacy_words(stack_data):
-    return {o["id"]: ((o.get("dod") or {}).get("legacy_check") or {}).get("state")
-            for o in (stack_data or {}).get("objects") or [] if "legacy_check" in (o.get("dod") or {})}
+    return {
+        o["id"]: ((o.get("dod") or {}).get("legacy_check") or {}).get("state")
+        for o in (stack_data or {}).get("objects") or []
+        if "legacy_check" in (o.get("dod") or {})
+    }
 
 
 def step_marks(state, dry_run=False, planned=False):
     stack_data = read_json(state.path("stack.json"))
     words = legacy_words(stack_data)
-    L = [t("migrate.head_3"),
-         t("migrate.legacy_words", words=", ".join("%s (%s)" % (k, v) for k, v in sorted(words.items())))
-         if words else t("migrate.legacy_none"),
-         t("migrate.marks_empty")]
+    L = [
+        t("migrate.head_3"),
+        t("migrate.legacy_words", words=", ".join(f"{k} ({v})" for k, v in sorted(words.items())))
+        if words
+        else t("migrate.legacy_none"),
+        t("migrate.marks_empty"),
+    ]
     if dry_run:
         return L
     if words:
@@ -232,9 +344,17 @@ def step_marks(state, dry_run=False, planned=False):
                 o["dod"].pop("legacy_check")
         write_json(state.path("stack.json"), stack_data)
         state.touch(state.path("stack.json"))
-    append_jsonl(state.path("tracks-history.jsonl"), {
-        "ts": now_iso(), "event": "migrate", "track": None, "schema": 3, "from": "schema 2",
-        "legacy_check": words or None})
+    append_jsonl(
+        state.path("tracks-history.jsonl"),
+        {
+            "ts": now_iso(),
+            "event": "migrate",
+            "track": None,
+            "schema": 3,
+            "from": "schema 2",
+            "legacy_check": words or None,
+        },
+    )
     for f in ("tracks.json", "trains.json"):  # the gate flips last
         d = read_json(state.path(f))
         if d is not None:
@@ -252,6 +372,7 @@ STACK_FILES = ("stack.json", "team-stack.json")
 
 def queue_priority(entries):
     from .queues import note_prio
+
     out = {}
     for e in entries:
         if "priority" in e and "prio" not in e:
@@ -264,8 +385,9 @@ def queue_priority(entries):
 
 
 def step_priority(state, dry_run=False, planned=False):
-    """Schema 3 → 4: the priority 1–10 (the module's head). planned: a dry run of the steps before came first (the
-    tracks and the trains on the disk are not today's yet)."""
+    """Schema 3 → 4: the priority 1-10 (the module's head). planned: a dry run of the steps before came first (the
+    tracks and the trains on the disk are not today's yet).
+    """
     L = [t("migrate.head_4")]
     rows, counts = [], {}
     for name in QUEUE_FILES:
@@ -275,25 +397,42 @@ def step_priority(state, dry_run=False, planned=False):
         counts[name] = len(got)
         notes = sorted(k for k, v in got.items() if v[1])
         by = pri.counts([{"priority": v[2]} for v in got.values()])
-        L.append(t("migrate.queue_prio", queue=QUEUE_WORDS[name], n=len(got)) +
-                 (": " + pri.counts_cell(by) if got else "") +
-                 ("; " + t("migrate.prio_notes", ids=", ".join(notes)) if notes else ""))
+        L.append(
+            t("migrate.queue_prio", queue=QUEUE_WORDS[name], n=len(got))
+            + (": " + pri.counts_cell(by) if got else "")
+            + ("; " + t("migrate.prio_notes", ids=", ".join(notes)) if notes else "")
+        )
         if got and not dry_run:
             for e in d["entries"]:
                 if e["id"] in got:
                     e["priority"] = got[e["id"]][2]
                     e.pop("prio", None)
-            rows.append((path, d, state.path(name + "-history.jsonl"), {
-                "ts": now_iso(), "event": "migrate_priority", "entry": None, "schema": 4,
-                "prio": {k: v[0] for k, v in got.items()}, "from_notes": notes or None}))
+            rows.append(
+                (
+                    path,
+                    d,
+                    state.path(name + "-history.jsonl"),
+                    {
+                        "ts": now_iso(),
+                        "event": "migrate_priority",
+                        "entry": None,
+                        "schema": 4,
+                        "prio": {k: v[0] for k, v in got.items()},
+                        "from_notes": notes or None,
+                    },
+                )
+            )
     for path, d, hpath, row in rows:  # the queues first: a run cut short finds them done and goes on
         write_json(path, d)
         append_jsonl(hpath, row)
         state.touch(path)
         state.touch(hpath)
     tracks = read_json(state.path("tracks.json")) if not planned else None
-    cars = {"%s:%s" % (trk["id"], c["n"]): c
-            for trk in (tracks or {}).get("tracks") or [] for c in trk.get("cars") or []}
+    cars = {
+        "{}:{}".format(trk["id"], c["n"]): c
+        for trk in (tracks or {}).get("tracks") or []
+        for c in trk.get("cars") or []
+    }
     by_st = {c["st"]: c for c in cars.values() if c.get("st")}
     for f in STACK_FILES:
         d = read_json(state.path(f))
@@ -311,16 +450,31 @@ def step_priority(state, dry_run=False, planned=False):
         miss_c = [c for c in cars.values() if "priority" not in c]
         miss_t = [tn for tn in trains.get("trains") or [] if "priority" not in tn]
         counts.update(cars=len(miss_c), trains=len(miss_t))
-        L.append(t("migrate.prio_default", trains=len(miss_t), cars=len(miss_c), stack=counts["stack"],
-                   tstack=counts["team-stack"]))
+        L.append(
+            t(
+                "migrate.prio_default",
+                trains=len(miss_t),
+                cars=len(miss_c),
+                stack=counts["stack"],
+                tstack=counts["team-stack"],
+            )
+        )
         if not dry_run:
             for c in miss_c:
                 c["priority"] = pri.DEFAULT
             for tn in miss_t:
                 tn["priority"] = pri.DEFAULT
-            append_jsonl(state.path("tracks-history.jsonl"), {
-                "ts": now_iso(), "event": "migrate", "track": None, "schema": 4, "from": "schema 3",
-                "priority": counts})
+            append_jsonl(
+                state.path("tracks-history.jsonl"),
+                {
+                    "ts": now_iso(),
+                    "event": "migrate",
+                    "track": None,
+                    "schema": 4,
+                    "from": "schema 3",
+                    "priority": counts,
+                },
+            )
             for f, d in (("tracks.json", tracks), ("trains.json", trains)):  # the gate flips last
                 if d:
                     d["schema"] = 4
@@ -337,6 +491,7 @@ def arrivals_by():
 
 def step_arrivals(state, cfg, dry_run=False, planned=False):
     from .merge import epoch, hhmm
+
     L = [t("migrate.head_5")]
     if planned:
         L.append(t("migrate.arr_planned"))
@@ -362,9 +517,18 @@ def step_arrivals(state, cfg, dry_run=False, planned=False):
         L.append(t("migrate.arr_left", n=len(left), refs=", ".join(left)))
     if dry_run:
         return L
-    append_jsonl(state.path("tracks-history.jsonl"), {
-        "ts": now_iso(), "event": "migrate", "track": None, "schema": 5, "from": "schema 4",
-        "arrived": moved or None, "last_ride": rides[-1][1]["id"] if rides else None})
+    append_jsonl(
+        state.path("tracks-history.jsonl"),
+        {
+            "ts": now_iso(),
+            "event": "migrate",
+            "track": None,
+            "schema": 5,
+            "from": "schema 4",
+            "arrived": moved or None,
+            "last_ride": rides[-1][1]["id"] if rides else None,
+        },
+    )
     for f in ("tracks.json", "trains.json"):  # the gate flips last
         d = read_json(state.path(f))
         if d is not None:
@@ -377,10 +541,10 @@ def step_arrivals(state, cfg, dry_run=False, planned=False):
 
 def clip_title(text, n=60):
     t = " ".join((text or "").split())
-    return t if len(t) <= n else t[:n - 1] + "…"
+    return t if len(t) <= n else t[: n - 1] + "…"
 
 
 def _rolling(state, cfg):
     from .board import Board
-    return [it for it in Board(state, cfg).items(with_gates=False) if it["stage"] == "rolling"]
 
+    return [it for it in Board(state, cfg).items(with_gates=False) if it["stage"] == "rolling"]

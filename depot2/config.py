@@ -10,8 +10,10 @@ import json
 import os
 import re
 import sys
+from pathlib import Path
 
 from . import effort
+from .store import expand_user_path
 
 DEFAULT_STATE = "~/.local/share/depot2/depot"  # or $DEPOT2_STATE, or --state
 
@@ -45,11 +47,11 @@ DEFAULTS = {
     # removed after the round; for `--pr N` it is that PR's head), plus read_dirs. Round 1 and
     # the debate get the same --add-dir list.
     "deep_repo": {
-        "clone": None,               # the project's clone; null: the rounds read no repo
+        "clone": None,  # the project's clone; null: the rounds read no repo
         "ref": "origin/main",
         "fetch": True,
     },
-    "read_dirs": [],                 # more dirs every round pass may read
+    "read_dirs": [],  # more dirs every round pass may read
     "reflect": {
         "budget_mtok": 0.28,
         "timeout_s": 900,
@@ -62,14 +64,14 @@ DEFAULTS = {
         "budget_mtok": 1.8,
         "max_calls": 16,
         "stop_at_utilization": 0.90,
-        "proposals_max": 3,           # new points a character may raise (review, discuss)
+        "proposals_max": 3,  # new points a character may raise (review, discuss)
         "comment_max_chars": 600,
         "free_comment_max_chars": 140,  # a comment without a stake is one short line
         "rebuttals_max": 2,
     },
     "bundle": {
         "max_chars": 120000,
-        "decisions_glob": None,        # the latest file matching it goes into every bundle
+        "decisions_glob": None,  # the latest file matching it goes into every bundle
         "decisions_max_chars": 16000,
         "context_max_chars": 30000,
         "merged_pr_limit": 30,
@@ -85,24 +87,27 @@ DEFAULTS = {
         "fee_other": 5,
         "questions_min": 3,
         "questions_max": 5,
-        "topics_dir": None,           # null: <state>/topics
+        "topics_dir": None,  # null: <state>/topics
     },
     "orders": {
         "price": 5,
         "moved_bonus": 1,
-        "hardware": ["cpu"],          # what an order may run on; anything else needs the owner's OK
-        "results_dir": None,          # null: <state>/orders
+        "hardware": ["cpu"],  # what an order may run on; anything else needs the owner's OK
+        "results_dir": None,  # null: <state>/orders
     },
     "stack": {"slots": 4, "queue_max": 10, "post_max": 4},
-    "gates": {"dor": ["brief", "questions", "after", "project", "checks"],
-              "dod": ["ci", "heavy", "scan", "shots", "principles", "docs"], "checks_since": None},
-    "repair": {"bugs": None},       # the bug table (a Markdown file whose first column is the bug id); null: none
+    "gates": {
+        "dor": ["brief", "questions", "after", "project", "checks"],
+        "dod": ["ci", "heavy", "scan", "shots", "principles", "docs"],
+        "checks_since": None,
+    },
+    "repair": {"bugs": None},  # the bug table (a Markdown file whose first column is the bug id); null: none
     "team_stack": {"slots": 2, "queue_max": 4},
     "usage": {
-        "mtok_per_pct": 10.0,         # MTok in 1 % of the usage window (%UW): set it to your runner's own budget
-        "usd_per_mtok": 2.5,          # the runner's rough $ per MTok (it takes its caps in $)
+        "mtok_per_pct": 10.0,  # MTok in 1 % of the usage window (%UW): set it to your runner's own budget
+        "usd_per_mtok": 2.5,  # the runner's rough $ per MTok (it takes its caps in $)
         "sizes": {"doc": 0.4, "S": 0.3, "M": 1.0, "L": 1.4},
-        "stop_at": 0.9,                # no new agent past this share of the usage window
+        "stop_at": 0.9,  # no new agent past this share of the usage window
     },
     "agents": {"projects": None, "silent_min": 20, "tail": 10},  # projects: where the executor keeps the runs' logs
     "trains": {"default_slots": "max 1"},
@@ -115,13 +120,13 @@ DEFAULTS = {
         "timeout_s": 900,
     },
     "backup": {
-        "drive": False,                          # the daily Drive run from any command (off: by hand only)
+        "drive": False,  # the daily Drive run from any command (off: by hand only)
         "git": {
-            "remote": "backup",                  # the remote's NAME in the state's git; the URL is the owner's to add
-            "branch": None,                      # null: the current branch
-            "every_commits": 10,                 # this many commits the remote lacks start a push
-            "retry_min": 30,                     # at most one background start per this many min, doubled per failure
-            "timeout_s": 600,                    # per git push
+            "remote": "backup",  # the remote's NAME in the state's git; the URL is the owner's to add
+            "branch": None,  # null: the current branch
+            "every_commits": 10,  # this many commits the remote lacks start a push
+            "retry_min": 30,  # at most one background start per this many min, doubled per failure
+            "timeout_s": 600,  # per git push
             # The scan before every push (null: no scan), twice; the last line of each must be exactly CLEAN. First
             # what the push carries (its blobs and commit messages, exported to {dir}), then the files on disk.
             "scan": None,
@@ -130,36 +135,36 @@ DEFAULTS = {
             "scan_timeout_s": 1800,
             "quarantine": "~/.local/state/depot2/quarantine",
         },
-        "remote": None,                          # the cloud remote in rclone.conf (its root), e.g. "mycloud:"
-        "folder": "depot2-backup",               # our own top-level folder, nothing else's
-        "crypt_name": "depot2backupcrypt",       # the env-only crypt remote over remote+folder
-        "pass_password": None,                   # the pass entries of the crypt password and salt
+        "remote": None,  # the cloud remote in rclone.conf (its root), e.g. "mycloud:"
+        "folder": "depot2-backup",  # our own top-level folder, nothing else's
+        "crypt_name": "depot2backupcrypt",  # the env-only crypt remote over remote+folder
+        "pass_password": None,  # the pass entries of the crypt password and salt
         "pass_salt": None,
-        "forbidden_remotes": [],                 # remote names the backup must never write to
-        "forbidden_folders": [],                 # folder names it must never write into
+        "forbidden_remotes": [],  # remote names the backup must never write to
+        "forbidden_folders": [],  # folder names it must never write into
         "rclone_bin": "rclone",
         "pass_bin": "pass",
-        "host": None,                            # null: the short hostname, in the archive's name
-        "every_h": 24,                           # a success older than this starts a run
-        "retry_min": 15,                         # at most one background start per this many min
-        "keep_daily": 14,                        # + the first archive of every month, kept
-        "drive_trash": True,                     # deleted archives go to Drive's trash (30 days)
-        "lock_wait_s": 1800,                     # the snapshot waits this long for the state lock
-        "timeout_s": 1800,                       # per rclone call
+        "host": None,  # null: the short hostname, in the archive's name
+        "every_h": 24,  # a success older than this starts a run
+        "retry_min": 15,  # at most one background start per this many min
+        "keep_daily": 14,  # + the first archive of every month, kept
+        "drive_trash": True,  # deleted archives go to Drive's trash (30 days)
+        "lock_wait_s": 1800,  # the snapshot waits this long for the state lock
+        "timeout_s": 1800,  # per rclone call
     },
-    "repo": None,                    # the project on GitHub, owner/name (gh -R)
+    "repo": None,  # the project on GitHub, owner/name (gh -R)
     "web": {"hosts": []},
     "merge": {
-        "clone": None,                # the project's main clone: fetch, the dry run's throwaway worktree, the smoke's cwd
-        "worktrees": None,            # a PR's branch rides in <worktrees>/<branch>
+        "clone": None,  # the project's main clone: fetch, the dry run's throwaway worktree, the smoke's cwd
+        "worktrees": None,  # a PR's branch rides in <worktrees>/<branch>
         "remote": "origin",
         "base": "main",
-        "ci_workflow": "ci.yml",      # the workflow whose runs gate a PR and main's merge commit
-        "deploy_job": None,           # the job of that workflow that deploys main; null: no deploy to wait for
+        "ci_workflow": "ci.yml",  # the workflow whose runs gate a PR and main's merge commit
+        "deploy_job": None,  # the job of that workflow that deploys main; null: no deploy to wait for
         "poll_s": 60,
         "run_appear_min": 10,
-        "ci_timeout_min": 120,       # the branch's CI on its head, running (not waiting for GitHub)
-        "deploy_timeout_min": 60,    # main's CI/CD of the merge commit
+        "ci_timeout_min": 120,  # the branch's CI on its head, running (not waiting for GitHub)
+        "deploy_timeout_min": 60,  # main's CI/CD of the merge commit
         "queued_max_min": 15,
         "github_rerun_after_min": 5,  # a run GitHub left unstarted: `gh run rerun --failed` after this; null: by hand
         "github_reruns_max": 3,
@@ -171,11 +176,11 @@ DEFAULTS = {
         "cd_fallback": None,
         "ci_fallback": None,
         "githubstatus": ["curl", "-s", "--max-time", "15", "https://www.githubstatus.com/api/v2/components.json"],
-        "scan": None,                 # the scan before every push (its last line must be exactly CLEAN); null: none
+        "scan": None,  # the scan before every push (its last line must be exactly CLEAN); null: none
         "scan_args": ["{worktree}"],
         "scan_timeout_s": 1800,
         # after a prepared resolution, in the worktree, before the merge commit
-        "after_resolve": [],          # commands, e.g. [["make", "check"]]
+        "after_resolve": [],  # commands, e.g. [["make", "check"]]
         "after_resolve_timeout_s": 1800,
         "auto": {
             # each rule null: off. generated: {"file": a generated file, "cmd": its generator}, rebuilt after every
@@ -198,13 +203,20 @@ DEFAULTS = {
         "net_retries": 5,
         "net_retry_s": 60,
         "ci_net_reruns": 2,
-        "ci_net_patterns": ["HttpClient.Timeout", "download has timed out", "Failed to download action",
-                            "Could not resolve host", "TLS handshake timeout", "Connection timed out", "ETIMEDOUT",
-                            "ECONNRESET"],
+        "ci_net_patterns": [
+            "HttpClient.Timeout",
+            "download has timed out",
+            "Failed to download action",
+            "Could not resolve host",
+            "TLS handshake timeout",
+            "Connection timed out",
+            "ETIMEDOUT",
+            "ECONNRESET",
+        ],
         # After the deploy: the site's HTTP status (a command that prints it; null: none), then the smoke check (a
         # command in the main clone; its verdict: the plugins' smoke_verdict, else its exit code; null: none), then
         # the plugins' after_merge (usage: false skips it).
-        "site_check": None,           # e.g. ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "https://example.org/"]
+        "site_check": None,  # e.g. ["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "https://example.org/"]
         "site_ok": [200],
         "smoke": None,
         "smoke_timeout_s": 900,
@@ -217,9 +229,15 @@ DEFAULTS = {
     "prompt_layout": "cache",
     # Never readable, on top of --restricted.
     "deny_read": [
-        "Read(//proc/**)", "Read(//sys/**)", "Read(//dev/**)",
-        "Read(**/.env*)", "Read(**/.dev.vars*)", "Read(**/*.pem)", "Read(**/*.key)",
-        "Read(**/.git/**)", "Read(**/node_modules/**)",
+        "Read(//proc/**)",
+        "Read(//sys/**)",
+        "Read(//dev/**)",
+        "Read(**/.env*)",
+        "Read(**/.dev.vars*)",
+        "Read(**/*.pem)",
+        "Read(**/*.key)",
+        "Read(**/.git/**)",
+        "Read(**/node_modules/**)",
     ],
 }
 
@@ -227,7 +245,7 @@ EFFORTS = ("low", "medium", "high", "xhigh", "max")
 QUORUMS = ("unanimous", "majority")
 
 OBSOLETE = {
-    "deep_levels": None,     # the price list of the paid passes
+    "deep_levels": None,  # the price list of the paid passes
     "deep_dirs": "read_dirs",  # every pass read them already; the new name says so
 }
 USD_KEYS = (
@@ -247,7 +265,7 @@ def repo(cfg):
     """The project on GitHub (config `repo`, owner/name), or a ValueError that says how to set it."""
     r = cfg.get("repo")
     if not isinstance(r, str) or "/" not in r:
-        raise ValueError("repo is not set: the project on GitHub, owner/name (config.json \"repo\", or --set repo=…)")
+        raise ValueError('repo is not set: the project on GitHub, owner/name (config.json "repo", or --set repo=…)')
     return r
 
 
@@ -265,7 +283,7 @@ def parse_set(items):
     over = {}
     for item in items or []:
         if "=" not in item:
-            raise ValueError("--set wants key=value, got %r" % item)
+            raise ValueError(f"--set wants key=value, got {item!r}")
         key, raw = item.split("=", 1)
         try:
             val = json.loads(raw)
@@ -281,20 +299,20 @@ def parse_set(items):
 
 def drop_obsolete(over, where, warn=None):
     """Remove OBSOLETE keys from one override dict (config.json or --set), in place. An old name
-    passes its value to the new one unless the new one is set too. Returns the warnings."""
+    passes its value to the new one unless the new one is set too. Returns the warnings.
+    """
     msgs = []
     for key, new in OBSOLETE.items():
         if key not in over:
             continue
         val = over.pop(key)
         if new is None:
-            msgs.append("%s: %s is obsolete (the paid passes are gone) and ignored; remove it" % (where, key))
+            msgs.append(f"{where}: {key} is obsolete (the paid passes are gone) and ignored; remove it")
         elif new in over:
-            msgs.append("%s: %s is the old name of %s, which is set too; %s ignored; remove it"
-                        % (where, key, new, key))
+            msgs.append(f"{where}: {key} is the old name of {new}, which is set too; {key} ignored; remove it")
         else:
             over[new] = val
-            msgs.append("%s: %s is the old name of %s; used as %s; rename it" % (where, key, new, new))
+            msgs.append(f"{where}: {key} is the old name of {new}; used as {new}; rename it")
     for m in msgs:
         if warn is not None:
             warn(m)
@@ -305,14 +323,15 @@ def _rate(usage):
     for key in ("usd_per_mtok", "mtok_per_pct"):
         v = usage.get(key)
         if isinstance(v, bool) or not isinstance(v, (int, float)) or v <= 0:
-            raise ValueError("usage.%s must be a number > 0" % key)
+            raise ValueError(f"usage.{key} must be a number > 0")
     return float(usage["usd_per_mtok"]), float(usage["mtok_per_pct"])
 
 
 def convert_usd(over, where, usage, warn=None):
     """The old $ caps (USD_KEYS) of one override dict (config.json or --set), in place: each becomes
     its MTok key, value / usage.usd_per_mtok, unless that key is set in the same dict too. Returns
-    the warnings."""
+    the warnings.
+    """
     rate, per_pct = _rate(usage)
     msgs = []
     for sect, old, new in USD_KEYS:
@@ -321,21 +340,32 @@ def convert_usd(over, where, usage, warn=None):
             continue
         val = node.pop(old)
         if new in node:
-            msgs.append("%s: %s.%s is deprecated and %s.%s is set too; %s.%s ignored; remove it"
-                        % (where, sect, old, sect, new, sect, old))
+            msgs.append(
+                f"{where}: {sect}.{old} is deprecated and {sect}.{new} is set too; {sect}.{old} ignored; remove it"
+            )
             continue
         if val is None:
             node[new] = None
-            msgs.append("%s: %s.%s is deprecated; read as %s.%s = null; rename it" % (where, sect, old, sect, new))
+            msgs.append(f"{where}: {sect}.{old} is deprecated; read as {sect}.{new} = null; rename it")
             continue
         if isinstance(val, bool) or not isinstance(val, (int, float)):
-            raise ValueError("%s: %s.%s must be a number" % (where, sect, old))
+            raise ValueError(f"{where}: {sect}.{old} must be a number")
         mtok = round(float(val) / rate, 6)
         node[new] = mtok
-        msgs.append("%s: %s.%s is deprecated (the limits are in MTok now); read as %s.%s = %s: %s "
-                    "(%g / usage.usd_per_mtok %g); rename it"
-                    % (where, sect, old, sect, new, "%.6g" % mtok,
-                       effort.fmt(mtok, {"usage": {"mtok_per_pct": per_pct}}), val, rate))
+        msgs.append(
+            "{}: {}.{} is deprecated (the limits are in MTok now); read as {}.{} = {}: {} "
+            "({:g} / usage.usd_per_mtok {:g}); rename it".format(
+                where,
+                sect,
+                old,
+                sect,
+                new,
+                f"{mtok:.6g}",
+                effort.fmt(mtok, {"usage": {"mtok_per_pct": per_pct}}),
+                val,
+                rate,
+            )
+        )
     for m in msgs:
         if warn is not None:
             warn(m)
@@ -350,20 +380,21 @@ def _warn_once(msg):
 
 def load(state_root, sets=None, warn=_warn_once):
     """DEFAULTS, then the project's config file ($DEPOT2_CONFIG, when set: it can live in the project's repo), then
-    the depot's own config.json, then each --set."""
+    the depot's own config.json, then each --set.
+    """
     layers = []
     project = os.environ.get("DEPOT2_CONFIG")
     if project:
-        project = os.path.expanduser(project)
-        if not os.path.isfile(project):
-            raise ValueError("DEPOT2_CONFIG=%s: no such file" % project)
-        with open(project, encoding="utf-8") as f:
+        project = expand_user_path(project)
+        if not os.path.isfile(project):  # noqa: PTH113 - unusable filenames must test false, including on Python 3.11
+            raise ValueError(f"DEPOT2_CONFIG={project}: no such file")
+        with Path(project).open(encoding="utf-8") as f:
             over = json.load(f)
         drop_obsolete(over, project, warn)
         layers.append((project, over))
-    path = os.path.join(state_root, "config.json")
-    if os.path.exists(path):
-        with open(path, encoding="utf-8") as f:
+    path = str(Path(state_root, "config.json"))
+    if Path(path).exists():
+        with Path(path).open(encoding="utf-8") as f:
             over = json.load(f)
         drop_obsolete(over, path, warn)
         layers.append((path, over))
@@ -386,46 +417,50 @@ def load(state_root, sets=None, warn=_warn_once):
             # a share above 1 can only be meant as percent: the fuse would never fire
             cfg[sect][key] = u / 100.0
             if warn is not None:
-                warn("%s.%s %g is a share of a window (0.9 = 90 %%); read as %g" % (sect, key, u, u / 100.0))
+                warn(f"{sect}.{key} {u:g} is a share of a window (0.9 = 90 %); read as {u / 100.0:g}")
     check(cfg)
     from . import i18n
+
     i18n.configure(cfg["language"])
     for sect, key, sub in (("brainstorm", "topics_dir", "topics"), ("orders", "results_dir", "orders")):
         if not cfg[sect].get(key):  # null: a folder of the depot itself
-            cfg[sect][key] = os.path.join(state_root, sub)
+            cfg[sect][key] = str(Path(state_root, sub))
     from . import characters
+
     characters.configure(cfg.get("characters"))
     return cfg
 
 
 def check(cfg):
     from . import i18n
+
     i18n.check_language(cfg.get("language"))
     if cfg["effort"] is not None and cfg["effort"] not in EFFORTS:
-        raise ValueError("effort must be one of %s or null" % (EFFORTS,))
+        raise ValueError(f"effort must be one of {EFFORTS} or null")
     bad = [t for t in cfg["tools"] if t not in ("Read", "Grep", "Glob")]
     if bad:
-        raise ValueError("only read-only tools are allowed, got %s" % bad)
+        raise ValueError(f"only read-only tools are allowed, got {bad}")
     if cfg["prompt_layout"] not in ("cache", "brief"):
         raise ValueError("prompt_layout must be cache or brief")
     if cfg["brainstorm"]["quorum"] not in QUORUMS:
-        raise ValueError("brainstorm.quorum must be one of %s" % (QUORUMS,))
+        raise ValueError(f"brainstorm.quorum must be one of {QUORUMS}")
     for k in ("fee_initiator", "fee_other"):
         if int(cfg["brainstorm"][k]) < 0:
-            raise ValueError("brainstorm.%s must be >= 0" % k)
+            raise ValueError(f"brainstorm.{k} must be >= 0")
     for key in ("stack", "team_stack"):
         if int(cfg[key]["slots"]) < 0 or int(cfg[key]["queue_max"]) < 0:
-            raise ValueError("%s.slots and %s.queue_max must be >= 0" % (key, key))
+            raise ValueError(f"{key}.slots and {key}.queue_max must be >= 0")
     if int(cfg["stack"].get("post_max", 0)) < 0:
         raise ValueError("stack.post_max must be >= 0")
     from .gates import DOD, DOR
+
     for key, known in (("dor", DOR), ("dod", DOD)):
         bad = [i for i in cfg["gates"].get(key) or [] if i not in known]
         if bad:
-            raise ValueError("gates.%s: unknown %s (known: %s)" % (key, ", ".join(map(str, bad)), ", ".join(known)))
+            raise ValueError("gates.{}: unknown {} (known: {})".format(key, ", ".join(map(str, bad)), ", ".join(known)))
     since = cfg["gates"].get("checks_since")
     if since is not None and not (isinstance(since, str) and re.match(r"^\d{4}-\d{2}-\d{2}$", since)):
-        raise ValueError("gates.checks_since must be a day, YYYY-MM-DD (got %r)" % (since,))
+        raise ValueError(f"gates.checks_since must be a day, YYYY-MM-DD (got {since!r})")
     if not isinstance(cfg["usage"]["mtok_per_pct"], (int, float)) or cfg["usage"]["mtok_per_pct"] <= 0:
         raise ValueError("usage.mtok_per_pct must be a number > 0 (MTok in 1%% of the usage window)")
     if not isinstance(cfg["usage"]["usd_per_mtok"], (int, float)) or cfg["usage"]["usd_per_mtok"] <= 0:
@@ -435,7 +470,9 @@ def check(cfg):
         if v is None and sect == "solo":
             continue
         if isinstance(v, bool) or not isinstance(v, (int, float)) or v <= 0:
-            raise ValueError("%s.%s must be a number of MTok > 0%s" % (sect, key, " or null" if sect == "solo" else ""))
+            raise ValueError(
+                "{}.{} must be a number of MTok > 0{}".format(sect, key, " or null" if sect == "solo" else "")
+            )
     u = cfg["round"]["stop_at_utilization"]
     if isinstance(u, bool) or not isinstance(u, (int, float)) or not 0 < u <= 1:
         raise ValueError("round.stop_at_utilization is a share of a window, 0 < x <= 1 (0.9 = 90 %)")
@@ -443,14 +480,17 @@ def check(cfg):
     if isinstance(u, bool) or not isinstance(u, (int, float)) or not 0 < u <= 1:
         raise ValueError("usage.stop_at is a share of the usage window, 0 < x <= 1 (0.99 = 99 %)")
     ag = cfg["agents"]
-    if isinstance(ag.get("silent_min"), bool) or not isinstance(ag.get("silent_min"), (int, float)) or \
-            ag["silent_min"] <= 0:
+    if (
+        isinstance(ag.get("silent_min"), bool)
+        or not isinstance(ag.get("silent_min"), (int, float))
+        or ag["silent_min"] <= 0
+    ):
         raise ValueError("agents.silent_min must be a number of minutes > 0")
     if isinstance(ag.get("tail"), bool) or not isinstance(ag.get("tail"), int) or ag["tail"] < 1:
         raise ValueError("agents.tail must be a whole number >= 1")
     for size, pct in cfg["usage"]["sizes"].items():
         if not isinstance(pct, (int, float)) or pct < 0:
-            raise ValueError("usage.sizes.%s must be a number of %%UW >= 0" % size)
+            raise ValueError(f"usage.sizes.{size} must be a number of %UW >= 0")
     if not isinstance(cfg["backup"].get("drive"), bool):
         raise ValueError("backup.drive must be true or false (the daily Drive run)")
     if int(cfg["lock"]["price"]) < 1:
@@ -459,30 +499,48 @@ def check(cfg):
         raise ValueError("orders.price must be >= 1")
     ids = [q["id"] for q in cfg["standing_questions"]]
     if len(set(ids)) != len(ids):
-        raise ValueError("standing_questions: duplicate ids %s" % ids)
+        raise ValueError(f"standing_questions: duplicate ids {ids}")
     if not isinstance(cfg.get("plugins"), list) or not all(isinstance(x, str) and x for x in cfg["plugins"]):
         raise ValueError("plugins must be a list of module names or .py paths")
     if not isinstance(cfg.get("executor"), str) or not cfg["executor"]:
         raise ValueError("executor must be a module name (depot2.executors.cli_agent)")
     if not isinstance(cfg.get("project"), dict):
-        raise ValueError("project must be an object: {\"name\": ..., \"description\": ...}")
+        raise ValueError('project must be an object: {"name": ..., "description": ...}')
     from . import characters
+
     characters.check_config(cfg.get("characters"))
     check_merge(cfg["merge"])
 
 
 def check_merge(m):
     """The merge queue's settings: numbers where numbers go, every command a list of strings (or null)."""
+
     def num(key, nullable=False):
         v = m.get(key)
         if v is None and nullable:
             return
         if isinstance(v, bool) or not isinstance(v, (int, float)) or v < 0:
-            raise ValueError("merge.%s must be a number >= 0%s" % (key, " or null" if nullable else ""))
-    for key in ("poll_s", "run_appear_min", "ci_timeout_min", "deploy_timeout_min", "queued_max_min",
-                "github_reruns_max", "github_wait_max_min", "scan_timeout_s", "after_resolve_timeout_s",
-                "smoke_timeout_s", "generate_timeout_s", "golden_timeout_s", "presync_depth", "trial_retry_min",
-                "net_retries", "net_retry_s", "ci_net_reruns"):
+            raise ValueError("merge.{} must be a number >= 0{}".format(key, " or null" if nullable else ""))
+
+    for key in (
+        "poll_s",
+        "run_appear_min",
+        "ci_timeout_min",
+        "deploy_timeout_min",
+        "queued_max_min",
+        "github_reruns_max",
+        "github_wait_max_min",
+        "scan_timeout_s",
+        "after_resolve_timeout_s",
+        "smoke_timeout_s",
+        "generate_timeout_s",
+        "golden_timeout_s",
+        "presync_depth",
+        "trial_retry_min",
+        "net_retries",
+        "net_retry_s",
+        "ci_net_reruns",
+    ):
         num(key)
     if not isinstance(m.get("trial_prefix"), str) or not m["trial_prefix"].endswith("/") or len(m["trial_prefix"]) < 2:
         raise ValueError("merge.trial_prefix must be a branch prefix ending in «/» (mq/)")
@@ -500,10 +558,18 @@ def check_merge(m):
             r = auto.get(rule)
             if r is None:
                 continue
-            if not isinstance(r, dict) or not isinstance(r.get(key), str) or not r[key] or not isinstance(
-                    r.get("cmd"), list) or not r["cmd"] or not all(isinstance(x, str) for x in r["cmd"]):
-                raise ValueError("merge.auto.%s must be null or {\"%s\": a path, \"cmd\": [a command]}" % (rule, key))
-        if not isinstance(auto.get("union") or [], list) or not all(isinstance(x, str) and x for x in auto.get("union") or []):
+            if (
+                not isinstance(r, dict)
+                or not isinstance(r.get(key), str)
+                or not r[key]
+                or not isinstance(r.get("cmd"), list)
+                or not r["cmd"]
+                or not all(isinstance(x, str) for x in r["cmd"])
+            ):
+                raise ValueError(f'merge.auto.{rule} must be null or {{"{key}": a path, "cmd": [a command]}}')
+        if not isinstance(auto.get("union") or [], list) or not all(
+            isinstance(x, str) and x for x in auto.get("union") or []
+        ):
             raise ValueError("merge.auto.union must be a list of path patterns")
     num("github_rerun_after_min", nullable=True)
 
@@ -511,8 +577,10 @@ def check_merge(m):
         if value is None:
             return
         if not isinstance(value, list) or not value or not all(isinstance(x, str) for x in value):
-            raise ValueError("merge.%s must be a command: a list of strings%s" % (key, ", or null" if key not in (
-                "scan_args",) else ""))
+            raise ValueError(
+                "merge.{} must be a command: a list of strings{}".format(key, ", or null" if key != "scan_args" else "")
+            )
+
     for key in ("githubstatus", "site_check", "smoke"):
         cmd(key, m.get(key))
     if not isinstance(m.get("scan_args"), list) or not all(isinstance(x, str) for x in m["scan_args"]):
@@ -523,10 +591,10 @@ def check_merge(m):
         cmd("after_resolve", c)
     for key in ("remote", "base", "ci_workflow"):
         if not isinstance(m.get(key), str) or not m[key]:
-            raise ValueError("merge.%s must be a non-empty string" % key)
+            raise ValueError(f"merge.{key} must be a non-empty string")
     for key in ("clone", "worktrees", "deploy_job"):
         if m.get(key) is not None and (not isinstance(m[key], str) or not m[key]):
-            raise ValueError("merge.%s must be a non-empty string or null" % key)
+            raise ValueError(f"merge.{key} must be a non-empty string or null")
     if m.get("scan") not in (None, False) and (not isinstance(m["scan"], str) or not m["scan"]):
         raise ValueError("merge.scan must be a command's path, null (not set: no push) or false (push without a scan)")
     if not isinstance(m.get("site_ok"), list) or not m["site_ok"]:
@@ -535,9 +603,17 @@ def check_merge(m):
         fb = m.get(key)
         if fb is None:
             continue
-        if not isinstance(fb, dict) or not isinstance(fb.get("var"), str) or not fb["var"] or not all(
+        if (
+            not isinstance(fb, dict)
+            or not isinstance(fb.get("var"), str)
+            or not fb["var"]
+            or not all(
                 isinstance(fb.get(k), list) and fb[k] and all(isinstance(x, str) and x for x in fb[k])
-                for k in ("main", "fallback") + (("jobs",) if key == "ci_fallback" or "jobs" in fb else ())):
-            raise ValueError("merge.%s must be null or {\"var\": a name, \"main\": [labels], \"fallback\": [labels]%s}"
-                             % (key, ", \"jobs\": [job names]" if key == "ci_fallback" else ""))
-
+                for k in ("main", "fallback") + (("jobs",) if key == "ci_fallback" or "jobs" in fb else ())
+            )
+        ):
+            raise ValueError(
+                'merge.{} must be null or {{"var": a name, "main": [labels], "fallback": [labels]{}}}'.format(
+                    key, ', "jobs": [job names]' if key == "ci_fallback" else ""
+                )
+            )

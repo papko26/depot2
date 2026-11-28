@@ -1,25 +1,98 @@
 [build-system]
-requires = ["setuptools>=61"]
-build-backend = "setuptools.build_meta"
+requires = ["uv_build>=0.13.10,<0.14"]
+build-backend = "uv_build"
 
 [project]
 name = "depot2"
 version = "0.1.0"
 description = "A planning and merge depot for a team that works through outside runners"
 readme = "README.md"
-requires-python = ">=3.8"
-license = {text = "Apache-2.0"}
+requires-python = ">=3.11,<3.16"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
 authors = [{name = "papko26"}, {name = "dice cafe"}]
 classifiers = [
-    "License :: OSI Approved :: Apache Software License",
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "Operating System :: MacOS :: MacOS X",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
+    "Programming Language :: Python :: 3.15",
 ]
 
 [project.scripts]
 depot2 = "depot2.cli:main"
 
-[tool.setuptools]
-packages = ["depot2", "depot2.catalogs", "depot2.executors"]
+[tool.uv.build-backend]
+module-root = ""
 
-[tool.setuptools.package-data]
-depot2 = ["web/*"]
+[dependency-groups]
+dev = [
+    "ruff==0.17.6",
+    "mypy==1.14.1",
+    "pytest>=9.2.0",
+    "pytest-xdist>=3.8.0",
+    "pytest-cov>=7.1.0",
+]
+
+[tool.coverage.run]
+patch = ["subprocess"]
+
+[tool.coverage.report]
+precision = 1
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+select = [
+    "B",    # flake8-bugbear
+    "C4",   # flake8-comprehensions
+    "E4",   # pycodestyle
+    "E7",   # pycodestyle
+    "E9",   # pycodestyle
+    "F",    # Pyflakes
+    "FA",   # flake8-future-annotations
+    "FURB", # refurb
+    "G",    # flake8-logging-format
+    "I",    # isort
+    "LOG",  # flake8-logging
+    "PGH",  # pygrep-hooks
+    "PIE",  # flake8-pie
+    "PLE",  # Pylint errors
+    "PTH",  # flake8-use-pathlib
+    "RET",  # flake8-return
+    "RUF",  # Ruff-specific rules
+    "SIM",  # flake8-simplify
+    "T10",  # flake8-debugger
+    "TC",   # flake8-type-checking
+    "UP",   # pyupgrade
+    "YTT",  # flake8-2020
+]
+extend-select = [
+    "ANN204", # missing-return-type-special-method
+    "D204", # incorrect-blank-line-after-class
+    "D208", # over-indentation
+    "D209", # new-line-after-last-paragraph
+    "Q",      # flake8-quotes
+    "RSE102", # unnecessary-paren-on-raise-exception
+]
+ignore = [
+    "E402",   # module-import-not-at-top-of-file
+    "PTH211", # os-symlink
+]
+# Russian alphabet, uppercase and lowercase
+allowed-confusables = [
+    "А", "Б", "В", "Г", "Д", "Е", "Ё", "Ж", "З", "И", "Й",
+    "К", "Л", "М", "Н", "О", "П", "Р", "С", "Т", "У", "Ф",
+    "Х", "Ц", "Ч", "Ш", "Щ", "Ъ", "Ы", "Ь", "Э", "Ю", "Я",
+    "а", "б", "в", "г", "д", "е", "ё", "ж", "з", "и", "й",
+    "к", "л", "м", "н", "о", "п", "р", "с", "т", "у", "ф",
+    "х", "ц", "ч", "ш", "щ", "ъ", "ы", "ь", "э", "ю", "я",
+]

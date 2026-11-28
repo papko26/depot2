@@ -1,5 +1,6 @@
 """Русский каталог (i18n.py): те же ключи и те же поля, что в en.py. Сообщение о персонаже может быть парой по роду:
-{"m": …, "f": …}."""
+{"m": …, "f": …}.
+"""
 
 MESSAGES = {
     # --- команда (characters.py) ---
@@ -8,34 +9,39 @@ MESSAGES = {
     "team.role_default": "участник команды",
     "team.agree": {"m": "согласен", "f": "согласна"},
     "team.disagree": {"m": "не согласен", "f": "не согласна"},
-    "team.spec_gender": {"m": "Род: мужской — пишет о себе в мужском роде (я согласен, я поставил).",
-                         "f": "Род: женский — пишет о себе в женском роде (я согласна, я поставила)."},
+    "team.spec_gender": {
+        "m": "Род: мужской — пишет о себе в мужском роде (я согласен, я поставил).",
+        "f": "Род: женский — пишет о себе в женском роде (я согласна, я поставила).",
+    },
     "in.spec_gender": r"^Род:|пишет о себе в",
-
     # --- init (cli.py) ---
     "init.done": "депо создано в {root}: персонажей {n}, у каждого {balance} токенов",
     "init.done_no_team": "депо создано в {root}: без команды (команда — ключ `characters` в config.json)",
-
     # --- стек (stack.py) ---
-    "stack.lock_means": ("объект в очереди не стартует; объект в слоте не мерджится (его агент может работать дальше, "
-                         "чтобы выполнить условие); держится до `stack unlock --met` или `--owner`"),
-
+    "stack.lock_means": (
+        "объект в очереди не стартует; объект в слоте не мерджится (его агент может работать дальше, "
+        "чтобы выполнить условие); держится до `stack unlock --met` или `--owner`"
+    ),
     # --- приоритет (priority.py) ---
-    "priority.means": ("приоритет 1–10 (10 — важнее всего, по умолчанию 5): `depot2 priority ID N` или `--priority N` "
-                       "у add/set; свободный слот берёт по приоритету поезда, затем вагона, при равенстве — по порядку"),
-
+    "priority.means": (
+        "приоритет 1-10 (10 — важнее всего, по умолчанию 5): `depot2 priority ID N` или `--priority N` "
+        "у add/set; свободный слот берёт по приоритету поезда, затем вагона, при равенстве — по порядку"
+    ),
     # --- слово автора (первые строки README; конец `depot2 --help`) ---
-    "about.note": ("Я знаю что есть готовые оркестраторы навроде herdr, и вам наверняка нужно выбрать один из них, "
-                   "я просто хотел разобраться в процессе."),
-
+    "about.note": (
+        "Я знаю что есть готовые оркестраторы навроде herdr, и вам наверняка нужно выбрать один из них, "
+        "я просто хотел разобраться в процессе."
+    ),
     # === командная строка, доска, рекламации, агенты, приоритет, решения, effort, seed, migrate ===
     # --- the priority (priority.py) ---
     "in.priority.high": r"высокий",
     "in.priority.normal": r"обычный",
     "in.priority.later": r"потом",
     "priority.is_track": "{ref} — трек (тема): приоритет у поезда и у вагонов, не у трека; вагон — {ref}:N",
-    "priority.bad_ref": ("приоритет — у поезда (его имя), вагона tr-NNNN:N, объекта st-/tm-NNNN, хотелки wl-, "
-                         "«подумать» th-, todo td-NNNN; не {ref}"),
+    "priority.bad_ref": (
+        "приоритет — у поезда (его имя), вагона tr-NNNN:N, объекта st-/tm-NNNN, хотелки wl-, "
+        "«подумать» th-, todo td-NNNN; не {ref}"
+    ),
     "priority.not_in_stack": "{ref} не в стеке: приоритет — у того, что стоит в стеке",
     "priority.not_in_tstack": "{ref} не в стеке команды: приоритет — у того, что стоит в стеке",
     "priority.not_in_queue": "нет {ref} в очереди {queue}",
@@ -53,9 +59,11 @@ MESSAGES = {
     "decisions.empty": "(пусто)",
     "decisions.footer": "Пишет их `depot2 decide`; эта команда только читает (`--grep СЛОВА`, `--limit N`, `--json`).",
     # --- the effort (effort.py) ---
-    "effort.legend": ("Effort — %UW, доля окна расхода; в скобках MTok, млн токенов «эквивалента ввода» (ввод ×1, "
-                      "запись кэша ×1.25, чтение кэша ×0.1, вывод ×5). 1%UW ≈ {per} MTok (usage.mtok_per_pct). "
-                      "Размеры, %UW: {sizes}."),
+    "effort.legend": (
+        "Effort — %UW, доля окна расхода; в скобках MTok, млн токенов «эквивалента ввода» (ввод x1, "
+        "запись кэша x1.25, чтение кэша x0.1, вывод x5). 1%UW ≈ {per} MTok (usage.mtok_per_pct). "
+        "Размеры, %UW: {sizes}."
+    ),
     # --- seeding (seed.py): a spec and the first portrait's prompt ---
     "seed.spec": "# {name} («{full}»)\n\nИз брифа команды ({brief}).\n\n{spec}\n",
     "seed.part_votes": "Твои голоса в бюллетене {file}",
@@ -65,8 +73,10 @@ MESSAGES = {
     "seed.part_cut": "[…код опустил ещё {n} строк…]",
     "seed.past": "# Твоё прошлое",
     "seed.owner_after": "## Что сделал владелец после ставок (ещё не учтено)",
-    "seed.task_first": ("## Задача: первый автопортрет\nНапиши свой первый автопортрет по спецификации и по своим "
-                        "прошлым позициям выше."),
+    "seed.task_first": (
+        "## Задача: первый автопортрет\nНапиши свой первый автопортрет по спецификации и по своим "
+        "прошлым позициям выше."
+    ),
     # --- the data migrations (migrate.py) ---
     "migrate.old_status.paused": "на паузе",
     "migrate.old_status.done": "прибыл",
@@ -81,37 +91,51 @@ MESSAGES = {
     "migrate.nothing": "миграция данных депо: нечего переносить (схема {v})",
     "migrate.nothing_no_data": "миграция данных депо: нечего переносить (схема — данных нет)",
     "migrate.dry_run": "DRY RUN: ничего не записано",
-    "migrate.history": ("история: {n} строк → tracks-history.jsonl; прежний файл — {hist}, прежний trains.json — "
-                        "{trains}"),
-    "migrate.head_3": ("миграция данных депо: схема 2 → 3 (оценка вагона по принципам: пункт DoD `legacy_check` → "
-                       "`principles`)"),
+    "migrate.history": (
+        "история: {n} строк → tracks-history.jsonl; прежний файл — {hist}, прежний trains.json — {trains}"
+    ),
+    "migrate.head_3": (
+        "миграция данных депо: схема 2 → 3 (оценка вагона по принципам: пункт DoD `legacy_check` → `principles`)"
+    ),
     "migrate.legacy_words": "сданные слова «legacy check» сняты с объектов стека: {words}",
     "migrate.legacy_none": "сданные слова «legacy check» сняты с объектов стека: таких нет",
-    "migrate.marks_empty": ("отметки по принципам — пустые: их прочтёт из PR следующий stack post, merge add или "
-                            "tracks car check --from-pr"),
+    "migrate.marks_empty": (
+        "отметки по принципам — пустые: их прочтёт из PR следующий stack post, merge add или tracks car check --from-pr"
+    ),
     "migrate.queue.wishes": "хотелки",
     "migrate.queue.think": "«подумать»",
     "migrate.queue.todo": "todo",
-    "migrate.head_4": ("миграция данных депо: схема 3 → 4 (приоритет 1–10 у поездов и вагонов в любом виде: поезд, "
-                       "вагон трека, объект стека и стека команды, хотелка, «подумать», todo; 10 — важнее всего)"),
+    "migrate.head_4": (
+        "миграция данных депо: схема 3 → 4 (приоритет 1-10 у поездов и вагонов в любом виде: поезд, "
+        "вагон трека, объект стека и стека команды, хотелка, «подумать», todo; 10 — важнее всего)"
+    ),
     "migrate.queue_prio": "{queue}: prio → priority у {n} (high 8, normal 5, later 2; без слова — 5)",
     "migrate.prio_notes": "из заметки «prio: …»: {ids}",
-    "migrate.prio_planned": ("поезда, вагоны треков, объекты стека и стека команды: приоритет 5 (по умолчанию) — "
-                             "каждому, после шагов выше"),
-    "migrate.prio_default": ("приоритет 5 (по умолчанию): поездов {trains}, вагонов треков {cars}, объектов стека "
-                             "{stack}, стека команды {tstack} (объект вагона — как у его вагона)"),
+    "migrate.prio_planned": (
+        "поезда, вагоны треков, объекты стека и стека команды: приоритет 5 (по умолчанию) — каждому, после шагов выше"
+    ),
+    "migrate.prio_default": (
+        "приоритет 5 (по умолчанию): поездов {trains}, вагонов треков {cars}, объектов стека "
+        "{stack}, стека команды {tstack} (объект вагона — как у его вагона)"
+    ),
     "migrate.arrivals_by": "depot2 migrate (схема 5)",
-    "migrate.head_5": ("миграция данных депо: схема 4 → 5 (вагоны «в пути», слитые мимо мердж-очереди до её последней "
-                       "выкатки, → «прибыл»)"),
-    "migrate.arr_planned": ("вагоны «в пути» до последней выкатки — после шагов выше (список: depot2 migrate "
-                            "--dry-run на схеме 4)"),
-    "migrate.arr_last": ("последняя выкатка мердж-очереди: #{pr} ({id}), слит {at}; вагонов «в пути» до неё, слитых "
-                         "мимо очереди: {n}"),
+    "migrate.head_5": (
+        "миграция данных депо: схема 4 → 5 (вагоны «в пути», слитые мимо мердж-очереди до её последней "
+        "выкатки, → «прибыл»)"
+    ),
+    "migrate.arr_planned": (
+        "вагоны «в пути» до последней выкатки — после шагов выше (список: depot2 migrate --dry-run на схеме 4)"
+    ),
+    "migrate.arr_last": (
+        "последняя выкатка мердж-очереди: #{pr} ({id}), слит {at}; вагонов «в пути» до неё, слитых мимо очереди: {n}"
+    ),
     "migrate.arr_none": "выкаток мердж-очереди нет: вагоны «в пути» остаются",
     "migrate.arr_why": "выкачен с #{pr} ({id}, {at}): слит руками раньше (миграция)",
     "migrate.arr_line": "- {car} «{title}» (в пути с {at}) → прибыл: {why}",
-    "migrate.arr_left": ("остаются «в пути» (слиты после последней выкатки, или их везёт мердж-очередь, или объект в "
-                         "стеке): {n} — {refs}"),
+    "migrate.arr_left": (
+        "остаются «в пути» (слиты после последней выкатки, или их везёт мердж-очередь, или объект в "
+        "стеке): {n} — {refs}"
+    ),
     # --- the board (board.py) ---
     "board.kind.car": "вагон",
     "board.kind.stack": "объект стека",
@@ -125,14 +149,16 @@ MESSAGES = {
     "board.where.parked": "запаркован",
     "board.where.track": "на треке",
     "board.where.merge": "мердж-очередь",
-    "board.legend": ("Колонки — этапы вагона (Kanban); вагон целиком — `depot2 car show ID`. Лимиты мягкие: сборка — "
-                     "слоты (stack.slots), приёмка — места пост-стека (stack.post_max); их держат и вагоны, что уже "
-                     "встали на пути из слота или пост-стека. Сверх лимита и мимо ворот (DoR — вход в сборку, DoD — "
-                     "вход в приёмку) — только `--force --why «…»`, в истории этапа — forced (⚑). Документация — "
-                     "необязательный этап после сборки: держит слот сборки; вагону, которому она нужна (`tracks car "
-                     "set --docs yes` или строка эскиза «Документация: нужна»), DoD не даёт в приёмку прямо из сборки "
-                     "— сперва `depot2 car stage ID docs`. У вагона: «брак N» — возвратов в сборку, «рекламаций N» — "
-                     "дефектов на проде, «ремонт» — вагон-ремонт (`depot2 claims`)."),
+    "board.legend": (
+        "Колонки — этапы вагона (Kanban); вагон целиком — `depot2 car show ID`. Лимиты мягкие: сборка — "
+        "слоты (stack.slots), приёмка — места пост-стека (stack.post_max); их держат и вагоны, что уже "
+        "встали на пути из слота или пост-стека. Сверх лимита и мимо ворот (DoR — вход в сборку, DoD — "
+        "вход в приёмку) — только `--force --why «…»`, в истории этапа — forced (⚑). Документация — "
+        "необязательный этап после сборки: держит слот сборки; вагону, которому она нужна (`tracks car "
+        "set --docs yes` или строка эскиза «Документация: нужна»), DoD не даёт в приёмку прямо из сборки "
+        "— сперва `depot2 car stage ID docs`. У вагона: «брак N» — возвратов в сборку, «рекламаций N» — "
+        "дефектов на проде, «ремонт» — вагон-ремонт (`depot2 claims`)."
+    ),
     "board.why_repair": "ремонт, вне очереди",
     "board.why_autostart": "автозапуск",
     "board.why_train": "поезд {name}",
@@ -161,8 +187,9 @@ MESSAGES = {
     "board.mark_claims": "рекламаций {n}",
     "board.where_in_merge": "мердж-очередь {id}",
     "board.gate_passed": "{name} пройдены",
-    "board.summary": ("Доска (`depot2 board`): {counts}; стек — её вид: сборка, документация, приёмка, на путях и "
-                      "очередь стека."),
+    "board.summary": (
+        "Доска (`depot2 board`): {counts}; стек — её вид: сборка, документация, приёмка, на путях и очередь стека."
+    ),
     # --- returns and claims (claims.py) ---
     "claims.what.car": "вагон",
     "claims.what.culprit": "виновник",
@@ -170,8 +197,10 @@ MESSAGES = {
     "claims.what.old_culprit": "прежний виновник",
     "claims.no_pr": "#{n}: ни вагона, ни объекта стека с этим PR",
     "claims.bad_ref": "{what} — это st-NNNN, tr-NNNN:N или #PR, не {text}",
-    "claims.not_on_prod": ("{ref} на этапе «{stage}», не на проде (рекламация — на прибывший вагон; брак до мерджа — "
-                           "возврат в сборку, «доработать»: depot2 stack start из пост-стека)"),
+    "claims.not_on_prod": (
+        "{ref} на этапе «{stage}», не на проде (рекламация — на прибывший вагон; брак до мерджа — "
+        "возврат в сборку, «доработать»: depot2 stack start из пост-стека)"
+    ),
     "claims.of_and_bug": "--of {of} — не вагон (st-NNNN, tr-NNNN:N, #PR), и --bug {bug}: баг — один",
     "claims.not_rolled": "{of} — не выехавший вагон: рекламация — на st-NNNN, tr-NNNN:N или #PR",
     "claims.of_needed": "--of: виновник (st-NNNN, tr-NNNN:N, #PR) или id бага из BUGS.md",
@@ -183,12 +212,17 @@ MESSAGES = {
     "claims.title_bug": "ремонт: {bug}",
     "claims.title_car": "ремонт: {ref} {title}",
     "claims.added_ref": "{id} — ремонт {ref}: голова очереди стека ({n}/{max}), автозапуск да, этап эскиз",
-    "claims.added_ref_no_brief": ("{id} — ремонт {ref}: голова очереди стека ({n}/{max}), автозапуск да, этап эскиз; "
-                                  "брифа нет — DoR ждёт его (depot2 stack set {id} --brief …)"),
-    "claims.added_noref": ("{id} — ремонт (виновник не найден): голова очереди стека ({n}/{max}), автозапуск да, этап "
-                           "эскиз"),
-    "claims.added_noref_no_brief": ("{id} — ремонт (виновник не найден): голова очереди стека ({n}/{max}), автозапуск "
-                                    "да, этап эскиз; брифа нет — DoR ждёт его (depot2 stack set {id} --brief …)"),
+    "claims.added_ref_no_brief": (
+        "{id} — ремонт {ref}: голова очереди стека ({n}/{max}), автозапуск да, этап эскиз; "
+        "брифа нет — DoR ждёт его (depot2 stack set {id} --brief …)"
+    ),
+    "claims.added_noref": (
+        "{id} — ремонт (виновник не найден): голова очереди стека ({n}/{max}), автозапуск да, этап эскиз"
+    ),
+    "claims.added_noref_no_brief": (
+        "{id} — ремонт (виновник не найден): голова очереди стека ({n}/{max}), автозапуск "
+        "да, этап эскиз; брифа нет — DoR ждёт его (depot2 stack set {id} --brief …)"
+    ),
     "claims.claim_added": "{ref}: рекламация №{n} (ремонт {repair}); рекламаций теперь {claims}",
     "claims.culprit_later": "виновник найдётся — depot2 repair link {id} --of <st-…|tr-…:N|#PR>",
     "claims.bugs_md": "BUGS.md: в строке {bug}, в «куда», — {id}",
@@ -218,10 +252,13 @@ MESSAGES = {
     "claims.since_start": "начала",
     "claims.until_today": "сегодня",
     "claims.report_head": "## Брак и рекламации — {period}",
-    "claims.report_means": ("Брак — вагон вернулся в сборку после сдачи (из приёмки, «доработать», или с путей). "
-                            "Рекламация — дефект на проде после «прибыл»: вагон-ремонт (`depot2 repair add --of …`)."),
-    "claims.report_total": ("Итого: брак {returns}, рекламаций {claims} — у {cars} вагонов; ремонтов {repairs} (в "
-                            "работе {open})."),
+    "claims.report_means": (
+        "Брак — вагон вернулся в сборку после сдачи (из приёмки, «доработать», или с путей). "
+        "Рекламация — дефект на проде после «прибыл»: вагон-ремонт (`depot2 repair add --of …`)."
+    ),
+    "claims.report_total": (
+        "Итого: брак {returns}, рекламаций {claims} — у {cars} вагонов; ремонтов {repairs} (в работе {open})."
+    ),
     "claims.by_tracks": "### По трекам",
     "claims.tracks_table": "| Трек | Вагонов | Брак | Рекламаций |",
     "claims.off_tracks": "вне треков (стек)",
@@ -244,9 +281,11 @@ MESSAGES = {
     "agents.state.stopped": "остановлен",
     "agents.state.unattached": "не привязан",
     "agents.state.lost": "транскрипт не найден",
-    "agents.state_means": ("работает — новые строки в транскрипте; молчит — ни строки дольше agents.silent_min; "
-                           "закончил — транскрипт закрыт (траты записаны на вагон); остановлен — `agents stop` "
-                           "(процесс останавливает оркестратор); не привязан — нет `agents attach`"),
+    "agents.state_means": (
+        "работает — новые строки в транскрипте; молчит — ни строки дольше agents.silent_min; "
+        "закончил — транскрипт закрыт (траты записаны на вагон); остановлен — `agents stop` "
+        "(процесс останавливает оркестратор); не привязан — нет `agents attach`"
+    ),
     "agents.st_stopped": "остановлен {at}: {why}",
     "agents.st_finished_at": "закончил {at}",
     "agents.st_unattached": "не привязан (depot2 agents attach {id} <run id>)",
@@ -257,12 +296,17 @@ MESSAGES = {
     "agents.post_n": "П{n}",
     "agents.booked_finished": "{id} закончил: на вагон {car} записано {mtok} (всего на вагоне {total})",
     "agents.booked_stopped": "{id} остановлен: на вагон {car} записано {mtok} (всего на вагоне {total})",
-    "agents.role_build_stage": ("роль «{role}»: вагон на этапе «{stage}» — в сборку идёт из эскиза, проекта или сборки "
-                                "(запаркованный PR)"),
-    "agents.role_docs_stage": ("роль «{role}»: вагон на этапе «{stage}», а роль берёт этап «{docs}» (он держит слот "
-                               "сборки): depot2 car stage {ref} docs"),
-    "agents.role_docs_slot": ("роль «{role}»: этап «{docs}» держит слот сборки, а {st} не в слоте; в слот — depot2 "
-                              "tracks car stack {ref} --start, затем depot2 car stage {ref} docs"),
+    "agents.role_build_stage": (
+        "роль «{role}»: вагон на этапе «{stage}» — в сборку идёт из эскиза, проекта или сборки (запаркованный PR)"
+    ),
+    "agents.role_docs_stage": (
+        "роль «{role}»: вагон на этапе «{stage}», а роль берёт этап «{docs}» (он держит слот "
+        "сборки): depot2 car stage {ref} docs"
+    ),
+    "agents.role_docs_slot": (
+        "роль «{role}»: этап «{docs}» держит слот сборки, а {st} не в слоте; в слот — depot2 "
+        "tracks car stack {ref} --start, затем depot2 car stage {ref} docs"
+    ),
     "agents.role_stages": "роль «{role}»: вагон на этапе «{stage}», а роль берёт этапы: {stages}",
     "agents.no_usage": "нет показания окна расхода: --usage X (доля или %), стоп {stop} (usage.stop_at)",
     "agents.over_stop": "окно {usage} ≥ стоп {stop} (usage.stop_at)",
@@ -272,11 +316,13 @@ MESSAGES = {
     "agents.heading": "## Агенты",
     "agents.none": "Живых агентов нет.",
     "agents.none_live": "Живых агентов нет (`depot2 agents --all`: все).",
-    "agents.table": ("| Агент | Вагон | Роль | Кто | Начал | Состояние | Ходов | Потрачено | Последнее действие | "
-                     "Слот |"),
+    "agents.table": (
+        "| Агент | Вагон | Роль | Кто | Начал | Состояние | Ходов | Потрачено | Последнее действие | Слот |"
+    ),
     "agents.forced_mark": "ворота с --force",
-    "agents.legend": ("Состояние: {means}. Потрачено — по транскрипту (%UW и MTok, как везде); по окончании — на "
-                      "вагон, один раз."),
+    "agents.legend": (
+        "Состояние: {means}. Потрачено — по транскрипту (%UW и MTok, как везде); по окончании — на вагон, один раз."
+    ),
     "agents.show_who": "- кто: {by}; начал {at}",
     "agents.show_who_usage": "- кто: {by}; начал {at}; окно при старте {usage} (стоп {stop})",
     "agents.show_forced": "- ворота пройдены с --force ({why}): {gates}",
@@ -293,15 +339,18 @@ MESSAGES = {
     "cli.note_added": "{id}: заметка {n} — {note}",
     "cli.unlock_decision": "Владелец снял замок {lock} ({id}, условие «{condition}»): {reason}",
     "cli.forced": "{id}: ворота пройдены с --force ({why}): {gates}",
-    "cli.stage_on_add": ("--stage при добавлении — тележка, эскиз или проект (bogie, sketch, project), не «{stage}»; "
-                         "дальше вагон двигают его команды"),
+    "cli.stage_on_add": (
+        "--stage при добавлении — тележка, эскиз или проект (bogie, sketch, project), не «{stage}»; "
+        "дальше вагон двигают его команды"
+    ),
     "cli.question_open": "{car}: вопрос {n} открыт: {q} (DoR ждёт ответа: depot2 car answer {id} {n} --answer «…»)",
     "cli.question_closed": "{car}: вопрос {n} закрыт: {answer}",
     "cli.project_required": "{car}: проект обязателен: {why}",
     "cli.project_required_off": "{car}: отметка «проект обязателен» снята",
-    "cli.priority_show": "{ref}: приоритет {cell} ({min}–{max}, 10 — важнее всего; по умолчанию {default})",
-    "cli.agent_started": ("{id} — {role}, {car} ({by}): теперь запусти агента; его id запуска — depot2 agents attach "
-                          "{id} <run id>"),
+    "cli.priority_show": "{ref}: приоритет {cell} ({min}-{max}, 10 — важнее всего; по умолчанию {default})",
+    "cli.agent_started": (
+        "{id} — {role}, {car} ({by}): теперь запусти агента; его id запуска — depot2 agents attach {id} <run id>"
+    ),
     "cli.agent_attached": "{id} → {agent} ({path}): {state}, ходов {turns}, потрачено {spent}",
     "cli.agent_stopped": "{id} остановлен ({why}): процесс останавливает оркестратор",
     "cli.check_either": "либо --from-pr (строки из PR), либо одна отметка вручную (N ок|не касается|нарушен)",
@@ -321,63 +370,89 @@ MESSAGES = {
     "cli.web_bad_host": "warning: web.hosts: не имя хоста, пропущено: {bad}",
     "cli.web_resumed": "{name}: перезапущен на новом коде ({code})",
     "cli.web_restart": "{name}: код изменился — перезапускаюсь",
-    "cli.import_dry": ("DRY RUN: would import {n} principles from {file}; the render equals the file line for line "
-                       "({lines} lines), but the banner «Собран из депо» and the sections' headings in today's words"),
+    "cli.import_dry": (
+        "DRY RUN: would import {n} principles from {file}; the render equals the file line for line "
+        "({lines} lines), but the banner «Собран из депо» and the sections' headings in today's words"
+    ),
     "cli.principle_replaced": "{id} → заменён by {by}",
     "cli.principle_dropped": "{id} → снят",
     "cli.queues_migrate_dry": "DRY RUN: перенёс бы {n} записей и объектов",
     "cli.queues_migrate": "перенесено: {n} записей и объектов",
-    "cli.train_state_arrived": ("arrived (прибыл) is not reached by trains state: depot2 trains done NAME (every car "
-                                "merged or dropped; past the gate: --force --why «…»)"),
+    "cli.train_state_arrived": (
+        "arrived (прибыл) is not reached by trains state: depot2 trains done NAME (every car "
+        "merged or dropped; past the gate: --force --why «…»)"
+    ),
     "cli.train_state_scrapped": "scrapped (списан) is not reached by trains state: depot2 trains drop NAME --why «…»",
-    "cli.train_state_bad": ("a train moves to design, impl or merge (дизайн, имплементация, мердж-очередь), got "
-                            "{text}; it arrives by depot2 trains done NAME, is scrapped by trains drop NAME --why «…»"),
+    "cli.train_state_bad": (
+        "a train moves to design, impl or merge (дизайн, имплементация, мердж-очередь), got "
+        "{text}; it arrives by depot2 trains done NAME, is scrapped by trains drop NAME --why «…»"
+    ),
     # --- the command line's help (cli.py; the parser is built before the config is read: $DEPOT2_LANG or en) ---
     "cli.help.queues_json": "the entries as data (the web's «Очереди»)",
-    "cli.help.car_docs": ("its docs are needed: with yes it goes into the acceptance only through the stage "
-                          "«документация» (car stage REF docs); it wins over its sketch's line «Документация: нужна»"),
-    "cli.help.car_stack": ("put the car into the agents' stack (linked); --start: into a free slot now (a car of a "
-                           "live train: its train in «имплементация», within its slots)"),
-    "cli.help.car_check": ("its marks by the principles: print them; --from-pr reads its PR's «Проверка по "
-                           "принципам»; N MARK sets one by hand (it wins over the PR's line)"),
+    "cli.help.car_docs": (
+        "its docs are needed: with yes it goes into the acceptance only through the stage "
+        "«документация» (car stage REF docs); it wins over its sketch's line «Документация: нужна»"
+    ),
+    "cli.help.car_stack": (
+        "put the car into the agents' stack (linked); --start: into a free slot now (a car of a "
+        "live train: its train in «имплементация», within its slots)"
+    ),
+    "cli.help.car_check": (
+        "its marks by the principles: print them; --from-pr reads its PR's «Проверка по "
+        "принципам»; N MARK sets one by hand (it wins over the PR's line)"
+    ),
     "cli.help.check_rest": "a principle's number and ок | не касается | нарушен (ok, n/a, bad)",
-    "cli.help.trains": ("the trains (trains.json): named runs of cars — дизайн, имплементация, мердж-очередь; no "
-                        "action: print them"),
+    "cli.help.trains": (
+        "the trains (trains.json): named runs of cars — дизайн, имплементация, мердж-очередь; no action: print them"
+    ),
     "cli.help.trains_add": "a new train, in «дизайн»",
     "cli.help.owner_word": "its way into «имплементация» is the owner's word",
-    "cli.help.owner_word_set": ("yes (the flag alone, as on add) or no: its way into «имплементация» is the owner's "
-                                "word"),
-    "cli.help.trains_next": ("what a free slot takes now: a repair out of turn, then the trains in «имплементация» by "
-                             "priority (their cars past the DoR), then the stack's autostart queue"),
-    "cli.help.car": ("one car (tr-NNNN:N, st-, wl-, th-): its stage, show, its open questions, the stage «проект» "
-                     "required"),
+    "cli.help.owner_word_set": (
+        "yes (the flag alone, as on add) or no: its way into «имплементация» is the owner's word"
+    ),
+    "cli.help.trains_next": (
+        "what a free slot takes now: a repair out of turn, then the trains in «имплементация» by "
+        "priority (their cars past the DoR), then the stack's autostart queue"
+    ),
+    "cli.help.car": (
+        "one car (tr-NNNN:N, st-, wl-, th-): its stage, show, its open questions, the stage «проект» required"
+    ),
     "cli.help.stage_by": "who (default: car stage), e.g. «владелец»",
     "cli.help.answer_by": "whose answer, e.g. «владелец»",
-    "cli.help.needs_project": ("the stage «проект» is required (the data model, the server, privacy and policy; size "
-                               "L is by itself): the DoR asks for it"),
+    "cli.help.needs_project": (
+        "the stage «проект» is required (the data model, the server, privacy and policy; size "
+        "L is by itself): the DoR asks for it"
+    ),
     "cli.help.needs_why": "why, e.g. «схема данных»",
     "cli.help.board_view": "stack: the stack's view (сборка, приёмка, на путях, the queue): stack --md",
-    "cli.help.repair": ("брак и рекламации: a claim on a car on production and its repair car (repair add --of …), "
-                        "its culprit found later (repair link)"),
+    "cli.help.repair": (
+        "брак и рекламации: a claim on a car on production and its repair car (repair add --of …), "
+        "its culprit found later (repair link)"
+    ),
     "cli.help.repair_title": "default: «ремонт: <the culprit or the bug>»",
     "cli.help.repair_by": "who (default: repair add), e.g. «владелец»",
     "cli.help.claims": "брак и рекламации: which tracks and cars gave them, for a period",
-    "cli.help.agents_start": ("the gates (the role and the car's stage, the usage window's stop, one live agent per "
-                              "car; a build: its slot or the DoR, then into a slot; docs: the stage «документация», "
-                              "in the build's slot), then ag-NNNN: its id, the first line"),
-    "cli.help.agents_role": ("the stages it takes: sketch — тележка, эскиз; plan — эскиз, проект; build — its car in "
-                             "a slot, or into one through the DoR; docs — документация (in the build's slot: car "
-                             "stage REF docs first); mergefix — приёмка, на путях"),
+    "cli.help.agents_start": (
+        "the gates (the role and the car's stage, the usage window's stop, one live agent per "
+        "car; a build: its slot or the DoR, then into a slot; docs: the stage «документация», "
+        "in the build's slot), then ag-NNNN: its id, the first line"
+    ),
+    "cli.help.agents_role": (
+        "the stages it takes: sketch — тележка, эскиз; plan — эскиз, проект; build — its car in "
+        "a slot, or into one through the DoR; docs — документация (in the build's slot: car "
+        "stage REF docs first); mergefix — приёмка, на путях"
+    ),
     "cli.help.agents_by": "who starts it (default: оркестратор)",
     "cli.help.agents_stop_by": "who stops it (default: оркестратор)",
     "cli.help.queue_done": "«сделано»: it came true (not drop); off the open table, in --all",
     "cli.help.principles_checks": "the three checks: the owner's words, «Сверка с кодом», the check principles",
     "cli.help.merge_word": "the owner's words, verbatim (e.g. «мердж»)",
     "cli.help.merge_force": "the DoD's principles (its PR's «Проверка по принципам»: priority 1 are gates)",
-    "cli.help.merge_handoff": ("a merged PR whose ride did not end stops being watched: its deploy rides with the "
-                               "next merge (it stays «в пути» until that one arrives)"),
+    "cli.help.merge_handoff": (
+        "a merged PR whose ride did not end stops being watched: its deploy rides with the "
+        "next merge (it stays «в пути» until that one arrives)"
+    ),
     "cli.help.merge_rerun": "gh run rerun --failed for the run GitHub left unstarted («ждёт GitHub»)",
-
     # === этапы, треки, поезда ===
     # --- этапы (stages.py) ---
     "stage.bogie": "тележка",
@@ -423,19 +498,23 @@ MESSAGES = {
     "stages.in_merge_queue": "в мердж-очереди {id}",
     "stages.merged_rolling": "слит ({sha}), мердж-очередь {id} ещё выкатывает",
     "stages.hand_why": "выкачен с #{pr} ({id}): слит руками раньше",
-    "stages.arrive_hint": ("«прибыл» поставит следующая выкатка мердж-очереди: она берёт всё, что слито раньше неё; "
-                           "вручную (выкатка уже прошла) — depot2 car stage {ref} arrived --why «выкачен с #N …»"),
+    "stages.arrive_hint": (
+        "«прибыл» поставит следующая выкатка мердж-очереди: она берёт всё, что слито раньше неё; "
+        "вручную (выкатка уже прошла) — depot2 car stage {ref} arrived --why «выкачен с #N …»"
+    ),
     "stages.no_object": "нет объекта {ref} в стеке",
     "stages.left_no_record": "{ref} вышел из стека без записи объекта",
     "stages.bad_ref": "вагон — это st-NNNN, tr-NNNN:N, wl-NNNN или th-NNNN; не {ref!r}",
     "stages.label_object": "{car} (объект {obj})",
     "stages.owned_queued": "на путях ставит мердж-очередь: depot2 merge add <PR> --word «слова владельца»",
-    "stages.owned_back_to_brief": ("{oid} {where}: назад к брифу — depot2 stack done {oid} --car back (вагон) "
-                                   "или stack park {oid}"),
+    "stages.owned_back_to_brief": (
+        "{oid} {where}: назад к брифу — depot2 stack done {oid} --car back (вагон) или stack park {oid}"
+    ),
     "stages.owned_obj_build": "сборка — depot2 stack start {oid}",
     "stages.owned_obj_acceptance": "приёмка — depot2 stack post {oid}",
-    "stages.owned_obj_rolling": ("в пути — после мерджа: depot2 stack done {oid} --car merged --reason «…» "
-                                 "(или мердж-очередь)"),
+    "stages.owned_obj_rolling": (
+        "в пути — после мерджа: depot2 stack done {oid} --car merged --reason «…» (или мердж-очередь)"
+    ),
     "stages.owned_obj_arrived": "прибыл — depot2 stack done {oid} --car merged --reason «…» (без PR) или мердж-очередь",
     "stages.owned_obj_scrapped": "списан — depot2 stack done {oid} --car dropped --reason «…»",
     "stages.owned_car_build": "сборка — depot2 tracks car stack {ref} --start",
@@ -445,8 +524,9 @@ MESSAGES = {
     "stages.owned_entry_scrapped": "списан — depot2 {name} drop {ref} --reason «…»",
     "stages.owned_wish_arrived": "прибыл — depot2 wishes done {ref} --reason «…»",
     "stages.owned_wish_take": "хотелка сама не собирается: её берут в работу — depot2 wish take {ref} --to st-…|tr-…:N",
-    "stages.owned_think_take": ("запись «подумать» сама не собирается: её берут в работу — depot2 wish take {ref} "
-                                "--to st-…|tr-…:N"),
+    "stages.owned_think_take": (
+        "запись «подумать» сама не собирается: её берут в работу — depot2 wish take {ref} --to st-…|tr-…:N"
+    ),
     "stages.owned_left": "{ref} вышел из стека: вручную — только «в пути» → «прибыл»",
     "stages.next_arrive_mq": "Дальше: «прибыл» поставит мердж-очередь, когда {id} #{pr} выкатится.",
     "stages.next_line": "Дальше: {hint}.",
@@ -471,7 +551,7 @@ MESSAGES = {
     "stages.questions": "Вопросы:",
     "stages.question_answered": "- {n}. {q} — ответ ({at}): {answer}",
     "stages.question_open": "- {n}. {q} — открыт",
-    "stages.show_priority": "Приоритет: {p} (1–10, 10 — важнее всего; `depot2 priority {ref} N`).",
+    "stages.show_priority": "Приоритет: {p} (1-10, 10 — важнее всего; `depot2 priority {ref} N`).",
     "stages.show_track": "Трек: {track} {title}. Поезд: {train}.",
     "stages.show_old_ref": "{ref} — старый номер: вагон перенесён, теперь {now}.",
     "stages.show_moved": "Перенесён: {src} → {to} ({at}{why}).",
@@ -492,7 +572,6 @@ MESSAGES = {
     "stages.migrate_tracks": "этапы: вагоны треков — записан у {n} ({counts})",
     "stages.migrate_wishes": "этапы: хотелки — записан у {n} ({counts})",
     "stages.migrate_think": "этапы: на подумать — записан у {n} ({counts}); вопрос (question) у {asked}",
-
     # --- треки (tracks.py) ---
     "tracks.car.waiting": "ждёт",
     "tracks.car.ready": "готов",
@@ -506,10 +585,13 @@ MESSAGES = {
     "tracks.moved_note": "note: {ref} перенесён в {now} — это он",
     "tracks.taken_car": "номер занят: {track}:{n} — {title} ({status})",
     "tracks.taken_pointer": "номер занят: {track}:{n} — вагон «{title}» перенесён в {to}",
-    "tracks.closed_note": ("warning: {track}:{n} «{title}» — {status}, этап «{stage}»: запись идёт в закрытый вагон; "
-                           "новый вагон — depot2 tracks car add {track} --title …"),
-    "tracks.marks_head": ("Оценка по принципам (`depot2 tracks car check <вагон>`; ворота — приоритет 1, "
-                          "балл — приоритет 2):"),
+    "tracks.closed_note": (
+        "warning: {track}:{n} «{title}» — {status}, этап «{stage}»: запись идёт в закрытый вагон; "
+        "новый вагон — depot2 tracks car add {track} --title …"
+    ),
+    "tracks.marks_head": (
+        "Оценка по принципам (`depot2 tracks car check <вагон>`; ворота — приоритет 1, балл — приоритет 2):"
+    ),
     "tracks.why_dropped": "снят",
     "tracks.why_merged_before": "слит до учёта этапов — на проде",
     "tracks.why_running": "в работе",
@@ -538,8 +620,10 @@ MESSAGES = {
     "tracks.no_object_team": "нет объекта {oid} в стеке команды",
     "tracks.object_left": "{oid} вышел из стека: в вагон берётся объект, что в нём стоит",
     "tracks.object_left_team": "{oid} вышел из стека команды: в вагон берётся объект, что в нём стоит",
-    "tracks.team_in_slot": ("{oid} в слоте команды: идёт его раунд, он пишет в этот объект (round --item); в вагон "
-                            "берётся объект из очереди команды"),
+    "tracks.team_in_slot": (
+        "{oid} в слоте команды: идёт его раунд, он пишет в этот объект (round --item); в вагон "
+        "берётся объект из очереди команды"
+    ),
     "tracks.taken_reason": "взят в вагон {ref}",
     "tracks.taken_team": "{oid} → {ref}: новый вагон «{title}» ({stage}); {oid} вышел из стека команды",
     "tracks.already_object": "{oid} — уже объект вагона {track}:{n}",
@@ -549,8 +633,10 @@ MESSAGES = {
     "tracks.blocker_arrived": "он прибыл (слит): его PR в main под этим номером; новая работа — новый вагон (tracks car add)",
     "tracks.blocker_queued": "его PR #{pr} в мердж-очереди ({id}): перенос — когда запись закроется",
     "tracks.no_move": "{old} не переносится: {blocker}",
-    "tracks.moved": ("{old} → {new}: перенесён со всей историей (этапы, заметки, траты, ветка, PR, бриф, оценки); "
-                     "на старом месте указатель «перенесён в {new}» — старый номер находит его"),
+    "tracks.moved": (
+        "{old} → {new}: перенесён со всей историей (этапы, заметки, траты, ветка, PR, бриф, оценки); "
+        "на старом месте указатель «перенесён в {new}» — старый номер находит его"
+    ),
     "tracks.moved_slot": "{new}: слот и PR при нём ({st})",
     "tracks.moved_slot_pr": "{new}: слот и PR при нём ({st}, PR #{pr})",
     "tracks.moved_waits": "ждут его под новым номером (after): {waits}",
@@ -564,8 +650,10 @@ MESSAGES = {
     "tracks.on_park": "{ref} → PR #{pr} открыт, запаркован на треке ({oid} вышел из стека, слот свободен)",
     "tracks.on_post": "{ref} → PR #{pr} открыт, в пост-стеке: ждёт мерджа владельца ({oid}, слот свободен)",
     "tracks.on_requeue": "{ref} → готов ({oid} в голове очереди стека, на доработку; PR #{pr})",
-    "tracks.on_back": ("{ref} → {status}, назад на трек как был: бриф и ветка при нём, связь со стеком снята "
-                       "({oid} вышел); снова в стек: depot2 tracks car stack {ref}"),
+    "tracks.on_back": (
+        "{ref} → {status}, назад на трек как был: бриф и ветка при нём, связь со стеком снята "
+        "({oid} вышел); снова в стек: depot2 tracks car stack {ref}"
+    ),
     "tracks.open_n": "открыто {n}",
     "tracks.in_trains": "в поездах: {names}",
     "tracks.free_n": "вне поездов {n}",
@@ -576,8 +664,10 @@ MESSAGES = {
     "tracks.md_legend": "Трек — тема и её вагоны; кто за кем едет и сколько слотов берёт — поезда (`depot2 trains --md`).",
     "tracks.car_md_heading": "## Трек {id} {title}",
     "tracks.car_md_state": "Состояние: {state}. Effort (ожидаемо / потрачено): {effort}.",
-    "tracks.car_md_header": ("| Вагон | Приоритет | Что | После | Размер: effort (оценка / факт) | Ветка / PR | Стек "
-                             "| Поезд | Статус | Этап |"),
+    "tracks.car_md_header": (
+        "| Вагон | Приоритет | Что | После | Размер: effort (оценка / факт) | Ветка / PR | Стек "
+        "| Поезд | Статус | Этап |"
+    ),
     "tracks.car_md_empty": "| — | | (вагонов нет) | | | | | | | |",
     "tracks.car_md_moved": "Перенесены отсюда (старый номер находит вагон): {moved}.",
     "tracks.parked_list": "Запаркованы (слот не держат): {list}.",
@@ -596,13 +686,14 @@ MESSAGES = {
     "tracks.note_obj": "из {id} — объект стека ({where}; добавлен {added}): {title}",
     "tracks.by_cars": "(по вагонам ≈ {sum})",
     "tracks.dropped_n": "(+{n} снят)",
-    "tracks.stage_legend": ("Этап: тележка → эскиз → (проект) → сборка → (документация) → приёмка → на путях → в пути "
-                            "→ прибыл, или списан; документация — `depot2 car stage tr-…:N docs`, нужна ли — "
-                            "`tracks car set --docs yes|no` или строка эскиза «Документация: нужна»; история — "
-                            "`depot2 car show tr-…:N`."),
+    "tracks.stage_legend": (
+        "Этап: тележка → эскиз → (проект) → сборка → (документация) → приёмка → на путях → в пути "
+        "→ прибыл, или списан; документация — `depot2 car stage tr-…:N docs`, нужна ли — "
+        "`tracks car set --docs yes|no` или строка эскиза «Документация: нужна»; история — "
+        "`depot2 car show tr-…:N`."
+    ),
     "tracks.post_item": "{id}{car} PR #{pr} (CI {ci}, ждёт {age})",
     "tracks.post_line": "Пост-стек — ждут мерджа владельца ({n}/{cap}, слот не держат): {items}.",
-
     # --- поезда (trains.py) ---
     "trains.state.design": "дизайн",
     "trains.state.impl": "имплементация",
@@ -634,8 +725,9 @@ MESSAGES = {
     "trains.gate_passed_owner": "в «{state}»: ворота пройдены — `depot2 trains state {name} {to}` (слово владельца)",
     "trains.gate_passed_word": "в «{state}»: ворота пройдены — `depot2 trains state {name} {to}` --word «…»",
     "trains.gate_waits": "в «{state}» ждёт: {miss}",
-    "trains.slot_only_impl": ("поезд {name} — «{state}»: его вагоны берут слот только в «имплементации» "
-                              "(`depot2 trains state {name} impl`)"),
+    "trains.slot_only_impl": (
+        "поезд {name} — «{state}»: его вагоны берут слот только в «имплементации» (`depot2 trains state {name} impl`)"
+    ),
     "trains.slots_full": "поезд {name} держит слотов уже {busy} из {n} ({cars})",
     "trains.why_parked": "запаркован: {reason}",
     "trains.why_owner_word": "ждёт слова владельца (автозапуск — нет)",
@@ -649,8 +741,10 @@ MESSAGES = {
     "trains.plan_no_pr": "{ref}: нет PR — `depot2 tracks car set {ref} --pr N`, {off}",
     "trains.plan_same_pr": "{ref}: PR #{n} — тот же, что у {other}: `depot2 tracks car set {ref} --pr N`, {off}",
     "trains.plan_refused": "{ref}: {said} — поправить PR или вагон (другой PR: `depot2 tracks car set {ref} --pr N`), {off}",
-    "trains.plan_not_ready": ("{name}: в «мердж-очередь» встаёт весь поезд или ничего — не готовы {bad} из {all} "
-                              "вагонов:\n{list}\nНичего не записано: очередь и поезд как были."),
+    "trains.plan_not_ready": (
+        "{name}: в «мердж-очередь» встаёт весь поезд или ничего — не готовы {bad} из {all} "
+        "вагонов:\n{list}\nНичего не записано: очередь и поезд как были."
+    ),
     "trains.take_back_why": "откат trains state merge (поезд {name}: PR #{n} не встал)",
     "trains.take_back_nothing": "Откатывать нечего: до него этот вызов в очередь ничего не поставил.",
     "trains.take_back_head": "Откачено ({why}):",
@@ -667,8 +761,10 @@ MESSAGES = {
     "trains.at_once": "сразу",
     "trains.status_busy": "{state}: в работе {cars}",
     "trains.md_heading": "## Поезда",
-    "trains.md_header": ("| № | Поезд | Приоритет | Состояние | Старт | Вагонов (готово / всего) | Слоты "
-                         "| Effort (ожидаемо / потрачено) | Дальше | Этапы вагонов |"),
+    "trains.md_header": (
+        "| № | Поезд | Приоритет | Состояние | Старт | Вагонов (готово / всего) | Слоты "
+        "| Effort (ожидаемо / потрачено) | Дальше | Этапы вагонов |"
+    ),
     "trains.md_empty": "| — | (пусто) | | | | | | | | |",
     "trains.free_slots": "Свободных слотов в стеке: {free}/{slots}.",
     "trains.repairs": "Вне очереди — ремонт: {list}.",
@@ -684,22 +780,27 @@ MESSAGES = {
     "trains.gated": "Ждут ворот DoR (слот их сам не возьмёт): {list}.",
     "trains.gated_item": "{ref} «{title}» — {dor} (`{cmd}`, или с --force --why «…»)",
     "trains.owner_word_head": "Очередь стека, слот их сам не возьмёт:",
-    "trains.order": ("Порядок: ремонт вне очереди, потом поезда в «имплементации» по приоритету поезда, в поезде — по "
-                     "приоритету вагона, потом очередь стека по приоритету; при равенстве — по порядку (P10 — первым)."),
+    "trains.order": (
+        "Порядок: ремонт вне очереди, потом поезда в «имплементации» по приоритету поезда, в поезде — по "
+        "приоритету вагона, потом очередь стека по приоритету; при равенстве — по порядку (P10 — первым)."
+    ),
     "trains.car_md_heading": "## Поезд {name} «{title}»",
-    "trains.car_md_state": ("Состояние: {state}. Приоритет: {p}. Старт: {start}. Слоты: {slots}. "
-                            "Effort (ожидаемо / потрачено): {effort}. Дальше: {next}."),
+    "trains.car_md_state": (
+        "Состояние: {state}. Приоритет: {p}. Старт: {start}. Слоты: {slots}. "
+        "Effort (ожидаемо / потрачено): {effort}. Дальше: {next}."
+    ),
     "trains.car_md_header": "| # | Вагон | Приоритет | Трек | Что | Ветка / PR | Стек | Статус | Этап |",
     "trains.car_md_empty": "| — | (вагонов нет) | | | | | | | |",
     "trains.unpriced": "вагонов без оценки: {n}",
-    "trains.states_legend": ("Поезд: дизайн → имплементация → мердж-очередь → прибыл, или списан; ворота — "
-                             "`depot2 trains state ИМЯ impl|merge` (с --force --why «…» мимо них), назад — без ворот."),
+    "trains.states_legend": (
+        "Поезд: дизайн → имплементация → мердж-очередь → прибыл, или списан; ворота — "
+        "`depot2 trains state ИМЯ impl|merge` (с --force --why «…» мимо них), назад — без ворот."
+    ),
     "trains.freed_repair": "{id} (ремонт, вне очереди) — `depot2 stack start {id}`",
     "trains.freed_pick": "{track}:{n} (поезд {train} {tp}, вагон {cp}) — `{cmd}`",
     "trains.freed_takes": "Свободный слот берёт (trains next): {list}",
     "trains.freed_nothing": "Свободный слот (trains next): с автозапуском брать нечего",
     "trains.freed_nothing_word": "Свободный слот (trains next): с автозапуском брать нечего; ждут слова владельца: {ids}",
-
     # === стек, стек команды, ворота, очереди, extras, push, бэкап ===
     # --- ворота (gates.py) ---
     "gates.item.brief": "бриф",
@@ -751,30 +852,44 @@ MESSAGES = {
     "gates.open_questions": "открытые вопросы: {n} ({list})",
     "gates.after_unmet": "after не выполнен: {blockers}",
     "gates.project_required": "проект обязателен ({need}), этапа «проект» не было (depot2 car stage … project)",
-    "gates.post_full_slot": ("пост-стек полон ({used}/{cap}): {oid} stays in its slot; the owner merges one first "
-                             "(stack done), or one goes back for work (stack start)"),
-    "gates.post_full_queue": ("пост-стек полон ({used}/{cap}): {oid} stays in the queue; the owner merges one first "
-                              "(stack done), or one goes back for work (stack start)"),
+    "gates.post_full_slot": (
+        "пост-стек полон ({used}/{cap}): {oid} stays in its slot; the owner merges one first "
+        "(stack done), or one goes back for work (stack start)"
+    ),
+    "gates.post_full_queue": (
+        "пост-стек полон ({used}/{cap}): {oid} stays in the queue; the owner merges one first "
+        "(stack done), or one goes back for work (stack start)"
+    ),
     "gates.limit_slots": "слоты",
     "gates.limit_post": "пост-стек",
-    "gates.refused": ("ворота: {ref} → «{target}» не пройдены: {text}. Пройти всё равно — только с причиной: {cmd} "
-                      "--force --why «…» (в истории этапа: forced)"),
+    "gates.refused": (
+        "ворота: {ref} → «{target}» не пройдены: {text}. Пройти всё равно — только с причиной: {cmd} "
+        "--force --why «…» (в истории этапа: forced)"
+    ),
     "gates.force_needs_why": "--force — только с причиной: --why «…» (не пройдено: {text})",
     # --- стек (stack.py) ---
-    "stack.autostart_means": ("да — первый свободный слот берёт объект сам (`trains next`, после поездов); нет (по "
-                              "умолчанию) — ждёт слова владельца, `stack start`; вагон — объект вагона трека: его слот "
-                              "берёт его поезд в «имплементации» (или `tracks car stack --start`), флаг не читается"),
-    "stack.post_means": ("PR готов (CI зелёный) и ждёт только «мердж» владельца; слота не держит (`stack post`); после "
-                         "мерджа — `stack done`, на доработку — `stack start` (в слот, или в голову очереди, если "
-                         "слота нет)"),
-    "stack.stage_legend": ("Этап: тележка → эскиз → (проект) → сборка → (документация) → приёмка → на путях → в пути → "
-                           "прибыл, или списан; документация держит слот сборки, а вагон, которому она нужна (`tracks "
-                           "car set --docs yes` или строка эскиза «Документация: нужна»), идёт в приёмку только через "
-                           "неё (`depot2 car stage ID docs`); история — `depot2 car show ID`."),
+    "stack.autostart_means": (
+        "да — первый свободный слот берёт объект сам (`trains next`, после поездов); нет (по "
+        "умолчанию) — ждёт слова владельца, `stack start`; вагон — объект вагона трека: его слот "
+        "берёт его поезд в «имплементации» (или `tracks car stack --start`), флаг не читается"
+    ),
+    "stack.post_means": (
+        "PR готов (CI зелёный) и ждёт только «мердж» владельца; слота не держит (`stack post`); после "
+        "мерджа — `stack done`, на доработку — `stack start` (в слот, или в голову очереди, если "
+        "слота нет)"
+    ),
+    "stack.stage_legend": (
+        "Этап: тележка → эскиз → (проект) → сборка → (документация) → приёмка → на путях → в пути → "
+        "прибыл, или списан; документация держит слот сборки, а вагон, которому она нужна (`tracks "
+        "car set --docs yes` или строка эскиза «Документация: нужна»), идёт в приёмку только через "
+        "неё (`depot2 car stage ID docs`); история — `depot2 car show ID`."
+    ),
     "in.stack.yes": r"да",
     "in.stack.no": r"нет",
-    "stack.queue_full": ("очередь полна ({n}): место освобождает depot2 stack done ID --reason «…» (что уже не нужно) "
-                         "или stack start ID (голова очереди — в слот)"),
+    "stack.queue_full": (
+        "очередь полна ({n}): место освобождает depot2 stack done ID --reason «…» (что уже не нужно) "
+        "или stack start ID (голова очереди — в слот)"
+    ),
     "stack.running": "агент работает",
     "stack.waiting": "ждёт слота",
     "stack.stage_needs_docs": "{stage} (нужна документация)",
@@ -789,11 +904,15 @@ MESSAGES = {
     "stack.why_unpost": "из пост-стека на доработку",
     "stack.why_restore": "запаркованный PR снова в работу",
     "stack.no_stage": "нет этапа {stage}",
-    "stack.park_full": ("очередь полна ({n}): a parked object goes to the head of the queue; {oid} stays in its slot "
-                        "(stack done one of the queue first)"),
-    "stack.park_full_post": ("очередь полна ({n}): a parked object goes to the head of the queue; {oid} stays in its "
-                             "slot (stack done one of the queue first, or stack post {oid} if its PR waits only for the "
-                             "merge)"),
+    "stack.park_full": (
+        "очередь полна ({n}): a parked object goes to the head of the queue; {oid} stays in its slot "
+        "(stack done one of the queue first)"
+    ),
+    "stack.park_full_post": (
+        "очередь полна ({n}): a parked object goes to the head of the queue; {oid} stays in its "
+        "slot (stack done one of the queue first, or stack post {oid} if its PR waits only for the "
+        "merge)"
+    ),
     "stack.num_slot": "С{n}",
     "stack.num_slot_over": "С+",
     "stack.num_post": "П{n}",
@@ -801,8 +920,10 @@ MESSAGES = {
     "stack.where.post": "пост",
     "stack.where.queue": "очередь",
     "stack.heading": "## Стек",
-    "stack.header": ("| № | Где | Задача | Приоритет | Ветка / PR | Статус | Автозапуск | Effort (ожидаемо / потрачено) "
-                     "| Зависит от | Замок | Этап |"),
+    "stack.header": (
+        "| № | Где | Задача | Приоритет | Ветка / PR | Статус | Автозапуск | Effort (ожидаемо / потрачено) "
+        "| Зависит от | Замок | Этап |"
+    ),
     "stack.header_places": " Поезд | Трек |",
     "stack.part_build_board": "Сборка — в слотах",
     "stack.part_slots": "В слотах",
@@ -837,7 +958,6 @@ MESSAGES = {
     "stack.ballots_header": "| № | Раунд | Тема | Статус | Где остановились | Осталось пунктов |",
     "stack.title_solo": "{title} (соло: {who})",
     "stack.title_brainstorm": "Мозговой штурм команды ({id})",
-
     # --- стек команды (tstack.py) ---
     "tstack.kind.review": "обзор",
     "tstack.kind.review-10": "обзор после 10 мерджей",
@@ -853,10 +973,13 @@ MESSAGES = {
     "tstack.queue_full": "очередь команды полна ({n})",
     "tstack.round_done": "раунд прошёл: {rid}",
     "tstack.heading": "## Стек команды",
-    "tstack.header": ("| № | Где | Что | Приоритет | Вид | Кто | Вход | Раунд | Статус | Effort (ожидаемо / потрачено) "
-                      "| Зависит от |"),
-    "tstack.footer": ("Слоты команды идут параллельно со стеком агентов: раунды лёгкие. Потрачено — по токенам вызовов "
-                      "самого раунда (costs.json)."),
+    "tstack.header": (
+        "| № | Где | Что | Приоритет | Вид | Кто | Вход | Раунд | Статус | Effort (ожидаемо / потрачено) | Зависит от |"
+    ),
+    "tstack.footer": (
+        "Слоты команды идут параллельно со стеком агентов: раунды лёгкие. Потрачено — по токенам вызовов "
+        "самого раунда (costs.json)."
+    ),
     "in.tstack.all": r"все",
     "tstack.all": "все",
     # --- очереди (queues.py) ---
@@ -866,8 +989,9 @@ MESSAGES = {
     "queues.take_new_only_other": "--n, --size и --title — для нового вагона: --to tr-NNNN; {to} — не трек",
     "queues.took_new": "{id} → {ref}: новый вагон «{title}» ({stage})",
     "queues.took_car": "{id} → {ref}: в вагон «{title}» (его заметка и from)",
-    "queues.took_car_prio": ("{id} → {ref}: в вагон «{title}» (его заметка и from); приоритет вагона — его, {cprio} "
-                             "(у {id} был {eprio})"),
+    "queues.took_car_prio": (
+        "{id} → {ref}: в вагон «{title}» (его заметка и from); приоритет вагона — его, {cprio} (у {id} был {eprio})"
+    ),
     "queues.col.n": "№",
     "queues.col.stage": "Этап",
     "queues.col.date": "Дата",
@@ -887,8 +1011,10 @@ MESSAGES = {
     "queues.col.kind": "Вид",
     "queues.open_of": "Открыто {n} из {total}.",
     "queues.open_of_first": "Открыто {n} из {total}; показаны первые {limit}.",
-    "queues.stage_note": ("Этап: хотелка и «подумать» — тележки; взятая хотелка живёт дальше в том, что её взяло "
-                          "(«тележка → …» — его этап сейчас); история — `depot2 car show ID`."),
+    "queues.stage_note": (
+        "Этап: хотелка и «подумать» — тележки; взятая хотелка живёт дальше в том, что её взяло "
+        "(«тележка → …» — его этап сейчас); история — `depot2 car show ID`."
+    ),
     "queues.area.product": "продукт",
     "queues.area.tools": "тулзы",
     "queues.area.infra": "инфра",
@@ -962,11 +1088,15 @@ MESSAGES = {
     "queues.ov.principles_count": "{n} действуют",
     "queues.ov.heading": "## Очереди ({ts})",
     "queues.ov.header": "| Очередь | Открыто | Приоритет | Сверху | Команда |",
-    "queues.ov.priority_legend": ("Приоритет: открытые по приоритету 1–10 (P10 — важнее всего; `depot2 priority ID N`); "
-                                  "«Сверху» — по нему же; у принципов «Сверху» — принципы третьей проверки (③, "
-                                  "`depot2 principles checks`)."),
-    "queues.ov.stages": ("Этапы вагонов (стек, открытые вагоны поездов, хотелки, «подумать»; без прибывших и "
-                         "списанных): {counts}; история вагона — `depot2 car show ID`."),
+    "queues.ov.priority_legend": (
+        "Приоритет: открытые по приоритету 1-10 (P10 — важнее всего; `depot2 priority ID N`); "
+        "«Сверху» — по нему же; у принципов «Сверху» — принципы третьей проверки (③, "
+        "`depot2 principles checks`)."
+    ),
+    "queues.ov.stages": (
+        "Этапы вагонов (стек, открытые вагоны поездов, хотелки, «подумать»; без прибывших и "
+        "списанных): {counts}; история вагона — `depot2 car show ID`."
+    ),
     # --- добавки раунда: мозговые штурмы и заказы (extras.py) ---
     "extras.brainstorm.approved": "одобрен, ждёт запуска",
     "extras.brainstorm.done": "прошёл",
@@ -976,7 +1106,7 @@ MESSAGES = {
     "extras.order.done": "прогнан, ждёт решения",
     "extras.order.settled": "закрыт",
     "extras.no_topic": "нет темы",
-    "extras.questions_count": "вопросов {n}, нужно {lo}–{hi}",
+    "extras.questions_count": "вопросов {n}, нужно {lo}-{hi}",
     "extras.quorum_majority": "больше половины «да»: {need} из {n} (кто не голосовал — «нет»)",
     "extras.quorum_unanimous": "вся команда участвует в раунде 2 и все говорят «да»",
     "extras.no_part": {"m": "{who} не участвовал в раунде 2", "f": "{who} не участвовала в раунде 2"},
@@ -988,7 +1118,8 @@ MESSAGES = {
     "extras.topic_heading": "# Мозговой штурм команды: {topic}",
     "extras.topic_called": {
         "m": "Созвал: {who} ({id}, одобрено в раунде {round}). Тема, «зачем» и вопросы — дословно из предложения.",
-        "f": "Созвала: {who} ({id}, одобрено в раунде {round}). Тема, «зачем» и вопросы — дословно из предложения."},
+        "f": "Созвала: {who} ({id}, одобрено в раунде {round}). Тема, «зачем» и вопросы — дословно из предложения.",
+    },
     "extras.topic_why": "## Зачем сейчас",
     "extras.topic_questions": "## Вопросы для раунда",
     "extras.order_missing": "не заполнено: {fields}",
@@ -1042,8 +1173,10 @@ MESSAGES = {
     "push.detached": "HEAD не на ветке: пуш только с ветки",
     "push.no_commits": "в состоянии нет коммитов",
     "push.crash": "сбой: {error}",
-    "push.status_no_remote": ("git push: remote {remote} не задан: nothing is pushed and nothing warns. Add it once: "
-                              "git -C {root} remote add {remote} <url> (README «The state's backup»)"),
+    "push.status_no_remote": (
+        "git push: remote {remote} не задан: nothing is pushed and nothing warns. Add it once: "
+        "git -C {root} remote add {remote} <url> (README «The state's backup»)"
+    ),
     # --- облачный бэкап (backup.py) ---
     "backup.key_in_argv": "ключ попал бы в argv: отказ",
     "backup.bad_folder": "backup.folder должен быть одним именем папки, не {folder}",
@@ -1095,7 +1228,6 @@ MESSAGES = {
     "backup.push_check_crashed": "⚠ пуш депо: проверка упала: {kind}: {error}",
     "backup.started": "· бэкап команды: последний {h} ч назад, запущен в фоне (depot2 backup --status)",
     "backup.not_started": "⚠ бэкап команды не запущен: {reason}",
-
     # === мердж-очередь, её рабочие копии и пробы, принципы, отметки ===
     # --- оценка по принципам (marks.py) ---
     "marks.hand": "вручную",
@@ -1105,10 +1237,12 @@ MESSAGES = {
     "marks.unchecked": "не проверен",
     "marks.section": "Проверка по принципам",
     "marks.format": "`- 20: ок — как сделано`, `- 26: не касается`, `- 4: нарушен — что; взамен …`",
-    "marks.legend": ("Оценка по принципам (`depot2 tracks car check <вагон>`): приоритет 1 — ворота (у каждого строка, "
-                     "ни один не «нарушен»: иначе `stack post` и `merge add` не пускают); приоритет 2 — балл вагона: "
-                     "ок +1, не касается 0, нарушен −1; нет строки — «не проверен». Источник — раздел «{section}» в "
-                     "теле PR."),
+    "marks.legend": (
+        "Оценка по принципам (`depot2 tracks car check <вагон>`): приоритет 1 — ворота (у каждого строка, "
+        "ни один не «нарушен»: иначе `stack post` и `merge add` не пускают); приоритет 2 — балл вагона: "
+        "ок +1, не касается 0, нарушен -1; нет строки — «не проверен». Источник — раздел «{section}» в "
+        "теле PR."
+    ),
     "marks.gate_missing": "нет строки — {labels}",
     "marks.gate_bad": "нарушен — {labels}",
     "marks.gate_passed": "ворота пройдены",
@@ -1135,13 +1269,15 @@ MESSAGES = {
     "marks.title": "Оценка по принципам",
     "marks.kind_gate": "ворота",
     "marks.kind_score": "балл",
-    "marks.holder_none": ("{ref}: оценку по принципам ставят вагону трека или живому объекту стека "
-                          "(tr-NNNN:N, st-NNNN)"),
+    "marks.holder_none": (
+        "{ref}: оценку по принципам ставят вагону трека или живому объекту стека (tr-NNNN:N, st-NNNN)"
+    ),
     "marks.pr_unread": "PR #{n} не прочитан: {error}",
     "marks.read_error": "принципы: {error}; отметки — как были",
     "marks.read_no_section": "принципы: в PR #{pr} нет раздела «{section}» ({format})",
-    "marks.read_lines": ("принципы: PR #{pr}, раздел «{section}» — строк {n} (ок {ok} · не касается {na} · "
-                         "нарушен {bad})"),
+    "marks.read_lines": (
+        "принципы: PR #{pr}, раздел «{section}» — строк {n} (ок {ok} · не касается {na} · нарушен {bad})"
+    ),
     "marks.read_junk": "  не разобрана строка {no}: «{line}» ({format})",
     "marks.read_repeats": "  номер дважды: {labels} — считается худшая отметка",
     "marks.read_unknown": "  таких принципов в третьей проверке нет: {labels}",
@@ -1153,7 +1289,6 @@ MESSAGES = {
     "in.marks.ok": r"ок",
     "in.marks.na": r"не\s+касается",
     "in.marks.bad": r"нарушен[аоы]?",
-
     # --- принципы (principles.py) ---
     "principles.section.core": "Приоритет 1 — ворота",
     "principles.section.mechanics": "Приоритет 2 — балл вагона",
@@ -1166,16 +1301,20 @@ MESSAGES = {
     "in.principles.section.checks": r"проверка",
     "in.principles.section.voice": r"тексты|голос",
     "principles.means.1": "у каждого строка, и ни один не «нарушен» — иначе вагон не идёт в приёмку и в мердж",
-    "principles.means.2": "ок +1, не касается 0, нарушен −1; нет строки — «не проверен»",
-    "principles.banner": ("> Собран из депо (`depot2 principles render`); править через `depot2 principles` "
-                          "(add, set, replace, drop), не руками: между рендерами файл только для чтения."),
+    "principles.means.2": "ок +1, не касается 0, нарушен -1; нет строки — «не проверен»",
+    "principles.banner": (
+        "> Собран из депо (`depot2 principles render`); править через `depot2 principles` "
+        "(add, set, replace, drop), не руками: между рендерами файл только для чтения."
+    ),
     "principles.banner_words": "Собран из депо",
     "in.principles.banner": r"Собран из депо",
     "principles.default_head": "# Принципы проекта",
     "in.principles.owner": r"владел",
     "principles.check1_title": "Слова владельца",
-    "principles.check1_text": ("что сказал владелец, дословно и с датой; его поздние ответы и "
-                               "датированные поправки в шапке главнее остального текста эскиза."),
+    "principles.check1_text": (
+        "что сказал владелец, дословно и с датой; его поздние ответы и "
+        "датированные поправки в шапке главнее остального текста эскиза."
+    ),
     "principles.check2_title": "«Сверка с кодом»",
     "principles.check2_text": "что код делает сейчас, по origin/main и с file:line; не по памяти и не по старому брифу.",
     "in.principles.frame": r"проверк",
@@ -1187,9 +1326,11 @@ MESSAGES = {
     "principles.import_lossy": "импорт с потерями, ничего не записано: {lost}",
     "principles.md_header": "| Принцип | Раздел | Дата | Слова владельца | Подпункты | Статус |",
     "principles.md_empty": "| (пусто: `depot2 principles import FILE`) | | | | | |",
-    "principles.md_footer": ("Действуют {n} из {of}{first}; ③ — в третьей проверке (`depot2 principles checks`). Файл: "
-                             "{file} — собран из депо (`depot2 principles render`), править через "
-                             "`depot2 principles add|set|replace|drop`."),
+    "principles.md_footer": (
+        "Действуют {n} из {of}{first}; ③ — в третьей проверке (`depot2 principles checks`). Файл: "
+        "{file} — собран из депо (`depot2 principles render`), править через "
+        "`depot2 principles add|set|replace|drop`."
+    ),
     "principles.md_first": "; показаны первые {n}",
     "principles.md_no_file": "ещё нет",
     "principles.show_heading": "# {id} — принцип {label} ({status})",
@@ -1202,31 +1343,39 @@ MESSAGES = {
     "principles.field.links": "связи",
     "principles.field.source_ref": "откуда",
     "principles.field.notes": "заметки",
-    "principles.check3_text": ("по строке на каждый принцип ниже: {format} — как сделано, «не касается» или «нарушен» с "
-                               "тем, что взамен; депо читает эти строки из тела PR и ставит вагону оценку."),
+    "principles.check3_text": (
+        "по строке на каждый принцип ниже: {format} — как сделано, «не касается» или «нарушен» с "
+        "тем, что взамен; депо читает эти строки из тела PR и ставит вагону оценку."
+    ),
     "principles.checks_heading": "## Три проверки (`depot2 principles checks`)",
-    "principles.checks_intro": ("Каждый эскиз, бриф, PR и раунд команды проходит три проверки; у принципов приоритета 1 — "
-                                "ворота, у остальных — балл вагона."),
+    "principles.checks_intro": (
+        "Каждый эскиз, бриф, PR и раунд команды проходит три проверки; у принципов приоритета 1 — "
+        "ворота, у остальных — балл вагона."
+    ),
     "principles.checks_third": "3. **{title}** — по строке на каждый принцип: {format}.",
     "principles.checks_none": "     - (нет: `depot2 principles set pc-… --check yes`)",
-    "principles.checks_where": ("В брифе — разделы «Сверка с кодом» и «{section}» (ворота DoR, пункт `checks`). В теле "
-                                "PR — раздел «{section}», по строке на каждый принцип выше: депо читает его при "
-                                "`stack post` и `merge add` (ворота DoD, пункт `principles`) и ставит вагону оценку — "
-                                "ворота и балл (`depot2 tracks car check <вагон>`)."),
+    "principles.checks_where": (
+        "В брифе — разделы «Сверка с кодом» и «{section}» (ворота DoR, пункт `checks`). В теле "
+        "PR — раздел «{section}», по строке на каждый принцип выше: депо читает его при "
+        "`stack post` и `merge add` (ворота DoD, пункт `principles`) и ставит вагону оценку — "
+        "ворота и балл (`depot2 tracks car check <вагон>`)."
+    ),
     "principles.round_none": "нет",
     "principles.round_no_checks": "принципов с check: true нет",
-    "principles.round_line": ("Три проверки (`depot2 principles checks`): (1) слова владельца, (2) «Сверка с кодом», "
-                              "(3) проверка по принципам — {third}. Сверяйте тему раунда с ними и с принципами ниже; "
-                              "нарушение называйте прямо, с тем, что взамен."),
+    "principles.round_line": (
+        "Три проверки (`depot2 principles checks`): (1) слова владельца, (2) «Сверка с кодом», "
+        "(3) проверка по принципам — {third}. Сверяйте тему раунда с ними и с принципами ниже; "
+        "нарушение называйте прямо, с тем, что взамен."
+    ),
     "principles.check_mark.1": "ворота",
     "principles.check_mark.2": "балл",
     "principles.diff_line": "строка {n}: было {was}, в рендере {got}",
     "principles.diff_eof": "конец файла",
     "principles.parse_blank": "{name}:{no}: пустая строка сразу после заголовка раздела — так не рендерится",
-    "principles.parse_junk": ("{name}:{no}: строка не принцип («N. **…**»), не подпункт («   - …») и не раздел "
-                              "(«## …»): «{line}»"),
+    "principles.parse_junk": (
+        "{name}:{no}: строка не принцип («N. **…**»), не подпункт («   - …») и не раздел («## …»): «{line}»"
+    ),
     "principles.owner_said": "(владелец {words})",
-
     # --- рабочие копии мердж-очереди (mergewt.py) ---
     "mergewt.no_reason": "без причины",
     "mergewt.text_removed": "копия удалена ({size})",
@@ -1260,10 +1409,10 @@ MESSAGES = {
     "mergewt.prune_kept": "не тронуты ({n}):",
     "mergewt.prune_total_dry": "итого: удалю {n}, не тронуто {kept}, освободится {size}",
     "mergewt.prune_total_real": "итого: удалены {n}, не тронуто {kept}, освобождено {size}",
-
     # --- пробы мердж-очереди (mergetrials.py) ---
-    "mergetrials.line_conflict": ("{head}: #{n}: конфликт {conflicts} — its own turn stops there unless that is resolved "
-                                  "first ({reason})"),
+    "mergetrials.line_conflict": (
+        "{head}: #{n}: конфликт {conflicts} — its own turn stops there unless that is resolved first ({reason})"
+    ),
     "mergetrials.brief_pushed": "#{n} — {branch} {sha} поверх {on} (CI на {branch})",
     "mergetrials.brief_same": "#{n} — голова {sha} уже содержит {on}: она и есть проба",
     "mergetrials.brief.stop": "проба остановилась",
@@ -1278,7 +1427,6 @@ MESSAGES = {
     "mergetrials.cell.blocked": "проба не собрана",
     "mergetrials.cell.failed": "проба не удалась",
     "mergetrials.cell_other": "проба: {status}",
-
     # --- мердж-очередь (merge.py) ---
     "merge.status.waiting": "ждёт",
     "merge.status.riding": "едет",
@@ -1298,9 +1446,11 @@ MESSAGES = {
     "merge.smoke.ok": "ок",
     "merge.smoke.skipped": "пропущен",
     "merge.smoke.bad": "НЕ ок",
-    "merge.means": ("PR по слову владельца (дословно в депо), по одному, в порядке добавления (`depot2 merge`); провал "
-                    "останавливает очередь до `merge resume` или `merge drop`; «ждёт GitHub» (задание не стартовало) — "
-                    "не стоп"),
+    "merge.means": (
+        "PR по слову владельца (дословно в депо), по одному, в порядке добавления (`depot2 merge`); провал "
+        "останавливает очередь до `merge resume` или `merge drop`; «ждёт GitHub» (задание не стартовало) — "
+        "не стоп"
+    ),
     "merge.ci_no_run": "прогона нет",
     "merge.ci_stuck": "задание «{job}» в очереди {min}+ мин, раннера нет",
     "merge.ci_running": "идёт ({status})",
@@ -1312,12 +1462,17 @@ MESSAGES = {
     "merge.fb_waits.ci": "CI ждал",
     "merge.fb_waits.cd": "выкатка ждала",
     "merge.fb_reason": "{main} не в сети: {what} → {spare} (прогон {run} отменён, перезапуск упавших)",
-    "merge.fb_var_refused": ("{var}: {main} не в сети, «{job}» ждал {waited}+ мин; сменить {var} на {to} не удалось "
-                             "({error}): {waits} {main}"),
-    "merge.fb_cancel_refused": ("{var}: {main} не в сети, «{job}» ждал {waited}+ мин; отмена прогона {run} не прошла "
-                                "({error}), {waits} {main}"),
-    "merge.fb_switched": ("{var}: {main} не в сети, «{job}» ждал {waited}+ мин → {what} на {spare} (прогон {run}: "
-                          "отмена, перезапуск упавших)"),
+    "merge.fb_var_refused": (
+        "{var}: {main} не в сети, «{job}» ждал {waited}+ мин; сменить {var} на {to} не удалось "
+        "({error}): {waits} {main}"
+    ),
+    "merge.fb_cancel_refused": (
+        "{var}: {main} не в сети, «{job}» ждал {waited}+ мин; отмена прогона {run} не прошла ({error}), {waits} {main}"
+    ),
+    "merge.fb_switched": (
+        "{var}: {main} не в сети, «{job}» ждал {waited}+ мин → {what} на {spare} (прогон {run}: "
+        "отмена, перезапуск упавших)"
+    ),
     "merge.fb_back": "{var} снова {back_to} ({at})",
     "merge.fb_back_error": "{var} НЕ вернулся ({error}): вернуть руками `{cmd}`",
     "merge.fb_back_later": "{var} пока {to}: вернётся на {back_to}, когда прогон закончится (`merge run`)",
@@ -1349,7 +1504,7 @@ MESSAGES = {
     "merge.ensure_riding": "исполнитель мердж-очереди уже едет (pid {pid}): второго не запускаю",
     "merge.ensure_empty": "мердж-очередь пуста: нечего везти",
     "merge.ensure_stopped": "мердж-очередь остановлена на {id} #{pr}: {reason} — исполнителя не запускаю",
-    "merge.ensure_after_fix": "  после починки: depot2 merge resume {pr}; или: depot2 merge drop {pr} --reason \"…\"",
+    "merge.ensure_after_fix": '  после починки: depot2 merge resume {pr}; или: depot2 merge drop {pr} --reason "…"',
     "merge.ensure_start": "исполнитель не едет{was}, в очереди {n}: запускаю",
     "merge.ensure_stale_lock": " (в замке был pid {pid}, замок свободен)",
     "merge.ensure_started": "исполнитель едет (pid {pid}); лог: {log}",
@@ -1393,7 +1548,6 @@ MESSAGES = {
     "merge.report_none": "смердженных очередью PR ещё нет",
     "merge.report_queue": "Очередь: {counts}; исполнитель: {runner}.",
     "merge.report_queue_empty": "пусто",
-
     # === раунды команды: промпты, отчёты, рефлексия, пакеты ===
     # --- the prompts (prompts.py) ---
     "prompts.pos.agree": "да",
@@ -1410,12 +1564,18 @@ MESSAGES = {
     "prompts.and": " и ",
     "prompts.or": " или ",
     "prompts.project_name": "the project",
-    "prompts.project": ("The project is {name}. The orchestrator (the owner's main agent) runs team rounds; this is one "
-                        "of them. The owner reads Russian."),
-    "prompts.project_desc": ("The project is {name}: {desc}. The orchestrator (the owner's main agent) runs team rounds; "
-                             "this is one of them. The owner reads Russian."),
-    "prompts.team_line": {"m": "- {label}: {role}. He speaks of himself in the masculine (я согласен, я поставил).",
-                          "f": "- {label}: {role}. She speaks of herself in the feminine (я согласна, я поставила)."},
+    "prompts.project": (
+        "The project is {name}. The orchestrator (the owner's main agent) runs team rounds; this is one "
+        "of them. The owner reads Russian."
+    ),
+    "prompts.project_desc": (
+        "The project is {name}: {desc}. The orchestrator (the owner's main agent) runs team rounds; "
+        "this is one of them. The owner reads Russian."
+    ),
+    "prompts.team_line": {
+        "m": "- {label}: {role}. He speaks of himself in the masculine (я согласен, я поставил).",
+        "f": "- {label}: {role}. She speaks of herself in the feminine (я согласна, я поставила).",
+    },
     "prompts.rules": (
         "You are one member of a {n}-character team that advises the owner of a project.\n"
         "{project}\n"
@@ -1457,45 +1617,65 @@ MESSAGES = {
         "- main_point: your main point of this round, one sentence.\n"
         "- inner_thought: 1-2 sentences to yourself about this round. Don't retell; think.\n"
         "\n"
-        "This round: {kind}."),
-    "prompts.identity_head": {"m": "# Ты — {label}\nТы говоришь о себе в мужском роде (я согласен, я поставил).",
-                              "f": "# Ты — {label}\nТы говоришь о себе в женском роде (я согласна, я поставила)."},
-    "prompts.identity_body": ("## Твоя спецификация\n{spec}\n\n## Твой автопортрет (версия {version})\n{portrait}\n\n"
-                              "## Твои последние мысли\n{thoughts}\n\n## Баланс\nУ тебя {balance} ток."),
+        "This round: {kind}."
+    ),
+    "prompts.identity_head": {
+        "m": "# Ты — {label}\nТы говоришь о себе в мужском роде (я согласен, я поставил).",
+        "f": "# Ты — {label}\nТы говоришь о себе в женском роде (я согласна, я поставила).",
+    },
+    "prompts.identity_body": (
+        "## Твоя спецификация\n{spec}\n\n## Твой автопортрет (версия {version})\n{portrait}\n\n"
+        "## Твои последние мысли\n{thoughts}\n\n## Баланс\nУ тебя {balance} ток."
+    ),
     "prompts.portrait_empty": "(пока пуст)",
     "prompts.point_by": "- {id}. {title} (предложение: {name})",
     "prompts.no_points": "(нет готовых пунктов)",
-    "prompts.tools": ("Инструменты чтения: не больше {turns} ходов (дальше процесс убивают и ответ пропадает). "
-                      "Доступно: {dirs}. Читай точечно: сначала Grep, потом Read нужных строк."),
-    "prompts.stakes": ("Ставка — приоритет твоего комментария. Сумма всех твоих ставок в раунде не больше "
-                       "твоего баланса; все ставки вернутся, когда раунд закончится."),
-    "prompts.standing": ("{ids} — постоянные вопросы каждого раунда: отвечай про тему раунда, а если она ничего не "
-                         "даёт — про проект. Позиция none, ответ в comment."),
+    "prompts.tools": (
+        "Инструменты чтения: не больше {turns} ходов (дальше процесс убивают и ответ пропадает). "
+        "Доступно: {dirs}. Читай точечно: сначала Grep, потом Read нужных строк."
+    ),
+    "prompts.stakes": (
+        "Ставка — приоритет твоего комментария. Сумма всех твоих ставок в раунде не больше "
+        "твоего баланса; все ставки вернутся, когда раунд закончится."
+    ),
+    "prompts.standing": (
+        "{ids} — постоянные вопросы каждого раунда: отвечай про тему раунда, а если она ничего не "
+        "даёт — про проект. Позиция none, ответ в comment."
+    ),
     "prompts.brainstorm": (
         "`brainstorm_proposal` (по желанию, иначе не заполняй): команда может сама созвать мозговой "
         "штурм на любую тему, без вызова владельца; он получит бюллетень по итогу. Дай тему (topic), "
-        "зачем сейчас (why) и {qmin}–{qmax} вопросов (questions). Взнос: {fee_init} ток. с инициатора и по {fee_other} "
+        "зачем сейчас (why) и {qmin}-{qmax} вопросов (questions). Взнос: {fee_init} ток. с инициатора и по {fee_other} "
         "с каждого из остальных; взнос не возвращается. Штурм состоится, только если в раунде 2 {quorum}, и каждый "
-        "может заплатить из баланса после возврата ставок. Штурм за раунд один."),
+        "может заплатить из баланса после возврата ставок. Штурм за раунд один."
+    ),
     "prompts.order": (
         "`order` (по желанию, один за раунд, иначе не заполняй): заказ замера или прогона, {price} ток. "
         "Протокол: command — один вызов скрипта из tools/ снимка с аргументами; seeds; hardware — {hardware} "
         "(другое железо только с OK владельца); threshold — число, которое решает; forecast — "
         "твой прогноз до прогона; why — какой пункт он решает. Запускает оркестратор, по очереди; "
         "результаты придут в одном из следующих раундов. Цена вернётся +{bonus}, если замер сдвинет решение; "
-        "сгорит, если совпадёт и с прогнозом, и с рекомендацией; иначе решает владелец."),
-    "prompts.solo": ("Это сольный раунд: владелец спрашивает только тебя. Дебатов не будет, мозговой штурм в сольном "
-                     "раунде не созывается (ему нужен кворум команды); ставки, заказ и замок — как в полном раунде."),
+        "сгорит, если совпадёт и с прогнозом, и с рекомендацией; иначе решает владелец."
+    ),
+    "prompts.solo": (
+        "Это сольный раунд: владелец спрашивает только тебя. Дебатов не будет, мозговой штурм в сольном "
+        "раунде не созывается (ему нужен кворум команды); ставки, заказ и замок — как в полном раунде."
+    ),
     "prompts.task_r1": "## Задача: раунд 1, независимо от коллег",
     "prompts.task_r1_solo": "## Задача: сольный раунд, только ты",
     "prompts.points_head": "Пункты (id и заголовок; подробности в пакете):",
-    "prompts.points_how": ("В `points` дай позицию по каждому пункту, где она у тебя есть: id, position, "
-                           "stake, comment. Пункты без мнения пропусти."),
-    "prompts.proposals": ("В `proposals` (до {n}) вынеси свои новые пункты для владельца: title, "
-                          "question (что предлагаешь и почему), stake. Только то, чего нет среди "
-                          "пунктов выше."),
-    "prompts.verdict_how": ("`verdict`: куда идёт проект (или этот PR, если в пакете один PR): on_track, "
-                            "drifting или off_course."),
+    "prompts.points_how": (
+        "В `points` дай позицию по каждому пункту, где она у тебя есть: id, position, "
+        "stake, comment. Пункты без мнения пропусти."
+    ),
+    "prompts.proposals": (
+        "В `proposals` (до {n}) вынеси свои новые пункты для владельца: title, "
+        "question (что предлагаешь и почему), stake. Только то, чего нет среди "
+        "пунктов выше."
+    ),
+    "prompts.verdict_how": (
+        "`verdict`: куда идёт проект (или этот PR, если в пакете один PR): on_track, drifting или off_course."
+    ),
     "prompts.no_positions": "(нет позиций)",
     "prompts.r1_title": "## Итоги раунда 1 (кратко)",
     "prompts.r1_point_by": "### {id}. {title} (предложение: {name})",
@@ -1506,18 +1686,24 @@ MESSAGES = {
     "prompts.bs_proposal": "### {id}. {topic} (предлагает {name})",
     "prompts.bs_why": "Зачем сейчас: {text}",
     "prompts.bs_fee": "Взнос: {fees}.",
-    "prompts.r2_votes": ("В `brainstorm_votes` проголосуй по каждому предложению штурма ({ids}), своё тоже: proposal, "
-                         "vote yes или no, line — одна строка почему. Кто не проголосовал — «нет». Нужно: {quorum}, и "
-                         "каждый может заплатить взнос ({fee_init} с инициатора, по {fee_other} с остальных; не "
-                         "возвращается)."),
+    "prompts.r2_votes": (
+        "В `brainstorm_votes` проголосуй по каждому предложению штурма ({ids}), своё тоже: proposal, "
+        "vote yes или no, line — одна строка почему. Кто не проголосовал — «нет». Нужно: {quorum}, и "
+        "каждый может заплатить взнос ({fee_init} с инициатора, по {fee_other} с остальных; не "
+        "возвращается)."
+    ),
     "prompts.task_r2": "## Задача: раунд 2, дебаты",
     "prompts.r2_tools": "{tools} Проверяй чужие утверждения.",
     "prompts.r2_own": "Итоги раунда 1 — в пакете. Твои позиции раунда 1:",
-    "prompts.r2_rebut": ("Прочитай коллег. Можно возразить (до {n} возражений в `rebuttals`: кому, по какому "
-                         "пункту, текст) или пересмотреть свои позиции и ставки."),
-    "prompts.r2_points": ("В `points` дай окончательные позиции; пункт, который ты пропустишь, сохранит позицию "
-                          "раунда 1. Ставку можно перенести; если чужой пункт повторяет твой, поддержи один из "
-                          "них, не дроби ставки."),
+    "prompts.r2_rebut": (
+        "Прочитай коллег. Можно возразить (до {n} возражений в `rebuttals`: кому, по какому "
+        "пункту, текст) или пересмотреть свои позиции и ставки."
+    ),
+    "prompts.r2_points": (
+        "В `points` дай окончательные позиции; пункт, который ты пропустишь, сохранит позицию "
+        "раунда 1. Ставку можно перенести; если чужой пункт повторяет твой, поддержи один из "
+        "них, не дроби ставки."
+    ),
     "prompts.r2_sum": "Сумма ставок не больше {n} ток. (твой баланс); все ставки вернутся, когда раунд закончится.",
     "prompts.r2_order": "{order} Если заказ уже есть в раунде 1, второй отклонят.",
     "prompts.outcome_title": "## Итоги раунда (окончательные позиции, после дебатов)",
@@ -1535,15 +1721,18 @@ MESSAGES = {
         "condition — конкретное условие снятия: тест с именем, строка вывода проверки, замер или ответ. why — зачем.\n"
         "Один замок на объект, один на персонажа за раунд; решаешь сам, без кворума. Код проверит объект, "
         "условие и баланс.\n"
-        "inner_thought: 1-2 предложения себе."),
+        "inner_thought: 1-2 предложения себе."
+    ),
     "prompts.r3_lock": (
         "`lock` (по желанию, иначе не заполняй): замок на один объект стека (его id — в пакете, таблица «Стек»). "
         "Цена {price} ток. Замок значит: объект в очереди не стартует, объект в слоте не мерджится, пока условие "
-        "не выполнено или владелец не снимет замок."),
+        "не выполнено или владелец не снимет замок."
+    ),
     "prompts.r3_lock_paid": (
         "`lock` (по желанию, иначе не заполняй): замок на один объект стека (его id — в пакете, таблица «Стек»). "
         "Цена {price} ток., не возвращается. Замок значит: объект в очереди не стартует, объект в слоте не "
-        "мерджится, пока условие не выполнено или владелец не снимет замок."),
+        "мерджится, пока условие не выполнено или владелец не снимет замок."
+    ),
     "prompts.reflect_rules": (
         "You maintain the self-portrait of one character of a {n}-character advisory team.\n"
         "{project}\n"
@@ -1567,8 +1756,8 @@ MESSAGES = {
         "(at most {summary_max} characters, third person): who the character is, what it stands for, its record "
         "with the owner, its running disputes, how it spends tokens.\n"
         "- inner_thought: 1-2 sentences to yourself. Don't retell; think.\n"
-        "- Answer ONLY through the structured output."),
-
+        "- Answer ONLY through the structured output."
+    ),
     # --- the round's bundle (bundle.py) ---
     "bundle.cut_note": "{what}: оставлено {cap} из {n} символов (начало)",
     "bundle.cut_mark": "[…обрезано кодом…]",
@@ -1602,7 +1791,6 @@ MESSAGES = {
     "in.bundle.question": r"вопрос",
     "in.bundle.question_full": r"вопрос \(развёрнуто\)|вопрос \(развернуто\)",
     "in.bundle.rec": r"рекомендую|рекомендация|рекомендация оркестратора",
-
     # --- the round (round.py) ---
     "round.unknown_point": "неизвестный пункт {id} пропущен",
     "round.quarantine": "{file}: сырой поток в карантине ({why}): {to}",
@@ -1612,8 +1800,10 @@ MESSAGES = {
     "round.stack_what": "стек",
     "round.ballots": "Очередь бюллетеней владельца (ещё не решены)",
     "round.ballots_what": "очередь бюллетеней",
-    "round.resumed": ("раунд продолжен после фатальной ошибки ({why}): {n} ответ(ов) взяты из прерванного прохода "
-                      "({kept}), вызовы — только недостающие"),
+    "round.resumed": (
+        "раунд продолжен после фатальной ошибки ({why}): {n} ответ(ов) взяты из прерванного прохода "
+        "({kept}), вызовы — только недостающие"
+    ),
     "round.r1_unasked": "{name}: раунд 1 без ответа в прерванном проходе; не дозапрошен — раунд 2 уже шёл",
     "round.r1_failed": "{name}: раунд 1 не удался ({error})",
     "round.r1_skipped": "{name}: раунд 1 пропущен ({error})",
@@ -1638,7 +1828,6 @@ MESSAGES = {
     "round.order_why": "- зачем: {text}",
     "round.order_result": "- результат: {text}",
     "round.order_note": "- заметка оркестратора: {text}",
-
     # --- reflection (reflect.py) ---
     "reflect.forfeit": "- {date} ставка {stake} НЕ возвращена{where}: {reason}",
     "reflect.fine": "- {date} штраф {amount}{where}: {reason}",
@@ -1654,30 +1843,40 @@ MESSAGES = {
     "reflect.facts_owner": "## Что сделал владелец с твоей прошлой рефлексии",
     "reflect.facts_rounds": "## Твои позиции в раундах с прошлой рефлексии",
     "reflect.facts_stakes": "## Твои открытые ставки",
-    "reflect.task": ("## Задача: рефлексия\nПрочитай свой автопортрет, мысли и факты выше и напиши новый "
-                     "автопортрет целиком: он заменит старый (старый код сохранит в истории)."),
-
+    "reflect.task": (
+        "## Задача: рефлексия\nПрочитай свой автопортрет, мысли и факты выше и напиши новый "
+        "автопортрет целиком: он заменит старый (старый код сохранит в истории)."
+    ),
     # --- the round's report (report.py) ---
     "report.with_stake": "{text} (ставка токенов: {n})",
     "report.skipped": "пропущено",
     "report.call_failed": "{turns}, вызов упал",
     "report.no_stakes": "Ставок нет.",
-    "report.stakes_all_back": ("Ставки: {n} ток.; все вернулись, когда раунд закончился: ставка — только приоритет "
-                               "пункта."),
-    "report.stakes_none_back": ("Ставки: {n} ток.; списаны до решения владельца: раунд прошёл раньше, чем ставки "
-                                "стали возвращаться сами."),
+    "report.stakes_all_back": (
+        "Ставки: {n} ток.; все вернулись, когда раунд закончился: ставка — только приоритет пункта."
+    ),
+    "report.stakes_none_back": (
+        "Ставки: {n} ток.; списаны до решения владельца: раунд прошёл раньше, чем ставки стали возвращаться сами."
+    ),
     "report.stakes_some_back": "Ставки: {n} ток.; вернулись сами {back} ток., остальные закрыл владелец.",
     "report.title_solo": "# Команда: {kind}, сольный раунд ({name}), {rid}",
-    "report.title_brainstorm": {"m": "# Команда: мозговой штурм команды (созвал {name}), {rid}",
-                                "f": "# Команда: мозговой штурм команды (созвала {name}), {rid}"},
+    "report.title_brainstorm": {
+        "m": "# Команда: мозговой штурм команды (созвал {name}), {rid}",
+        "f": "# Команда: мозговой штурм команды (созвала {name}), {rid}",
+    },
     "report.title": "# Команда: {kind}, {rid}",
     "report.solo": {
-        "m": ("Сольный раунд: отвечает только {name}; дебатов нет, мозговой штурм не созывается; ставки, журнал, "
-              "выплаты, решения и рефлексия — как в полном раунде, только для него. Капы — на одного: {cap}, "
-              "{calls} вызова."),
-        "f": ("Сольный раунд: отвечает только {name}; дебатов нет, мозговой штурм не созывается; ставки, журнал, "
-              "выплаты, решения и рефлексия — как в полном раунде, только для неё. Капы — на одного: {cap}, "
-              "{calls} вызова.")},
+        "m": (
+            "Сольный раунд: отвечает только {name}; дебатов нет, мозговой штурм не созывается; ставки, журнал, "
+            "выплаты, решения и рефлексия — как в полном раунде, только для него. Капы — на одного: {cap}, "
+            "{calls} вызова."
+        ),
+        "f": (
+            "Сольный раунд: отвечает только {name}; дебатов нет, мозговой штурм не созывается; ставки, журнал, "
+            "выплаты, решения и рефлексия — как в полном раунде, только для неё. Капы — на одного: {cap}, "
+            "{calls} вызова."
+        ),
+    },
     "report.src_input": "вход `{path}`",
     "report.src_brainstorm": "штурм {id}, одобрен в раунде {round}",
     "report.src_pr": "PR #{pr} «{title}»",
@@ -1686,16 +1885,24 @@ MESSAGES = {
     "report.src_decisions": "решения `{path}`",
     "report.sources": "Источники: {list}.",
     "report.cuts": "Обрезано кодом: {list}.",
-    "report.calls": ("Вызовов {calls}, ходов {turns} (с инструментами {tool_turns}), {secs} с; токенов {total}: "
-                     "вход {input}, чтение кэша {cache_read}, запись кэша {cache_write}, выход {output}."),
-    "report.calls_approx": ("Вызовов {calls}, ходов {turns} (с инструментами {tool_turns}), {secs} с; токенов {total}: "
-                            "вход {input}, чтение кэша {cache_read}, запись кэша {cache_write}, выход {output} (≈: у "
-                            "убитых вызовов — по потоку)."),
-    "report.spend": ("Расход {spent}: токены вызовов по весам (вход ×1, запись кэша ×1.25, чтение кэша ×0.1, выход ×5; "
-                     "1%UW ≈ {per} MTok). Окно расхода: {window}. Модель {models}, усилие {effort}."),
-    "report.spend_by_cost": ("Расход {spent}: токены вызовов по весам (вход ×1, запись кэша ×1.25, чтение кэша ×0.1, "
-                             "выход ×5; 1%UW ≈ {per} MTok); у {by_cost} вызовов без токенов — по оценке CLI / "
-                             "usage.usd_per_mtok. Окно расхода: {window}. Модель {models}, усилие {effort}."),
+    "report.calls": (
+        "Вызовов {calls}, ходов {turns} (с инструментами {tool_turns}), {secs} с; токенов {total}: "
+        "вход {input}, чтение кэша {cache_read}, запись кэша {cache_write}, выход {output}."
+    ),
+    "report.calls_approx": (
+        "Вызовов {calls}, ходов {turns} (с инструментами {tool_turns}), {secs} с; токенов {total}: "
+        "вход {input}, чтение кэша {cache_read}, запись кэша {cache_write}, выход {output} (≈: у "
+        "убитых вызовов — по потоку)."
+    ),
+    "report.spend": (
+        "Расход {spent}: токены вызовов по весам (вход x1, запись кэша x1.25, чтение кэша x0.1, выход x5; "
+        "1%UW ≈ {per} MTok). Окно расхода: {window}. Модель {models}, усилие {effort}."
+    ),
+    "report.spend_by_cost": (
+        "Расход {spent}: токены вызовов по весам (вход x1, запись кэша x1.25, чтение кэша x0.1, "
+        "выход x5; 1%UW ≈ {per} MTok); у {by_cost} вызовов без токенов — по оценке CLI / "
+        "usage.usd_per_mtok. Окно расхода: {window}. Модель {models}, усилие {effort}."
+    ),
     "report.na": "н/д",
     "report.effort_default": "по умолчанию",
     "report.read_pr_head": "Проходы читали голову PR {commit}.",
@@ -1733,9 +1940,11 @@ MESSAGES = {
     "report.ledger_empty": "в журнале транзакций нет",
     "report.after_head": "## После раунда",
     "report.after_cols": "| Персонаж | После раунда | Возвращено | Выплачено | Штраф | Прочее | Сейчас |",
-    "report.after_legend": ("«Выплачено» — выплаты владельца и расчёты по заказам этого раунда. «Прочее» — транзакции "
-                            "после раунда не про него: выплаты и штрафы других раундов или без раунда, взносы и заказы "
-                            "следующих раундов; их ставки возвращаются сразу и в сумме дают 0."),
+    "report.after_legend": (
+        "«Выплачено» — выплаты владельца и расчёты по заказам этого раунда. «Прочее» — транзакции "
+        "после раунда не про него: выплаты и штрафы других раундов или без раунда, взносы и заказы "
+        "следующих раундов; их ставки возвращаются сразу и в сумме дают 0."
+    ),
     "report.now_mismatch": "«Сейчас» НЕ СХОДИТСЯ с журналом: {names}.",
     "report.now_ok": "«Сейчас» сходится с журналом (баланс на {tx}).",
     "report.settle.moved": "сдвинул решение, цена назад и +1",
@@ -1760,17 +1969,21 @@ MESSAGES = {
     "report.bs_fee": "- Взнос: {fees}.",
     "report.bs_fee_paid": "- Взнос: {fees} — списан ({first} … {last}).",
     "report.bs_reason": "- Почему нет: {text}",
-    "report.bs_run": ("- Тема: `{file}`. Запуск (оркестратор, сразу после этого раунда): "
-                      "`depot2 round --kind brainstorm --brainstorm {id}`"),
+    "report.bs_run": (
+        "- Тема: `{file}`. Запуск (оркестратор, сразу после этого раунда): "
+        "`depot2 round --kind brainstorm --brainstorm {id}`"
+    ),
     "report.orders_head": "## Заказы",
-    "report.order_placed": ("- {id} {name} (−{price} ток.): `{command}`; seeds {seeds}; {hardware}; порог: {threshold}; "
-                            "прогноз: {forecast}; зачем: {why}."),
+    "report.order_placed": (
+        "- {id} {name} (-{price} ток.): `{command}`; seeds {seeds}; {hardware}; порог: {threshold}; "
+        "прогноз: {forecast}; зачем: {why}."
+    ),
     "report.order_refused": "- отклонён, {name}: `{command}` — {reason}.",
     "report.orders_shown": "- результаты в пакете этого раунда: {ids}.",
     "report.locks_head": "## Замки",
     "report.locks_ran": "Проход замков (раунд 3) прошёл: {n} вызовов. Замок: {means}.",
     "report.locks_skipped": "Проход замков (раунд 3) пропущен: {why}.",
-    "report.lock_placed": "- {id} {name} на {object} «{title}» (−{price} ток.): условие: {condition}; зачем: {why}.",
+    "report.lock_placed": "- {id} {name} на {object} «{title}» (-{price} ток.): условие: {condition}; зачем: {why}.",
     "report.lock_refused": "- отклонён, {name} — {reason}.",
     "report.lock_refused_obj": "- отклонён, {name}: {object} — {reason}.",
     "report.lock_lifted": "- снят с прошлого раунда: {id} на {object} ({name}), {how}: {reason}.",
@@ -1780,9 +1993,8 @@ MESSAGES = {
     "report.ow_payout": "выплата +{n}",
     "report.ow_forfeit": "ставка {n} не возвращена",
     "report.ow_settle": "заказ {order}: {outcome}, {amount}",
-    "report.ow_fine": "штраф −{n}",
-    "report.ow_fine_part": "штраф −{n} из {asked} (больше не было)",
-
+    "report.ow_fine": "штраф -{n}",
+    "report.ow_fine_part": "штраф -{n} из {asked} (больше не было)",
     # === веб-морда ===
     # --- the server (webui.py) ---
     "webui.queue.todo": "Todo",
@@ -1808,15 +2020,17 @@ MESSAGES = {
     "webui.code_dirty": "код {commit} от {date}, с правками",
     "webui.code_outside_git": "код вне git ({stamp})",
     "webui.no_api": "нет такого API: /api/{name}",
-    "webui.migrate_pending": ("данные депо ждут миграции (схема {old} → {new}): её делает первая команда депо, "
-                              "`depot2 migrate`; показ данных не пишет"),
-    "webui.read_failed": ("состояние депо сейчас не дочитать ({kind}: {error}); страница повторит при следующем "
-                          "обновлении"),
+    "webui.migrate_pending": (
+        "данные депо ждут миграции (схема {old} → {new}): её делает первая команда депо, "
+        "`depot2 migrate`; показ данных не пишет"
+    ),
+    "webui.read_failed": (
+        "состояние депо сейчас не дочитать ({kind}: {error}); страница повторит при следующем обновлении"
+    ),
     "webui.no_brief": "у {ref} нет брифа",
     "webui.brief_not_served": "бриф не отдаётся: {path} (только .md в папках web.docs.dirs)",
     "webui.file_not_served": "файл не отдаётся: {path} (только .md в папках web.docs.dirs)",
     "in.webui.yes": r"да",
-
     # --- the page (web/index.html): T(key) there names these keys without the `web.` prefix ---
     "web.top.ro": "только показ · 127.0.0.1",
     "web.top.tabs": "вид",
@@ -1852,8 +2066,9 @@ MESSAGES = {
     "web.code.outside_git": "код вне git · {stamp}",
     "web.code.broken": "{code} · новый код не собрался: {error}",
     "web.code.title": "код, который отдаёт эту страницу; сервер запущен {started}",
-    "web.code.title_broken": ("код, который отдаёт эту страницу; сервер запущен {started}; на диске новый код с "
-                              "ошибкой — работает прежний"),
+    "web.code.title_broken": (
+        "код, который отдаёт эту страницу; сервер запущен {started}; на диске новый код с ошибкой — работает прежний"
+    ),
     "web.copy.name": "копировать {name}",
     "web.copy.done": "скопировано",
     "web.copy.failed": "не скопировалось: браузер не дал буфер обмена",
@@ -1925,16 +2140,17 @@ MESSAGES = {
     "web.gate.passed_notes": "{gate} пройдены ({notes})",
     "web.merge.place": "мердж-очередь: {pos}-й из {total} ({id}, {status})",
     "web.merge.idle": "очередь {n}, исполнитель не едет",
-    "web.merge.idle_stopped": ("остановлена на #{pr} (<code>depot2 merge resume {pr}</code> или <code>merge "
-                               "drop</code>)"),
+    "web.merge.idle_stopped": (
+        "остановлена на #{pr} (<code>depot2 merge resume {pr}</code> или <code>merge drop</code>)"
+    ),
     "web.merge.wt_removed": "копия удалена ({mb} MB)",
     "web.merge.wt_kept": "копия не тронута",
     # вкладка мердж-очереди: открытые записи по порядку, исполнитель, последние мерджи и строки их отчёта
     "web.mq.queue_h": "Очередь",
     "web.mq.done_h": "Последние мерджи",
     "web.mq.count": "в мердж-очереди: <b>{n}</b>{states}",
-    "web.mq.runner_rides": "исполнитель: <b class=\"g\">едет</b>",
-    "web.mq.runner_idle": "исполнитель: <b class=\"w\">не едет</b>, в очереди {n}",
+    "web.mq.runner_rides": 'исполнитель: <b class="g">едет</b>',
+    "web.mq.runner_idle": 'исполнитель: <b class="w">не едет</b>, в очереди {n}',
     "web.mq.runner_empty": "исполнитель: не едет, очередь пуста",
     "web.mq.last": "последний мердж: {pr} {sha} ({at})",
     "web.mq.place_title": "место в очереди",
@@ -1951,8 +2167,10 @@ MESSAGES = {
     "web.mq.merged_sha": "смерджен {sha}",
     "web.mq.github": "ждёт GitHub на шаге «{step}»: {reason} (с {since}, {age}; перезапусков {reruns})",
     "web.mq.stopped": "остановлен на шаге «{step}», {at} ({ago}): {reason}",
-    "web.mq.todo": ("что сделать: после исправления <code>depot2 merge resume {pr}</code>; или "
-                    "<code>depot2 merge drop {pr} --reason …</code>"),
+    "web.mq.todo": (
+        "что сделать: после исправления <code>depot2 merge resume {pr}</code>; или "
+        "<code>depot2 merge drop {pr} --reason …</code>"
+    ),
     "web.mq.empty": "мердж-очередь пуста",
     "web.mq.none_merged": "очередь ещё не смерджила ни одного PR",
     "web.mq.merged_at": "смерджен {sha} · {at}",
@@ -2071,14 +2289,17 @@ MESSAGES = {
     "web.agents.out": "Живые вне слотов",
     "web.agents.recent": "Недавние",
     "web.agents.none_ended": "закончивших агентов ещё нет: depot2 agents --all",
-    "web.agents.legend": ("Состояние: работает — новые строки в транскрипте; молчит — ни строки дольше {silent} мин "
-                          "(agents.silent_min); закончил — транскрипт закрыт, траты записаны на вагон; остановлен — "
-                          "depot2 agents stop; не привязан — нет depot2 agents attach. Траты — по транскрипту, в %UW "
-                          "и MTok."),
+    "web.agents.legend": (
+        "Состояние: работает — новые строки в транскрипте; молчит — ни строки дольше {silent} мин "
+        "(agents.silent_min); закончил — транскрипт закрыт, траты записаны на вагон; остановлен — "
+        "depot2 agents stop; не привязан — нет depot2 agents attach. Траты — по транскрипту, в %UW "
+        "и MTok."
+    ),
     "web.dec.count_found": "найдено {n} из {total}",
     "web.dec.none": "решений ещё нет",
-    "web.dec.note": ("Новые сверху. Пишет их <code>depot2 decide</code>; здесь только показ (<code>depot2 "
-                     "decisions</code>)."),
+    "web.dec.note": (
+        "Новые сверху. Пишет их <code>depot2 decide</code>; здесь только показ (<code>depot2 decisions</code>)."
+    ),
     "web.q.when": "когда: {v}",
     "web.q.questions": "вопросов {n}: {first}",
     "web.q.raised_by": "поднял: {who}",
@@ -2103,10 +2324,14 @@ MESSAGES = {
     "web.q.closed_n": "закрытые {n}",
     "web.q.total": "· всего {n}",
     "web.q.open_line": "открыто: {heads}",
-    "web.q.hint": ("поезда, треки, стек агентов и мердж-очередь — на своих вкладках; правят очереди команды "
-                   "<code>depot2</code>, здесь только показ"),
-    "web.q.hint_closed": ("поезда, треки, стек агентов и мердж-очередь — на своих вкладках; правят очереди команды "
-                          "<code>depot2</code>, здесь только показ (закрытые — галочкой «закрытые»)"),
+    "web.q.hint": (
+        "поезда, треки, стек агентов и мердж-очередь — на своих вкладках; правят очереди команды "
+        "<code>depot2</code>, здесь только показ"
+    ),
+    "web.q.hint_closed": (
+        "поезда, треки, стек агентов и мердж-очередь — на своих вкладках; правят очереди команды "
+        "<code>depot2</code>, здесь только показ (закрытые — галочкой «закрытые»)"
+    ),
     "web.pc.active": "действуют <b>{n}</b>",
     "web.pc.replaced": "заменено {n}",
     "web.pc.dropped": "снято {n}",
@@ -2145,8 +2370,10 @@ MESSAGES = {
     "web.hist.why": "почему",
     "web.hist.off_route": "не по маршруту",
     "web.hist.return": "брак: возврат в сборку",
-    "web.marks.legend": ("приоритет 1 — ворота (у каждого строка, ни один не «нарушен»); приоритет 2 — балл: ок +1, "
-                         "не касается 0, нарушен −1"),
+    "web.marks.legend": (
+        "приоритет 1 — ворота (у каждого строка, ни один не «нарушен»); приоритет 2 — балл: ок +1, "
+        "не касается 0, нарушен -1"
+    ),
     "web.marks.counts": "ок {ok} · не касается {na} · нарушен {bad} · не проверен {none}",
     "web.marks.h_principle": "принцип",
     "web.marks.h_priority": "приоритет",

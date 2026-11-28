@@ -1,7 +1,7 @@
 """The effort unit, everywhere: MTok, printed as a share of a usage window.
 
-- **MTok** is millions of price-weighted input-equivalent tokens: input ×1, cache write ×1.25, cache read ×0.1,
-  output ×5. It is what the depot stores, and every limit of the config is in it.
+- **MTok** is millions of price-weighted input-equivalent tokens: input x1, cache write x1.25, cache read x0.1,
+  output x5. It is what the depot stores, and every limit of the config is in it.
 - **%UW** is MTok / `usage.mtok_per_pct`: the share of the usage window the project budgets with. A car's size
   (`usage.sizes`: doc, S, M, L) is in %UW.
 - A call that reports a cost but no tokens is converted at `usage.usd_per_mtok`.
@@ -14,8 +14,12 @@ import re
 from .i18n import t
 
 WEIGHTS = {"input": 1.0, "cache_write": 1.25, "cache_read": 0.1, "output": 5.0}
-API_KEYS = {"input_tokens": "input", "cache_creation_input_tokens": "cache_write",
-            "cache_read_input_tokens": "cache_read", "output_tokens": "output"}
+API_KEYS = {
+    "input_tokens": "input",
+    "cache_creation_input_tokens": "cache_write",
+    "cache_read_input_tokens": "cache_read",
+    "output_tokens": "output",
+}
 
 
 class EffortError(ValueError):
@@ -51,7 +55,8 @@ def weighted_mtok(tokens):
 
 def call_mtok(res, cfg):
     """One call's spend in MTok: its own token usage, weighted (a killed call's is summed from the
-    stream). A call that reports no tokens but a cost: that ≈$ / usage.usd_per_mtok. Else 0."""
+    stream). A call that reports no tokens but a cost: that ≈$ / usage.usd_per_mtok. Else 0.
+    """
     m = weighted_mtok((res or {}).get("usage") or {})
     if m > 0:
         return m
@@ -66,7 +71,8 @@ def by_cost_only(res):
 
 def costs_mtok(costs, cfg):
     """A run's spend in MTok from its costs.json (a round's or a reflection's): its own "mtok"; for a
-    file from before it, the sum over its calls, else its token counts, else total_usd / usd_per_mtok."""
+    file from before it, the sum over its calls, else its token counts, else total_usd / usd_per_mtok.
+    """
     c = costs or {}
     if c.get("mtok") is not None:
         return float(c["mtok"])
@@ -79,11 +85,12 @@ def costs_mtok(costs, cfg):
 
 def from_transcript(path):
     """It sums the per-message `usage` with the weights, deduped by message id: a streamed message is
-    logged once per content block with the same usage."""
+    logged once per content block with the same usage.
+    """
     seen = set()
-    tok = {k: 0 for k in WEIGHTS}
+    tok = dict.fromkeys(WEIGHTS, 0)
     n = 0
-    with open(path, encoding="utf-8", errors="replace") as f:
+    with open(path, encoding="utf-8", errors="replace") as f:  # noqa: PTH123 - pass the original path spelling to open
         for line in f:
             if '"usage"' not in line:
                 continue
@@ -103,13 +110,13 @@ def from_transcript(path):
             for api, k in API_KEYS.items():
                 tok[k] += u.get(api) or 0
     if not n:
-        raise EffortError("no usage in %s" % path)
+        raise EffortError(f"no usage in {path}")
     return round(weighted_mtok(tok), 4)
 
 
 def size_mtok(size, cfg):
     if size not in sizes(cfg):
-        raise EffortError("a size is one of %s (usage.sizes, in %%UW)" % ", ".join(sorted(sizes(cfg))))
+        raise EffortError("a size is one of {} (usage.sizes, in %UW)".format(", ".join(sorted(sizes(cfg)))))
     return float(sizes(cfg)[size]) * per_pct(cfg)
 
 
@@ -120,7 +127,7 @@ def check_size(size, cfg):
 
 
 def parse_mtok(text):
-    """'12', '12.5', '10-13' / '10–13' (a range) -> 12.0 / [10.0, 13.0]; None/'none' -> None."""
+    """'12', '12.5', '10-13' / '10-13' (a range) -> 12.0 / [10.0, 13.0]; None/'none' -> None."""
     if text is None or isinstance(text, (int, float)):
         return None if text is None else float(text)
     if isinstance(text, (list, tuple)):
@@ -128,13 +135,13 @@ def parse_mtok(text):
     t = str(text).strip().replace(",", ".")
     if t.lower() in ("", "none", "-", "—"):
         return None
-    m = re.match(r"^(\d+(?:\.\d+)?)\s*[-–]\s*(\d+(?:\.\d+)?)$", t)
+    m = re.match(r"^(\d+(?:\.\d+)?)\s*[-\u2013]\s*(\d+(?:\.\d+)?)$", t)
     if m:
         return [float(m.group(1)), float(m.group(2))]
     try:
         return float(t)
     except ValueError:
-        raise EffortError("an effort is a number of MTok or a range like 10-13, got %r" % text)
+        raise EffortError(f"an effort is a number of MTok or a range like 10-13, got {text!r}")  # noqa: B904
 
 
 def est_from(cfg, pct=None, mtok=None, allow_range=False):
@@ -149,14 +156,14 @@ def est_from(cfg, pct=None, mtok=None, allow_range=False):
 
 
 def _num(x, nd):
-    return ("%.*f" % (nd, x)).rstrip("0").rstrip(".") or "0"
+    return ("%.*f" % (nd, x)).rstrip("0").rstrip(".") or "0"  # noqa: UP031
 
 
 def _small(x, nd):
     """nd decimals; below 0.1, two significant digits, so a call's cap never prints as 0."""
     a = abs(x)
     if 0 < a < 0.1:
-        nd = max(nd, min(8, 1 - int(math.floor(math.log10(a)))))
+        nd = max(nd, min(8, 1 - math.floor(math.log10(a))))
     return _num(x, nd)
 
 
@@ -166,8 +173,8 @@ def fmt(mtok, cfg):
     k = per_pct(cfg)
     if isinstance(mtok, (list, tuple)):
         lo, hi = mtok
-        return "%s–%s%%UW (%s–%s MTok)" % (_small(lo / k, 2), _small(hi / k, 2), _mt(lo), _mt(hi))
-    return "%s%%UW (%s MTok)" % (_small(mtok / k, 2), _mt(mtok))
+        return f"{_small(lo / k, 2)}-{_small(hi / k, 2)}%UW ({_mt(lo)}-{_mt(hi)} MTok)"
+    return f"{_small(mtok / k, 2)}%UW ({_mt(mtok)} MTok)"
 
 
 def share(u, cfg):
@@ -182,7 +189,7 @@ def cell(expected, spent, cfg):
     """The expected / spent cell of every table."""
     if expected is None and spent is None:
         return "—"
-    return "%s / %s" % (("≈ " + fmt(expected, cfg)) if expected is not None else "—", fmt(spent, cfg))
+    return "{} / {}".format(("≈ " + fmt(expected, cfg)) if expected is not None else "—", fmt(spent, cfg))
 
 
 def item_expected(obj, cfg):
@@ -198,5 +205,5 @@ def item_expected(obj, cfg):
 
 
 def legend(cfg):
-    s = ", ".join("%s %s" % (k, _num(v, 2)) for k, v in sorted(sizes(cfg).items(), key=lambda x: x[1]))
+    s = ", ".join(f"{k} {_num(v, 2)}" for k, v in sorted(sizes(cfg).items(), key=lambda x: x[1]))
     return t("effort.legend", per=_num(per_pct(cfg), 2), sizes=s)

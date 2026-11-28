@@ -13,6 +13,7 @@ and replace the bodies with what your project checks.
 import json
 import os
 import time
+from pathlib import Path
 
 
 def smoke_verdict(code, out):
@@ -32,28 +33,28 @@ def smoke_verdict(code, out):
         return None  # not this plugin's format: the next plugin, or the exit code, decides
     bad = [c for c in checks if not c.get("ok")]
     ok = code == 0 and not bad
-    parts = ["checks %d/%d ok" % (len(checks) - len(bad), len(checks))]
-    parts += ["%s: %s" % (c.get("check"), str(c.get("error") or "failed")[:80]) for c in bad[:3]]
+    parts = ["checks %d/%d ok" % (len(checks) - len(bad), len(checks))]  # noqa: UP031
+    parts += ["{}: {}".format(c.get("check"), str(c.get("error") or "failed")[:80]) for c in bad[:3]]
     if code is None:
         parts.append("timed out")
     elif code:
-        parts.append("exit %d" % code)
+        parts.append("exit %d" % code)  # noqa: UP031
     return ok, ", ".join(parts)
 
 
 def snapshot_test(path):
     """tests/__snapshots__/parser.test.py.snap -> tests/parser.test.py (None for any other path)."""
     head, name = os.path.split(path)
-    if os.path.basename(head) != "__snapshots__" or not name.endswith(".snap"):
+    if Path(head).name != "__snapshots__" or not name.endswith(".snap"):
         return None
-    return os.path.join(os.path.dirname(head), name[:-len(".snap")])
+    return os.path.join(os.path.dirname(head), name[: -len(".snap")])  # noqa: PTH118, PTH120 - preserve lexical path components
 
 
 def after_merge(cfg, entry):
     """One line for the merge report: when the merge queue finished this entry."""
-    return {"line": "finished at %s" % time.strftime("%H:%M"), "pr": entry.get("pr")}
+    return {"line": "finished at {}".format(time.strftime("%H:%M")), "pr": entry.get("pr")}
 
 
 def round_context(cfg, kind):
     """Nothing extra for a team round in this example; a project could add its glossary here."""
-    return None
+    return

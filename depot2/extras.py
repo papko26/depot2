@@ -12,30 +12,35 @@ The checks here are code, never a model's judgement. brainstorms.jsonl and order
 import os
 import re
 import shlex
+from pathlib import Path
 
 from . import characters, i18n
 from .i18n import t
-from .store import append_jsonl, now_iso, read_jsonl, today, write_new
+from .store import append_jsonl, expand_user_path, now_iso, read_jsonl, today, write_new
 
 YES, NO = "yes", "no"
 
 
 # --- the standing questions ------------------------------------------------------------------
 
+
 def standing_points(cfg):
-    return [{"id": q["id"], "title": q["title"], "question": q["question"], "recommendation": "",
-             "source": "standing"} for q in cfg["standing_questions"]]
+    return [
+        {"id": q["id"], "title": q["title"], "question": q["question"], "recommendation": "", "source": "standing"}
+        for q in cfg["standing_questions"]
+    ]
 
 
 # --- the event logs --------------------------------------------------------------------------
 
-class EventLog(object):
+
+class EventLog:
     """Append-only records {id, status, ts, …}; an item is the merge of its records in order."""
 
-    prefix = None
-    filename = None
+    prefix: str | None = None
+    filename: str | None = None
 
-    def __init__(self, state):
+    def __init__(self, state) -> None:
         self.state = state
         self.path = state.path(self.filename)
 
@@ -54,10 +59,10 @@ class EventLog(object):
         for it in self.items():
             if it["id"] == item_id:
                 return it
-        raise ValueError("no %s in %s" % (item_id, self.filename))
+        raise ValueError(f"no {item_id} in {self.filename}")
 
     def next_id(self):
-        return "%s-%04d" % (self.prefix, len({r["id"] for r in self.records()}) + 1)
+        return "%s-%04d" % (self.prefix, len({r["id"] for r in self.records()}) + 1)  # noqa: UP031
 
     def add(self, item_id, status, **fields):
         rec = {"id": item_id, "status": status, "ts": now_iso()}
@@ -66,9 +71,8 @@ class EventLog(object):
         self.state.touch(self.path)
         return rec
 
-
-    OPEN = ()
-    STATUS_RU = {}
+    OPEN: tuple[str, ...] = ()
+    STATUS_RU: dict[str, str] | i18n.Labels[str] = {}  # noqa: RUF012
 
     def listing(self, all_=False):
         return [it for it in self.items() if all_ or it["status"] in self.OPEN]
@@ -76,6 +80,7 @@ class EventLog(object):
 
 class Brainstorms(EventLog):
     """approved → done | failed (a fatal error, the fee back) | cancelled (never ran, the fee back)."""
+
     prefix, filename = "bs", "brainstorms.jsonl"
     OPEN = ("approved",)
     STATUS_RU = i18n.Labels("extras.brainstorm", ("approved", "done", "failed", "cancelled"))
@@ -83,16 +88,19 @@ class Brainstorms(EventLog):
 
 class Orders(EventLog):
     """queued → done → settled; `shown` marks the round whose bundle listed the results."""
+
     prefix, filename = "ord", "orders.jsonl"
     OPEN = ("queued", "done")
     STATUS_RU = i18n.Labels("extras.order", ("queued", "done", "settled"))
 
     def unshown_done(self):
-        return [o for o in self.items() if o["status"] in ("done", "settled") and not o.get("shown_in")
-                and o.get("results")]
+        return [
+            o for o in self.items() if o["status"] in ("done", "settled") and not o.get("shown_in") and o.get("results")
+        ]
 
 
 # --- the brainstorm --------------------------------------------------------------------------
+
 
 def check_proposal(p, cfg):
     """A round-1 brainstorm_proposal → (normalized or None, why not). None, None: no proposal."""
@@ -153,8 +161,9 @@ def evaluate(proposals, votes, took_part, balances, cfg, history, genders):
             reasons.append(t("extras.yes_count", yes=len(yes), n=len(characters.IDS), need=majority()))
         for cid in characters.IDS:
             if balances[cid] < r["fees"][cid]:
-                reasons.append(t("extras.cannot_pay", who=characters.name(cid), balance=balances[cid],
-                                 fee=r["fees"][cid]))
+                reasons.append(
+                    t("extras.cannot_pay", who=characters.name(cid), balance=balances[cid], fee=r["fees"][cid])
+                )
         r["yes"] = len(yes)
         r["status"] = "passed" if not reasons else "failed"
         r["reasons"] = reasons
@@ -170,9 +179,47 @@ def evaluate(proposals, votes, took_part, balances, cfg, history, genders):
 
 # The Russian alphabet (U+0430..U+044F, with the yo U+0451 after the ye) in Latin letters, for a topic's file name.
 RU_ALPHABET = "".join(chr(c) for c in range(0x430, 0x436)) + chr(0x451) + "".join(chr(c) for c in range(0x436, 0x450))
-TRANSLIT = dict(zip(RU_ALPHABET,
-                    ["a", "b", "v", "g", "d", "e", "e", "zh", "z", "i", "y", "k", "l", "m", "n", "o", "p",
-                     "r", "s", "t", "u", "f", "kh", "ts", "ch", "sh", "shch", "", "y", "", "e", "yu", "ya"]))
+TRANSLIT = dict(
+    zip(
+        RU_ALPHABET,
+        [
+            "a",
+            "b",
+            "v",
+            "g",
+            "d",
+            "e",
+            "e",
+            "zh",
+            "z",
+            "i",
+            "y",
+            "k",
+            "l",
+            "m",
+            "n",
+            "o",
+            "p",
+            "r",
+            "s",
+            "t",
+            "u",
+            "f",
+            "kh",
+            "ts",
+            "ch",
+            "sh",
+            "shch",
+            "",
+            "y",
+            "",
+            "e",
+            "yu",
+            "ya",
+        ],
+        strict=False,
+    )
+)
 
 
 def slugify(text, n=40):
@@ -184,22 +231,29 @@ def slugify(text, n=40):
 def topic_text(entry, gender):
     """The topic file, in the discuss format, from the initiator's proposal verbatim."""
     who = characters.name(entry["initiator"])
-    lines = [t("extras.topic_heading", topic=entry["topic"]), "",
-             t("extras.topic_called", gender=gender, who=who, id=entry["id"],
-               round=entry["round"]), "",
-             t("extras.topic_why"), "", entry.get("why") or "—", "",
-             t("extras.topic_questions"), ""]
-    lines += ["%d. %s" % (i, q) for i, q in enumerate(entry["questions"], 1)]
-    lines += ["", "— %s" % who, ""]
+    lines = [
+        t("extras.topic_heading", topic=entry["topic"]),
+        "",
+        t("extras.topic_called", gender=gender, who=who, id=entry["id"], round=entry["round"]),
+        "",
+        t("extras.topic_why"),
+        "",
+        entry.get("why") or "—",
+        "",
+        t("extras.topic_questions"),
+        "",
+    ]
+    lines += ["%d. %s" % (i, q) for i, q in enumerate(entry["questions"], 1)]  # noqa: UP031
+    lines += ["", f"— {who}", ""]
     return "\n".join(lines)
 
 
 def write_topic(cfg, entry, gender):
-    d = os.path.expanduser(cfg["brainstorm"]["topics_dir"])
-    base = os.path.join(d, "%s-brainstorm-%s" % (today(), slugify(entry["topic"])))
+    d = expand_user_path(cfg["brainstorm"]["topics_dir"])
+    base = str(Path(d, "{}-brainstorm-{}".format(today(), slugify(entry["topic"]))))
     path, n = base + ".md", 2
-    while os.path.exists(path):
-        path, n = "%s-%d.md" % (base, n), n + 1
+    while Path(path).exists():
+        path, n = "%s-%d.md" % (base, n), n + 1  # noqa: UP031
     write_new(path, topic_text(entry, gender))
     return path
 
@@ -213,7 +267,8 @@ SHELL_META = re.compile(r"[;|&<>`$\n]")
 def check_order(o, snap_dir, cfg):
     """An order → (normalized or None, why not). None, None: no order. Code checks only: every
     field filled, one call of a script that exists under tools/ in the round's snapshot, headless
-    hardware."""
+    hardware.
+    """
     if not o:
         return None, None
     o = {k: " ".join(str(o.get(k) or "").split()) for k in ORDER_FIELDS}
@@ -231,12 +286,12 @@ def check_order(o, snap_dir, cfg):
     scripts = [tok for tok in tokens if tok.startswith(("tools/", "./tools/"))]
     if not scripts:
         return None, t("extras.order_no_script")
-    rel = os.path.normpath(scripts[0][2:] if scripts[0].startswith("./") else scripts[0])
-    if not rel.startswith("tools" + os.sep) or ".." in rel.split(os.sep):
+    rel = os.path.normpath(scripts[0].removeprefix("./"))
+    if not rel.startswith("tools" + os.sep) or ".." in Path(rel).parts:
         return None, t("extras.order_outside", script=scripts[0])
     if not snap_dir:
         return None, t("extras.order_no_snapshot")
-    if not os.path.isfile(os.path.join(snap_dir, rel)):
+    if not os.path.isfile(os.path.join(snap_dir, rel)):  # noqa: PTH113, PTH118 - unusable filenames must test false, including on Python 3.11
         return None, t("extras.order_not_in_snapshot", script=rel)
     hw = o["hardware"].lower()
     allowed = [h.lower() for h in cfg["orders"]["hardware"]]

@@ -23,9 +23,13 @@ Plugins run in the depot's process with its rights: they are the project's code,
 import importlib
 import importlib.util
 import os
+from pathlib import Path
+from types import ModuleType
+
+from .store import absolute_user_path
 
 HOOKS = ("smoke_verdict", "after_merge", "snapshot_test", "round_context")
-_cache = {}
+_cache: dict[str, ModuleType] = {}
 
 
 class HookError(RuntimeError):
@@ -36,10 +40,10 @@ def _load_one(spec):
     if spec in _cache:
         return _cache[spec]
     if spec.endswith(".py") or os.sep in spec:
-        path = os.path.abspath(os.path.expanduser(spec))
-        if not os.path.isfile(path):
-            raise HookError("plugin %s: no such file" % spec)
-        name = "depot2_plugin_%s" % os.path.splitext(os.path.basename(path))[0]
+        path = absolute_user_path(spec)
+        if not Path(path).is_file():
+            raise HookError(f"plugin {spec}: no such file")
+        name = f"depot2_plugin_{os.path.splitext(Path(path).name)[0]}"  # noqa: PTH122 - keep splitext semantics for plugin module names
         mspec = importlib.util.spec_from_file_location(name, path)
         mod = importlib.util.module_from_spec(mspec)
         mspec.loader.exec_module(mod)
@@ -47,7 +51,7 @@ def _load_one(spec):
         try:
             mod = importlib.import_module(spec)
         except ImportError as e:
-            raise HookError("plugin %s: %s" % (spec, e))
+            raise HookError(f"plugin {spec}: {e}")  # noqa: B904
     _cache[spec] = mod
     return mod
 
@@ -57,7 +61,7 @@ def plugins(cfg):
     out = []
     for spec in (cfg or {}).get("plugins") or []:
         if not isinstance(spec, str) or not spec:
-            raise HookError("plugins: every entry is a module name or a .py path, got %r" % (spec,))
+            raise HookError(f"plugins: every entry is a module name or a .py path, got {spec!r}")
         out.append(_load_one(spec))
     return out
 
@@ -65,7 +69,7 @@ def plugins(cfg):
 def call_all(cfg, name, *args, **kw):
     """Every plugin's answer to hook `name` that is not None, in the plugins' order."""
     if name not in HOOKS:
-        raise HookError("unknown hook %s (known: %s)" % (name, ", ".join(HOOKS)))
+        raise HookError("unknown hook {} (known: {})".format(name, ", ".join(HOOKS)))
     out = []
     for mod in plugins(cfg):
         fn = getattr(mod, name, None)

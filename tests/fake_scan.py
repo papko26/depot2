@@ -9,6 +9,7 @@ import json
 import os
 import subprocess
 import sys
+from pathlib import Path
 
 
 def files_under(d, skip_git):
@@ -17,24 +18,38 @@ def files_under(d, skip_git):
         if skip_git:
             dirs[:] = [x for x in dirs if x != ".git"]
         for f in fs:
-            out.append(os.path.relpath(os.path.join(root, f), d))
+            out.append(os.path.relpath(Path(root, f), d))
     return sorted(out)
 
 
 def calls(log):
-    if not log or not os.path.exists(log):
+    if not log or not os.path.exists(log):  # noqa: PTH110 - keep os.path error and path-spelling semantics
         return 0
-    with open(log) as f:
+    with Path(log).open() as f:
         return sum(1 for ln in f if ln.strip())
 
 
 def move_head(state, n):
-    p = os.path.join(state, "scan-moved-%d.txt" % n)
-    with open(p, "w") as f:
-        f.write("written during the scan %d\n" % n)
-    subprocess.run(["git", "-C", state, "add", "--", os.path.basename(p)], check=True)
-    subprocess.run(["git", "-C", state, "-c", "user.name=t", "-c", "user.email=t@localhost", "commit", "-q", "-m",
-                    "moved during the scan"], check=True)
+    p = str(Path(state, "scan-moved-%d.txt" % n))  # noqa: UP031
+    with Path(p).open("w") as f:
+        f.write("written during the scan %d\n" % n)  # noqa: UP031
+    subprocess.run(["git", "-C", state, "add", "--", Path(p).name], check=True)
+    subprocess.run(
+        [
+            "git",
+            "-C",
+            state,
+            "-c",
+            "user.name=t",
+            "-c",
+            "user.email=t@localhost",
+            "commit",
+            "-q",
+            "-m",
+            "moved during the scan",
+        ],
+        check=True,
+    )
 
 
 def main():
@@ -48,11 +63,11 @@ def main():
     elif "--repo" in argv:
         d, skip_git = argv[argv.index("--repo") + 1], True
     else:
-        sys.stderr.write("fake scan: wants --root or --repo, got %s\n" % argv)
+        sys.stderr.write(f"fake scan: wants --root or --repo, got {argv}\n")
         return 2
     seen = files_under(d, skip_git)
     if log:
-        with open(log, "a") as f:
+        with Path(log).open("a") as f:
             f.write(json.dumps({"argv": argv, "files": seen}) + "\n")
     commit = os.environ.get("FAKE_SCAN_COMMIT", "")
     if commit and n == 0:
@@ -60,18 +75,18 @@ def main():
     hits = []
     for rel in seen:
         try:
-            with open(os.path.join(d, rel), encoding="utf-8", errors="replace") as f:
+            with Path(d, rel).open(encoding="utf-8", errors="replace") as f:
                 for ln in f:
                     if hit and hit in ln:
-                        hits.append("HIT file %s: %s" % (rel, ln.strip()))
+                        hits.append(f"HIT file {rel}: {ln.strip()}")
         except OSError:
             pass
     if mode in ("dirty", "dirty0") and not hits:
         hits.append("HIT file somewhere.md: a line with %s in it" % (hit or "a private word"))
-    print("== files under %s" % d)
+    print(f"== files under {d}")
     for h in hits:
         print(h)
-    print("== total hits: %d" % len(hits))
+    print("== total hits: %d" % len(hits))  # noqa: UP031
     if hits:
         print("NOT CLEAN")
         return 0 if mode == "dirty0" else 1

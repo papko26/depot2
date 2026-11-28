@@ -1,25 +1,28 @@
 """The message catalogs (depot2/i18n.py): en and ru hold the same keys with the same fields, every key the code names
-is in them, no Russian text is left outside the Russian catalog, and the language follows the config and $DEPOT2_LANG."""
+is in them, no Russian text is left outside the Russian catalog, and the language follows the config and $DEPOT2_LANG.
+"""
 
-import glob
 import importlib
 import os
 import pkgutil
 import re
 import string
 import unittest
+from pathlib import Path
 
-import helpers  # noqa: F401
+import helpers
 
 import depot2
 from depot2 import config, i18n
 
-ROOT = os.path.dirname(helpers.HERE)
-PKG = os.path.join(ROOT, "depot2")
+ROOT = str(Path(helpers.HERE).parent)
+PKG = str(Path(ROOT, "depot2"))
 CYRILLIC = re.compile("[Ѐ-ӿ]")
 # t("key"), i18n.t("key"), rx("in.key"), is_word(x, "in.key"), matches(x, "key"), forms("key"), message("key")
-RE_KEY = re.compile(r"""(?:\bt|\bi18n\.t|\brx|\bforms|\bmessage)\(\s*["']([a-z0-9_.\-]*[a-z0-9_\-])["']\s*[,)]|"""
-                    r"""(?:\bis_word|\bmatches)\([^()]*?,\s*["']([a-z0-9_.\-]*[a-z0-9_\-])["']\)""")
+RE_KEY = re.compile(
+    r"""(?:\bt|\bi18n\.t|\brx|\bforms|\bmessage)\(\s*["']([a-z0-9_.\-]*[a-z0-9_\-])["']\s*[,)]|"""
+    r"""(?:\bis_word|\bmatches)\([^()]*?,\s*["']([a-z0-9_.\-]*[a-z0-9_\-])["']\)"""
+)
 RE_WEB_KEY = re.compile(r"""\bT\(\s*["']([A-Za-z0-9_.\-]+)["']""")
 
 
@@ -42,12 +45,12 @@ class CatalogTest(unittest.TestCase):
         for key in en:
             if key.startswith(i18n.INPUT):
                 continue  # regex fragments, never formatted
-            self.assertIsInstance(en[key], str, "%s: the English message is one string (no gender)" % key)
+            self.assertIsInstance(en[key], str, f"{key}: the English message is one string (no gender)")
             want = fields(en[key])
             for form in variants(ru[key]):
-                self.assertEqual(fields(form), want, "%s: ru fields differ from en" % key)
+                self.assertEqual(fields(form), want, f"{key}: ru fields differ from en")
             if isinstance(ru[key], dict):
-                self.assertEqual(sorted(ru[key]), ["f", "m"], "%s: a gender pair is f and m" % key)
+                self.assertEqual(sorted(ru[key]), ["f", "m"], f"{key}: a gender pair is f and m")
             for form in variants(en[key]) + variants(ru[key]):
                 form.format(**{f.split(".")[0].split("[")[0]: "x" for f in want})  # braces balanced, fields named
 
@@ -59,19 +62,19 @@ class CatalogTest(unittest.TestCase):
     def test_every_key_the_code_names_is_in_the_catalog(self):
         en = i18n.catalog("en")
         missing = []
-        for path in glob.glob(os.path.join(PKG, "**", "*.py"), recursive=True):
-            if os.sep + "catalogs" + os.sep in path:
+        for path in Path(PKG).rglob("*.py"):
+            if "catalogs" in path.parts:
                 continue
-            with open(path, encoding="utf-8") as f:
+            with path.open(encoding="utf-8") as f:
                 text = f.read()
             for m in RE_KEY.finditer(text):
                 key = m.group(1) or m.group(2)
                 if key not in en:
-                    missing.append("%s: %s" % (os.path.relpath(path, ROOT), key))
-        with open(os.path.join(PKG, "web", "index.html"), encoding="utf-8") as f:
+                    missing.append(f"{os.path.relpath(path, ROOT)}: {key}")
+        with Path(PKG, "web", "index.html").open(encoding="utf-8") as f:
             page = f.read()
         web = i18n.web_messages("en")
-        missing += ["depot2/web/index.html: web.%s" % k for k in RE_WEB_KEY.findall(page) if k not in web]
+        missing += [f"depot2/web/index.html: web.{k}" for k in RE_WEB_KEY.findall(page) if k not in web]
         self.assertEqual(missing, [])
 
     def test_every_label_family_resolves_in_both(self):
@@ -83,20 +86,20 @@ class CatalogTest(unittest.TestCase):
                 if isinstance(v, i18n.Labels):
                     for k in v:
                         for lang in i18n.LANGS:
-                            self.assertIn("%s.%s" % (v.prefix, k), i18n.catalog(lang), "%s.%s" % (mod.name, name))
+                            self.assertIn(f"{v.prefix}.{k}", i18n.catalog(lang), f"{mod.name}.{name}")
 
     def test_no_russian_outside_the_russian_catalog(self):
         """The code, its comments and the web page are English; Russian lives in depot2/catalogs/ru.py alone."""
         bad = []
-        paths = glob.glob(os.path.join(PKG, "**", "*.py"), recursive=True) + [os.path.join(PKG, "web", "index.html")]
+        paths = [*Path(PKG).rglob("*.py"), Path(PKG, "web", "index.html")]
         for path in sorted(paths):
-            if os.path.abspath(path) == os.path.join(PKG, "catalogs", "ru.py"):
+            if path == Path(PKG, "catalogs", "ru.py"):
                 continue
-            with open(path, encoding="utf-8") as f:
+            with path.open(encoding="utf-8") as f:
                 for n, line in enumerate(f, 1):
                     if CYRILLIC.search(line):
-                        bad.append("%s:%d" % (os.path.relpath(path, ROOT), n))
-        self.assertEqual(bad, [], "%d lines with Russian outside ru.py" % len(bad))
+                        bad.append("%s:%d" % (os.path.relpath(path, ROOT), n))  # noqa: UP031
+        self.assertEqual(bad, [], "%d lines with Russian outside ru.py" % len(bad))  # noqa: UP031
 
 
 class LanguageTest(unittest.TestCase):
@@ -140,8 +143,9 @@ class LanguageTest(unittest.TestCase):
         self.assertEqual(i18n.t("team.agree", gender="m", lang="en"), i18n.t("team.agree", gender="f", lang="en"))
 
     def test_words_are_read_in_every_language(self):
-        self.assertTrue(i18n.is_word("Род: мужской", "in.spec_gender") or
-                        re.search(i18n.rx("in.spec_gender"), "Род: мужской"))
+        self.assertTrue(
+            i18n.is_word("Род: мужской", "in.spec_gender") or re.search(i18n.rx("in.spec_gender"), "Род: мужской")
+        )
         self.assertTrue(re.search(i18n.rx("in.spec_gender"), "Grammatical gender: f"))
 
 
